@@ -45,7 +45,7 @@
 # php -- BEGIN cPanel-generated handler, do not edit
 # Set the “ea-php81” package as the default “PHP” programming language.
 
-<FilesMatch "\.(php4|php5|php3|php2|php|phtml)$">
-SetHandler application/x-lsphp82
-</FilesMatch>
+# <FilesMatch "\.(php4|php5|php3|php2|php|phtml)$">
+# SetHandler application/x-lsphp82
+# </FilesMatch>
 # php -- END cPanel-generated handler, do not edit

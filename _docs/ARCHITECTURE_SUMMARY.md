@@ -1,7 +1,7 @@
 # QIEC – Project Architecture Summary
 
 **Project:** qiec (Quality and Innovation in Education Center)
-**Current folder name:** `qice-project` (note: misspelling of "qiec")
+**Current folder name:** `qiec-project`
 **Production domain:** https://training.qiec.sa
 **Base platform:** RocketLMS v2.1 (IonCube-encoded core)
 **Laravel version:** 9.x
@@ -12,7 +12,7 @@
 ## Project Structure Overview
 
 ```
-qice-project/
+qiec-project/
 ├── .editorconfig              – Editor settings (4-space indent, UTF-8, LF)
 ├── .env                       – ⚠️ PRODUCTION credentials (MUST NOT be committed)
 ├── .gitattributes             – Git attributes
