@@ -1,0 +1,15 @@
+<?php return array (
+  'maximum_64_characters' => 'الحد الأقصى 64 حرفا',
+  'maximum_255_characters' => 'الحد الأقصى 255 حرفًا',
+  'maximum_128_characters' => 'الحد الأقصى 128 حرفًا',
+  '50_160_characters_preferred' => 'الطول المفضل: 155 - 160 حرفًا',
+  'maximum_50_characters' => 'الحد الأقصى 50 حرفا',
+  'course_thumbnail_size' => 'الحجم المفضل: 360×250 بكسل',
+  'course_cover_size' => 'الحجم المفضل: 1920x530 بكسل',
+  'max' => 'الأعلى',
+  'capacity_placeholder' => 'كم عدد الطلاب الذين تخطط لاستضافتهم؟',
+  'subscribe_hint' => 'يمكن للطلاب الاشتراك في المحتوى الخاص بك بالإضافة إلى عمليات الشراء المباشرة.',
+  'webinar_description_placeholder' => 'الحد الأدنى المطلوب هو 300 كلمة. يتم دعم HTML والصور.',
+  'empty_means_unlimited' => 'اتركه فارغا لعدد غير محدود.',
+  'webinar_summary_placeholder' => 'ملخص مختصر لمحتوى الدورة، من الأفضل أن يتراوح بين 50 و160 حرفًا.',
+);
