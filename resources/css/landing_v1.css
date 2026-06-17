@@ -1,0 +1,112 @@
+@import "flyonui/dist/full.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Landing pages only. Keep global tokens here and page-specific layout in Blade. */
+:root {
+    scroll-behavior: smooth;
+
+    /* Brand tokens used by components and Figma conversions. */
+    --color-primary: #3d455d;
+    --color-secondary: #b9a685;
+    --color-gold: #b9a685;
+    --color-black: #000000;
+    --color-blue: #3d455d;
+    --color-77: #777777;
+    --color-card-text: #255977;
+    --color-e3: #e3e3e3;
+    --color-f7: #f7f7f7;
+
+    /* --secondary: #b9a685; */
+
+    /* Typography scale for landing screens. */
+    --font-ibm:
+        "IBM Plex Sans Arabic", ui-sans-serif, system-ui, -apple-system,
+        BlinkMacSystemFont, Segoe UI, Roboto;
+}
+
+@layer base {
+    html {
+        font-size: clamp(12px, 1vw + 0.5rem, 16px) !important;
+        scroll-behavior: smooth;
+        font-family: var(--font-ibm);
+    }
+
+    body {
+        font-family: var(--font-ibm);
+        /* overflow-x: hidden; */
+    }
+}
+
+@layer utilities {
+    /* Shared layout helpers for landing screens. */
+    .container {
+        @apply w-full mx-auto max-w-full sm:px-15 px-3.5;
+        @apply xl:max-w-7xl;
+    }
+
+    .section-gap {
+        margin-block: 8.125rem;
+    }
+
+    .center_flex,
+    .center,
+    .centered {
+        @apply flex items-center justify-center;
+    }
+    .btn {
+        @apply border-none;
+    }
+}
+
+/* Simple reusable utility for dark buttons. */
+.btn-black {
+    background-color: var(--color-black);
+    color: white;
+}
+
+/* Reusable gold button utility for landing CTA buttons. */
+.btn-gold,
+.btn-secondary {
+    background-color: var(--color-gold);
+    color: white;
+    border-radius: 6px;
+}
+
+/* FlyonUI button tokens expect theme variables, so remap the landing buttons here. */
+.btn.btn-primary {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #ffffff;
+}
+
+.btn.btn-primary:hover,
+.btn.btn-primary:focus-visible {
+    background-color: #4a5269;
+    border-color: #4a5269;
+    color: #ffffff;
+}
+
+.carousel-dot {
+    width: 20px;
+    height: 20px;
+    background-color: #d9d9d9;
+    border-radius: 9999px;
+}
+
+.carousel-dot.active {
+    background-color: var(--color-gold) !important;
+}
+
+main {
+    min-height: 100vh;
+    margin-top: 88px;
+}
+
+.course_details_page
+    [data-tab].active.active-tab\:tab-active.tab:not([disabled]) {
+    color: var(--color-primary) !important;
+    border-bottom: 3px solid var(--color-primary) !important;
+}

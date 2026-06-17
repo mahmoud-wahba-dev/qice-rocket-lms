@@ -60,9 +60,7 @@ class LoginController extends Controller
             'pageRobot' => $pageRobot,
         ];
 
-        //
-        $authTemplate = getThemeAuthenticationPagesStyleName();
-        return view("design_1.web.auth.{$authTemplate}.login.index", $data);
+        return view('landing_v1.pages.auth.login', $data);
     }
 
     public function login(Request $request)

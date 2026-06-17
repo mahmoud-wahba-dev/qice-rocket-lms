@@ -79,8 +79,7 @@ class RegisterController extends Controller
             'formFields' => $formFields
         ];
 
-        $authTemplate = getThemeAuthenticationPagesStyleName();
-        return view("design_1.web.auth.{$authTemplate}.register.index", $data);
+        return view('landing_v1.pages.auth.register', $data);
     }
 
     /**
