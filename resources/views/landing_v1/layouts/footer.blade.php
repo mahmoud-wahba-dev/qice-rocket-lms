@@ -1,15 +1,21 @@
 <footer class="bg-primary text-white pt-13 pb-4">
     <div class="container">
-        <div class=" grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6 lg:gap-28">
+        <div class=" grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6 lg:gap-8 max-sm:gap-8">
             <div class="sm:col-span-2 md:col-span-1">
                 <div class="flex items-center gap-2 text-xl font-bold mb-4">
-                    <img src="{{ $landingImg }}/home/logo-footer.svg" alt="logo" class="">
+                    <img src="{{ $landingImg }}/logo-footer.svg" alt="logo" class="">
                 </div>
-                <p class="font-normal text-20px mb-4 text-white lg:w-[90%]">شريكك المهني الأول في المملكة نقدم
-                    حلولاً تعليمية
-                    مبتكرة لصناعة مستقبل
-                    واعد.</p>
-                <div class="flex items-center gap-4 flex-wrap">
+                <p class="font-normal text-20px mb-4 text-white lg:w-[90%]">
+                    مركز الجودة والتميز للتدريب مؤسسة متخصصة في تقديم التدريب النوعي الذي يركز على التطبيق العملي لتلبية
+                    الاحتياجات التدريبية للمؤسسات والأفراد.
+
+
+                </p>
+                <div class="flex items-center gap-4 xl:flex-nowrap flex-wrap">
+                    <img src="{{ $landingImg }}/logo-footer3.webp" alt="logo" class="">
+                    <img src="{{ $landingImg }}/logo-footer2.webp" alt="logo" class="">
+                </div>
+                <!-- <div class="flex items-center gap-4 flex-wrap">
                     <a href="#" class="bg-[#7C849A] size-9 center rounded-full">
                         <svg width="22" height="19" viewBox="0 0 22 19" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path
@@ -62,43 +68,43 @@
 
 
                     </a>
-                </div>
+                </div> -->
             </div>
-            <nav class="flex justify-center">
+            <nav class="flex justify-center max-sm:justify-start">
                 <div>
                     <h6 class="footer-title font-semibold text-24px text-white mb-4">روابط سريعة</h6>
                     <div class=" flex flex-col gap-2">
                         <a href="{{ route('landing.v1.index') }}"
                             class="link link-hover font-normal text-19px text-white">الرئيسية</a>
                         <a href="{{ route('landing.v1.about') }}"
-                            class="link link-hover font-normal text-19px text-white">من
-                            نحن</a>
+                            class="link link-hover font-normal text-19px text-white">الدورات المجانية</a>
                         <a href="{{ route('landing.v1.courses') }}"
-                            class="link link-hover font-normal text-19px text-white">الدورات</a>
+                            class="link link-hover font-normal text-19px text-white">الدورات المعتمدة</a>
                         <a href="{{ route('landing.v1.instructors') }}"
-                            class="link link-hover font-normal text-19px text-white">المدربين</a>
-                        <a href="#" class="link link-hover font-normal text-19px text-white">المقالات</a>
+                            class="link link-hover font-normal text-19px text-white">الخطة التدريبية</a>
 
 
                     </div>
                 </div>
             </nav>
             <nav class="">
-                <h6 class="footer-title font-semibold text-24px text-white mb-4">الاقسام</h6>
+                <h6 class="footer-title font-semibold text-24px text-white mb-4">تصنيف الدورات</h6>
                 <div class=" flex flex-col gap-2">
-                    <a href="#" class="link link-hover font-normal text-19px text-white">تسويق</a>
-                    <a href="#" class="link link-hover font-normal text-19px text-white">استراتيجية العمل</a>
-                    <a href="#" class="link link-hover font-normal text-19px text-white">الصحة واللياقة البدنية</a>
-                    <a href="#" class="link link-hover font-normal text-19px text-white">تطوير الشبكة</a>
+                    <a href="#" class="link link-hover font-normal text-19px text-white">الأدارة </a>
+                    <a href="#" class="link link-hover font-normal text-19px text-white">التسويق</a>
+                    <a href="#" class="link link-hover font-normal text-19px text-white">التقنية وتحليل البيانات</a>
+                    <a href="#" class="link link-hover font-normal text-19px text-white">الجودة</a>
+                    <a href="#" class="link link-hover font-normal text-19px text-white">السلامة</a>
+                    <a href="#" class="link link-hover font-normal text-19px text-white">المهارات الشخصية</a>
 
                 </div>
 
             </nav>
 
             <nav class="">
-                <h6 class="footer-title font-semibold text-24px text-white mb-4">شركة سمات للتطوير و الاستشارات</h6>
-                <p href="#" class="link link-hover font-normal text-19px text-white">المملكة العربية السعودية - المنطقة
-                    الشرقية الدمام</p>
+                <h6 class="footer-title font-semibold text-24px text-white mb-4">التواصل</h6>
+                <p href="#" class="link link-hover font-normal text-19px text-white">للتسجيل والاستفسارات، يرجى التواصل
+                    معنا</p>
                 <a href="mailto:info@siematplus.com"
                     class="link link-hover font-normal text-19px text-white">info@siematplus.com</a>
 
@@ -110,8 +116,8 @@
         <div class="footer text-white border-[#FFFFFF5E] border-t px-6 py-5 mt-9">
             <div class="center w-full ">
                 <aside class="grid-flow-col items-center">
-                    <p class="font-normal text-white text-17px text-center">© كل الحقوق محفوطة لدي @ <a
-                            class="link link-hover font-medium" href="{{ route('landing.v1.index') }}">SIEMATPLUS</a>
+                    <p class="font-normal text-white text-17px text-center">Quality & Excellence Center for Training
+                        <!-- <a class="link link-hover font-medium" href="{{ route('landing.v1.index') }}">SIEMATPLUS</a> -->
                     </p>
                 </aside>
 

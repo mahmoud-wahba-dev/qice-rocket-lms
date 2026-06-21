@@ -3,23 +3,23 @@
         class="navbar rounded-box flex w-full items-center justify-between gap-2 shadow-[0px_4px_34.5px_-3px_#0000000D] mx-auto [@media(min-width:1600px)]:container">
     <div class="navbar-start max-xl:w-1/4">
         <a class="link link-neutral text-xl font-semibold no-underline" href="{{ route('landing.v1.index') }}">
-            <img src="{{ asset('assets/landing_v1/logo_nav.png') }}" alt="Logo" class="h-16">
+            <img src="{{ asset('assets/landing_v1/logo_nav.svg') }}" alt="Logo" class="h-16">
         </a>
     </div>
     <div class="navbar-center max-md:hidden">
         <ul class="menu menu-horizontal p-0 font-medium">
             <li><a class="font-medium text-15px text-[#3D455D] " href="{{ route('landing.v1.index') }}">الرئيسية</a>
             </li>
-            <li><a class="font-medium text-15px text-[#3D455D] " href="{{ route('landing.v1.about') }}">من نحن</a></li>
-            <li><a class="font-medium text-15px text-[#3D455D] " href="{{ route('landing.v1.courses') }}">الدورات</a>
-            </li>
+            <li><a class="font-medium text-15px text-[#3D455D] " href="{{ route('landing.v1.about') }}">دورات مجانية</a></li>
+       
             <li><a class="font-medium text-15px text-[#3D455D] "
                     href="{{ route('landing.v1.instructors') }}">المدربين</a></li>
-            <li><a class="font-medium text-15px text-[#3D455D] " href="{{ route('landing.v1.contact') }}">تواصل معنا</a>
+            <li><a class="font-medium text-15px text-[#3D455D] " href="{{ route('landing.v1.contact') }}">الدورات المعتمدة</a>
             </li>
         </ul>
-    </div>
-    <div class="navbar-end items-center gap-4 max-xl:w-fit">
+    </div> 
+    
+    <div class="navbar-end items-center   gap-4 max-xl:w-fit">
         <div class="dropdown relative inline-flex md:hidden rtl:[--placement:bottom-end]">
             <button id="dropdown-default" type="button"
                 class="dropdown-toggle btn btn-text bg-secondary text-white btn-square" aria-haspopup="menu"

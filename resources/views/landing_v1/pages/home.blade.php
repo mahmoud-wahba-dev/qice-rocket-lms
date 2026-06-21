@@ -2,32 +2,29 @@
 
 @section('content')
 @php($landingImg = asset('assets/landing_v1/img'))
-<main class="mt-20">
-<button class="btn btn-gradient">Default</button>
-<button class="btn btn-gradient btn-primary">Primary</button>
-<button class="btn btn-gradient btn-secondary">Secondary</button>
-<button class="btn btn-gradient btn-accent">Accent</button>
-<button class="btn btn-gradient btn-info">Info</button>
-<button class="btn btn-gradient btn-success">Success</button>
-<button class="btn btn-gradient btn-warning">Warning</button>
-<button class="btn btn-gradient btn-error">Error</button>
-    <header class="relative mt-16 bg-white text-primary overflow-hidden pt-8">
-        <!-- Soft premium radial glow in the center of the hero -->
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0">
-            <img src="{{ $landingImg }}/home/shpe-circle-blur.svg" alt="blur shape"
-                class="w-[750px] max-w-none opacity-90">
-        </div>
-        <div class="container relative z-10">
-            <div class="grid grid-cols-1 md:grid-cols-2 items-center gap-6 ">
+<main class="mt-0">
 
-                <div class="md:w-[93%]">
-                    <h1 class="font-bold text-57px  text-primary mb-6 ">التميز المهني عبر حلول تعليمية متكاملة </h1>
-                    <p class="font-medium text-18px text-primary mb-7">تلتزم منصة "سمات بلس" بتقديم مسارات تدريبية نوعية
-                        مصممة وفق أعلى المعايير المهنية، لتمكين الكوادر
-                        الوطنية وتطوير كفاءاتهم.</p>
-                    <div class="flex items-center flex-wrap gap-6 h-14 font-medium text-20px">
+    <header class="relative  bg-white text-primary overflow-hidden pt-8 h-screen max-xl:mt-20"
+        style="background-image: url('{{ $landingImg }}/home/hero-bg.webp'); background-size: cover; background-position: center;">
+
+        <div class="container relative z-10  flex justify-end items-center h-full">
+
+                <div class="mw-fit">
+                    <h1 class="font-bold text-40px xl:text-57px  text-primary mb-5 ">تدريـب نوعي متخصص
+
+                        <br>
+                        مـوجــه نحــو التطبيـــق
+                    </h1>
+                    <p class="font-normal text-20px xl:text-26px text-[#7A8886] mb-5">تلبية الاحتياجات التدريبية للمرحلة المقبلة
+                        ورؤية
+                        2030</p>
+
+                    <div class="flex items-center ">
+                        <img src="{{ $landingImg }}/home/hero-3.webp" alt="">
+                    </div>
+                    <div class="flex items-center flex-wrap gap-4 h-14 font-medium text-20px">
                         <a href="{{ route('landing.v1.register') }}"
-                            class="btn btn-primary h-14 font-medium text-20px ">
+                            class="btn btn-primary h-12 xl:h-16 font-medium text-16px xl:text-20px ">
 
                             <svg width="21" height="14" viewBox="0 0 21 14" fill="none"
                                 xmlns="http://www.w3.org/2000/svg">
@@ -37,23 +34,17 @@
                             </svg>
 
 
-                            سجل لدينا الان
+                            استعرض الدورات المجانية
                         </a>
 
-                        <a href="{{ route('landing.v1.about') }}" class="btn btn-text h-14 font-medium text-20px">
+                        <a href="{{ route('landing.v1.about') }}" class="btn btn-text h-12 xl:h-16 font-medium text-16px xl:text-20px">
 
 
 
-                            اكتشف المزيد عنا </a>
+                            تحميل الخطة التدريبية</a>
                     </div>
                 </div>
 
-                <div>
-                    <div>
-                        <img src="{{ $landingImg }}/home/hero.webp" alt="hero image" class="max-w-full max-h-full">
-                    </div>
-                </div>
-            </div>
         </div>
     </header>
 
@@ -144,7 +135,8 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
                 <div class="center flex-col px-4">
-                    <p class="font-bold flex items-center flex-nowrap text-71px max-xl:text-60px max-md:text-48px mb-7 text-secondary">
+                    <p
+                        class="font-bold flex items-center flex-nowrap text-71px max-xl:text-60px max-md:text-48px mb-7 text-secondary">
                         <span>+</span>
                         <span data-toggle-count='{"target":"#stats-1","min":0,"max":95000,"duration":1200}'>
                             0
@@ -159,7 +151,8 @@
 
 
                 <div class="center flex-col px-8 border-x border-[#B9A68566]">
-                    <p class="font-bold flex items-center flex-nowrap text-71px max-xl:text-60px max-md:text-48px mb-7 text-secondary">
+                    <p
+                        class="font-bold flex items-center flex-nowrap text-71px max-xl:text-60px max-md:text-48px mb-7 text-secondary">
                         <span>+</span>
                         <span data-toggle-count='{"target":"#stats-2","min":0,"max":620,"duration":1200}'>
                             0
@@ -171,7 +164,8 @@
                 </div>
 
                 <div class="center flex-col px-8 border-e border-[#B9A68566]">
-                    <p class="font-bold flex items-center flex-nowrap text-71px max-xl:text-60px max-md:text-48px mb-7 text-secondary">
+                    <p
+                        class="font-bold flex items-center flex-nowrap text-71px max-xl:text-60px max-md:text-48px mb-7 text-secondary">
                         <span>+</span>
                         <span data-toggle-count='{"target":"#stats-3","min":0,"max":66,"duration":1200}'>
                             0
@@ -183,7 +177,8 @@
                 </div>
 
                 <div class="center flex-col px-4">
-                    <p class="font-bold flex items-center flex-nowrap text-71px max-xl:text-60px max-md:text-48px mb-7 text-secondary">
+                    <p
+                        class="font-bold flex items-center flex-nowrap text-71px max-xl:text-60px max-md:text-48px mb-7 text-secondary">
                         <span>+</span>
                         <span data-toggle-count='{"target":"#stats-4","min":0,"max":1200,"duration":1200}'>
                             0
@@ -356,72 +351,72 @@
                 <div class="carousel">
                     <div class="carousel-body opacity-0">
                         @forelse ($courses as $course)
-                            <div class="carousel-slide">
-                                <div class="grid grid-cols-1 lg:grid-cols-12 items-center">
-                                    <div class="lg:col-span-8 text-white">
-                                        <div class="lg:w-[80%]">
-                                            <p class="font-semibold text-white text-36px md:w-[60%] mb-5">
-                                                <span class="icon-[tabler--star-filled] text-[#F9AA00]"></span>
-                                                <span class="icon-[tabler--star-filled] text-[#F9AA00]"></span>
-                                                ابدأ رحلة التميز مع دوراتنا الأكثر طلباً
-                                            </p>
-                                            <h3 class="font-bold text-50px text-white mb-8 lg:w-[75%]">
-                                                {{ $course->title }}
-                                            </h3>
-                                            <p class="font-normal text-20px mb-8 lg:w-[70%] line-clamp-4">
-                                                {{ $course->summary ?? Str::limit(strip_tags(html_entity_decode($course->description)), 200) }}
-                                            </p>
-                                            <div>
-                                                <a href="{{ route('landing.v1.course-details', $course->slug) }}"
-                                                    class="btn btn-gold h-12 px-20 font-medium text-24px"> اشترك الان
-                                                </a>
-                                            </div>
+                        <div class="carousel-slide">
+                            <div class="grid grid-cols-1 lg:grid-cols-12 items-center">
+                                <div class="lg:col-span-8 text-white">
+                                    <div class="lg:w-[80%]">
+                                        <p class="font-semibold text-white text-36px md:w-[60%] mb-5">
+                                            <span class="icon-[tabler--star-filled] text-[#F9AA00]"></span>
+                                            <span class="icon-[tabler--star-filled] text-[#F9AA00]"></span>
+                                            ابدأ رحلة التميز مع دوراتنا الأكثر طلباً
+                                        </p>
+                                        <h3 class="font-bold text-50px text-white mb-8 lg:w-[75%]">
+                                            {{ $course->title }}
+                                        </h3>
+                                        <p class="font-normal text-20px mb-8 lg:w-[70%] line-clamp-4">
+                                            {{ $course->summary ??
+                                            Str::limit(strip_tags(html_entity_decode($course->description)), 200) }}
+                                        </p>
+                                        <div>
+                                            <a href="{{ route('landing.v1.course-details', $course->slug) }}"
+                                                class="btn btn-gold h-12 px-20 font-medium text-24px"> اشترك الان
+                                            </a>
                                         </div>
                                     </div>
-                                    <div class="lg:col-span-4">
-                                        <x-landing_v1::course-card
-                                            title="{{ $course->title }}"
-                                            description="{{ $course->description }}"
-                                            teacherName="{{ $course->teacher->full_name ?? '' }}"
-                                            teacherAvatar="{{ !empty($course->teacher) ? $course->teacher->getAvatar() : '' }}"
-                                            price="{{ ($course->price > 0) ? $course->price . ' ر.س' : 'مجاناً' }}"
-                                            image="{{ $course->image_cover ?? asset('assets/landing_v1/img/contact/hero.webp') }}"
-                                            slug="{{ $course->slug }}"
-                                        />
-                                    </div>
+                                </div>
+                                <div class="lg:col-span-4">
+                                    <x-landing_v1::course-card title="{{ $course->title }}"
+                                        description="{{ $course->description }}"
+                                        teacherName="{{ $course->teacher->full_name ?? '' }}"
+                                        teacherAvatar="{{ !empty($course->teacher) ? $course->teacher->getAvatar() : '' }}"
+                                        price="{{ ($course->price > 0) ? $course->price . ' ر.س' : 'مجاناً' }}"
+                                        image="{{ $course->image_cover ?? asset('assets/landing_v1/img/contact/hero.webp') }}"
+                                        slug="{{ $course->slug }}" />
                                 </div>
                             </div>
+                        </div>
                         @empty
-                            <div class="carousel-slide">
-                                <div class="grid grid-cols-1 lg:grid-cols-12 items-center">
-                                    <div class="lg:col-span-8 text-white">
-                                        <div class="lg:w-[80%]">
-                                            <p class="font-semibold text-white text-36px md:w-[60%] mb-5">
-                                                <span class="icon-[tabler--star-filled] text-[#F9AA00]"></span>
-                                                <span class="icon-[tabler--star-filled] text-[#F9AA00]"></span>
-                                                ابدأ رحلة التميز مع دوراتنا الأكثر طلباً
-                                            </p>
-                                            <h3 class="font-bold text-50px text-white mb-8 lg:w-[75%]">
-                                                الاستراتيجيات الحديثة في إدارة المشاريع الهندسية
-                                            </h3>
-                                            <p class="font-normal text-20px mb-8 lg:w-[70%]">
-                                                دورة مكثفة صُممت خصيصاً لسد الفجوة بين المعرفة الأكاديمية التطبيق الميداني في كبرى الشركات.
-                                            </p>
-                                            <div>
-                                                <a href="{{ route('landing.v1.course-details') }}"
-                                                    class="btn btn-gold h-12 px-20 font-medium text-24px"> اشترك الان
-                                                </a>
-                                            </div>
+                        <div class="carousel-slide">
+                            <div class="grid grid-cols-1 lg:grid-cols-12 items-center">
+                                <div class="lg:col-span-8 text-white">
+                                    <div class="lg:w-[80%]">
+                                        <p class="font-semibold text-white text-36px md:w-[60%] mb-5">
+                                            <span class="icon-[tabler--star-filled] text-[#F9AA00]"></span>
+                                            <span class="icon-[tabler--star-filled] text-[#F9AA00]"></span>
+                                            ابدأ رحلة التميز مع دوراتنا الأكثر طلباً
+                                        </p>
+                                        <h3 class="font-bold text-50px text-white mb-8 lg:w-[75%]">
+                                            الاستراتيجيات الحديثة في إدارة المشاريع الهندسية
+                                        </h3>
+                                        <p class="font-normal text-20px mb-8 lg:w-[70%]">
+                                            دورة مكثفة صُممت خصيصاً لسد الفجوة بين المعرفة الأكاديمية التطبيق الميداني
+                                            في كبرى الشركات.
+                                        </p>
+                                        <div>
+                                            <a href="{{ route('landing.v1.course-details') }}"
+                                                class="btn btn-gold h-12 px-20 font-medium text-24px"> اشترك الان
+                                            </a>
                                         </div>
                                     </div>
-                                    <div class="lg:col-span-4">
-                                        <x-landing_v1::course-card title="استشارات هندسية"
-                                            description="دورة مكثفة في إدارة المشاريع الهندسية والإنشائية."
-                                            teacher-name="المهندس الاستشاري" price="150 ر.س"
-                                            image="{{ $landingImg }}/home/course.webp" />
-                                    </div>
+                                </div>
+                                <div class="lg:col-span-4">
+                                    <x-landing_v1::course-card title="استشارات هندسية"
+                                        description="دورة مكثفة في إدارة المشاريع الهندسية والإنشائية."
+                                        teacher-name="المهندس الاستشاري" price="150 ر.س"
+                                        image="{{ $landingImg }}/home/course.webp" />
                                 </div>
                             </div>
+                        </div>
                         @endforelse
                     </div>
                 </div>
