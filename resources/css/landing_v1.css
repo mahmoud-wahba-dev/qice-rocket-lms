@@ -110,7 +110,7 @@
 .carousel-dot {
     width: 17px;
     height: 17px;
-    background-color: #0F4C453D;
+    background-color: #0f4c453d;
     border-radius: 9999px;
     border: none;
     cursor: pointer;
@@ -183,4 +183,9 @@ main {
         inset-inline-end: 0;
         transform: translateY(-50%) translateX(-49%);
     }
+}
+
+/* Figma "Ellipse 14" — layer blur on #FFF1D5 fill (not backdrop-filter) */
+.blur-glow-circle {
+    filter: blur(130px);
 }
