@@ -558,6 +558,312 @@
             </div>
         </section>
 
+
+        <section class="my-0 lg:py-32 py-8 bg-primary text-white">
+            <div class="container">
+                <div class="flex justify-between items-end xl:flex-nowrap mb-20">
+                    <div>
+                        <h2 class="font-bold text-40px text-secondary  mb-4 ">قائمة المدربين بالمركز
+                        </h2>
+                        <p class="font-normal text-20px  text-secondary xl:w-[60%] lg:w-[80%] ">
+                            نخبة من الخبراء والمستشارين والمدربين المعتمدين يقودون مسارات التدريب في المركز بخبرات متنوعة في
+                            الحوكمة، الجودة، الإدارة الصحية، القانون، التدريب، التطوير المؤسسي والتميز. </p>
+                    </div>
+                    <a href=""
+                        class="btn btn-outline bg-[#E8F5E9] rounded-10px h-15 font-extrabold px-10 text-primary text-20px">
+                        عرض جميع المدربين </a>
+                </div>
+                <div id="multi-slide mb-10"
+                    data-carousel='{ "loadingClasses": "opacity-0", "slidesQty": { "xs": 1, "sm": 2, "lg": 3 , "xl": 4 }, "isRTL": true ,"dotsItemClasses": "carousel-dot" ,"isInfiniteLoop": true }'
+                    class="relative w-full">
+                    <div class="carousel ">
+                        <div class="carousel-body  h-full opacity-0 overflow-visible gap-4 xl:gap-8">
+                            <div class="carousel-slide ">
+                                <div class="bg-white  rounded-19px ">
+                                    <div class="h-60 mb-6 overflow-hidden">
+                                        <img class="h-full w-full object-cover rounded-tr-[19px] rounded-tl-[19px]"
+                                            src="{{ $landingImg }}/home/course.webp" alt="course 1">
+                                    </div>
+
+                                    <div class="p-6">
+                                        <h6 class="font-semibold text-24px text-blue mb-3">د. محمد أبو هيشة</h6>
+                                        <ul class="list-inside list-disc font-normal text-14px text-blue">
+                                            <li class="mb-1 font-normal text-14px text-blue">دكتوراه في الإدارة والتخطيط الصحي.</li>
+                                            <li class="mb-1 font-normal text-14px text-blue">استشاري الإدارة الصحية والمستشفيات.</li>
+                                            <li class="mb-1 font-normal text-14px text-blue">عمل مديرًا عامًا لعدة إدارات عامة بوزارة الصحة لمدة 30 سنة.</li>
+                                          </ul>
+                                 
+
+                                  
+                                    </div>
+                                </div>
+                            </div>
+
+                 
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+
+                    <button type="button" class="carousel-prev start-0 -translate-x-[-49%]">
+                        <span
+                            class="size-12 bg-[#F4F4F6] border border-primary flex items-center justify-center rounded-full shadow">
+                            <span class="icon-[tabler--chevron-left] size-5 cursor-pointer rtl:rotate-180"></span>
+                        </span>
+                        <span class="sr-only">Previous</span>
+                    </button>
+                    <button type="button" class="carousel-next end-0 translate-x-[-49%]">
+                        <span class="sr-only">Next</span>
+                        <span
+                            class="size-12 bg-[#F4F4F6] border border-primary flex items-center justify-center rounded-full shadow">
+                            <span class="icon-[tabler--chevron-right] size-5 cursor-pointer rtl:rotate-180"></span>
+                        </span>
+                    </button>
+                </div>
+
+
+            </div>
+        </section>
+
+        <section class="my-0 lg:py-32 py-8 bg-primary text-white">
+            <div class="container">
+                <div class="flex justify-between items-end flex-wrap mb-20">
+                    <div>
+                        <h2 class="font-bold text-40px text-secondary  mb-4 ">الدورات المعتمدة والبرامج المدفوعة
+                        </h2>
+                        <p class="font-normal text-20px  text-secondary ">
+                            برامج تدريبية احترافية ومعتمدة في مختلف المجالات
+                        </p>
+                    </div>
+                    <a href=""
+                        class="btn btn-outline bg-[#E8F5E9] rounded-10px h-15 font-extrabold px-10 text-primary text-20px">
+                        عرض جميع المدربين
+                    </a>
+                </div>
+                <div id="multi-slide mb-10"
+                    data-carousel='{ "loadingClasses": "opacity-0", "slidesQty": { "xs": 1, "sm": 2, "lg": 3 , "xl": 4 }, "isRTL": true ,"dotsItemClasses": "carousel-dot" ,"isInfiniteLoop": true }'
+                    class="relative w-full">
+                    <div class="carousel ">
+                        <div class="carousel-body  h-full opacity-0 overflow-visible gap-4 xl:gap-8">
+                            <div class="carousel-slide ">
+                                <div class="bg-white  rounded-19px ">
+                                    <div class="h-60 mb-6 overflow-hidden">
+                                        <img class="h-full w-full object-cover rounded-tr-[19px] rounded-tl-[19px]"
+                                            src="{{ $landingImg }}/home/course.webp" alt="course 1">
+                                    </div>
+
+                                    <div class="p-6">
+                                        <h6 class="font-semibold text-20px text-primary mb-2">التسويق الرقمي</h6>
+                                        <p class="font-normal text-12px text-7a mb-2">Digital Marketing</p>
+                                        <p class="font-normal text-13px text-7a mb-3">
+                                            دورة تطويرية
+                                        </p>
+                                        <div class="flex items-center gap-1.5 mb-5 border-t border-card-border pt-4 ">
+                                            <div class="avatar">
+
+                                                <div class="size-10 rounded-full">
+                                                    <img src="https://cdn.flyonui.com/fy-assets/avatar/avatar-1.png"
+                                                        alt="avatar" />
+                                                </div>
+                                            </div>
+
+                                            <p class="font-medium text-77 text-base">اسم المعلم</p>
+                                        </div>
+
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-bold text-20px text-primary whitespace-nowrap gap-4">
+                                                699 ريال
+                                            </span>
+                                            <a href=""
+                                                class="btn btn-primary rounded-[3px] h-10 font-medium text-14px ">سجّل
+                                                الآن</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="carousel-slide ">
+                                <div class="bg-white  rounded-19px ">
+                                    <div class="h-60 mb-6 overflow-hidden">
+                                        <img class="h-full w-full object-cover rounded-tr-[19px] rounded-tl-[19px]"
+                                            src="{{ $landingImg }}/home/course.webp" alt="course 1">
+                                    </div>
+
+                                    <div class="p-6">
+                                        <h6 class="font-semibold text-20px text-primary mb-2">التسويق الرقمي</h6>
+                                        <p class="font-normal text-12px text-7a mb-2">Digital Marketing</p>
+                                        <p class="font-normal text-13px text-7a mb-3">
+                                            دورة تطويرية
+                                        </p>
+                                        <div class="flex items-center gap-1.5 mb-5 border-t border-card-border pt-4 ">
+                                            <div class="avatar">
+
+                                                <div class="size-10 rounded-full">
+                                                    <img src="https://cdn.flyonui.com/fy-assets/avatar/avatar-1.png"
+                                                        alt="avatar" />
+                                                </div>
+                                            </div>
+
+                                            <p class="font-medium text-77 text-base">اسم المعلم</p>
+                                        </div>
+
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-bold text-20px text-primary whitespace-nowrap gap-4">
+                                                699 ريال
+                                            </span>
+                                            <a href=""
+                                                class="btn btn-primary rounded-[3px] h-10 font-medium text-14px ">سجّل
+                                                الآن</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="carousel-slide ">
+                                <div class="bg-white  rounded-19px ">
+                                    <div class="h-60 mb-6 overflow-hidden">
+                                        <img class="h-full w-full object-cover rounded-tr-[19px] rounded-tl-[19px]"
+                                            src="{{ $landingImg }}/home/course.webp" alt="course 1">
+                                    </div>
+
+                                    <div class="p-6">
+                                        <h6 class="font-semibold text-20px text-primary mb-2">التسويق الرقمي</h6>
+                                        <p class="font-normal text-12px text-7a mb-2">Digital Marketing</p>
+                                        <p class="font-normal text-13px text-7a mb-3">
+                                            دورة تطويرية
+                                        </p>
+                                        <div class="flex items-center gap-1.5 mb-5 border-t border-card-border pt-4 ">
+                                            <div class="avatar">
+
+                                                <div class="size-10 rounded-full">
+                                                    <img src="https://cdn.flyonui.com/fy-assets/avatar/avatar-1.png"
+                                                        alt="avatar" />
+                                                </div>
+                                            </div>
+
+                                            <p class="font-medium text-77 text-base">اسم المعلم</p>
+                                        </div>
+
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-bold text-20px text-primary whitespace-nowrap gap-4">
+                                                699 ريال
+                                            </span>
+                                            <a href=""
+                                                class="btn btn-primary rounded-[3px] h-10 font-medium text-14px ">سجّل
+                                                الآن</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="carousel-slide ">
+                                <div class="bg-white  rounded-19px ">
+                                    <div class="h-60 mb-6 overflow-hidden">
+                                        <img class="h-full w-full object-cover rounded-tr-[19px] rounded-tl-[19px]"
+                                            src="{{ $landingImg }}/home/course.webp" alt="course 1">
+                                    </div>
+
+                                    <div class="p-6">
+                                        <h6 class="font-semibold text-20px text-primary mb-2">التسويق الرقمي</h6>
+                                        <p class="font-normal text-12px text-7a mb-2">Digital Marketing</p>
+                                        <p class="font-normal text-13px text-7a mb-3">
+                                            دورة تطويرية
+                                        </p>
+                                        <div class="flex items-center gap-1.5 mb-5 border-t border-card-border pt-4 ">
+                                            <div class="avatar">
+
+                                                <div class="size-10 rounded-full">
+                                                    <img src="https://cdn.flyonui.com/fy-assets/avatar/avatar-1.png"
+                                                        alt="avatar" />
+                                                </div>
+                                            </div>
+
+                                            <p class="font-medium text-77 text-base">اسم المعلم</p>
+                                        </div>
+
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-bold text-20px text-primary whitespace-nowrap gap-4">
+                                                699 ريال
+                                            </span>
+                                            <a href=""
+                                                class="btn btn-primary rounded-[3px] h-10 font-medium text-14px ">سجّل
+                                                الآن</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="carousel-slide ">
+                                <div class="bg-white  rounded-19px ">
+                                    <div class="h-60 mb-6 overflow-hidden">
+                                        <img class="h-full w-full object-cover rounded-tr-[19px] rounded-tl-[19px]"
+                                            src="{{ $landingImg }}/home/course.webp" alt="course 1">
+                                    </div>
+
+                                    <div class="p-6">
+                                        <h6 class="font-semibold text-20px text-primary mb-2">التسويق الرقمي</h6>
+                                        <p class="font-normal text-12px text-7a mb-2">Digital Marketing</p>
+                                        <p class="font-normal text-13px text-7a mb-3">
+                                            دورة تطويرية
+                                        </p>
+                                        <div class="flex items-center gap-1.5 mb-5 border-t border-card-border pt-4 ">
+                                            <div class="avatar">
+
+                                                <div class="size-10 rounded-full">
+                                                    <img src="https://cdn.flyonui.com/fy-assets/avatar/avatar-1.png"
+                                                        alt="avatar" />
+                                                </div>
+                                            </div>
+
+                                            <p class="font-medium text-77 text-base">اسم المعلم</p>
+                                        </div>
+
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-bold text-20px text-primary whitespace-nowrap gap-4">
+                                                699 ريال
+                                            </span>
+                                            <a href=""
+                                                class="btn btn-primary rounded-[3px] h-10 font-medium text-14px ">سجّل
+                                                الآن</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+
+                    <button type="button" class="carousel-prev start-0 -translate-x-[-49%]">
+                        <span
+                            class="size-12 bg-[#F4F4F6] border border-primary flex items-center justify-center rounded-full shadow">
+                            <span class="icon-[tabler--chevron-left] size-5 cursor-pointer rtl:rotate-180"></span>
+                        </span>
+                        <span class="sr-only">Previous</span>
+                    </button>
+                    <button type="button" class="carousel-next end-0 translate-x-[-49%]">
+                        <span class="sr-only">Next</span>
+                        <span
+                            class="size-12 bg-[#F4F4F6] border border-primary flex items-center justify-center rounded-full shadow">
+                            <span class="icon-[tabler--chevron-right] size-5 cursor-pointer rtl:rotate-180"></span>
+                        </span>
+                    </button>
+                </div>
+
+
+            </div>
+        </section>
+
         <section class="bg-secondary py-16 lg:py-32 my-0">
             <div class="container">
                 <h2 class="font-bold text-38px text-primary mb-16 text-center sec-title">لماذا مركز الجودة والتميز؟</h2>
@@ -583,13 +889,19 @@
 
                     <div class="bg-white  rounded-20px p-14 flex flex-col items-center">
                         <div class="size-16 center bg-gold rounded-full mb-6">
-                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M10.668 2.66797V8.0013" stroke="#0F4C45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M21.332 2.66797V8.0013" stroke="#0F4C45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M25.3333 5.33203H6.66667C5.19391 5.33203 4 6.52594 4 7.9987V26.6654C4 28.1381 5.19391 29.332 6.66667 29.332H25.3333C26.8061 29.332 28 28.1381 28 26.6654V7.9987C28 6.52594 26.8061 5.33203 25.3333 5.33203Z" stroke="#0F4C45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M4 13.332H28" stroke="#0F4C45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                                
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M10.668 2.66797V8.0013" stroke="#0F4C45" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <path d="M21.332 2.66797V8.0013" stroke="#0F4C45" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <path
+                                    d="M25.3333 5.33203H6.66667C5.19391 5.33203 4 6.52594 4 7.9987V26.6654C4 28.1381 5.19391 29.332 6.66667 29.332H25.3333C26.8061 29.332 28 28.1381 28 26.6654V7.9987C28 6.52594 26.8061 5.33203 25.3333 5.33203Z"
+                                    stroke="#0F4C45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M4 13.332H28" stroke="#0F4C45" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+
 
                         </div>
                         <h4 class="font-semibold text-24px text-primary mb-4">برامج حضورية وعن بُعد</h4>
@@ -601,13 +913,22 @@
 
                     <div class="bg-white  rounded-20px p-14 flex flex-col items-center">
                         <div class="size-16 center bg-gold rounded-full mb-6">
-                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M21.3346 28V25.3333C21.3346 23.9188 20.7727 22.5623 19.7725 21.5621C18.7723 20.5619 17.4158 20 16.0013 20H8.0013C6.58681 20 5.23026 20.5619 4.23007 21.5621C3.22987 22.5623 2.66797 23.9188 2.66797 25.3333V28" stroke="#0F4C45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M12.0013 14.6667C14.9468 14.6667 17.3346 12.2789 17.3346 9.33333C17.3346 6.38781 14.9468 4 12.0013 4C9.05578 4 6.66797 6.38781 6.66797 9.33333C6.66797 12.2789 9.05578 14.6667 12.0013 14.6667Z" stroke="#0F4C45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M29.332 27.9985V25.3319C29.3311 24.1502 28.9378 23.0022 28.2139 22.0683C27.4899 21.1344 26.4762 20.4673 25.332 20.1719" stroke="#0F4C45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M21.332 4.17188C22.4793 4.46561 23.4961 5.13281 24.2222 6.06829C24.9484 7.00377 25.3425 8.15431 25.3425 9.33854C25.3425 10.5228 24.9484 11.6733 24.2222 12.6088C23.4961 13.5443 22.4793 14.2115 21.332 14.5052" stroke="#0F4C45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                                
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M21.3346 28V25.3333C21.3346 23.9188 20.7727 22.5623 19.7725 21.5621C18.7723 20.5619 17.4158 20 16.0013 20H8.0013C6.58681 20 5.23026 20.5619 4.23007 21.5621C3.22987 22.5623 2.66797 23.9188 2.66797 25.3333V28"
+                                    stroke="#0F4C45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                <path
+                                    d="M12.0013 14.6667C14.9468 14.6667 17.3346 12.2789 17.3346 9.33333C17.3346 6.38781 14.9468 4 12.0013 4C9.05578 4 6.66797 6.38781 6.66797 9.33333C6.66797 12.2789 9.05578 14.6667 12.0013 14.6667Z"
+                                    stroke="#0F4C45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                <path
+                                    d="M29.332 27.9985V25.3319C29.3311 24.1502 28.9378 23.0022 28.2139 22.0683C27.4899 21.1344 26.4762 20.4673 25.332 20.1719"
+                                    stroke="#0F4C45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                <path
+                                    d="M21.332 4.17188C22.4793 4.46561 23.4961 5.13281 24.2222 6.06829C24.9484 7.00377 25.3425 8.15431 25.3425 9.33854C25.3425 10.5228 24.9484 11.6733 24.2222 12.6088C23.4961 13.5443 22.4793 14.2115 21.332 14.5052"
+                                    stroke="#0F4C45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+
 
                         </div>
                         <h4 class="font-semibold text-24px text-primary mb-4"> ورش مجانية للتوعية</h4>
@@ -618,11 +939,14 @@
 
                     <div class="bg-white  rounded-20px p-14 flex flex-col items-center">
                         <div class="size-16 center bg-gold rounded-full mb-6">
-                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M29.3346 9.33203L18.0013 20.6654L11.3346 13.9987L2.66797 22.6654" stroke="#0F4C45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M21.332 9.33203H29.332V17.332" stroke="#0F4C45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                                
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M29.3346 9.33203L18.0013 20.6654L11.3346 13.9987L2.66797 22.6654" stroke="#0F4C45"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M21.332 9.33203H29.332V17.332" stroke="#0F4C45" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+
 
                         </div>
                         <h4 class="font-semibold text-24px text-primary mb-4">مسارات مرتبطة بسوق العمل</h4>
