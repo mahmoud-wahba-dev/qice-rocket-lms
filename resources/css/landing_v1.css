@@ -9,15 +9,17 @@
     scroll-behavior: smooth;
 
     /* Brand tokens used by components and Figma conversions. */
-    --color-primary: #0F4C45;
-    --color-secondary: #E8D9C0;
-    --color-gold: #E8D9C0;
+    --color-primary: #0f4c45;
+    --color-secondary: #faf8f4;
+    --color-gold: #e8d9c0;
     --color-black: #000000;
     --color-blue: #3d455d;
     --color-77: #777777;
     --color-card-text: #255977;
     --color-e3: #e3e3e3;
     --color-f7: #f7f7f7;
+    --color-card-border: #e0d4bc;
+    --color-7a: #7a8886;
 
     /* --secondary: #b9a685; */
 
@@ -45,8 +47,10 @@
         @apply xl:max-w-7xl;
     }
 
-    .section-gap {
-        margin-block: 8.125rem;
+    .section-gap,
+    section {
+        /* margin-block: 8.125rem; */
+        @apply my-8 lg:my-32;
     }
 
     .center_flex,
@@ -54,37 +58,53 @@
     .centered {
         @apply flex items-center justify-center;
     }
-    .btn {
-        @apply border-none;
-    }
 }
 
-/* Simple reusable utility for dark buttons. */
-.btn-black {
+.bg-linear {
+    background: linear-gradient(
+        180deg,
+        rgba(6, 99, 89, 0.71) 0%,
+        rgba(0, 0, 0, 0.71) 100%
+    );
+}
+
+/* Solid landing buttons — keep FlyonUI outline/soft/text variants untouched. */
+.btn.btn-black:not(.btn-outline):not(.btn-soft):not(.btn-text) {
     background-color: var(--color-black);
-    color: white;
+    border-color: var(--color-black);
+    color: #ffffff;
 }
 
-/* Reusable gold button utility for landing CTA buttons. */
-.btn-gold,
-.btn-secondary {
+.btn.btn-gold:not(.btn-outline):not(.btn-soft):not(.btn-text) {
     background-color: var(--color-gold);
-    color: white;
+    border-color: var(--color-gold);
+    color: var(--color-primary);
     border-radius: 6px;
 }
 
-/* FlyonUI button tokens expect theme variables, so remap the landing buttons here. */
-.btn.btn-primary {
+.btn.btn-gold:not(.btn-outline):not(.btn-soft):not(.btn-text):hover,
+.btn.btn-gold:not(.btn-outline):not(.btn-soft):not(.btn-text):focus-visible {
+    background-color: #ddc9a8;
+    border-color: #ddc9a8;
+    color: var(--color-primary);
+}
+
+.btn.btn-primary:not(.btn-outline):not(.btn-soft):not(.btn-text) {
     background-color: var(--color-primary);
     border-color: var(--color-primary);
     color: #ffffff;
 }
 
-.btn.btn-primary:hover,
-.btn.btn-primary:focus-visible {
-    background-color: #4a5269;
-    border-color: #4a5269;
+.btn.btn-primary:not(.btn-outline):not(.btn-soft):not(.btn-text):hover,
+.btn.btn-primary:not(.btn-outline):not(.btn-soft):not(.btn-text):focus-visible {
+    background-color: #0c4039;
+    border-color: #0c4039;
     color: #ffffff;
+}
+
+/* Match card CTA design: cream fill with primary outline/text. */
+.btn.btn-outline.btn-primary {
+    background-color: var(--color-secondary);
 }
 
 .carousel-dot {
@@ -107,4 +127,20 @@ main {
     [data-tab].active.active-tab\:tab-active.tab:not([disabled]) {
     color: var(--color-primary) !important;
     border-bottom: 3px solid var(--color-primary) !important;
+}
+
+.sec-title {
+    position: relative;
+}
+
+.sec-title::after {
+    content: "";
+    position: absolute;
+    bottom: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 4px;
+    background: var(--color-gold);
+    border-radius: 999px;
 }

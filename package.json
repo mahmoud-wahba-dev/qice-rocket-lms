@@ -8,8 +8,8 @@
         "hot": "mix watch --hot",
         "prod": "npm run production",
         "production": "mix --production",
-        "landing:dev": "vite",
-        "landing:build": "vite build",
+        "dev:landing": "vite",
+        "build:landing": "vite build",
         "deploy": "deploy.bat"
     },
     "devDependencies": {

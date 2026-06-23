@@ -141,7 +141,7 @@
                                 class="input input-bordered flex-1 text-14px font-medium text-primary h-10 rounded-8px focus:border-secondary"
                                 placeholder="أدخل رمز الخصم هنا">
                             <button type="button" id="apply-coupon-btn"
-                                class="btn btn-outline-secondary h-10 px-4 text-14px font-medium rounded-8px"
+                                class="btn btn-outline btn-primary h-10 px-4 text-14px font-medium rounded-8px"
                                 onclick="applyCoupon()">
                                 تطبيق
                             </button>
