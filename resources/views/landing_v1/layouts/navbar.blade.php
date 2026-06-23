@@ -162,9 +162,10 @@
                     </div>
                 </div>
             @else
-                <a class="btn max-md:btn-square btn-primary font-medium text-17px h-12"
-                    href="{{ route('landing.v1.login') }}">
-                  
+                <a class="btn max-xl:btn-square btn-primary font-medium text-17px h-12"
+                    href="{{ route('landing.v1.login') }}"
+                    aria-label="تسجيل الدخول">
+                    <span class="icon-[tabler--login] size-5 xl:hidden"></span>
                     <span class="max-xl:hidden font-medium text-15px">تسجيل الدخول</span>
                 </a>
             @endauth
