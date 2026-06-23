@@ -59,6 +59,18 @@ class LandingV1Controller extends Controller
             'pageTitle' => 'ورش ومحاضرات مجانية',
         ]);
     }
+    public function blogs()
+    {
+        return view('landing_v1.pages.blogs', [
+            'pageTitle' => 'اخر الاخبار لدينا',
+        ]);
+    }
+    public function blogDetails()
+    {
+        return view('landing_v1.pages.blog-details', [
+            'pageTitle' => 'اخر الاخبار لدينا',
+        ]);
+    }
 
     public function coursesPaid()
     {

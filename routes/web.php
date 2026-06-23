@@ -459,6 +459,8 @@ Route::group(['namespace' => 'Web', 'middleware' => ['check_mobile_app', 'impers
     Route::get('/contact',     [LandingV1Controller::class, 'contact'])->name('landing.v1.contact');
     Route::get('/courses',     [LandingV1Controller::class, 'courses'])->name('landing.v1.courses');
     Route::get('/courses-paid',     [LandingV1Controller::class, 'coursesPaid'])->name('landing.v1.courses-paid');
+    Route::get('/blogs',     [LandingV1Controller::class, 'blogs'])->name('landing.v1.blogs');
+    Route::get('/blog-details',     [LandingV1Controller::class, 'blogDetails'])->name('landing.v1.blog-details');
     Route::get('/instructors', [LandingV1Controller::class, 'instructors'])->name('landing.v1.instructors');
     Route::get('/cart',        [LandingV1Controller::class, 'cart'])->name('landing.v1.cart');
     Route::match(['get', 'post'], '/checkout', [LandingV1Controller::class, 'checkout'])->name('landing.v1.checkout');
