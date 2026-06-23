@@ -1069,7 +1069,7 @@
         </section>
 
 
-        <section>
+        {{-- <section>
             <div class="container">
                 <div class="flex justify-between items-center mb-15 flex-wrap ">
                     <div>
@@ -1097,10 +1097,10 @@
                     @endforeach
                 </div>
             </div>
-        </section>
+        </section> --}}
 
 
-        <section class="section-gap bg-blue py-28 pb-36"
+        {{-- <section class="section-gap bg-blue py-28 pb-36"
             style="background-image: url('{{ $landingImg }}/home/bg-slide1.webp'); background-size: cover; background-repeat: no-repeat; background-position: bottom;">
             <div class="container">
                 <div id="featured-courses"
@@ -1197,8 +1197,8 @@
                     </div>
                 </div>
             </div>
-        </section>
-        <section class="section-gap">
+        </section> --}}
+        {{-- <section class="section-gap">
             <div class="container">
                 <h2 class="font-semibold text-36px text-primary mb-14">حلول تعليمية مخصصة لكل احتياج</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -1223,6 +1223,6 @@
                     @endforeach
                 </div>
             </div>
-        </section>
+        </section> --}}
     </main>
 @endsection
