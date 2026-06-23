@@ -119,7 +119,7 @@
                                             <label class="label label-text font-medium text-24px text-primary mb-4">الجوال</label>
                                             <div class="grid grid-cols-3 gap-2" dir="ltr">
                                                 <div class="col-span-1">
-                                                    <select name="country_code" class="select bg-f7 h-16 rounded-7px w-full text-primary text-center font-medium" required>
+                                                    <select name="country_code" class="select bg-f7 h-16 rounded-7px w-full text-primary text-center font-medium whitespace-normal" required>
                                                         @foreach(getCountriesMobileCode() as $country => $code)
                                                             <option value="{{ $code }}" @if($code == old('country_code')) selected @endif>{{ $code }} ({{ $country }})</option>
                                                         @endforeach
@@ -192,7 +192,7 @@
 
                                         <div class="mt-4">
                                             <div class="flex items-center gap-3">
-                                                <input type="checkbox" name="term" value="1" id="studentTerm" class="checkbox size-6 rounded-md border-gray-300 text-gold focus:ring-gold" required {{ old('term') == '1' ? 'checked' : '' }}>
+                                                <input type="checkbox" name="term" value="1" id="studentTerm" class="checkbox checkbox-primary size-6 rounded-md border-gray-300 text-primary focus:ring-primary" required {{ old('term') == '1' ? 'checked' : '' }}>
                                                 <label for="studentTerm" class="font-medium text-18px text-primary cursor-pointer select-none">
                                                     أوافق على <a href="/pages/terms" target="_blank" class="link font-bold text-gold">الشروط والأحكام</a>
                                                 </label>
@@ -207,7 +207,7 @@
                                         <!-- Submit button -->
                                         <div class="mt-4">
                                             <button type="submit" name="submitButton"
-                                                class="btn btn-gold btn-block h-16 rounded-8px font-semibold text-24px">انشاء حساب</button>
+                                                class="btn btn-primary btn-block h-16 rounded-8px font-semibold text-24px">انشاء حساب</button>
                                         </div>
                                     </form>
                                 </div>
@@ -246,7 +246,7 @@
                                             <label class="label label-text font-medium text-24px text-primary mb-4">الجوال</label>
                                             <div class="grid grid-cols-3 gap-2" dir="ltr">
                                                 <div class="col-span-1">
-                                                    <select name="country_code" class="select bg-f7 h-16 rounded-7px w-full text-primary text-center font-medium" required>
+                                                    <select name="country_code" class="select bg-f7 h-16 rounded-7px w-full text-primary text-center font-medium whitespace-normal" required>
                                                         @foreach(getCountriesMobileCode() as $country => $code)
                                                             <option value="{{ $code }}" @if($code == old('country_code')) selected @endif>{{ $code }} ({{ $country }})</option>
                                                         @endforeach
@@ -319,7 +319,7 @@
 
                                         <div class="mt-4">
                                             <div class="flex items-center gap-3">
-                                                <input type="checkbox" name="term" value="1" id="traineeTerm" class="checkbox size-6 rounded-md border-gray-300 text-gold focus:ring-gold" required {{ old('term') == '1' ? 'checked' : '' }}>
+                                                <input type="checkbox" name="term" value="1" id="traineeTerm" class="checkbox checkbox-primary size-6 rounded-md border-gray-300 text-primary focus:ring-primary" required {{ old('term') == '1' ? 'checked' : '' }}>
                                                 <label for="traineeTerm" class="font-medium text-18px text-primary cursor-pointer select-none">
                                                     أوافق على <a href="/pages/terms" target="_blank" class="link font-bold text-gold">الشروط والأحكام</a>
                                                 </label>
@@ -334,7 +334,7 @@
                                         <!-- Submit button -->
                                         <div class="mt-4">
                                             <button type="submit" name="submitButton"
-                                                class="btn btn-gold btn-block h-16 rounded-8px font-semibold text-24px">انشاء حساب</button>
+                                                class="btn btn-primary btn-block h-16 rounded-8px font-semibold text-24px">انشاء حساب</button>
                                         </div>
                                     </form>
                                 </div>
@@ -373,7 +373,7 @@
                                             <label class="label label-text font-medium text-24px text-primary mb-4">الجوال</label>
                                             <div class="grid grid-cols-3 gap-2" dir="ltr">
                                                 <div class="col-span-1">
-                                                    <select name="country_code" class="select bg-f7 h-16 rounded-7px w-full text-primary text-center font-medium" required>
+                                                    <select name="country_code" class="select bg-f7 h-16 rounded-7px w-full text-primary text-center font-medium whitespace-normal" required>
                                                         @foreach(getCountriesMobileCode() as $country => $code)
                                                             <option value="{{ $code }}" @if($code == old('country_code')) selected @endif>{{ $code }} ({{ $country }})</option>
                                                         @endforeach
@@ -446,7 +446,7 @@
 
                                         <div class="mt-4">
                                             <div class="flex items-center gap-3">
-                                                <input type="checkbox" name="term" value="1" id="orgTerm" class="checkbox size-6 rounded-md border-gray-300 text-gold focus:ring-gold" required {{ old('term') == '1' ? 'checked' : '' }}>
+                                                <input type="checkbox" name="term" value="1" id="orgTerm" class="checkbox checkbox-primary size-6 rounded-md border-gray-300 text-primary focus:ring-primary" required {{ old('term') == '1' ? 'checked' : '' }}>
                                                 <label for="orgTerm" class="font-medium text-18px text-primary cursor-pointer select-none">
                                                     أوافق على <a href="/pages/terms" target="_blank" class="link font-bold text-gold">الشروط والأحكام</a>
                                                 </label>
@@ -461,7 +461,7 @@
                                         <!-- Submit button -->
                                         <div class="mt-4">
                                             <button type="submit" name="submitButton"
-                                                class="btn btn-gold btn-block h-16 rounded-8px font-semibold text-24px">انشاء حساب</button>
+                                                class="btn btn-primary btn-block h-16 rounded-8px font-semibold text-24px">انشاء حساب</button>
                                         </div>
                                     </form>
                                 </div>
@@ -478,56 +478,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="">
-                    <div id="indicators "
-                        data-carousel='{ "loadingClasses": "opacity-0", "dotsItemClasses": "carousel-dot", "isRTL": true ,"isInfiniteLoop": true, "isAutoPlay": true, "isDraggable": true }'
-                        class="relative w-full h-full">
-                        <div class="carousel h-full">
-                            <div class="carousel-body h-full opacity-0">
-                                <!-- Slide 1 -->
-                                <div class="carousel-slide">
-                                    <div class="bg-primary rounded-20px py-11 px-7 h-full">
-                                        <div class="mb-20 h-[60%] center">
-                                            <img class="h-full" src="{{ $landingImg }}/register-slide.webp"
-                                                alt="Slide 1">
-                                        </div>
-                                        <p class="font-bold text-32px text-white text-center">
-                                            شهاداتك المعتمدة.. بانتظارك دائمًا
-                                        </p>
-                                    </div>
-
-                                </div>
-                                <!-- Slide 2 -->
-                                <div class="carousel-slide">
-                                    <div class="bg-primary rounded-20px py-11 px-7 h-full">
-                                        <div class="mb-20 h-[60%] center">
-                                            <img class="h-full" src="{{ $landingImg }}/register-slide.webp"
-                                                alt="Slide 1">
-                                        </div>
-                                        <p class="font-bold text-32px text-white text-center">
-                                            شهاداتك المعتمدة.. بانتظارك دائمًا
-                                        </p>
-                                    </div>
-
-                                </div>
-                                <div class="carousel-slide">
-                                    <div class="bg-primary rounded-20px py-11 px-7 h-full">
-                                        <div class="mb-20 h-[60%] center">
-                                            <img class="h-full" src="{{ $landingImg }}/register-slide.webp"
-                                                alt="Slide 1">
-                                        </div>
-                                        <p class="font-bold text-32px text-white text-center">
-                                            شهاداتك المعتمدة.. بانتظارك دائمًا
-                                        </p>
-                                    </div>
-
-                                </div>
-                            </div>
-                        </div>
-                        <div class="carousel-pagination absolute bottom-3 end-0 start-0 flex justify-center gap-3">
-                        </div>
-                    </div>
-                </div>
+                <x-landing_v1::auth-slider />
             </div>
         </div>
     </header>

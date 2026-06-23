@@ -127,7 +127,7 @@
                                                 <div class="grid grid-cols-3 gap-2" dir="ltr">
                                                     <div class="col-span-1">
                                                         <select name="country_code"
-                                                            class="select bg-f7 h-16 rounded-7px w-full text-primary text-center font-medium"
+                                                            class="select bg-f7 h-16 rounded-7px w-full text-primary text-center whitespace-normal font-medium"
                                                             required>
                                                             @foreach (getCountriesMobileCode() as $country => $code)
                                                                 <option value="{{ $code }}"
@@ -204,64 +204,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="">
-                        <div id="indicators "
-                            data-carousel='{ "loadingClasses": "opacity-0", "dotsItemClasses": "carousel-dot", "isRTL": true ,"isInfiniteLoop": true, "isAutoPlay": true, "isDraggable": true }'
-                            class="relative w-full h-full">
-                            <div class="carousel h-full">
-                                <div class="carousel-body h-full opacity-0">
-                                    <!-- Slide 1 -->
-                                    <div class="carousel-slide relative">
-                                        <div class="bg-primary rounded-10px py-11 px-7 h-full relative"
-                                            style="background-image: url('{{ $landingImg }}/home/hero-bg.webp'); background-size: cover; background-position: right;">
-                                            <div class="layer bg-linear-login absolute inset-0 rounded-10px"></div>
-
-                                        </div>
-                                        <p
-                                            class="max-w-[95%] font-bold text-41px w-full text-white text-center absolute  top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                                            انضم لآلاف المتدربين الذين بدأوا رحلة تغيير مسارهم المهني معنا اليوم.
-                                        </p>
-
-                                        <div class="absolute top-8 left-6 w-48 h-16">
-                                            <img src="{{ $landingImg }}/logo-footer.svg" alt="logo" class="size-full object-cover">
-                                        </div>
-                                    </div>
-                                    <div class="carousel-slide relative">
-                                        <div class="bg-primary rounded-10px py-11 px-7 h-full relative"
-                                            style="background-image: url('{{ $landingImg }}/home/hero-bg.webp'); background-size: cover; background-position: right;">
-                                            <div class="layer bg-linear-login absolute inset-0 rounded-10px"></div>
-
-                                        </div>
-                                        <p
-                                            class="max-w-[95%] font-bold text-41px w-full text-white text-center absolute  top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                                            انضم لآلاف المتدربين الذين بدأوا رحلة تغيير مسارهم المهني معنا اليوم.
-                                        </p>
-
-                                        <div class="absolute top-8 left-6 w-48 h-16">
-                                            <img src="{{ $landingImg }}/logo-footer.svg" alt="logo" class="size-full object-cover">
-                                        </div>
-                                    </div>       <div class="carousel-slide relative">
-                                        <div class="bg-primary rounded-10px py-11 px-7 h-full relative"
-                                            style="background-image: url('{{ $landingImg }}/home/hero-bg.webp'); background-size: cover; background-position: right;">
-                                            <div class="layer bg-linear-login absolute inset-0 rounded-10px"></div>
-
-                                        </div>
-                                        <p
-                                            class="max-w-[95%] font-bold text-41px w-full text-white text-center absolute  top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                                            انضم لآلاف المتدربين الذين بدأوا رحلة تغيير مسارهم المهني معنا اليوم.
-                                        </p>
-
-                                        <div class="absolute top-8 left-6 w-48 h-16">
-                                            <img src="{{ $landingImg }}/logo-footer.svg" alt="logo" class="size-full object-cover">
-                                        </div>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
-                        <div class="carousel-pagination absolute bottom-3 end-0 start-0 flex justify-center gap-3">
-                        </div>
-                    </div>
+                    <x-landing_v1::auth-slider />
                 </div>
             </div>
             </div>

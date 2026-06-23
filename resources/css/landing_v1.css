@@ -121,6 +121,14 @@
     background-color: var(--color-primary) !important;
 }
 
+.carousel-dot-light {
+    background-color: rgba(255, 255, 255, 0.45);
+}
+
+.carousel-dot-light.active {
+    background-color: #ffffff !important;
+}
+
 .trainer-card {
     box-shadow: 0 3px 29.3px 0 rgba(61, 69, 93, 0.1);
 }
