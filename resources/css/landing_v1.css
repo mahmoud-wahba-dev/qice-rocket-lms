@@ -108,14 +108,21 @@
 }
 
 .carousel-dot {
-    width: 20px;
-    height: 20px;
-    background-color: #d9d9d9;
+    width: 17px;
+    height: 17px;
+    background-color: #0F4C453D;
     border-radius: 9999px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
 }
 
 .carousel-dot.active {
-    background-color: var(--color-gold) !important;
+    background-color: var(--color-primary) !important;
+}
+
+.trainer-card {
+    box-shadow: 0 3px 29.3px 0 rgba(61, 69, 93, 0.1);
 }
 
 main {

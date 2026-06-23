@@ -559,13 +559,13 @@
         </section>
 
 
-        <section class="my-0 lg:py-32 py-8 bg-primary text-white">
+        <section class="my-0 lg:py-32 py-8 ">
             <div class="container">
                 <div class="flex justify-between items-end xl:flex-nowrap mb-20">
                     <div>
-                        <h2 class="font-bold text-40px text-secondary  mb-4 ">قائمة المدربين بالمركز
+                        <h2 class="font-bold text-40px text-primary  mb-4 ">قائمة المدربين بالمركز
                         </h2>
-                        <p class="font-normal text-20px  text-secondary xl:w-[60%] lg:w-[80%] ">
+                        <p class="font-medium text-20px  text-primary xl:w-[60%] lg:w-[80%] ">
                             نخبة من الخبراء والمستشارين والمدربين المعتمدين يقودون مسارات التدريب في المركز بخبرات متنوعة في
                             الحوكمة، الجودة، الإدارة الصحية، القانون، التدريب، التطوير المؤسسي والتميز. </p>
                     </div>
@@ -573,57 +573,98 @@
                         class="btn btn-outline bg-[#E8F5E9] rounded-10px h-15 font-extrabold px-10 text-primary text-20px">
                         عرض جميع المدربين </a>
                 </div>
-                <div id="multi-slide mb-10"
-                    data-carousel='{ "loadingClasses": "opacity-0", "slidesQty": { "xs": 1, "sm": 2, "lg": 3 , "xl": 4 }, "isRTL": true ,"dotsItemClasses": "carousel-dot" ,"isInfiniteLoop": true }'
+                <div id="trainers-carousel"
+                    data-carousel='{ "loadingClasses": "opacity-0", "slidesQty": { "xs": 1, "sm": 2, "lg": 3, "xl": 4 }, "isRTL": true, "dotsItemClasses": "carousel-dot", "isInfiniteLoop": true, "isAutoPlay": true, "speed": 3500 }'
                     class="relative w-full">
-                    <div class="carousel ">
-                        <div class="carousel-body  h-full opacity-0 overflow-visible gap-4 xl:gap-8">
-                            <div class="carousel-slide ">
-                                <div class="bg-white  rounded-19px ">
-                                    <div class="h-60 mb-6 overflow-hidden">
-                                        <img class="h-full w-full object-cover rounded-tr-[19px] rounded-tl-[19px]"
-                                            src="{{ $landingImg }}/home/course.webp" alt="course 1">
+                    <div class="carousel">
+                        <div class="carousel-body h-full opacity-0 overflow-visible gap-4 xl:gap-8">
+                            <div class="carousel-slide">
+                                <div class="trainer-card bg-white border border-[#0000001A] rounded-19px overflow-hidden h-full">
+                                    <div class="h-60 overflow-hidden rounded-t-[19px]">
+                                        <img class="h-full w-full object-cover"
+                                            src="{{ $landingImg }}/home/instructor.webp" alt="د. محمد أبو هيشة">
                                     </div>
-
                                     <div class="p-6">
                                         <h6 class="font-semibold text-24px text-blue mb-3">د. محمد أبو هيشة</h6>
-                                        <ul class="list-inside list-disc font-normal text-14px text-blue">
-                                            <li class="mb-1 font-normal text-14px text-blue">دكتوراه في الإدارة والتخطيط الصحي.</li>
-                                            <li class="mb-1 font-normal text-14px text-blue">استشاري الإدارة الصحية والمستشفيات.</li>
-                                            <li class="mb-1 font-normal text-14px text-blue">عمل مديرًا عامًا لعدة إدارات عامة بوزارة الصحة لمدة 30 سنة.</li>
-                                          </ul>
-                                 
-
-                                  
+                                        <ul class="list-inside list-disc font-normal text-14px text-blue space-y-1">
+                                            <li>دكتوراه في الإدارة والتخطيط الصحي.</li>
+                                            <li>استشاري الإدارة الصحية والمستشفيات.</li>
+                                            <li>عمل مديرًا عامًا لعدة إدارات عامة بوزارة الصحة لمدة 30 سنة.</li>
+                                        </ul>
                                     </div>
                                 </div>
                             </div>
 
-                 
+                            <div class="carousel-slide">
+                                <div class="trainer-card bg-white border border-[#0000001A] rounded-19px overflow-hidden h-full">
+                                    <div class="h-60 overflow-hidden rounded-t-[19px]">
+                                        <img class="h-full w-full object-cover"
+                                            src="{{ $landingImg }}/home/instructor.webp" alt="د. عبدالله القحطاني">
+                                    </div>
+                                    <div class="p-6">
+                                        <h6 class="font-semibold text-24px text-blue mb-3">د. عبدالله القحطاني</h6>
+                                        <ul class="list-inside list-disc font-normal text-14px text-blue space-y-1">
+                                            <li>دكتوراه في إدارة الأعمال.</li>
+                                            <li>خبير في الحوكمة والتطوير المؤسسي.</li>
+                                            <li>مدرب معتمد في برامج التميز المؤسسي.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
 
+                            <div class="carousel-slide">
+                                <div class="trainer-card bg-white border border-[#0000001A] rounded-19px overflow-hidden h-full">
+                                    <div class="h-60 overflow-hidden rounded-t-[19px]">
+                                        <img class="h-full w-full object-cover"
+                                            src="{{ $landingImg }}/home/instructor.webp" alt="د. سارة العتيبي">
+                                    </div>
+                                    <div class="p-6">
+                                        <h6 class="font-semibold text-24px text-blue mb-3">د. سارة العتيبي</h6>
+                                        <ul class="list-inside list-disc font-normal text-14px text-blue space-y-1">
+                                            <li>دكتوراه في الجودة والاعتماد المؤسسي.</li>
+                                            <li>استشارية في نظم الجودة الصحية.</li>
+                                            <li>خبرة تتجاوز 20 عامًا في التدريب والتطوير.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
 
+                            <div class="carousel-slide">
+                                <div class="trainer-card bg-white border border-[#0000001A] rounded-19px overflow-hidden h-full">
+                                    <div class="h-60 overflow-hidden rounded-t-[19px]">
+                                        <img class="h-full w-full object-cover"
+                                            src="{{ $landingImg }}/home/instructor.webp" alt="د. خالد الشمري">
+                                    </div>
+                                    <div class="p-6">
+                                        <h6 class="font-semibold text-24px text-blue mb-3">د. خالد الشمري</h6>
+                                        <ul class="list-inside list-disc font-normal text-14px text-blue space-y-1">
+                                            <li>ماجستير في القانون الإداري.</li>
+                                            <li>مستشار في الامتثال والحوكمة.</li>
+                                            <li>مدرب في برامج القيادة والإدارة الاستراتيجية.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
 
-
-
-
-
+                            <div class="carousel-slide">
+                                <div class="trainer-card bg-white border border-[#0000001A] rounded-19px overflow-hidden h-full">
+                                    <div class="h-60 overflow-hidden rounded-t-[19px]">
+                                        <img class="h-full w-full object-cover"
+                                            src="{{ $landingImg }}/home/instructor.webp" alt="د. نورة الدوسري">
+                                    </div>
+                                    <div class="p-6">
+                                        <h6 class="font-semibold text-24px text-blue mb-3">د. نورة الدوسري</h6>
+                                        <ul class="list-inside list-disc font-normal text-14px text-blue space-y-1">
+                                            <li>دكتوراه في التخطيط الاستراتيجي.</li>
+                                            <li>خبيرة في تطوير الكفاءات القيادية.</li>
+                                            <li>مدربة معتمدة في برامج التطوير المهني.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-
-                    <button type="button" class="carousel-prev start-0 -translate-x-[-49%]">
-                        <span
-                            class="size-12 bg-[#F4F4F6] border border-primary flex items-center justify-center rounded-full shadow">
-                            <span class="icon-[tabler--chevron-left] size-5 cursor-pointer rtl:rotate-180"></span>
-                        </span>
-                        <span class="sr-only">Previous</span>
-                    </button>
-                    <button type="button" class="carousel-next end-0 translate-x-[-49%]">
-                        <span class="sr-only">Next</span>
-                        <span
-                            class="size-12 bg-[#F4F4F6] border border-primary flex items-center justify-center rounded-full shadow">
-                            <span class="icon-[tabler--chevron-right] size-5 cursor-pointer rtl:rotate-180"></span>
-                        </span>
-                    </button>
+                    <div class="carousel-pagination flex justify-center gap-3 mt-10"></div>
                 </div>
 
 
