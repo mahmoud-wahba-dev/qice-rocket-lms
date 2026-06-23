@@ -4,11 +4,11 @@
     <main>
         <x-landing_v1::section-header />
 
-        <section class="pb-8 lg:pb-32 my-0">
+        <section class="mb-8 lg:mb-14 mt-0">
             <div class="container">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 xl:gap-8">
                     @for ($i = 0; $i < 12; $i++)
-                        <x-landing_v1::instructor-card />
+                        <x-landing_v1::workshop-card />
                     @endfor
                 </div>
             </div>

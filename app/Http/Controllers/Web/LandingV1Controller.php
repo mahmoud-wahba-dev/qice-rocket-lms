@@ -53,6 +53,13 @@ class LandingV1Controller extends Controller
         ]);
     }
 
+    public function workshops()
+    {
+        return view('landing_v1.pages.workshops', [
+            'pageTitle' => 'ورش ومحاضرات مجانية',
+        ]);
+    }
+
     public function contact()
     {
         return view('landing_v1.pages.contact', [

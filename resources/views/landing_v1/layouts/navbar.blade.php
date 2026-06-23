@@ -10,7 +10,7 @@
         <ul class="menu menu-horizontal p-0 font-medium">
             <li><a class="font-medium text-15px text-[#3D455D] " href="{{ route('landing.v1.index') }}">الرئيسية</a>
             </li>
-            <li><a class="font-medium text-15px text-[#3D455D] " href="{{ route('landing.v1.about') }}">دورات مجانية</a></li>
+            <li><a class="font-medium text-15px text-[#3D455D] " href="{{ route('landing.v1.workshops') }}">دورات مجانية</a></li>
        
             <li><a class="font-medium text-15px text-[#3D455D] "
                     href="{{ route('landing.v1.instructors') }}">المدربين</a></li>

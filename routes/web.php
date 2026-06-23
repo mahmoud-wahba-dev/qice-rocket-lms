@@ -455,6 +455,7 @@ Route::group(['namespace' => 'Web', 'middleware' => ['check_mobile_app', 'impers
     // NOTE: /login and /register named routes are defined on the Auth group above.
     Route::get('/',            [LandingV1Controller::class, 'index'])->name('landing.v1.index');
     Route::get('/about',       [LandingV1Controller::class, 'about'])->name('landing.v1.about');
+    Route::get('/workshops',  [LandingV1Controller::class, 'workshops'])->name('landing.v1.workshops');
     Route::get('/contact',     [LandingV1Controller::class, 'contact'])->name('landing.v1.contact');
     Route::get('/courses',     [LandingV1Controller::class, 'courses'])->name('landing.v1.courses');
     Route::get('/instructors', [LandingV1Controller::class, 'instructors'])->name('landing.v1.instructors');

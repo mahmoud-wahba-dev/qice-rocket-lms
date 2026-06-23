@@ -28,9 +28,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
 
-        // Register the landing_v1 view namespace for Blade components
+        // Landing v1 views + anonymous Blade components (no PHP classes)
         \Illuminate\Support\Facades\View::addNamespace('landing_v1', resource_path('views/landing_v1'));
-        \Illuminate\Support\Facades\Blade::componentNamespace('App\\View\\Components\\LandingV1', 'landing_v1');
+        Blade::anonymousComponentPath(resource_path('views/landing_v1/components'), 'landing_v1');
         // Existing validation
         Validator::extend('check_price', function ($attribute, $value, $parameters, $validator) {
             return preg_match('/^\d*\.?\d*$/', $value);

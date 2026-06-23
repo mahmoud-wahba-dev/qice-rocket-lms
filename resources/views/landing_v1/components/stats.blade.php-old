@@ -16,6 +16,7 @@
                 </p>
                 <span id="stats-1" class="sr-only">95000</span>
                 <p class="font-semibold text-28px max-xl:text-24px text-primary">عميل مستفيد </p>
+
             </div>
 
             <div class="center flex-col px-8 border-x border-[#B9A68566]">
@@ -27,6 +28,7 @@
                 </p>
                 <span id="stats-2" class="sr-only">620</span>
                 <p class="font-semibold text-28px max-xl:text-24px text-primary">برنامج تدريبي </p>
+
             </div>
 
             <div class="center flex-col px-8 border-e border-[#B9A68566]">
@@ -38,6 +40,7 @@
                 </p>
                 <span id="stats-3" class="sr-only"> 66</span>
                 <p class="font-semibold text-28px max-xl:text-24px text-primary">مستشارين ومدربين </p>
+
             </div>
 
             <div class="center flex-col px-4">
@@ -49,6 +52,7 @@
                 </p>
                 <span id="stats-4" class="sr-only">+ 1200</span>
                 <p class="font-semibold text-28px max-xl:text-24px text-primary">خدمة استشارية </p>
+
             </div>
         </div>
     </div>
