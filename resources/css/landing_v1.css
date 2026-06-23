@@ -151,3 +151,36 @@ main {
     background: var(--color-gold);
     border-radius: 999px;
 }
+
+/* Prevent carousel arrows from shifting the page horizontally */
+#landing-v1-app {
+    overflow-x: clip;
+}
+
+.carousel-prev,
+.carousel-next {
+    position: absolute;
+    top: 50%;
+    z-index: 10;
+    transform: translateY(-50%);
+}
+
+.carousel-prev {
+    inset-inline-start: 0.25rem;
+}
+
+.carousel-next {
+    inset-inline-end: 0.25rem;
+}
+
+@media (min-width: 768px) {
+    .carousel-prev {
+        inset-inline-start: 0;
+        transform: translateY(-50%) translateX(49%);
+    }
+
+    .carousel-next {
+        inset-inline-end: 0;
+        transform: translateY(-50%) translateX(-49%);
+    }
+}

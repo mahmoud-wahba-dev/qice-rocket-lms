@@ -532,14 +532,14 @@
                         </div>
                     </div>
 
-                    <button type="button" class="carousel-prev start-0 -translate-x-[-49%]">
+                    <button type="button" class="carousel-prev">
                         <span
                             class="size-12 bg-[#F4F4F6] border border-primary flex items-center justify-center rounded-full shadow">
                             <span class="icon-[tabler--chevron-left] size-5 cursor-pointer rtl:rotate-180"></span>
                         </span>
                         <span class="sr-only">Previous</span>
                     </button>
-                    <button type="button" class="carousel-next end-0 translate-x-[-49%]">
+                    <button type="button" class="carousel-next">
                         <span class="sr-only">Next</span>
                         <span
                             class="size-12 bg-[#F4F4F6] border border-primary flex items-center justify-center rounded-full shadow">
@@ -885,14 +885,14 @@
                         </div>
                     </div>
 
-                    <button type="button" class="carousel-prev start-0 -translate-x-[-49%]">
+                    <button type="button" class="carousel-prev">
                         <span
                             class="size-12 bg-[#F4F4F6] border border-primary flex items-center justify-center rounded-full shadow">
                             <span class="icon-[tabler--chevron-left] size-5 cursor-pointer rtl:rotate-180"></span>
                         </span>
                         <span class="sr-only">Previous</span>
                     </button>
-                    <button type="button" class="carousel-next end-0 translate-x-[-49%]">
+                    <button type="button" class="carousel-next">
                         <span class="sr-only">Next</span>
                         <span
                             class="size-12 bg-[#F4F4F6] border border-primary flex items-center justify-center rounded-full shadow">

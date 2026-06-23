@@ -22,7 +22,7 @@
     <div class="navbar-end items-center   gap-4 max-xl:w-fit">
         <div class="dropdown relative inline-flex md:hidden rtl:[--placement:bottom-end]">
             <button id="dropdown-default" type="button"
-                class="dropdown-toggle btn btn-text bg-secondary text-white btn-square" aria-haspopup="menu"
+                class="dropdown-toggle btn btn-text bg-card-text text-white btn-square" aria-haspopup="menu"
                 aria-expanded="false" aria-label="Dropdown">
                 <span class="icon-[tabler--menu-2] dropdown-open:hidden size-5"></span>
                 <span class="icon-[tabler--x] dropdown-open:block hidden size-5"></span>
