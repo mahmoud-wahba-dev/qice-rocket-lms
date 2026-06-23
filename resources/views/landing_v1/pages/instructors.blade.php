@@ -2,7 +2,10 @@
 
 @section('content')
     <main>
-        <x-landing_v1::section-header />
+        <x-landing_v1::sec-header
+            title="قائمة المدربين بالمركز"
+            subtitle="نخبة من الخبراء والمستشارين والمدربين المعتمدين يقودون مسارات التدريب في المركز بخبرات متنوعة في الحوكمة، الجودة، الإدارة الصحية، القانون، التدريب، التطوير المؤسسي والتميز"
+        />
 
         <section class="pb-8 lg:pb-32 my-0">
             <div class="container">

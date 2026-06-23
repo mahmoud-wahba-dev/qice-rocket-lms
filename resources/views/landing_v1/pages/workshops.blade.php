@@ -2,7 +2,10 @@
 
 @section('content')
     <main>
-        <x-landing_v1::section-header />
+        <x-landing_v1::sec-header
+            title="ورش ومحاضرات مجانية لتطوير مهاراتك المهنية"
+            subtitle="مجموعة من الورش التدريبية والمحاضرات المجانية المصممة لرفع الوعي المهني ومساعدة المتدربين على اختيار المسار المهني الأنسب"
+        />
 
         <section class="mb-8 lg:mb-14 mt-0">
             <div class="container">

@@ -60,6 +60,13 @@ class LandingV1Controller extends Controller
         ]);
     }
 
+    public function coursesPaid()
+    {
+        return view('landing_v1.pages.courses-paid', [
+            'pageTitle' => 'الدورات المعتمدة والبرامج المدفوعة',
+        ]);
+    }
+
     public function contact()
     {
         return view('landing_v1.pages.contact', [
