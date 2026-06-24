@@ -369,6 +369,111 @@ function initCartDrawer() {
 }
 
 // ============================================================
+// COURSE DETAILS SCROLLSPY
+// ============================================================
+function initCourseScrollspy() {
+	if (window.__courseScrollspyReady) return;
+	window.__courseScrollspyReady = true;
+
+	const getNav = () => document.querySelector(".course_details_page [data-scrollspy]");
+
+	const getOffset = (nav) => {
+		const stickyWrapper = nav.closest(".sticky") || nav;
+		const custom = getComputedStyle(nav).getPropertyValue("--scrollspy-offset").trim();
+		if (custom) {
+			const parsed = parseInt(custom, 10);
+			if (!Number.isNaN(parsed)) return parsed;
+		}
+		return 88 + stickyWrapper.getBoundingClientRect().height + 16;
+	};
+
+	const getSections = (nav) =>
+		Array.from(nav.querySelectorAll('a[href^="#"]'))
+			.map((link) => {
+				const id = link.getAttribute("href")?.slice(1);
+				if (!id) return null;
+				const el = document.getElementById(id);
+				return el ? { link, el, id } : null;
+			})
+			.filter(Boolean);
+
+	const setActive = (nav, id) => {
+		nav.querySelectorAll('a[href^="#"]').forEach((link) => {
+			const isActive = link.getAttribute("href") === `#${id}`;
+			link.classList.toggle("active", isActive);
+			link.setAttribute("aria-current", isActive ? "location" : "false");
+		});
+	};
+
+	const scrollToSection = (el, nav) => {
+		const offset = getOffset(nav);
+		const top =
+			el.getBoundingClientRect().top +
+			(window.pageYOffset || document.documentElement.scrollTop) -
+			offset;
+
+		window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+	};
+
+	const updateActiveSection = () => {
+		const nav = getNav();
+		if (!nav) return;
+
+		const sections = getSections(nav);
+		if (!sections.length) return;
+
+		const marker =
+			(window.pageYOffset || document.documentElement.scrollTop) + getOffset(nav);
+		let current = sections[0].id;
+
+		sections.forEach(({ el, id }) => {
+			const top =
+				el.getBoundingClientRect().top +
+				(window.pageYOffset || document.documentElement.scrollTop);
+			if (top <= marker + 2) current = id;
+		});
+
+		setActive(nav, current);
+	};
+
+	document.addEventListener(
+		"click",
+		(event) => {
+			const link = event.target.closest(
+				".course_details_page [data-scrollspy] a[href^='#']"
+			);
+			if (!link) return;
+
+			const nav = link.closest("[data-scrollspy]");
+			const id = link.getAttribute("href")?.slice(1);
+			const el = id ? document.getElementById(id) : null;
+			if (!nav || !el) return;
+
+			event.preventDefault();
+			scrollToSection(el, nav);
+			setActive(nav, id);
+		},
+		false
+	);
+
+	let ticking = false;
+	const onScroll = () => {
+		if (ticking) return;
+		ticking = true;
+		requestAnimationFrame(() => {
+			updateActiveSection();
+			ticking = false;
+		});
+	};
+
+	window.addEventListener("scroll", onScroll, { passive: true });
+	window.addEventListener("resize", updateActiveSection, { passive: true });
+	updateActiveSection();
+}
+
+window.initCourseScrollspy = initCourseScrollspy;
+
+// ============================================================
 // INIT on DOM ready
 // ============================================================
 document.addEventListener("DOMContentLoaded", () => {
@@ -380,4 +485,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	// Handle all add-to-cart form submissions
 	handleAddToCartForms();
+
+	initCourseScrollspy();
 });
+
+if (document.readyState !== "loading") {
+	initCourseScrollspy();
+}

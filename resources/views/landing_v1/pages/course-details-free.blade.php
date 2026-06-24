@@ -103,35 +103,35 @@
             </div>
         </header>
 
-        <section class="my-0 course_details_page relative py-0 bg-white">
-            <nav data-scrollspy="#course-content-scrollspy"
-                class="sticky top-[88px] bg-secondary z-40  mb-12 overflow-x-auto whitespace-nowrap scrollbar-none">
-                <div class="container flex gap-6 items-center justify-between">
-                    <a href="#about-course"
-                        class="font-medium text-20px lg:text-24px text-[#B4B4B4] py-6 border-b-[3px] border-transparent hover:border-primary hover:text-primary transition scrollspy-active:border-primary scrollspy-active:text-primary active">
-                        عن الدورة
-                    </a>
-                    <a href="#course-content"
-                        class="font-medium text-20px lg:text-24px text-[#B4B4B4] py-6 border-b-[3px] border-transparent hover:border-primary hover:text-primary transition scrollspy-active:border-primary scrollspy-active:text-primary">
-                        المحتوى
-                    </a>
-                    <a href="#course-comments"
-                        class="font-medium text-20px lg:text-24px text-[#B4B4B4] py-6 border-b-[3px] border-transparent hover:border-primary hover:text-primary transition scrollspy-active:border-primary scrollspy-active:text-primary">
-                        التعليقات
-                    </a>
-                    <a href="#course-reviews"
-                        class="font-medium text-20px lg:text-24px text-[#B4B4B4] py-6 border-b-[3px] border-transparent hover:border-primary hover:text-primary transition scrollspy-active:border-primary scrollspy-active:text-primary">
-                        المراجعات
-                    </a>
+        <section class="my-0 course_details_page relative bg-white">
+            <div class="sticky top-[88px] z-40 bg-[#F5EFE5] border-b border-[#B4B4B4]">
+                <div class="container">
+                    <nav data-scrollspy="#course-content-scrollspy"
+                        class="course-scrollspy-nav"
+                        style="--scrollspy-offset: 168px">
+                        <a href="#about-course" class="course-scrollspy-link">
+                            عن الدورة
+                        </a>
+                        <a href="#course-curriculum" class="course-scrollspy-link">
+                            المحتوى
+                        </a>
+                        <a href="#course-comments" class="course-scrollspy-link">
+                            التعليقات
+                        </a>
+                        <a href="#course-reviews" class="course-scrollspy-link">
+                            المراجعات
+                        </a>
+                    </nav>
                 </div>
-            </nav>
-            <div class="container">
+            </div>
+
+            <div class="container py-8 lg:py-12">
 
 
                 <div id="course-content-scrollspy">
 
                     {{-- About --}}
-                    <div id="about-course" class="mb-16 scroll-mt-10">
+                    <div id="about-course" class="course-scrollspy-section mb-16">
                         <h3 class="font-medium text-36px text-primary mb-10">عن الدورة</h3>
                         <div class="border border-primary px-6 lg:px-8 py-8 lg:py-11 rounded-10px bg-white shadow-sm">
                             <p class="font-normal  lg:text-24px text-primary mb-7 leading-relaxed">
@@ -151,7 +151,7 @@
                     </div>
 
                     {{-- Curriculum --}}
-                    <div id="course-content" class="mb-16 scroll-mt-10">
+                    <div id="course-curriculum" class="course-scrollspy-section mb-16">
                         <h3 class="font-medium text-32px lg:text-36px text-primary mb-6">منهج الدورة</h3>
                         <div class="border border-primary px-6 lg:px-8 py-2 lg:py-4 rounded-10px bg-white shadow-sm">
                             @foreach ($curriculumModules as $module)
@@ -164,7 +164,7 @@
                     </div>
 
                     {{-- Instructor --}}
-                    <div id="course-instructor" class="mb-16 scroll-mt-10">
+                    <div id="course-instructor" class="course-scrollspy-section mb-16">
                         <h3 class="font-medium text-32px lg:text-36px text-primary mb-6">عن المدرب</h3>
                         <div
                             class="border border-primary flex flex-col md:flex-row items-start gap-10 px-6 lg:px-8 py-8 lg:py-11 rounded-8px bg-white shadow-sm">
@@ -220,7 +220,7 @@
                     </div>
 
                     {{-- Comments --}}
-                    <div id="course-comments" class="mb-16 scroll-mt-10">
+                    <div id="course-comments" class="course-scrollspy-section mb-16">
                         <h3 class="font-medium text-32px lg:text-36px text-primary mb-6">التعليقات</h3>
                         <div class="border border-primary px-6 lg:px-8 py-8 lg:py-11 rounded-8px bg-white shadow-sm">
                             <div class="space-y-0 divide-y divide-[#EEEEEE]">
@@ -256,7 +256,7 @@
                     </div>
 
                     {{-- Reviews --}}
-                    <div id="course-reviews" class="mb-16 scroll-mt-10">
+                    <div id="course-reviews" class="course-scrollspy-section mb-16">
                         <h3 class="font-medium text-32px lg:text-36px text-primary mb-6">المراجعات</h3>
                         <div
                             class="border border-primary px-6 lg:px-8 py-8 lg:py-11 rounded-8px bg-white shadow-sm flex flex-col md:flex-row justify-center items-center gap-8 lg:gap-12">
@@ -398,3 +398,49 @@
 
     </main>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (window.__courseScrollspyReady) return;
+    if (typeof window.initCourseScrollspy === 'function') {
+        window.initCourseScrollspy();
+        return;
+    }
+
+    window.__courseScrollspyReady = true;
+    var nav = document.querySelector('.course_details_page [data-scrollspy]');
+    if (!nav) return;
+
+    function getOffset() {
+        var sticky = nav.closest('.sticky') || nav;
+        var custom = getComputedStyle(nav).getPropertyValue('--scrollspy-offset').trim();
+        if (custom) {
+            var parsed = parseInt(custom, 10);
+            if (!isNaN(parsed)) return parsed;
+        }
+        return 88 + sticky.getBoundingClientRect().height + 16;
+    }
+
+    function scrollY() {
+        return window.pageYOffset || document.documentElement.scrollTop || 0;
+    }
+
+    document.addEventListener('click', function (e) {
+        var link = e.target.closest('.course_details_page [data-scrollspy] a[href^="#"]');
+        if (!link) return;
+        var id = (link.getAttribute('href') || '').slice(1);
+        var el = id ? document.getElementById(id) : null;
+        if (!el) return;
+        e.preventDefault();
+        var top = el.getBoundingClientRect().top + scrollY() - getOffset();
+        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+        nav.querySelectorAll('a[href^="#"]').forEach(function (a) {
+            var active = a === link;
+            a.classList.toggle('active', active);
+            a.setAttribute('aria-current', active ? 'location' : 'false');
+        });
+    });
+});
+</script>
+@endpush

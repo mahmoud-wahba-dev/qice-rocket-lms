@@ -144,6 +144,72 @@ main {
     border-bottom: 3px solid var(--color-primary) !important;
 }
 
+#landing-v1-app .course_details_page .course-scrollspy-section {
+    scroll-margin-top: 168px;
+}
+
+#landing-v1-app .course_details_page .course-scrollspy-nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+    min-height: 4.75rem;
+    align-items: stretch;
+}
+
+#landing-v1-app .course_details_page .course-scrollspy-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.375rem 0.5rem;
+    font-weight: 500;
+    font-size: 1.25rem;
+    line-height: 1.3;
+    text-align: center;
+    white-space: nowrap;
+    color: var(--color-primary);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+    transition: border-color 0.2s ease;
+}
+
+#landing-v1-app .course_details_page .course-scrollspy-link:hover {
+    color: var(--color-primary);
+}
+
+#landing-v1-app .course_details_page .course-scrollspy-link.active {
+    color: var(--color-primary) !important;
+    border-bottom-color: var(--color-primary) !important;
+}
+
+@media (min-width: 1024px) {
+    #landing-v1-app .course_details_page .course-scrollspy-link {
+        font-size: 1.5rem;
+        padding-block: 1.5rem;
+    }
+}
+
+@media (max-width: 767px) {
+    #landing-v1-app .course_details_page .course-scrollspy-nav {
+        display: flex;
+        justify-content: flex-start;
+        gap: 1.5rem;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    #landing-v1-app .course_details_page .course-scrollspy-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    #landing-v1-app .course_details_page .course-scrollspy-link {
+        flex: 0 0 auto;
+        justify-content: flex-start;
+        font-size: 1.125rem;
+        padding-inline: 0.25rem;
+    }
+}
+
 .sec-title {
     position: relative;
 }
