@@ -101,10 +101,8 @@ function updateCartBadge(count) {
 		if (count > 0) {
 			drawerBadge.textContent = count > 99 ? "99+" : count;
 			drawerBadge.classList.remove("hidden");
-			drawerBadge.classList.add("flex");
 		} else {
 			drawerBadge.classList.add("hidden");
-			drawerBadge.classList.remove("flex");
 		}
 	}
 }
@@ -119,9 +117,9 @@ async function loadCartDrawer() {
 
 	// Show loading state
 	drawerBody.innerHTML = `
-		<div class="flex flex-col items-center justify-center h-64 gap-3 text-primary/40">
-			<span class="icon-[tabler--loader-2] size-8 animate-spin"></span>
-			<p class="font-medium text-14px">جاري التحميل...</p>
+		<div class="cart-drawer-loading">
+			<span class="icon-[tabler--loader-2] size-8 animate-spin text-primary/40"></span>
+			<p class="font-medium text-14px text-primary/50">جاري التحميل...</p>
 		</div>
 	`;
 
@@ -147,8 +145,9 @@ async function loadCartDrawer() {
 				footerEl.style.display = data.is_empty ? "none" : "";
 			}
 
-			// Count items
-			const count = drawerBody.querySelectorAll("[data-cart-item-id]").length;
+			const count = typeof data.items_count === "number"
+				? data.items_count
+				: drawerBody.querySelectorAll("[data-cart-item-id]").length;
 			updateCartBadge(count);
 
 			// Bind remove buttons rendered in the drawer HTML
@@ -161,9 +160,12 @@ async function loadCartDrawer() {
 		}
 	} catch (err) {
 		drawerBody.innerHTML = `
-			<div class="flex flex-col items-center justify-center h-64 gap-3 text-primary/40">
-				<span class="icon-[tabler--alert-circle] size-8"></span>
-				<p class="font-medium text-14px">حدث خطأ، يرجى المحاولة مجدداً</p>
+			<div class="cart-drawer-empty">
+				<div class="cart-drawer-empty__icon">
+					<span class="icon-[tabler--alert-circle] size-8 text-red-400"></span>
+				</div>
+				<p class="cart-drawer-empty__title">حدث خطأ</p>
+				<p class="cart-drawer-empty__text">تعذّر تحميل السلة. يرجى المحاولة مجدداً.</p>
 			</div>
 		`;
 	}
@@ -180,10 +182,13 @@ async function refreshCartCount() {
 		const data = await response.json();
 
 		if (data.code === 200) {
-			// Count from HTML
-			const parser = new DOMParser();
-			const doc = parser.parseFromString(data.html, "text/html");
-			const count = doc.querySelectorAll("[data-cart-item-id]").length;
+			const count = typeof data.items_count === "number"
+				? data.items_count
+				: (() => {
+					const parser = new DOMParser();
+					const doc = parser.parseFromString(data.html, "text/html");
+					return doc.querySelectorAll("[data-cart-item-id]").length;
+				})();
 			updateCartBadge(count);
 		}
 	} catch (_) {}
@@ -197,41 +202,81 @@ async function refreshCartCount() {
  */
 async function removeCartItem(cartItemId) {
 	try {
-		const response = await fetch(`/cart/${cartItemId}/delete`, {
-			headers: { "X-Requested-With": "XMLHttpRequest" },
-		});
+		const response = await fetch(
+			`/cart/${encodeURIComponent(cartItemId)}/delete`,
+			{ headers: { "X-Requested-With": "XMLHttpRequest" } }
+		);
 		const data = await response.json();
 
 		if (data.code === 200) {
 			if (isOnCartPage()) {
-				// Reload so the server recalculates everything correctly
 				window.location.reload();
 			} else {
 				await loadCartDrawer();
+				await refreshCartCount();
 				showCartToast("تم الحذف", "تم إزالة الدورة من السلة", "info");
 			}
+			return true;
 		}
 	} catch (_) {}
+
+	return false;
 }
 
 /**
  * Returns true when the current page is the landing-v1 cart page.
  */
 function isOnCartPage() {
-	return window.location.pathname.includes('/landing-v1/cart');
+	return !!document.querySelector("[data-cart-page]");
+}
+
+/**
+ * Cart page — delegated delete handler (supports string cookie IDs e.g. webinar_id_5)
+ */
+function initCartPageRemove() {
+	const container = document.getElementById("cart-items-container");
+	if (!container || container.dataset.removeBound === "1") return;
+	container.dataset.removeBound = "1";
+
+	container.addEventListener("click", async (e) => {
+		const btn = e.target.closest("[data-cart-remove]");
+		if (!btn || !container.contains(btn)) return;
+
+		e.preventDefault();
+
+		const id = btn.getAttribute("data-cart-remove");
+		if (!id) return;
+
+		btn.disabled = true;
+		const originalHtml = btn.innerHTML;
+		btn.innerHTML = '<span class="icon-[tabler--loader-2] size-4 animate-spin inline-block"></span>';
+
+		const success = await removeCartItem(id);
+		if (!success) {
+			btn.disabled = false;
+			btn.innerHTML = originalHtml;
+			showCartToast("خطأ", "تعذّر حذف العنصر من السلة", "error");
+		}
+	});
 }
 
 /**
  * Bind remove buttons inside the dynamically loaded drawer HTML
  */
 function bindDrawerRemoveButtons() {
-	const btns = document.querySelectorAll("[data-cart-remove]");
-	btns.forEach((btn) => {
+	const drawerBody = document.getElementById("cart-drawer-body");
+	if (!drawerBody) return;
+
+	drawerBody.querySelectorAll("[data-cart-remove]").forEach((btn) => {
+		if (btn.dataset.removeBound === "1") return;
+		btn.dataset.removeBound = "1";
+
 		btn.addEventListener("click", async (e) => {
 			e.preventDefault();
 			const id = btn.getAttribute("data-cart-remove");
 			btn.disabled = true;
-			btn.innerHTML = '<span class="icon-[tabler--loader-2] size-4 animate-spin"></span>';
+			const label = btn.querySelector("span:last-child");
+			if (label) label.textContent = "...";
 			await removeCartItem(id);
 		});
 	});
@@ -288,6 +333,7 @@ function handleAddToCartForms() {
 
 		const btn = form.querySelector("button[type='submit']");
 		const originalContent = btn ? btn.innerHTML : "";
+		let addedSuccessfully = false;
 		if (btn) {
 			btn.disabled = true;
 			btn.innerHTML = '<span class="icon-[tabler--loader-2] size-5 animate-spin inline-block"></span>';
@@ -308,19 +354,37 @@ function handleAddToCartForms() {
 			const data = await response.json();
 
 			if (response.ok && (data.status === "success" || data.code === 200)) {
+				addedSuccessfully = true;
 				showCartToast(
 					data.title || "تمت الإضافة",
 					data.msg || "تمت إضافة الدورة إلى سلة التسوق",
 					"success"
 				);
 
+				if (typeof data.cart_count === "number") {
+					updateCartBadge(data.cart_count);
+				} else {
+					await refreshCartCount();
+				}
+
+				if (btn) {
+					btn.disabled = true;
+					btn.classList.add("is-added-to-cart", "btn-disabled", "opacity-60", "cursor-not-allowed");
+					const seatIcon = form.dataset.seatIcon || form.querySelector("img")?.src || "";
+					btn.innerHTML = "تمت الإضافة للسلة";
+					if (seatIcon) {
+						const img = document.createElement("img");
+						img.src = seatIcon;
+						img.alt = "";
+						img.className = "size-6 shrink-0";
+						btn.appendChild(img);
+					}
+				}
+
 				if (isOnCartPage()) {
 					// Reload so the cart page reflects the new item and recalculated totals
 					window.location.reload();
 				} else {
-					// Refresh the badge count
-					await refreshCartCount();
-
 					// If the drawer is open, refresh it too
 					const drawer = document.getElementById("cart-drawer");
 					if (drawer && !drawer.classList.contains("hidden")) {
@@ -339,7 +403,7 @@ function handleAddToCartForms() {
 		} catch (_) {
 			showCartToast("خطأ", "فشل الاتصال بالخادم", "error");
 		} finally {
-			if (btn) {
+			if (btn && !addedSuccessfully) {
 				btn.disabled = false;
 				btn.innerHTML = originalContent;
 			}
@@ -642,6 +706,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	// Wire drawer open event
 	initCartDrawer();
+
+	// Cart page delete buttons
+	initCartPageRemove();
 
 	// Handle all add-to-cart form submissions
 	handleAddToCartForms();

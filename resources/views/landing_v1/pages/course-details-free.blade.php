@@ -5,46 +5,36 @@
         $landingImg = asset('assets/landing_v1/img');
         $courseDetailsImg = asset('assets/landing_v1/img/course_details');
 
-        $learningOutcomes = [
-            'فهم المفاهيم الأساسية للعمل في البيئة السعودية',
-            'التعرف على الأنظمة واللوائح المهنية ذات الصلة',
-            'بناء أساس معرفي يمهّد للتخصص في مجالات التطوير المهني',
-        ];
+        if (empty($learningOutcomes)) {
+            $learningOutcomes = [
+                'فهم المفاهيم الأساسية للعمل في البيئة السعودية',
+                'التعرف على الأنظمة واللوائح المهنية ذات الصلة',
+                'بناء أساس معرفي يمهّد للتخصص في مجالات التطوير المهني',
+            ];
+        }
 
-        $curriculumModules = [
-            'الوحدة الأولى: أساسيات الفكر الاستشاري المؤسسي',
-            'الوحدة الثانية: مفاهيم العمل والثقافة المهنية السعودية',
-            'الوحدة الثالثة: مهارات التواصل والتعامل في بيئة العمل',
-            'الوحدة الرابعة: تطبيقات عملية ودراسات حالة',
-        ];
+        if (empty($curriculumModules)) {
+            $curriculumModules = [
+                'الوحدة الأولى: أساسيات الفكر الاستشاري المؤسسي',
+                'الوحدة الثانية: مفاهيم العمل والثقافة المهنية السعودية',
+                'الوحدة الثالثة: مهارات التواصل والتعامل في بيئة العمل',
+                'الوحدة الرابعة: تطبيقات عملية ودراسات حالة',
+            ];
+        }
 
-        $comments = [
-            [
-                'name' => 'سارة العتيبي',
-                'date' => '15 مايو 2025',
-                'body' =>
-                    'دورة ممتازة للمبتدئين، المحتوى واضح ومنظم بشكل يسهّل المتابعة. أنصح بها لكل من يريد فهم أساسيات بيئة العمل السعودية.',
-            ],
-            [
-                'name' => 'خالد المطيري',
-                'date' => '3 أبريل 2025',
-                'body' => 'استفدت كثيراً من الأمثلة العملية والشرح المبسّط. المدرب يمتلك خبرة واضحة في المجال.',
-            ],
-            [
-                'name' => 'نورة الشمري',
-                'date' => '20 مارس 2025',
-                'body' =>
-                    'محتوى مجاني بجودة عالية، والمنهج يغطي النقاط الأساسية التي يحتاجها أي موظف جديد في السوق السعودي.',
-            ],
-        ];
+        if (empty($comments)) {
+            $comments = [];
+        }
 
-        $ratesDistribution = [
-            5 => ['percent' => 72],
-            4 => ['percent' => 18],
-            3 => ['percent' => 6],
-            2 => ['percent' => 3],
-            1 => ['percent' => 1],
-        ];
+        if (empty($ratesDistribution)) {
+            $ratesDistribution = [
+                5 => ['percent' => 0],
+                4 => ['percent' => 0],
+                3 => ['percent' => 0],
+                2 => ['percent' => 0],
+                1 => ['percent' => 0],
+            ];
+        }
     @endphp
 
     <main>
@@ -56,11 +46,10 @@
                     <div class="lg:col-span-7">
                         <p class="font-semibold text-20px text-primary mb-12">دورة مجانية تماماً</p>
                         <h1 class="font-bold  xl:text-64px mb-6 text-primary leading-tight xl:w-[90%]">
-                            مقدمة في مفاهيم العمل السعودي
+                            {{ $course->title }}
                         </h1>
                         <p class="font-normal text-18px  text-primary mb-12 leading-relaxed max-w-2xl">
-                            دورة تعريفية مجانية تقدّم أساسيات العمل والثقافة المهنية في المملكة العربية السعودية،
-                            مصمّمة لمساعدة المتدربين على بناء فهم صحيح لبيئة العمل المحلية والانطلاق في مسيرتهم المهنية.
+                            {{ $course->summary ?? Str::limit(strip_tags(html_entity_decode($course->description)), 220) }}
                         </p>
 
                         <div class="flex items-center gap-3 lg:gap-4 flex-wrap xl:flex-nowrap mb-10">
@@ -84,20 +73,22 @@
                             </div>
                         </div>
 
-                        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
-                            <button type="button"
-                                class="btn btn-primary h-15 rounded-9px w-[70%] font-bold text-18px px-10  hover:shadow-lg transition-all duration-300">
-
-                                سجل مقعدك الآن
-                                <img src="{{ $courseDetailsImg }}/seat.webp" alt="user-plus" class="size-6 shrink-0">
-                            </button>
+                        <div class="flex items-center gap-4">
+                            <form class="w-[70%]" action="/course/{{ $course->slug }}/free" method="get">
+                                <button type="submit"
+                                    class="btn w-full btn-primary h-15 rounded-9px  font-bold text-18px px-10  whitespace-nowrap  hover:shadow-lg transition-all duration-300">
+                                    سجل مقعدك الآن
+                                    <img src="{{ $courseDetailsImg }}/seat.webp" alt="user-plus" class="size-6 shrink-0">
+                                </button>
+                            </form>
                             <p class="font-bold text-18px text-primary">الدورة مجانية تماماً</p>
                         </div>
                     </div>
 
                     <div class="lg:col-span-5">
                         {{-- include card component her  --}}
-                        <x-landing_v1::workshop-card />
+                        <x-landing_v1::workshop-card :title="$course->title" :summary="$course->summary ?? $course->description" :categoryTitle="$course->category->title ?? ''"
+                            :slug="$course->slug" buttonUrl="#about-course" />
                     </div>
                 </div>
             </div>
@@ -106,8 +97,7 @@
         <section class="my-0 course_details_page relative bg-white">
             <div class="sticky top-[88px] z-40 bg-[#F5EFE5] border-b border-[#B4B4B4]">
                 <div class="container">
-                    <nav data-scrollspy="#course-content-scrollspy"
-                        class="course-scrollspy-nav"
+                    <nav data-scrollspy="#course-content-scrollspy" class="course-scrollspy-nav"
                         style="--scrollspy-offset: 168px">
                         <a href="#about-course" class="course-scrollspy-link">
                             عن الدورة
@@ -164,60 +154,13 @@
                     </div>
 
                     {{-- Instructor --}}
-                    <div id="course-instructor" class="course-scrollspy-section mb-16">
-                        <h3 class="font-medium text-32px lg:text-36px text-primary mb-6">عن المدرب</h3>
-                        <div
-                            class="border border-primary flex flex-col md:flex-row items-start gap-10 px-6 lg:px-8 py-8 lg:py-11 rounded-8px bg-white shadow-sm">
-                            <div class="w-[160px] h-[160px] rounded-8px overflow-hidden shrink-0 border border-gray-100">
-                                <img src="{{ $landingImg }}/home/instructor.webp" alt="م. أحمد بن صالح آل سعود"
-                                    class="w-full h-full object-cover">
-                            </div>
-                            <div class="flex-grow">
-                                <h6 class="font-semibold text-24px text-primary mb-2">م. أحمد بن صالح آل سعود</h6>
-                                <p class="font-normal text-18px text-primary mb-6">خبير في التطوير المؤسسي والاستشارات
-                                    الإدارية
-                                </p>
-
-
-                                <div class="flex flex-wrap items-center gap-6 mb-11 border-t border-b border-gray-100 py-4">
-                                    <div class="flex items-center gap-2 text-[#A6AAB5]">
-                                        <span class="icon-[tabler--calendar] size-5 shrink-0 text-primary"></span>
-                                        <div class="font-medium text-10px text-primary flex flex-col">
-                                            <span>عضو منذ</span>
-                                            <span class=" text-primary">2018</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-2 text-[#A6AAB5]">
-                                        <span class="icon-[tabler--video] size-5 shrink-0 text-primary"></span>
-                                        <div class="font-medium text-10px text-primary flex flex-col">
-                                            <span>عدد الدورات</span>
-                                            <span class=" text-primary">12</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-2 text-[#A6AAB5]">
-                                        <span class="icon-[tabler--users] size-5 shrink-0 text-primary"></span>
-                                        <div class="font-medium text-10px text-primary flex flex-col">
-                                            <span>عدد الطلاب</span>
-                                            <span class=" text-primary">1,240</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-2 text-[#A6AAB5]">
-                                        <span class="icon-[tabler--star-filled] size-5 shrink-0 text-[#FFAA00]"></span>
-                                        <div class="font-medium text-10px text-primary flex flex-col">
-                                            <span>التقييم</span>
-                                            <span class=" text-primary">4.8</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <a href="#"
-                                    class="btn btn-primary h-12 lg:w-[40%] rounded-4px font-medium text-14px px-8 inline-flex items-center gap-2 shadow-sm hover:shadow-md transition-all">
-                                    <span class="icon-[tabler--user] size-5"></span>
-                                    عرض الملف الشخصي
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+                    <x-landing_v1::instructor-profile-block
+                        :teacher="$course->teacher"
+                        :coursesCount="$teacher_courses_count"
+                        :studentsCount="$teacher_students_count"
+                        :rating="$teacher_rating"
+                        variant="light"
+                    />
 
                     {{-- Comments --}}
                     <div id="course-comments" class="course-scrollspy-section mb-16">
@@ -231,7 +174,8 @@
                                         </div>
                                         <div class="flex-grow min-w-0">
                                             <div class="flex flex-wrap items-center gap-2 mb-2">
-                                                <span class="font-bold text-16px text-primary">{{ $comment['name'] }}</span>
+                                                <span
+                                                    class="font-bold text-16px text-primary">{{ $comment['name'] }}</span>
                                                 <span class="text-7a text-14px">·</span>
                                                 <span class="font-normal text-14px text-7a">{{ $comment['date'] }}</span>
                                             </div>
@@ -400,47 +344,54 @@
 @endsection
 
 @push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    if (window.__courseScrollspyReady) return;
-    if (typeof window.initCourseScrollspy === 'function') {
-        window.initCourseScrollspy();
-        return;
-    }
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.__courseScrollspyReady) return;
+            if (typeof window.initCourseScrollspy === 'function') {
+                window.initCourseScrollspy();
+                return;
+            }
 
-    window.__courseScrollspyReady = true;
-    var nav = document.querySelector('.course_details_page [data-scrollspy]');
-    if (!nav) return;
+            window.__courseScrollspyReady = true;
+            var nav = document.querySelector('.course_details_page [data-scrollspy]');
+            if (!nav) return;
 
-    function getOffset() {
-        var sticky = nav.closest('.sticky') || nav;
-        var custom = getComputedStyle(nav).getPropertyValue('--scrollspy-offset').trim();
-        if (custom) {
-            var parsed = parseInt(custom, 10);
-            if (!isNaN(parsed)) return parsed;
-        }
-        return 88 + sticky.getBoundingClientRect().height + 16;
-    }
+            function getOffset() {
+                var sticky = nav.closest('.sticky') || nav;
+                var custom = getComputedStyle(nav).getPropertyValue('--scrollspy-offset').trim();
+                if (custom) {
+                    var parsed = parseInt(custom, 10);
+                    if (!isNaN(parsed)) return parsed;
+                }
+                return 88 + sticky.getBoundingClientRect().height + 16;
+            }
 
-    function scrollY() {
-        return window.pageYOffset || document.documentElement.scrollTop || 0;
-    }
+            function scrollY() {
+                return window.pageYOffset || document.documentElement.scrollTop || 0;
+            }
 
-    document.addEventListener('click', function (e) {
-        var link = e.target.closest('.course_details_page [data-scrollspy] a[href^="#"]');
-        if (!link) return;
-        var id = (link.getAttribute('href') || '').slice(1);
-        var el = id ? document.getElementById(id) : null;
-        if (!el) return;
-        e.preventDefault();
-        var top = el.getBoundingClientRect().top + scrollY() - getOffset();
-        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
-        nav.querySelectorAll('a[href^="#"]').forEach(function (a) {
-            var active = a === link;
-            a.classList.toggle('active', active);
-            a.setAttribute('aria-current', active ? 'location' : 'false');
+            document.addEventListener('click', function(e) {
+                var link = e.target.closest(
+                    '.course_details_page [data-scrollspy] a[href^="#"], a.js-scroll-to-course-section[href^="#"]'
+                );
+                if (!link) return;
+                var id = (link.getAttribute('href') || '').slice(1);
+                var el = id ? document.getElementById(id) : null;
+                if (!el) return;
+                e.preventDefault();
+                var top = el.getBoundingClientRect().top + scrollY() - getOffset();
+                window.scrollTo({
+                    top: Math.max(0, top),
+                    behavior: 'smooth'
+                });
+                if (nav) {
+                    nav.querySelectorAll('a[href^="#"]').forEach(function(a) {
+                        var active = a.getAttribute('href') === link.getAttribute('href');
+                        a.classList.toggle('active', active);
+                        a.setAttribute('aria-current', active ? 'location' : 'false');
+                    });
+                }
+            });
         });
-    });
-});
-</script>
+    </script>
 @endpush

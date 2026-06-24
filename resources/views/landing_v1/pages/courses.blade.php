@@ -106,10 +106,9 @@
 
                 <div class="mt-3 relative min-h-[300px]">
                     <!-- Premium Glassmorphic Loader Overlay -->
-                    <div id="courses-loader" class="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300">
+                    <div id="courses-loader" class="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-150">
                         <div class="flex flex-col items-center gap-3">
-                            <span class="loading loading-spinner text-gold size-12"></span>
-                            <span class="text-18px font-bold text-primary">جاري تحميل الدورات...</span>
+                            <span class="loading loading-spinner text-gold size-10"></span>
                         </div>
                     </div>
 
@@ -145,6 +144,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     let currentCategoryId = '';
     let currentSort = 'popular';
+    let fetchController = null;
     
     const loader = document.getElementById('courses-loader');
     const container = document.getElementById('courses-container');
@@ -211,7 +211,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function fetchCourses() {
-        // Show loader
+        if (fetchController) {
+            fetchController.abort();
+        }
+        fetchController = new AbortController();
+
         loader.classList.remove('opacity-0', 'pointer-events-none');
         
         // Gather types
@@ -236,21 +240,21 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('{{ route("landing.v1.courses") }}?' + params.toString(), {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'
-            }
+            },
+            signal: fetchController.signal,
         })
         .then(response => response.json())
         .then(data => {
-            // Update container content
             container.innerHTML = data.html;
-            
-            // Hide loader with a slight beautiful delay
-            setTimeout(() => {
-                loader.classList.add('opacity-0', 'pointer-events-none');
-            }, 300);
         })
         .catch(err => {
-            console.error('Error fetching courses:', err);
+            if (err.name !== 'AbortError') {
+                console.error('Error fetching courses:', err);
+            }
+        })
+        .finally(() => {
             loader.classList.add('opacity-0', 'pointer-events-none');
+            fetchController = null;
         });
     }
 });

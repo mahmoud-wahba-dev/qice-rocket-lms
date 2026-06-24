@@ -25,7 +25,7 @@
                             alt="">
                     </div>
                     <div class="flex items-center flex-wrap gap-4 h-14 font-medium text-20px">
-                        <a href="{{ route('landing.v1.register') }}"
+                        <a href="{{ route('landing.v1.workshops') }}"
                             class="btn btn-primary gap-4 h-12 xl:h-16 font-medium text-16px xl:text-20px ">
 
 
@@ -41,7 +41,7 @@
 
                         </a>
 
-                        <a href="{{ route('landing.v1.about') }}"
+                        <a href="{{ route('landing.v1.workshops') }}"
                             class="btn btn-text h-12 xl:h-16 font-medium text-16px xl:text-20px">
 
                             <svg width="18" height="18" viewBox="0 0 18 18" fill="none"
@@ -150,22 +150,11 @@
 
 
 
-        <section class="section-gap">
-            <div class="container">
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6 items-center">
 
 
 
 
-
-                </div>
-            </div>
-        </section>
-
-
-
-        <section class="!my-0 lg:py-32 py-8 section-gap bg-secondary py-28 pb-36"
+        <section class="!my-0 lg:py-32 py-8 section-gap bg-secondary  pb-36"
             style="background-image: url('{{ $landingImg }}/home/triangles-exp.webp'); background-size: 100%; background-repeat: no-repeat; background-position: bottom;">
             <div class="container">
                 <div class="grid grid-cols-1 lg:grid-cols-2 items-center">
@@ -297,237 +286,20 @@
                     class="relative w-full">
                     <div class="carousel ">
                         <div class="carousel-body  h-full opacity-0 overflow-visible gap-4 xl:gap-8">
-                            <div class="carousel-slide ">
-                                <div class="relative bg-white border border-card-border  py-8 px-6 rounded-10px  ">
-                                    <div
-                                        class="absolute top-8 left-4 bg-[#E8F5E9] w-20
-                                 h-6 rounded-18px center font-medium text-12px text-primary">
-                                        مجاني
-                                    </div>
-                                    <div class="bg-[#F5F1E8] center rounded-full size-14 mb-6">
-                                        <svg width="28" height="28" viewBox="0 0 28 28" fill="none"
-                                            xmlns="http://www.w3.org/2000/svg">
-                                            <path
-                                                d="M18.6654 24.5V22.1667C18.6654 20.929 18.1737 19.742 17.2985 18.8668C16.4234 17.9917 15.2364 17.5 13.9987 17.5H6.9987C5.76102 17.5 4.57404 17.9917 3.69887 18.8668C2.8237 19.742 2.33203 20.929 2.33203 22.1667V24.5"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                            <path
-                                                d="M10.4987 12.8333C13.076 12.8333 15.1654 10.744 15.1654 8.16667C15.1654 5.58934 13.076 3.5 10.4987 3.5C7.92137 3.5 5.83203 5.58934 5.83203 8.16667C5.83203 10.744 7.92137 12.8333 10.4987 12.8333Z"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                            <path
-                                                d="M25.668 24.5007V22.1673C25.6672 21.1334 25.3231 20.1289 24.6896 19.3117C24.0561 18.4945 23.1691 17.9108 22.168 17.6523"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                            <path
-                                                d="M18.668 3.65234C19.6718 3.90936 20.5615 4.49316 21.1969 5.31171C21.8322 6.13025 22.1771 7.13698 22.1771 8.17318C22.1771 9.20938 21.8322 10.2161 21.1969 11.0346C20.5615 11.8532 19.6718 12.437 18.668 12.694"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                        </svg>
-
-                                    </div>
-                                    <h6 class="font-semibold text-19px text-primary mb-3">
-                                        مقدمة في مفاهيم العمل السعودي
-                                    </h6>
-                                    <p class="font-normal text-15px text-7a mb-2">
-                                        اكتب هنا وصف الكورس اكتب هنا وصف الكورس اكتب هنا وصف الكورس اكتب هنا وصف الكورس اكتب
-                                        هنا
-                                    </p>
-                                    <p class="font-normal text-15px text-primary mb-6">التطوير المهني</p>
-                                    <div>
-                                        <a class="btn btn-outline btn-primary whitespace-nowrap h-12 btn-block font-medium text-16px"
-                                            href="#">
-                                            تفاصيل الورشة
-                                        </a>
-                                    </div>
-                                </div>
+                            @forelse ($freeWorkshops as $workshop)
+                            <div class="carousel-slide">
+                                <x-landing_v1::workshop-card
+                                    :title="$workshop->title"
+                                    :summary="$workshop->summary ?? $workshop->description"
+                                    :categoryTitle="$workshop->category->title ?? ''"
+                                    :slug="$workshop->slug"
+                                />
                             </div>
-
-                            <div class="carousel-slide ">
-                                <div class="relative bg-white border border-card-border  py-8 px-6 rounded-10px  ">
-                                    <div
-                                        class="absolute top-8 left-4 bg-[#E8F5E9] w-20
-                                 h-6 rounded-18px center font-medium text-12px text-primary">
-                                        مجاني
-                                    </div>
-                                    <div class="bg-[#F5F1E8] center rounded-full size-14 mb-6">
-                                        <svg width="28" height="28" viewBox="0 0 28 28" fill="none"
-                                            xmlns="http://www.w3.org/2000/svg">
-                                            <path
-                                                d="M18.6654 24.5V22.1667C18.6654 20.929 18.1737 19.742 17.2985 18.8668C16.4234 17.9917 15.2364 17.5 13.9987 17.5H6.9987C5.76102 17.5 4.57404 17.9917 3.69887 18.8668C2.8237 19.742 2.33203 20.929 2.33203 22.1667V24.5"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                            <path
-                                                d="M10.4987 12.8333C13.076 12.8333 15.1654 10.744 15.1654 8.16667C15.1654 5.58934 13.076 3.5 10.4987 3.5C7.92137 3.5 5.83203 5.58934 5.83203 8.16667C5.83203 10.744 7.92137 12.8333 10.4987 12.8333Z"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                            <path
-                                                d="M25.668 24.5007V22.1673C25.6672 21.1334 25.3231 20.1289 24.6896 19.3117C24.0561 18.4945 23.1691 17.9108 22.168 17.6523"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                            <path
-                                                d="M18.668 3.65234C19.6718 3.90936 20.5615 4.49316 21.1969 5.31171C21.8322 6.13025 22.1771 7.13698 22.1771 8.17318C22.1771 9.20938 21.8322 10.2161 21.1969 11.0346C20.5615 11.8532 19.6718 12.437 18.668 12.694"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                        </svg>
-
-                                    </div>
-                                    <h6 class="font-semibold text-19px text-primary mb-3">
-                                        مقدمة في مفاهيم العمل السعودي
-                                    </h6>
-                                    <p class="font-normal text-15px text-7a mb-2">
-                                        اكتب هنا وصف الكورس اكتب هنا وصف الكورس اكتب هنا وصف الكورس اكتب هنا وصف الكورس اكتب
-                                        هنا
-                                    </p>
-                                    <p class="font-normal text-15px text-primary mb-6">التطوير المهني</p>
-                                    <div>
-                                        <a class="btn btn-outline btn-primary whitespace-nowrap h-12 btn-block font-medium text-16px"
-                                            href="#">
-                                            تفاصيل الورشة
-                                        </a>
-                                    </div>
-                                </div>
+                            @empty
+                            <div class="carousel-slide">
+                                <p class="text-center text-secondary font-medium py-8">لا توجد ورش مجانية متاحة حالياً.</p>
                             </div>
-
-
-                            <div class="carousel-slide ">
-                                <div class="relative bg-white border border-card-border  py-8 px-6 rounded-10px  ">
-                                    <div
-                                        class="absolute top-8 left-4 bg-[#E8F5E9] w-20
-                                 h-6 rounded-18px center font-medium text-12px text-primary">
-                                        مجاني
-                                    </div>
-                                    <div class="bg-[#F5F1E8] center rounded-full size-14 mb-6">
-                                        <svg width="28" height="28" viewBox="0 0 28 28" fill="none"
-                                            xmlns="http://www.w3.org/2000/svg">
-                                            <path
-                                                d="M18.6654 24.5V22.1667C18.6654 20.929 18.1737 19.742 17.2985 18.8668C16.4234 17.9917 15.2364 17.5 13.9987 17.5H6.9987C5.76102 17.5 4.57404 17.9917 3.69887 18.8668C2.8237 19.742 2.33203 20.929 2.33203 22.1667V24.5"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                            <path
-                                                d="M10.4987 12.8333C13.076 12.8333 15.1654 10.744 15.1654 8.16667C15.1654 5.58934 13.076 3.5 10.4987 3.5C7.92137 3.5 5.83203 5.58934 5.83203 8.16667C5.83203 10.744 7.92137 12.8333 10.4987 12.8333Z"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                            <path
-                                                d="M25.668 24.5007V22.1673C25.6672 21.1334 25.3231 20.1289 24.6896 19.3117C24.0561 18.4945 23.1691 17.9108 22.168 17.6523"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                            <path
-                                                d="M18.668 3.65234C19.6718 3.90936 20.5615 4.49316 21.1969 5.31171C21.8322 6.13025 22.1771 7.13698 22.1771 8.17318C22.1771 9.20938 21.8322 10.2161 21.1969 11.0346C20.5615 11.8532 19.6718 12.437 18.668 12.694"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                        </svg>
-
-                                    </div>
-                                    <h6 class="font-semibold text-19px text-primary mb-3">
-                                        مقدمة في مفاهيم العمل السعودي
-                                    </h6>
-                                    <p class="font-normal text-15px text-7a mb-2">
-                                        اكتب هنا وصف الكورس اكتب هنا وصف الكورس اكتب هنا وصف الكورس اكتب هنا وصف الكورس اكتب
-                                        هنا
-                                    </p>
-                                    <p class="font-normal text-15px text-primary mb-6">التطوير المهني</p>
-                                    <div>
-                                        <a class="btn btn-outline btn-primary whitespace-nowrap h-12 btn-block font-medium text-16px"
-                                            href="#">
-                                            تفاصيل الورشة
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="carousel-slide ">
-                                <div class="relative bg-white border border-card-border  py-8 px-6 rounded-10px  ">
-                                    <div
-                                        class="absolute top-8 left-4 bg-[#E8F5E9] w-20
-                                 h-6 rounded-18px center font-medium text-12px text-primary">
-                                        مجاني
-                                    </div>
-                                    <div class="bg-[#F5F1E8] center rounded-full size-14 mb-6">
-                                        <svg width="28" height="28" viewBox="0 0 28 28" fill="none"
-                                            xmlns="http://www.w3.org/2000/svg">
-                                            <path
-                                                d="M18.6654 24.5V22.1667C18.6654 20.929 18.1737 19.742 17.2985 18.8668C16.4234 17.9917 15.2364 17.5 13.9987 17.5H6.9987C5.76102 17.5 4.57404 17.9917 3.69887 18.8668C2.8237 19.742 2.33203 20.929 2.33203 22.1667V24.5"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                            <path
-                                                d="M10.4987 12.8333C13.076 12.8333 15.1654 10.744 15.1654 8.16667C15.1654 5.58934 13.076 3.5 10.4987 3.5C7.92137 3.5 5.83203 5.58934 5.83203 8.16667C5.83203 10.744 7.92137 12.8333 10.4987 12.8333Z"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                            <path
-                                                d="M25.668 24.5007V22.1673C25.6672 21.1334 25.3231 20.1289 24.6896 19.3117C24.0561 18.4945 23.1691 17.9108 22.168 17.6523"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                            <path
-                                                d="M18.668 3.65234C19.6718 3.90936 20.5615 4.49316 21.1969 5.31171C21.8322 6.13025 22.1771 7.13698 22.1771 8.17318C22.1771 9.20938 21.8322 10.2161 21.1969 11.0346C20.5615 11.8532 19.6718 12.437 18.668 12.694"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                        </svg>
-
-                                    </div>
-                                    <h6 class="font-semibold text-19px text-primary mb-3">
-                                        مقدمة في مفاهيم العمل السعودي
-                                    </h6>
-                                    <p class="font-normal text-15px text-7a mb-2">
-                                        اكتب هنا وصف الكورس اكتب هنا وصف الكورس اكتب هنا وصف الكورس اكتب هنا وصف الكورس اكتب
-                                        هنا
-                                    </p>
-                                    <p class="font-normal text-15px text-primary mb-6">التطوير المهني</p>
-                                    <div>
-                                        <a class="btn btn-outline btn-primary whitespace-nowrap h-12 btn-block font-medium text-16px"
-                                            href="#">
-                                            تفاصيل الورشة
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="carousel-slide ">
-                                <div class="relative bg-white border border-card-border  py-8 px-6 rounded-10px  ">
-                                    <div
-                                        class="absolute top-8 left-4 bg-[#E8F5E9] w-20
-                                 h-6 rounded-18px center font-medium text-12px text-primary">
-                                        مجاني
-                                    </div>
-                                    <div class="bg-[#F5F1E8] center rounded-full size-14 mb-6">
-                                        <svg width="28" height="28" viewBox="0 0 28 28" fill="none"
-                                            xmlns="http://www.w3.org/2000/svg">
-                                            <path
-                                                d="M18.6654 24.5V22.1667C18.6654 20.929 18.1737 19.742 17.2985 18.8668C16.4234 17.9917 15.2364 17.5 13.9987 17.5H6.9987C5.76102 17.5 4.57404 17.9917 3.69887 18.8668C2.8237 19.742 2.33203 20.929 2.33203 22.1667V24.5"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                            <path
-                                                d="M10.4987 12.8333C13.076 12.8333 15.1654 10.744 15.1654 8.16667C15.1654 5.58934 13.076 3.5 10.4987 3.5C7.92137 3.5 5.83203 5.58934 5.83203 8.16667C5.83203 10.744 7.92137 12.8333 10.4987 12.8333Z"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                            <path
-                                                d="M25.668 24.5007V22.1673C25.6672 21.1334 25.3231 20.1289 24.6896 19.3117C24.0561 18.4945 23.1691 17.9108 22.168 17.6523"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                            <path
-                                                d="M18.668 3.65234C19.6718 3.90936 20.5615 4.49316 21.1969 5.31171C21.8322 6.13025 22.1771 7.13698 22.1771 8.17318C22.1771 9.20938 21.8322 10.2161 21.1969 11.0346C20.5615 11.8532 19.6718 12.437 18.668 12.694"
-                                                stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                        </svg>
-
-                                    </div>
-                                    <h6 class="font-semibold text-19px text-primary mb-3">
-                                        مقدمة في مفاهيم العمل السعودي
-                                    </h6>
-                                    <p class="font-normal text-15px text-7a mb-2">
-                                        اكتب هنا وصف الكورس اكتب هنا وصف الكورس اكتب هنا وصف الكورس اكتب هنا وصف الكورس اكتب
-                                        هنا
-                                    </p>
-                                    <p class="font-normal text-15px text-primary mb-6">التطوير المهني</p>
-                                    <div>
-                                        <a class="btn btn-outline btn-primary whitespace-nowrap h-12 btn-block font-medium text-16px"
-                                            href="#">
-                                            تفاصيل الورشة
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-
+                            @endforelse
 
                         </div>
                     </div>
@@ -550,7 +322,7 @@
 
 
                 <div class="text-center mt-10">
-                    <a href=""
+                    <a href="{{ route('landing.v1.workshops') }}"
                         class="btn btn-outline bg-[#E8F5E9] rounded-10px h-15 font-extrabold px-8 text-primary text-20px">
                         عرض جميع الدورات المجانية
                     </a>
@@ -569,7 +341,7 @@
                             نخبة من الخبراء والمستشارين والمدربين المعتمدين يقودون مسارات التدريب في المركز بخبرات متنوعة في
                             الحوكمة، الجودة، الإدارة الصحية، القانون، التدريب، التطوير المؤسسي والتميز. </p>
                     </div>
-                    <a href=""
+                    <a href="{{ route('landing.v1.instructors') }}"
                         class="btn btn-outline bg-[#E8F5E9] rounded-10px h-15 font-extrabold px-10 text-primary text-20px">
                         عرض جميع المدربين </a>
                 </div>
@@ -578,90 +350,20 @@
                     class="relative w-full">
                     <div class="carousel">
                         <div class="carousel-body h-full opacity-0 overflow-visible gap-4 xl:gap-8">
+                            @forelse ($trainers as $trainer)
                             <div class="carousel-slide">
-                                <div class="trainer-card bg-white border border-[#0000001A] rounded-19px overflow-hidden h-full">
-                                    <div class="h-60 overflow-hidden rounded-t-[19px]">
-                                        <img class="h-full w-full object-cover"
-                                            src="{{ $landingImg }}/home/instructor.webp" alt="د. محمد أبو هيشة">
-                                    </div>
-                                    <div class="p-6">
-                                        <h6 class="font-semibold text-24px text-blue mb-3">د. محمد أبو هيشة</h6>
-                                        <ul class="list-inside list-disc font-normal text-14px text-blue space-y-1">
-                                            <li>دكتوراه في الإدارة والتخطيط الصحي.</li>
-                                            <li>استشاري الإدارة الصحية والمستشفيات.</li>
-                                            <li>عمل مديرًا عامًا لعدة إدارات عامة بوزارة الصحة لمدة 30 سنة.</li>
-                                        </ul>
-                                    </div>
-                                </div>
+                                <x-landing_v1::instructor-card
+                                    :name="$trainer->full_name"
+                                    :avatar="$trainer->getAvatar()"
+                                    :bio="$trainer->about ?? $trainer->bio ?? $trainer->headline ?? ''"
+                                    :username="$trainer->username"
+                                />
                             </div>
-
+                            @empty
                             <div class="carousel-slide">
-                                <div class="trainer-card bg-white border border-[#0000001A] rounded-19px overflow-hidden h-full">
-                                    <div class="h-60 overflow-hidden rounded-t-[19px]">
-                                        <img class="h-full w-full object-cover"
-                                            src="{{ $landingImg }}/home/instructor.webp" alt="د. عبدالله القحطاني">
-                                    </div>
-                                    <div class="p-6">
-                                        <h6 class="font-semibold text-24px text-blue mb-3">د. عبدالله القحطاني</h6>
-                                        <ul class="list-inside list-disc font-normal text-14px text-blue space-y-1">
-                                            <li>دكتوراه في إدارة الأعمال.</li>
-                                            <li>خبير في الحوكمة والتطوير المؤسسي.</li>
-                                            <li>مدرب معتمد في برامج التميز المؤسسي.</li>
-                                        </ul>
-                                    </div>
-                                </div>
+                                <p class="text-center text-primary/70 font-medium py-8">لا يوجد مدربون متاحون حالياً.</p>
                             </div>
-
-                            <div class="carousel-slide">
-                                <div class="trainer-card bg-white border border-[#0000001A] rounded-19px overflow-hidden h-full">
-                                    <div class="h-60 overflow-hidden rounded-t-[19px]">
-                                        <img class="h-full w-full object-cover"
-                                            src="{{ $landingImg }}/home/instructor.webp" alt="د. سارة العتيبي">
-                                    </div>
-                                    <div class="p-6">
-                                        <h6 class="font-semibold text-24px text-blue mb-3">د. سارة العتيبي</h6>
-                                        <ul class="list-inside list-disc font-normal text-14px text-blue space-y-1">
-                                            <li>دكتوراه في الجودة والاعتماد المؤسسي.</li>
-                                            <li>استشارية في نظم الجودة الصحية.</li>
-                                            <li>خبرة تتجاوز 20 عامًا في التدريب والتطوير.</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="carousel-slide">
-                                <div class="trainer-card bg-white border border-[#0000001A] rounded-19px overflow-hidden h-full">
-                                    <div class="h-60 overflow-hidden rounded-t-[19px]">
-                                        <img class="h-full w-full object-cover"
-                                            src="{{ $landingImg }}/home/instructor.webp" alt="د. خالد الشمري">
-                                    </div>
-                                    <div class="p-6">
-                                        <h6 class="font-semibold text-24px text-blue mb-3">د. خالد الشمري</h6>
-                                        <ul class="list-inside list-disc font-normal text-14px text-blue space-y-1">
-                                            <li>ماجستير في القانون الإداري.</li>
-                                            <li>مستشار في الامتثال والحوكمة.</li>
-                                            <li>مدرب في برامج القيادة والإدارة الاستراتيجية.</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="carousel-slide">
-                                <div class="trainer-card bg-white border border-[#0000001A] rounded-19px overflow-hidden h-full">
-                                    <div class="h-60 overflow-hidden rounded-t-[19px]">
-                                        <img class="h-full w-full object-cover"
-                                            src="{{ $landingImg }}/home/instructor.webp" alt="د. نورة الدوسري">
-                                    </div>
-                                    <div class="p-6">
-                                        <h6 class="font-semibold text-24px text-blue mb-3">د. نورة الدوسري</h6>
-                                        <ul class="list-inside list-disc font-normal text-14px text-blue space-y-1">
-                                            <li>دكتوراه في التخطيط الاستراتيجي.</li>
-                                            <li>خبيرة في تطوير الكفاءات القيادية.</li>
-                                            <li>مدربة معتمدة في برامج التطوير المهني.</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
+                            @endforelse
                         </div>
                     </div>
                     <div class="carousel-pagination flex justify-center gap-3 mt-10"></div>
@@ -681,9 +383,9 @@
                             برامج تدريبية احترافية ومعتمدة في مختلف المجالات
                         </p>
                     </div>
-                    <a href=""
+                    <a href="{{ route('landing.v1.courses-paid') }}"
                         class="btn btn-outline bg-[#E8F5E9] rounded-10px h-15 font-extrabold px-10 text-primary text-20px">
-                        عرض جميع المدربين
+                        عرض جميع الدورات المعتمدة
                     </a>
                 </div>
                 <div id="multi-slide mb-10"
@@ -691,197 +393,24 @@
                     class="relative w-full">
                     <div class="carousel ">
                         <div class="carousel-body  h-full opacity-0 overflow-visible gap-4 xl:gap-8">
-                            <div class="carousel-slide ">
-                                <div class="bg-white  rounded-19px ">
-                                    <div class="h-60 mb-6 overflow-hidden">
-                                        <img class="h-full w-full object-cover rounded-tr-[19px] rounded-tl-[19px]"
-                                            src="{{ $landingImg }}/home/course.webp" alt="course 1">
-                                    </div>
-
-                                    <div class="p-6">
-                                        <h6 class="font-semibold text-20px text-primary mb-2">التسويق الرقمي</h6>
-                                        <p class="font-normal text-12px text-7a mb-2">Digital Marketing</p>
-                                        <p class="font-normal text-13px text-7a mb-3">
-                                            دورة تطويرية
-                                        </p>
-                                        <div class="flex items-center gap-1.5 mb-5 border-t border-card-border pt-4 ">
-                                            <div class="avatar">
-
-                                                <div class="size-10 rounded-full">
-                                                    <img src="https://cdn.flyonui.com/fy-assets/avatar/avatar-1.png"
-                                                        alt="avatar" />
-                                                </div>
-                                            </div>
-
-                                            <p class="font-medium text-77 text-base">اسم المعلم</p>
-                                        </div>
-
-                                        <div class="flex items-center justify-between">
-                                            <span class="font-bold text-20px text-primary whitespace-nowrap gap-4">
-                                                699 ريال
-                                            </span>
-                                            <a href=""
-                                                class="btn btn-primary rounded-[3px] h-10 font-medium text-14px ">سجّل
-                                                الآن</a>
-                                        </div>
-                                    </div>
-                                </div>
+                            @forelse ($paidCourses as $course)
+                            <div class="carousel-slide">
+                            <x-landing_v1::course-card
+                                    :title="$course->title"
+                                    :description="$course->description"
+                                    :teacherName="$course->teacher->full_name ?? ''"
+                                    :teacherAvatar="!empty($course->teacher) ? $course->teacher->getAvatar() : null"
+                                    :price="($course->price > 0) ? handlePrice($course->price) : 'مجاناً'"
+                                    :image="$course->image_cover ?? $course->thumbnail ?? asset('assets/landing_v1/img/home/course.webp')"
+                                    :categoryTitle="$course->category->title ?? ''"
+                                    :slug="$course->slug"
+                                />
                             </div>
-
-                            <div class="carousel-slide ">
-                                <div class="bg-white  rounded-19px ">
-                                    <div class="h-60 mb-6 overflow-hidden">
-                                        <img class="h-full w-full object-cover rounded-tr-[19px] rounded-tl-[19px]"
-                                            src="{{ $landingImg }}/home/course.webp" alt="course 1">
-                                    </div>
-
-                                    <div class="p-6">
-                                        <h6 class="font-semibold text-20px text-primary mb-2">التسويق الرقمي</h6>
-                                        <p class="font-normal text-12px text-7a mb-2">Digital Marketing</p>
-                                        <p class="font-normal text-13px text-7a mb-3">
-                                            دورة تطويرية
-                                        </p>
-                                        <div class="flex items-center gap-1.5 mb-5 border-t border-card-border pt-4 ">
-                                            <div class="avatar">
-
-                                                <div class="size-10 rounded-full">
-                                                    <img src="https://cdn.flyonui.com/fy-assets/avatar/avatar-1.png"
-                                                        alt="avatar" />
-                                                </div>
-                                            </div>
-
-                                            <p class="font-medium text-77 text-base">اسم المعلم</p>
-                                        </div>
-
-                                        <div class="flex items-center justify-between">
-                                            <span class="font-bold text-20px text-primary whitespace-nowrap gap-4">
-                                                699 ريال
-                                            </span>
-                                            <a href=""
-                                                class="btn btn-primary rounded-[3px] h-10 font-medium text-14px ">سجّل
-                                                الآن</a>
-                                        </div>
-                                    </div>
-                                </div>
+                            @empty
+                            <div class="carousel-slide">
+                                <p class="text-center text-secondary font-medium py-8">لا توجد دورات معتمدة متاحة حالياً.</p>
                             </div>
-
-                            <div class="carousel-slide ">
-                                <div class="bg-white  rounded-19px ">
-                                    <div class="h-60 mb-6 overflow-hidden">
-                                        <img class="h-full w-full object-cover rounded-tr-[19px] rounded-tl-[19px]"
-                                            src="{{ $landingImg }}/home/course.webp" alt="course 1">
-                                    </div>
-
-                                    <div class="p-6">
-                                        <h6 class="font-semibold text-20px text-primary mb-2">التسويق الرقمي</h6>
-                                        <p class="font-normal text-12px text-7a mb-2">Digital Marketing</p>
-                                        <p class="font-normal text-13px text-7a mb-3">
-                                            دورة تطويرية
-                                        </p>
-                                        <div class="flex items-center gap-1.5 mb-5 border-t border-card-border pt-4 ">
-                                            <div class="avatar">
-
-                                                <div class="size-10 rounded-full">
-                                                    <img src="https://cdn.flyonui.com/fy-assets/avatar/avatar-1.png"
-                                                        alt="avatar" />
-                                                </div>
-                                            </div>
-
-                                            <p class="font-medium text-77 text-base">اسم المعلم</p>
-                                        </div>
-
-                                        <div class="flex items-center justify-between">
-                                            <span class="font-bold text-20px text-primary whitespace-nowrap gap-4">
-                                                699 ريال
-                                            </span>
-                                            <a href=""
-                                                class="btn btn-primary rounded-[3px] h-10 font-medium text-14px ">سجّل
-                                                الآن</a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-
-                            <div class="carousel-slide ">
-                                <div class="bg-white  rounded-19px ">
-                                    <div class="h-60 mb-6 overflow-hidden">
-                                        <img class="h-full w-full object-cover rounded-tr-[19px] rounded-tl-[19px]"
-                                            src="{{ $landingImg }}/home/course.webp" alt="course 1">
-                                    </div>
-
-                                    <div class="p-6">
-                                        <h6 class="font-semibold text-20px text-primary mb-2">التسويق الرقمي</h6>
-                                        <p class="font-normal text-12px text-7a mb-2">Digital Marketing</p>
-                                        <p class="font-normal text-13px text-7a mb-3">
-                                            دورة تطويرية
-                                        </p>
-                                        <div class="flex items-center gap-1.5 mb-5 border-t border-card-border pt-4 ">
-                                            <div class="avatar">
-
-                                                <div class="size-10 rounded-full">
-                                                    <img src="https://cdn.flyonui.com/fy-assets/avatar/avatar-1.png"
-                                                        alt="avatar" />
-                                                </div>
-                                            </div>
-
-                                            <p class="font-medium text-77 text-base">اسم المعلم</p>
-                                        </div>
-
-                                        <div class="flex items-center justify-between">
-                                            <span class="font-bold text-20px text-primary whitespace-nowrap gap-4">
-                                                699 ريال
-                                            </span>
-                                            <a href=""
-                                                class="btn btn-primary rounded-[3px] h-10 font-medium text-14px ">سجّل
-                                                الآن</a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="carousel-slide ">
-                                <div class="bg-white  rounded-19px ">
-                                    <div class="h-60 mb-6 overflow-hidden">
-                                        <img class="h-full w-full object-cover rounded-tr-[19px] rounded-tl-[19px]"
-                                            src="{{ $landingImg }}/home/course.webp" alt="course 1">
-                                    </div>
-
-                                    <div class="p-6">
-                                        <h6 class="font-semibold text-20px text-primary mb-2">التسويق الرقمي</h6>
-                                        <p class="font-normal text-12px text-7a mb-2">Digital Marketing</p>
-                                        <p class="font-normal text-13px text-7a mb-3">
-                                            دورة تطويرية
-                                        </p>
-                                        <div class="flex items-center gap-1.5 mb-5 border-t border-card-border pt-4 ">
-                                            <div class="avatar">
-
-                                                <div class="size-10 rounded-full">
-                                                    <img src="https://cdn.flyonui.com/fy-assets/avatar/avatar-1.png"
-                                                        alt="avatar" />
-                                                </div>
-                                            </div>
-
-                                            <p class="font-medium text-77 text-base">اسم المعلم</p>
-                                        </div>
-
-                                        <div class="flex items-center justify-between">
-                                            <span class="font-bold text-20px text-primary whitespace-nowrap gap-4">
-                                                699 ريال
-                                            </span>
-                                            <a href=""
-                                                class="btn btn-primary rounded-[3px] h-10 font-medium text-14px ">سجّل
-                                                الآن</a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-
-
-
-
-
-
+                            @endforelse
                         </div>
                     </div>
 
@@ -1005,48 +534,21 @@
             <div class="container">
                 <div class="flex justify-between items-center mb-16">
                     <h2 class="font-bold text-40px text-primary mb-4">اخر اخبارنا </h2>
-                    <a href=""
+                    <a href="{{ route('landing.v1.blogs') }}"
                         class="btn btn-outline border-none bg-[#E8F5E9] rounded-10px h-15 font-extrabold px-8 text-primary text-20px">
                         عرض جميع المقالات
                     </a>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <div class="h-[396px] bg-e3 rounded-20px p-7 flex flex-col items-center justify-end text-center   relative overflow-hidden "
-                        style="background-image: url('{{ $landingImg }}/home/news1.webp'); background-size: cover; background-position: center;">
-                        >
-                        <p class="font-bold text-22px text-white z-20 relative">استثمر في نفسك: كيف تختار الدورة التدريبية
-                            التي تنقل
-                            مسيرتك المهنية للجيل القادم؟</p>
-                        <div class="layer bg-linear absolute inset-0 rounded-20px"></div>
-                    </div>
-
-                    <div class="h-[396px] bg-e3 rounded-20px p-7 flex flex-col items-center justify-end text-center   relative overflow-hidden "
-                        style="background-image: url('{{ $landingImg }}/home/news1.webp'); background-size: cover; background-position: center;">
-                        >
-                        <p class="font-bold text-22px text-white z-20 relative">استثمر في نفسك: كيف تختار الدورة التدريبية
-                            التي تنقل
-                            مسيرتك المهنية للجيل القادم؟</p>
-                        <div class="layer bg-linear absolute inset-0 rounded-20px"></div>
-                    </div>
-
-                    <div class="h-[396px] bg-e3 rounded-20px p-7 flex flex-col items-center justify-end text-center   relative overflow-hidden "
-                        style="background-image: url('{{ $landingImg }}/home/news1.webp'); background-size: cover; background-position: center;">
-                        >
-                        <p class="font-bold text-22px text-white z-20 relative">استثمر في نفسك: كيف تختار الدورة التدريبية
-                            التي تنقل
-                            مسيرتك المهنية للجيل القادم؟</p>
-                        <div class="layer bg-linear absolute inset-0 rounded-20px"></div>
-                    </div>
-
-                    <div class="h-[396px] bg-e3 rounded-20px p-7 flex flex-col items-center justify-end text-center   relative overflow-hidden "
-                        style="background-image: url('{{ $landingImg }}/home/news1.webp'); background-size: cover; background-position: center;">
-                        >
-                        <p class="font-bold text-22px text-white z-20 relative">استثمر في نفسك: كيف تختار الدورة التدريبية
-                            التي تنقل
-                            مسيرتك المهنية للجيل القادم؟</p>
-                        <div class="layer bg-linear absolute inset-0 rounded-20px"></div>
-                    </div>
-
+                    @forelse ($latestPosts as $post)
+                        <x-landing_v1::blog-card
+                            :title="$post->title"
+                            :image="$post->image ?? asset('assets/landing_v1/img/home/news1.webp')"
+                            :slug="$post->slug"
+                        />
+                    @empty
+                        <p class="col-span-full text-center font-medium text-primary/70 py-12">لا توجد مقالات متاحة حالياً.</p>
+                    @endforelse
                 </div>
 
             </div>
@@ -1212,8 +714,6 @@
             </div>
         </section> --}}
     </main>
-    <div>
-        test
-    </div>
+
  
 @endsection

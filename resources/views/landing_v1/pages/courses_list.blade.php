@@ -5,8 +5,9 @@
             description="{{ $course->description }}" 
             teacherName="{{ $course->teacher->full_name ?? '' }}" 
             teacherAvatar="{{ !empty($course->teacher) ? $course->teacher->getAvatar() : '' }}" 
-            price="{{ ($course->price > 0) ? $course->price . ' ر.س' : 'مجاناً' }}" 
-            image="{{ $course->image_cover ?? asset('assets/landing_v1/img/contact/hero.webp') }}" 
+            price="{{ ($course->price > 0) ? handlePrice($course->price) : 'مجاناً' }}" 
+            image="{{ $course->image_cover ?? $course->thumbnail ?? asset('assets/landing_v1/img/home/course.webp') }}" 
+            categoryTitle="{{ $course->category->title ?? '' }}"
             slug="{{ $course->slug }}"
         />
     @empty

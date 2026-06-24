@@ -37,8 +37,8 @@ class CartManagerController extends Controller
 
             $carts = $user->carts()
                 ->with([
-                    'webinar',
-                    'bundle',
+                    'webinar.teacher',
+                    'bundle.teacher',
                     'installmentPayment',
                     'productOrder' => function ($query) {
                         $query->with(['product']);
@@ -60,6 +60,7 @@ class CartManagerController extends Controller
                             $webinar = Webinar::where('id', $cookieCart['item_id'])
                                 ->where('private', false)
                                 ->where('status', 'active')
+                                ->with('teacher')
                                 ->first();
 
                             if (!empty($webinar)) {
@@ -437,6 +438,7 @@ class CartManagerController extends Controller
             'msg' => trans('cart.cart_add_success_msg'),
             'status' => 'success',
             'code' => 200,
+            'cart_count' => $this->getCarts()->count(),
         ];
 
         if ($request->ajax()) {
@@ -574,6 +576,7 @@ class CartManagerController extends Controller
     {
         $user = auth()->user();
         $cartItems = $this->getCarts();
+        $skin = request()->get('skin', 'design_1');
 
         $subtotal = 0;
         $notIsEmpty = (!empty($cartItems) and $cartItems->isNotEmpty());
@@ -589,7 +592,11 @@ class CartManagerController extends Controller
                 'cartItems' => $cartItems,
             ];
 
-            $html = (string)view()->make("design_1.web.cart.drawer.body", $data);
+            if ($skin === 'landing_v1') {
+                $html = (string) view()->make('landing_v1.components.cart-drawer-body', $data);
+            } else {
+                $html = (string) view()->make('design_1.web.cart.drawer.body', $data);
+            }
         } else {
             $cartDiscount = CartDiscount::query()
                 ->where('show_only_on_empty_cart', true)
@@ -600,12 +607,17 @@ class CartManagerController extends Controller
                 'cartDiscount' => $cartDiscount,
             ];
 
-            $html = (string)view()->make("design_1.web.cart.drawer.empty", $data);
+            if ($skin === 'landing_v1') {
+                $html = (string) view()->make('landing_v1.components.cart-drawer-empty', $data);
+            } else {
+                $html = (string) view()->make('design_1.web.cart.drawer.empty', $data);
+            }
         }
 
         return response()->json([
             'code' => 200,
             'is_empty' => !$notIsEmpty,
+            'items_count' => $notIsEmpty ? $cartItems->count() : 0,
             'subtotal' => $subtotal > 0 ? handlePrice($subtotal) : 0,
             'html' => $html,
         ]);

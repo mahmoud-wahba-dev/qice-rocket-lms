@@ -1,18 +1,26 @@
+@props([
+    'name' => '',
+    'avatar' => null,
+    'bio' => '',
+    'username' => null,
+    'profileUrl' => null,
+])
 
 @php($landingImg = asset('assets/landing_v1/img'))
-
+@php($avatarUrl = $avatar ?? ($landingImg . '/home/instructor.webp'))
+@php($detailUrl = $profileUrl ?? (!empty($username) ? route('landing.v1.instructor-details', $username) : route('landing.v1.instructors')))
 
 <div class="trainer-card bg-white border border-[#0000001A] rounded-19px overflow-hidden h-full">
-    <div class="h-60 overflow-hidden rounded-t-[19px]">
+    <a href="{{ $detailUrl }}" class="block h-60 overflow-hidden rounded-t-[19px]">
         <img class="h-full w-full object-cover"
-            src="{{ $landingImg }}/home/instructor.webp" alt="د. محمد أبو هيشة">
-    </div>
+            src="{{ $avatarUrl }}" alt="{{ $name }}">
+    </a>
     <div class="p-6">
-        <h6 class="font-semibold text-24px text-blue mb-3">د. محمد أبو هيشة</h6>
-        <ul class="list-inside list-disc font-normal text-14px text-blue space-y-1">
-            <li>دكتوراه في الإدارة والتخطيط الصحي.</li>
-            <li>استشاري الإدارة الصحية والمستشفيات.</li>
-            <li>عمل مديرًا عامًا لعدة إدارات عامة بوزارة الصحة لمدة 30 سنة.</li>
-        </ul>
+        <a href="{{ $detailUrl }}">
+            <h6 class="font-semibold text-24px text-blue mb-3 hover:text-primary transition-colors">{{ $name }}</h6>
+        </a>
+        @if (!empty($bio))
+            <p class="font-normal text-14px text-blue line-clamp-4">{{ $bio }}</p>
+        @endif
     </div>
 </div>

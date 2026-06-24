@@ -4,55 +4,27 @@
     @php
         $landingImg = asset('assets/landing_v1/img');
         $courseDetailsImg = asset('assets/landing_v1/img/course_details');
-        $heroYoutubeId = 'JXEXdbS5tsI';
-
-        $learningOutcomes = [
-            'فهم إطار عمل PMBOK والمعايير الدولية لإدارة المشاريع',
-            'إتقان مجالات المعرفة العشرة في إدارة المشاريع',
-            'الاستعداد العملي لاجتياز اختبار PMP المعتمد',
+        $heroYoutubeId = $heroYoutubeId ?? 'JXEXdbS5tsI';
+        $isInCart = $isInCart ?? false;
+        $averageRating = $averageRating ?? 0;
+        $totalReviewsCount = $totalReviewsCount ?? 0;
+        $learningOutcomes = $learningOutcomes ?? [];
+        $curriculumModules = $curriculumModules ?? [];
+        $comments = $comments ?? [];
+        $ratesDistribution = $ratesDistribution ?? [
+            5 => ['percent' => 0],
+            4 => ['percent' => 0],
+            3 => ['percent' => 0],
+            2 => ['percent' => 0],
+            1 => ['percent' => 0],
         ];
+        $effectivePrice = $course->getPrice();
+        $hasDiscount = $effectivePrice < $course->price;
+        $sessionCount = $course->chapters->sum(fn ($chapter) => $chapter->sessions->count());
 
-        $curriculumModules = [
-            'الوحدة الأولى: أساسيات الفكر الاستشاري المؤسسي',
-            'الوحدة الثانية: نطاق المشروع والجدول الزمني',
-            'الوحدة الثالثة: التكلفة والجودة وإدارة المخاطر',
-            'الوحدة الرابعة: القيادة والتواصل مع أصحاب المصلحة',
-        ];
-
-        $discoveryTopics = [
-            'نطاق المشروع، الجدول الزمني، والتكلفة',
-            'الجودة، المخاطر، وأصحاب المصلحة',
-            'المنهجيات الرشيقة (Agile)',
-            'القيادة وإدارة الفريق',
-            'نماذج اختبارات المحاكاة',
-            'استراتيجيات النجاح في الاختبار',
-        ];
-
-        $comments = [
-            [
-                'name' => 'فهد العنزي',
-                'date' => '10 يونيو 2025',
-                'body' => 'برنامج متميز ساعدني على فهم منهجية PMP بشكل عملي. المدرب يمتلك خبرة واضحة في المجال.',
-            ],
-            [
-                'name' => 'ريم الحربي',
-                'date' => '22 مايو 2025',
-                'body' => 'محتوى منظم واختبارات المحاكاة كانت قريبة جداً من الاختبار الفعلي. أنصح بها بشدة.',
-            ],
-            [
-                'name' => 'عبدالله القحطاني',
-                'date' => '5 أبريل 2025',
-                'body' => 'تجربة تدريبية احترافية من التسجيل وحتى الحصول على الشهادة. قيمة ممتازة مقابل السعر.',
-            ],
-        ];
-
-        $ratesDistribution = [
-            5 => ['percent' => 78],
-            4 => ['percent' => 14],
-            3 => ['percent' => 5],
-            2 => ['percent' => 2],
-            1 => ['percent' => 1],
-        ];
+        $discoveryTopics = !empty($learningOutcomes)
+            ? $learningOutcomes
+            : $curriculumModules;
 
         $faqItems = [
             [
@@ -85,7 +57,7 @@
                 <iframe id="course-hero-youtube"
                     class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-h-full min-w-[177.78vh] w-[100vw] h-[56.25vw] border-0 pointer-events-auto"
                     src="https://www.youtube-nocookie.com/embed/{{ $heroYoutubeId }}?enablejsapi=1&autoplay=1&mute=1&loop=1&playlist={{ $heroYoutubeId }}&controls=0&modestbranding=1&rel=0&playsinline=1&origin={{ urlencode(url('/')) }}"
-                    title="إدارة المشاريع في 15 دقيقة — معاينة الدورة"
+                    title="{{ $course->title }}"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     referrerpolicy="strict-origin-when-cross-origin" loading="lazy"></iframe>
                 <div class="absolute bottom-6 left-6 z-20 flex items-center gap-2">
@@ -111,30 +83,46 @@
                 <div class="lg:max-w-[55%] pointer-events-auto">
                     <p class="font-semibold text-base text-white mb-10">خطوتك الأولى نحو القمة...</p>
                     <h1 class="font-bold text-36px lg:text-46px text-[#F1F5F9] mb-8 leading-tight">
-                        أهلاً بك في رحلة إتقان إدارة المشاريع (PMP)
+                        {{ $course->title }}
                     </h1>
                     <p class="font-normal text-16px lg:text-18px text-white mb-10 leading-relaxed max-w-2xl">
-                        برنامج تدريبي معتمد يأخذك خطوة بخطوة نحو إتقان منهجية إدارة المشاريع الاحترافية والاستعداد
-                        لاختبار PMP الدولي بثقة وكفاءة.
+                        {{ $course->summary ?? Str::limit(strip_tags(html_entity_decode($course->description)), 220) }}
                     </p>
 
                     <div class="flex items-center gap-3 lg:gap-4 flex-wrap xl:flex-nowrap mb-10">
-                        <div
-                            class="flex items-center gap-2  px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap">
-                            <img src="http://training.qiec.local/assets/landing_v1/img/course_details/calendar.webp"
-                                alt="calendar" class="size-6 shrink-0">
-                            <span class="font-semibold text-14px text-white whitespace-nowrap">7 أيام تفاعلية</span>
-                        </div>
-                        <div
-                            class="flex items-center gap-2  px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap">
-                            <img src="http://training.qiec.local/assets/landing_v1/img/course_details/clock.webp"
-                                alt="clock" class="size-6 shrink-0">
-                            <span class="font-medium text-14px text-white whitespace-nowrap">35 ساعة تدريبية
-                                معتمدة</span>
-                        </div>
+                        @if (!empty($course->access_days))
+                            <div
+                                class="flex items-center gap-2  px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap">
+                                <img src="{{ $courseDetailsImg }}/calendar.webp"
+                                    alt="calendar" class="size-6 shrink-0">
+                                <span class="font-semibold text-14px text-white whitespace-nowrap">{{ $course->access_days }} أيام تفاعلية</span>
+                            </div>
+                        @elseif ($course->chapters->count() > 0)
+                            <div
+                                class="flex items-center gap-2  px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap">
+                                <img src="{{ $courseDetailsImg }}/calendar.webp"
+                                    alt="calendar" class="size-6 shrink-0">
+                                <span class="font-semibold text-14px text-white whitespace-nowrap">{{ $course->chapters->count() }} وحدات تدريبية</span>
+                            </div>
+                        @endif
+                        @if (!empty($course->duration))
+                            <div
+                                class="flex items-center gap-2  px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap">
+                                <img src="{{ $courseDetailsImg }}/clock.webp"
+                                    alt="clock" class="size-6 shrink-0">
+                                <span class="font-medium text-14px text-white whitespace-nowrap">{{ convertMinutesToHourAndMinute($course->duration) }} {{ trans('home.hours') }} تدريبية معتمدة</span>
+                            </div>
+                        @elseif ($sessionCount > 0)
+                            <div
+                                class="flex items-center gap-2  px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap">
+                                <img src="{{ $courseDetailsImg }}/clock.webp"
+                                    alt="clock" class="size-6 shrink-0">
+                                <span class="font-medium text-14px text-white whitespace-nowrap">{{ $sessionCount }} جلسة تدريبية</span>
+                            </div>
+                        @endif
                         <div
                             class="flex items-center gap-2  px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap ">
-                            <img src="http://training.qiec.local/assets/landing_v1/img/course_details/waiting-room.webp"
+                            <img src="{{ $courseDetailsImg }}/waiting-room.webp"
                                 alt="waiting-room" class="size-6 shrink-0">
                             <span class="font-medium text-14px text-white whitespace-nowrap">حضور مَرِن (عن بُعد /
                                 حضوري)</span>
@@ -147,20 +135,28 @@
                             class="rounded-9px font-black text-13px text-[#155554] px-6 py-3   bg-white text-primary border border-[#00FF88]">
                             بـــ
                             <span
-                                class="shadow-[-3.32px_4.42px_19.57px_0px_#FFFFFF] font-bold text-22px text-[#C80A0A] px-1">1,299
-                                ر.س</span>
-                            <span>
-                                بدلا من
-                            </span>
-                            <span
-                                class="font-bold text-base text-[#2F2F2FA8] shadow-[-2.4px_3.21px_14.19px_0px_#FFFFFF] line-through ms-2">
-                                1,700 ر.س</span>
+                                class="shadow-[-3.32px_4.42px_19.57px_0px_#FFFFFF] font-bold text-22px text-[#C80A0A] px-1">{{ handlePrice($effectivePrice) }}</span>
+                            @if ($hasDiscount)
+                                <span>
+                                    بدلا من
+                                </span>
+                                <span
+                                    class="font-bold text-base text-[#2F2F2FA8] shadow-[-2.4px_3.21px_14.19px_0px_#FFFFFF] line-through ms-2">
+                                    {{ handlePrice($course->price) }}</span>
+                            @endif
                         </div>
-                        <button type="button"
-                            class="btn h-14 rounded-9px font-bold text-18px px-8 inline-flex items-center gap-3 bg-white text-primary border border-[#00FF88] shadow-[0_0_24px_rgba(255,255,255,0.15)] hover:bg-[#f5f5f5]">
-                            سجل مقعدك الآن
-                            <img src="{{ $courseDetailsImg }}/seat.webp" alt="" class="size-6 shrink-0">
-                        </button>
+                        <form action="/cart/store" method="post" class="add-to-cart-form"
+                            data-seat-icon="{{ $courseDetailsImg }}/seat.webp">
+                            @csrf
+                            <input type="hidden" name="item_id" value="{{ $course->id }}">
+                            <input type="hidden" name="item_name" value="webinar_id">
+                            <button type="submit"
+                                @disabled($isInCart)
+                                class="btn h-14 rounded-9px font-bold text-18px px-8 inline-flex items-center gap-3 bg-white text-primary border border-[#00FF88] shadow-[0_0_24px_rgba(255,255,255,0.15)] hover:bg-[#f5f5f5] {{ $isInCart ? 'btn-disabled opacity-60 cursor-not-allowed is-added-to-cart' : '' }}">
+                                {{ $isInCart ? 'تمت الإضافة للسلة' : 'سجل مقعدك الآن' }}
+                                <img src="{{ $courseDetailsImg }}/seat.webp" alt="" class="size-6 shrink-0">
+                            </button>
+                        </form>
 
                     </div>
                 </div>
@@ -196,15 +192,16 @@
                         <h3 class="font-medium text-36px text-white mb-9">عن الدورة</h3>
                         <div class="border border-white rounded-10px bg-transparent px-6 lg:px-10 py-8 lg:py-11">
                             <p class="font-normal text-24px text-white mb-6 leading-relaxed">
-                                برنامج متكامل لإعدادك لشهادة PMP المعتمدة عالمياً، يجمع بين المحتوى النظري العميق
-                                والتطبيق العملي على حالات واقعية في إدارة المشاريع المؤسسية.
+                                {{ $course->summary ?? Str::limit(strip_tags(html_entity_decode($course->description)), 300) }}
                             </p>
                             <h4 class="font-medium text-32px text-white mb-2">
                                 ماذا ستتعلم؟</h4>
                             <ul class="space-y-3 list-disc list-inside text-white">
-                                @foreach ($learningOutcomes as $outcome)
+                                @forelse ($learningOutcomes as $outcome)
                                     <li class="font-normal text-24px leading-relaxed">{{ $outcome }}</li>
-                                @endforeach
+                                @empty
+                                    <li class="font-normal text-24px leading-relaxed text-white/70">لا توجد مخرجات تعلم مضافة لهذه الدورة بعد.</li>
+                                @endforelse
                             </ul>
                         </div>
                     </div>
@@ -213,77 +210,32 @@
                     <div id="course-curriculum" class="course-scrollspy-section mb-16">
                         <h3 class="font-medium  text-36px text-white mb-9">منهج الدورة</h3>
                         <div class="border border-[#EEEEEE] rounded-10px bg-transparent px-6 lg:px-10 py-2 lg:py-4">
-                            @foreach ($curriculumModules as $module)
+                            @forelse ($curriculumModules as $module)
                                 <div
                                     class="py-5 border-b border-[#EEEEEE] last:border-b-0 font-medium text-24px text-white">
                                     {{ $module }}
                                 </div>
-                            @endforeach
+                            @empty
+                                <div class="py-5 font-medium text-24px text-white/70">لا يوجد منهج مضاف لهذه الدورة بعد.</div>
+                            @endforelse
                         </div>
                     </div>
 
                     {{-- Instructor --}}
-                    <div id="course-instructor" class="course-scrollspy-section mb-16 bg-[#165554] text-white">
-                        <h3 class="font-medium text-32px lg:text-36px text-white mb-6">عن المدرب</h3>
-                        <div
-                            class="border border-white flex flex-col md:flex-row items-start gap-10 px-6 lg:px-8 py-8 lg:py-11 rounded-8px  shadow-sm">
-                            <div class="w-[160px] h-[160px] rounded-8px overflow-hidden shrink-0 border border-gray-100">
-                                <img src="{{ $landingImg }}/home/instructor.webp" alt="م. أحمد بن صالح آل سعود"
-                                    class="w-full h-full object-cover">
-                            </div>
-                            <div class="flex-grow">
-                                <h6 class="font-semibold text-24px text-white mb-2">م. أحمد بن صالح آل سعود</h6>
-                                <p class="font-normal text-18px text-white mb-6">خبير في التطوير المؤسسي والاستشارات
-                                    الإدارية
-                                </p>
-
-
-                                <div
-                                    class="flex flex-wrap items-center gap-6 mb-11 border-t border-b border-gray-100 py-4">
-                                    <div class="flex items-center gap-2 text-[#A6AAB5]">
-                                        <span class="icon-[tabler--calendar] size-5 shrink-0 text-white"></span>
-                                        <div class="font-medium text-10px text-white flex flex-col">
-                                            <span>عضو منذ</span>
-                                            <span class=" text-white">2018</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-2 text-[#A6AAB5]">
-                                        <span class="icon-[tabler--video] size-5 shrink-0 text-white"></span>
-                                        <div class="font-medium text-10px text-white flex flex-col">
-                                            <span>عدد الدورات</span>
-                                            <span class=" text-white">12</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-2 text-[#A6AAB5]">
-                                        <span class="icon-[tabler--users] size-5 shrink-0 text-white"></span>
-                                        <div class="font-medium text-10px text-white flex flex-col">
-                                            <span>عدد الطلاب</span>
-                                            <span class=" text-white">1,240</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-2 text-[#A6AAB5]">
-                                        <span class="icon-[tabler--star-filled] size-5 shrink-0 text-[#FFAA00]"></span>
-                                        <div class="font-medium text-10px text-white flex flex-col">
-                                            <span>التقييم</span>
-                                            <span class=" text-white">4.8</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <a href="#"
-                                    class="btn btn-white text-[#165554] h-12 lg:w-[40%] rounded-4px font-medium text-14px px-8 inline-flex items-center gap-2 shadow-sm hover:shadow-md transition-all">
-                                    <span class="icon-[tabler--user] size-5"></span>
-                                    عرض الملف الشخصي
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+                    <x-landing_v1::instructor-profile-block
+                        :teacher="$course->teacher"
+                        :coursesCount="$teacher_courses_count"
+                        :studentsCount="$teacher_students_count"
+                        :rating="$teacher_rating"
+                        variant="dark"
+                    />
 
 
                 </div>
             </div>
 
             {{-- Discovery accordion --}}
+            @if (!empty($discoveryTopics))
             <div id="course-discovery"
                 class="course-scrollspy-section mb-16 bg-[#053535] px-3.5 sm:px-0 py-12 lg:py-16 rounded-10px lg:rounded-none">
                 <div class="container">
@@ -322,6 +274,7 @@
                     </div>
                 </div>
             </div>
+            @endif
 
             <div class="container">
                 {{-- Comments --}}
@@ -329,7 +282,7 @@
                     <h3 class="font-medium text-32px lg:text-40px text-white mb-8">التعليقات</h3>
                     <div class="border border-[#CFCFCF] rounded-10px bg-transparent px-6 lg:px-10 py-8 lg:py-11">
                         <div class="divide-y divide-white/20">
-                            @foreach ($comments as $comment)
+                            @forelse ($comments as $comment)
                                 <div class="flex gap-4 py-6 first:pt-0 last:pb-0">
                                     <div class="size-12 rounded-full bg-white/10 center shrink-0">
                                         <span class="icon-[tabler--user] size-6 text-white/80"></span>
@@ -345,7 +298,9 @@
                                             {{ $comment['body'] }}</p>
                                     </div>
                                 </div>
-                            @endforeach
+                            @empty
+                                <p class="font-normal text-16px text-white/70 text-center py-4">لا توجد تعليقات متاحة</p>
+                            @endforelse
                         </div>
                     </div>
                 </div>
@@ -357,8 +312,8 @@
                         class="border border-[#CFCFCF] rounded-10px bg-transparent px-6 lg:px-10 py-8 lg:py-11 flex flex-col md:flex-row justify-center items-center gap-8 lg:gap-12">
                         <div
                             class="w-[140px] h-[140px] bg-white/10 rounded-10px shrink-0 flex flex-col items-center justify-center border border-white/20">
-                            <span class="font-bold text-48px leading-none mb-1 text-white">4.9</span>
-                            <span class="font-semibold text-10px text-white/60">32 تقييم</span>
+                            <span class="font-bold text-48px leading-none mb-1 text-white">{{ $averageRating > 0 ? number_format($averageRating, 1) : '—' }}</span>
+                            <span class="font-semibold text-10px text-white/60">{{ $totalReviewsCount }} {{ $totalReviewsCount === 1 ? 'تقييم' : 'تقييمات' }}</span>
                         </div>
                         <div class="flex flex-col gap-3.5 w-full max-w-[320px]">
                             @foreach ($ratesDistribution as $stars => $dist)

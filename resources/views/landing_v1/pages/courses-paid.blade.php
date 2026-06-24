@@ -2,59 +2,51 @@
 
 @section('content')
     <main>
-    <section class="pt-8 lg:pt-20 pb-20 my-0 relative overflow-visible">
-    <!-- <div
-        class="pointer-events-none absolute left-1/2 top-[70%] z-0 size-[297px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#FFF1D5] blur-glow-circle"
-        aria-hidden="true">
-    </div> -->
-
-    <div class="container relative z-10">
-        <h2 class="font-bold text-38px text-primary mb-4 text-center">الدورات المعتمدة والبرامج المدفوعة</h2>
-        <p class="font-normal text-base text-primary/70 text-center max-w-4xl mx-auto">
-        برامج تدريبية احترافية ومعتمدة في مختلف المجالات
-        </p>
-    </div>
-</section>
-
-<div class="container mb-8">
-    <nav class="tabs bg-base-200 rounded-btn w-fit space-x-1 overflow-x-auto p-1 rtl:space-x-reverse" aria-label="Tabs" role="tablist" aria-orientation="horizontal" >
-        <button type="button" class="btn btn-text active-tab:bg-primary active-tab:text-white hover:text-primary active hover:bg-transparent" id="tabs-segment-item-1" data-tab="#tabs-segment-1" aria-controls="tabs-segment-1" role="tab" aria-selected="true" >
-            الكل
-        </button>
-        <button type="button" class="btn btn-text active-tab:bg-primary active-tab:text-white hover:text-primary hover:bg-transparent" id="tabs-segment-item-2" data-tab="#tabs-segment-2" aria-controls="tabs-segment-2" role="tab" aria-selected="false" >
-            الإدارة
-        </button>
-        <button type="button" class="btn btn-text active-tab:bg-primary active-tab:text-white hover:text-primary hover:bg-transparent" id="tabs-segment-item-3" data-tab="#tabs-segment-3" aria-controls="tabs-segment-3" role="tab" aria-selected="false" >
-            التسويق
-        </button>
-      </nav>
-      
-        {{-- <div class="mt-3 ">
-            <div id="tabs-segment-1" role="tabpanel" aria-labelledby="tabs-segment-item-1">
-            <p class="text-base-content/80">
-                Welcome to the <span class="text-base-content font-semibold">Home tab!</span> Explore the latest updates and news here.
-            </p>
+        <section class="pt-8 lg:pt-20 pb-8 lg:pb-12 my-0 relative overflow-visible">
+            <div class="container relative z-10">
+                <h2 class="font-bold text-38px text-primary mb-4 text-center">الدورات المعتمدة والبرامج المدفوعة</h2>
+                <p class="font-normal text-base text-primary/70 text-center max-w-4xl mx-auto">
+                    برامج تدريبية احترافية ومعتمدة في مختلف المجالات
+                </p>
             </div>
-            <div id="tabs-segment-2" class="hidden" role="tabpanel" aria-labelledby="tabs-segment-item-2">
-            <p class="text-base-content/80">
-                This is your <span class="text-base-content font-semibold">Profile</span> tab, where you can update your personal information and manage your account details.
-            </p>
-            </div>
-            <div id="tabs-segment-3" class="hidden" role="tabpanel" aria-labelledby="tabs-segment-item-3">
-            <p class="text-base-content/80">
-                <span class="text-base-content font-semibold">Messages:</span> View your recent messages, chat with friends, and manage your conversations.
-            </p>
-            </div>
-        </div> --}}
-</div>
+        </section>
 
+        @if ($categories->isNotEmpty())
+            <div class="container mb-8 lg:mb-12">
+                <div class="flex justify-center">
+                    <nav class="paid-courses-filter flex max-w-full flex-wrap justify-center gap-2 overflow-x-auto px-1 pb-1 lg:gap-3"
+                        aria-label="تصفية الدورات حسب التصنيف" role="tablist">
+                        <button type="button" role="tab"
+                            aria-selected="{{ empty($activeCategory) ? 'true' : 'false' }}"
+                            data-category-id=""
+                            class="paid-courses-filter__pill paid-courses-category-btn {{ empty($activeCategory) ? 'is-active' : '' }}">
+                            الكل
+                        </button>
+                        @foreach ($categories as $category)
+                            <button type="button" role="tab"
+                                aria-selected="{{ (string) $activeCategory === (string) $category->id ? 'true' : 'false' }}"
+                                data-category-id="{{ $category->id }}"
+                                class="paid-courses-filter__pill paid-courses-category-btn {{ (string) $activeCategory === (string) $category->id ? 'is-active' : '' }}">
+                                {{ $category->title }}
+                            </button>
+                        @endforeach
+                    </nav>
+                </div>
+            </div>
+        @endif
 
-        <section class="mb-8 lg:mb-14 mt-0">
-            <div class="container">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 xl:gap-8">
-                    @for ($i = 0; $i < 12; $i++)
-                        <x-landing_v1::course-card />
-                    @endfor
+        <section class="mb-8 lg:mb-14 mt-0" id="courses-paid-results">
+            <div class="container relative min-h-[200px]">
+                <div id="courses-paid-loader"
+                    class="absolute inset-0 z-10 flex items-center justify-center bg-white/70 opacity-0 pointer-events-none transition-opacity duration-150">
+                    <span class="loading loading-spinner text-primary size-10"></span>
+                </div>
+
+                <div id="courses-paid-container">
+                    @include('landing_v1.pages.courses_paid_list', [
+                        'courses' => $courses,
+                        'activeCategory' => $activeCategory,
+                    ])
                 </div>
             </div>
         </section>
@@ -62,3 +54,82 @@
         <x-landing_v1::prefooter-cta />
     </main>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const loader = document.getElementById('courses-paid-loader');
+    const container = document.getElementById('courses-paid-container');
+    const filterBtns = document.querySelectorAll('.paid-courses-category-btn');
+    const baseUrl = @json(route('landing.v1.courses-paid'));
+
+    if (!loader || !container || !filterBtns.length) {
+        return;
+    }
+
+    let activeCategoryId = @json($activeCategory ?? '');
+    let fetchController = null;
+
+    filterBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const categoryId = this.getAttribute('data-category-id') || '';
+
+            if (categoryId === activeCategoryId) {
+                return;
+            }
+
+            activeCategoryId = categoryId;
+
+            filterBtns.forEach(function (b) {
+                const isActive = (b.getAttribute('data-category-id') || '') === categoryId;
+                b.classList.toggle('is-active', isActive);
+                b.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+
+            fetchCourses(categoryId);
+        });
+    });
+
+    function fetchCourses(categoryId) {
+        if (fetchController) {
+            fetchController.abort();
+        }
+        fetchController = new AbortController();
+
+        loader.classList.remove('opacity-0', 'pointer-events-none');
+
+        const params = new URLSearchParams();
+        if (categoryId) {
+            params.set('category_id', categoryId);
+        }
+
+        const url = params.toString() ? baseUrl + '?' + params.toString() : baseUrl;
+
+        fetch(url, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            signal: fetchController.signal,
+        })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error('Network error');
+                }
+                return response.json();
+            })
+            .then(function (data) {
+                container.innerHTML = data.html;
+                const newUrl = params.toString() ? baseUrl + '?' + params.toString() : baseUrl;
+                history.replaceState(null, '', newUrl);
+            })
+            .catch(function (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('Error fetching courses:', err);
+                }
+            })
+            .finally(function () {
+                loader.classList.add('opacity-0', 'pointer-events-none');
+                fetchController = null;
+            });
+    }
+});
+</script>
+@endpush

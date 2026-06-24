@@ -76,11 +76,11 @@
                     <div class=" flex flex-col gap-2">
                         <a href="{{ route('landing.v1.index') }}"
                             class="link link-hover font-normal text-19px text-white">الرئيسية</a>
-                        <a href="{{ route('landing.v1.about') }}"
+                        <a href="{{ route('landing.v1.workshops') }}"
                             class="link link-hover font-normal text-19px text-white">الدورات المجانية</a>
-                        <a href="{{ route('landing.v1.courses') }}"
+                        <a href="{{ route('landing.v1.courses-paid') }}"
                             class="link link-hover font-normal text-19px text-white">الدورات المعتمدة</a>
-                        <a href="{{ route('landing.v1.instructors') }}"
+                        <a href="{{ route('landing.v1.workshops') }}"
                             class="link link-hover font-normal text-19px text-white">الخطة التدريبية</a>
 
 
@@ -90,13 +90,20 @@
             <nav class="">
                 <h6 class="footer-title font-semibold text-24px text-white mb-4">تصنيف الدورات</h6>
                 <div class=" flex flex-col gap-2">
-                    <a href="#" class="link link-hover font-normal text-19px text-white">الأدارة </a>
-                    <a href="#" class="link link-hover font-normal text-19px text-white">التسويق</a>
-                    <a href="#" class="link link-hover font-normal text-19px text-white">التقنية وتحليل البيانات</a>
-                    <a href="#" class="link link-hover font-normal text-19px text-white">الجودة</a>
-                    <a href="#" class="link link-hover font-normal text-19px text-white">السلامة</a>
-                    <a href="#" class="link link-hover font-normal text-19px text-white">المهارات الشخصية</a>
-
+                    @php
+                        $footerCategories = $footerCategories ?? \App\Models\Category::whereNull('parent_id')
+                            ->where('enable', true)
+                            ->orderBy('order')
+                            ->limit(6)
+                            ->get();
+                    @endphp
+                    @forelse ($footerCategories as $category)
+                        <a href="{{ route('landing.v1.courses-paid', ['category_id' => $category->id]) }}"
+                            class="link link-hover font-normal text-19px text-white">{{ $category->title }}</a>
+                    @empty
+                        <a href="{{ route('landing.v1.courses-paid') }}"
+                            class="link link-hover font-normal text-19px text-white">الدورات المعتمدة</a>
+                    @endforelse
                 </div>
 
             </nav>

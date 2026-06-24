@@ -1,7 +1,7 @@
 @extends('landing_v1.layouts.app')
 
 @section('content')
-<main class="min-h-screen bg-gray-50 pt-32 pb-20">
+<main class="min-h-screen bg-gray-50 pt-32 pb-20" id="cart-page" data-cart-page>
     <div class="container max-w-6xl mx-auto px-4">
 
         {{-- Page Header --}}
@@ -29,7 +29,7 @@
                         $itemPrice = 0;
                         $itemOriginalPrice = 0;
                         $itemHasDiscount = false;
-                        $cartItemId = $cart->id;
+                        $cartItemId = $cart->getId();
 
                         if (!empty($cart->webinar_id) && !empty($cart->webinar)) {
                             $item = $cart->webinar;
@@ -86,7 +86,7 @@
                             <button type="button"
                                 class="cart-remove-btn flex items-center gap-1.5 text-12px font-medium text-red-400 hover:text-red-600 transition-colors"
                                 data-cart-remove="{{ $cartItemId }}"
-                                onclick="handleCartPageRemove({{ $cartItemId }}, this)">
+                                aria-label="حذف من السلة">
                                 <span class="icon-[tabler--trash] size-4"></span>
                                 حذف
                             </button>
@@ -203,37 +203,6 @@
 
 @push('scripts')
 <script>
-/**
- * Handle removing a cart item from the cart page.
- * After a successful delete the page reloads so the summary
- * (subtotal, discount, tax, total) and the navbar badge are
- * all recalculated fresh from the server — same behaviour as
- * the original design_1 theme.
- */
-async function handleCartPageRemove(cartItemId, btn) {
-    if (!btn) return;
-    btn.disabled = true;
-    btn.innerHTML = '<span class="icon-[tabler--loader-2] size-4 animate-spin inline-block"></span>';
-
-    try {
-        const response = await fetch(`/cart/${cartItemId}/delete`, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        });
-        const data = await response.json();
-
-        if (data.code === 200) {
-            // Reload the page — server recalculates everything correctly
-            window.location.reload();
-        } else {
-            btn.disabled = false;
-            btn.innerHTML = '<span class="icon-[tabler--trash] size-4"></span> حذف';
-        }
-    } catch (_) {
-        btn.disabled = false;
-        btn.innerHTML = '<span class="icon-[tabler--trash] size-4"></span> حذف';
-    }
-}
-
 /**
  * Apply coupon code
  */

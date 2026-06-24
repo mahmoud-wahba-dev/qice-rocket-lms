@@ -280,7 +280,8 @@ Route::group(['namespace' => 'Web', 'middleware' => ['check_mobile_app', 'impers
     Route::group(['prefix' => 'blog'], function () {
         Route::get('/', 'BlogController@index');
         Route::get('/categories/{category}', 'BlogController@index');
-        Route::get('/{slug}', 'BlogController@show');
+        // Detail page served by landing_v1 at /blog/{slug} (LandingV1Controller)
+        // Route::get('/{slug}', 'BlogController@show');
         Route::get('/{slug}/share-modal', 'BlogController@getShareModal');
     });
 
@@ -462,8 +463,9 @@ Route::group(['namespace' => 'Web', 'middleware' => ['check_mobile_app', 'impers
     Route::get('/course-details-free',     [LandingV1Controller::class, 'courseDetailsFree'])->name('landing.v1.course-details-free');
     Route::get('/course-details-paid',     [LandingV1Controller::class, 'courseDetailsPaid'])->name('landing.v1.course-details-paid');
     Route::get('/blogs',     [LandingV1Controller::class, 'blogs'])->name('landing.v1.blogs');
-    Route::get('/blog-details',     [LandingV1Controller::class, 'blogDetails'])->name('landing.v1.blog-details');
+    Route::get('/blog/{slug}',     [LandingV1Controller::class, 'blogDetails'])->name('landing.v1.blog-details');
     Route::get('/instructors', [LandingV1Controller::class, 'instructors'])->name('landing.v1.instructors');
+    Route::get('/instructor/{username}', [LandingV1Controller::class, 'instructorDetails'])->name('landing.v1.instructor-details');
     Route::get('/cart',        [LandingV1Controller::class, 'cart'])->name('landing.v1.cart');
     Route::match(['get', 'post'], '/checkout', [LandingV1Controller::class, 'checkout'])->name('landing.v1.checkout');
     Route::get('/webinar/{slug}', [LandingV1Controller::class, 'courseDetails'])->name('landing.v1.course-details');

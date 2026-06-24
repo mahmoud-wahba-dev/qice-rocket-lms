@@ -1,3 +1,16 @@
+@props([
+    'title' => '',
+    'summary' => '',
+    'categoryTitle' => '',
+    'slug' => null,
+    'buttonText' => 'تفاصيل الورشة',
+    'buttonUrl' => null,
+])
+
+@php($landingImg = asset('assets/landing_v1/img'))
+@php($detailUrl = $buttonUrl ?? (!empty($slug) ? route('landing.v1.course-details', $slug) : route('landing.v1.workshops')))
+@php($isSectionLink = str_starts_with($detailUrl, '#'))
+
 <div class="relative bg-white border border-card-border py-8 px-6 rounded-10px h-full">
     <div class="absolute top-8 left-4 bg-[#E8F5E9] w-20 h-6 rounded-18px center font-medium text-12px text-primary">
         مجاني
@@ -18,14 +31,16 @@
                 stroke="#0F4C45" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
     </div>
-    <h6 class="font-semibold text-19px text-primary mb-3">مقدمة في مفاهيم العمل السعودي</h6>
-    <p class="font-normal text-15px text-7a mb-2">
-        اكتب هنا وصف الكورس اكتب هنا وصف الكورس اكتب هنا وصف الكورس اكتب هنا وصف الكورس اكتب هنا
+    <h6 class="font-semibold text-19px text-primary mb-3 line-clamp-2">{{ $title }}</h6>
+    <p class="font-normal text-15px text-7a mb-2 line-clamp-3">
+        {{ Str::limit(strip_tags(html_entity_decode($summary)), 120) }}
     </p>
-    <p class="font-normal text-15px text-primary mb-6">التطوير المهني</p>
+    @if (!empty($categoryTitle))
+        <p class="font-normal text-15px text-primary mb-6">{{ $categoryTitle }}</p>
+    @endif
     <div>
-        <a class="btn btn-outline btn-primary whitespace-nowrap h-12 btn-block font-medium text-16px" href="#">
-            تفاصيل الورشة
+        <a class="btn btn-outline btn-primary whitespace-nowrap h-12 btn-block font-medium text-16px {{ $isSectionLink ? 'js-scroll-to-course-section' : '' }}" href="{{ $detailUrl }}">
+            {{ $buttonText }}
         </a>
     </div>
 </div>

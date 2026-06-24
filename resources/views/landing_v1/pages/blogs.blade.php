@@ -7,10 +7,21 @@
         <section class="mb-8 lg:mb-14 mt-0">
             <div class="container">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 xl:gap-8">
-                    @for ($i = 0; $i < 12; $i++)
-                        <x-landing_v1::blog-card />
-                    @endfor
+                    @forelse ($posts as $post)
+                        <x-landing_v1::blog-card
+                            :title="$post->title"
+                            :image="$post->image ?? asset('assets/landing_v1/img/home/news1.webp')"
+                            :slug="$post->slug"
+                        />
+                    @empty
+                        <p class="col-span-full text-center font-medium text-primary/70 py-12">لا توجد مقالات متاحة حالياً.</p>
+                    @endforelse
                 </div>
+                @if ($posts->hasPages())
+                    <div class="mt-10 flex justify-center">
+                        {{ $posts->links() }}
+                    </div>
+                @endif
             </div>
         </section>
 

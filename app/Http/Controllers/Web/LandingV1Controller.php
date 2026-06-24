@@ -14,20 +14,152 @@ use App\Models\Cart;
 use App\Models\Discount;
 use App\Models\Order;
 use App\Models\OfflineBank;
+use App\Models\Blog;
 use App\Models\PaymentChannel;
 use Illuminate\Http\Request;
 
 class LandingV1Controller extends Controller
 {
-    public function index()
+    private function webinarTeacherEagerLoad(): array
     {
-        $trainers = User::query()
+        return [
+            'teacher:id,full_name,avatar,avatar_settings',
+        ];
+    }
+
+    /**
+     * Category title lives in category_translations — load manually to avoid
+     * invalid `select id, title from categories` eager-load constraints.
+     */
+    private function getFreeWorkshops(?int $limit = null)
+    {
+        $query = Webinar::where('status', Webinar::$active)
+            ->where('private', false)
+            ->where(function ($query) {
+                $query->whereNull('price')->orWhere('price', 0);
+            })
+            ->with($this->webinarTeacherEagerLoad())
+            ->orderByDesc('created_at');
+
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+
+        $workshops = $query->get();
+
+        $this->attachCategoryTranslations($workshops);
+
+        return $workshops;
+    }
+
+    private function getPaidCourses(?int $limit = null)
+    {
+        $query = Webinar::where('status', Webinar::$active)
+            ->where('private', false)
+            ->where('price', '>', 0)
+            ->with($this->webinarTeacherEagerLoad())
+            ->orderByDesc('created_at');
+
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+
+        $courses = $query->get();
+
+        $this->attachCategoryTranslations($courses);
+
+        return $courses;
+    }
+
+    private function getLatestBlogPosts(?int $limit = 4)
+    {
+        return Blog::where('status', 'publish')
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    private function attachInstructorStats(User $instructor): void
+    {
+        $instructor->courses_count = Webinar::where('status', Webinar::$active)
+            ->where('private', false)
+            ->where(function ($query) use ($instructor) {
+                $query->where('creator_id', $instructor->id)
+                    ->orWhere('teacher_id', $instructor->id);
+            })
+            ->count();
+
+        $instructor->students_count = Sale::where('seller_id', $instructor->id)
+            ->whereNotNull('webinar_id')
+            ->where('type', 'webinar')
+            ->whereNull('refund_at')
+            ->count();
+
+        $instructor->rating = $this->getInstructorRating($instructor);
+    }
+
+    private function getInstructorRating(User $user)
+    {
+        $rates = $user->rates(true);
+
+        if (is_array($rates)) {
+            return $rates['rate'] ?? 0;
+        }
+
+        return $rates ?: 0;
+    }
+
+    private function attachCategoryTranslations($webinars): void
+    {
+        if ($webinars instanceof Webinar) {
+            $webinars = collect([$webinars]);
+        }
+
+        $collection = $webinars instanceof \Illuminate\Pagination\AbstractPaginator
+            ? $webinars->getCollection()
+            : collect($webinars);
+
+        if ($collection->isEmpty()) {
+            return;
+        }
+
+        $categoryIds = $collection->pluck('category_id')->filter()->unique()->values();
+
+        if ($categoryIds->isEmpty()) {
+            return;
+        }
+
+        $categories = Category::query()
+            ->whereIn('id', $categoryIds)
+            ->with('translations')
+            ->get()
+            ->keyBy('id');
+
+        foreach ($collection as $webinar) {
+            if (!empty($webinar->category_id) && isset($categories[$webinar->category_id])) {
+                $webinar->setRelation('category', $categories[$webinar->category_id]);
+            }
+        }
+    }
+
+    private function getActiveInstructors(?int $limit = null)
+    {
+        $query = User::query()
             ->select('id', 'full_name', 'username', 'avatar', 'avatar_settings', 'bio', 'headline', 'about')
             ->where('role_name', Role::$teacher)
             ->where('status', 'active')
-            ->orderByDesc('id')
-            ->limit(5)
-            ->get();
+            ->orderByDesc('id');
+
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+
+        return $query->get();
+    }
+
+    public function index()
+    {
+        $trainers = $this->getActiveInstructors(12);
 
         $courses = Webinar::where('status', 'active')
             ->where('private', false)
@@ -41,6 +173,9 @@ class LandingV1Controller extends Controller
             'trainers' => $trainers,
             'instructors' => $trainers,
             'courses' => $courses,
+            'freeWorkshops' => $this->getFreeWorkshops(12),
+            'paidCourses' => $this->getPaidCourses(12),
+            'latestPosts' => $this->getLatestBlogPosts(4),
         ];
 
         return view('landing_v1.pages.home', $data);
@@ -55,42 +190,154 @@ class LandingV1Controller extends Controller
 
     public function workshops()
     {
+        $workshops = $this->getFreeWorkshops();
+
         return view('landing_v1.pages.workshops', [
             'pageTitle' => 'ورش ومحاضرات مجانية',
+            'workshops' => $workshops,
         ]);
     }
+
     public function blogs()
     {
+        $posts = Blog::where('status', 'publish')
+            ->with(['category', 'author:id,full_name,avatar,avatar_settings'])
+            ->orderByDesc('created_at')
+            ->paginate(12);
+
         return view('landing_v1.pages.blogs', [
             'pageTitle' => 'اخر الاخبار لدينا',
+            'posts' => $posts,
         ]);
     }
-    public function blogDetails()
+
+    public function blogDetails($slug)
     {
+        $post = Blog::where('slug', $slug)
+            ->where('status', 'publish')
+            ->with([
+                'category',
+                'author' => function ($query) {
+                    $query->select('id', 'username', 'full_name', 'role_id', 'avatar', 'role_name', 'bio', 'about');
+                },
+            ])
+            ->first();
+
+        if (empty($post)) {
+            abort(404);
+        }
+
+        $post->update(['visit_count' => ($post->visit_count ?? 0) + 1]);
+
+        $recentPosts = Blog::where('status', 'publish')
+            ->where('id', '!=', $post->id)
+            ->orderByDesc('created_at')
+            ->limit(4)
+            ->get();
+
         return view('landing_v1.pages.blog-details', [
-            'pageTitle' => 'اخر الاخبار لدينا',
+            'pageTitle' => $post->title,
+            'post' => $post,
+            'recentPosts' => $recentPosts,
         ]);
     }
 
     public function courseDetailsFree()
     {
-        return view('landing_v1.pages.course-details-free', [
-            'pageTitle' => 'الدورة التدريبية المجانية',
-        ]);
+        $course = Webinar::where('status', 'active')
+            ->where('private', false)
+            ->where(function ($query) {
+                $query->whereNull('price')->orWhere('price', 0);
+            })
+            ->orderBy('id')
+            ->first();
+
+        if (empty($course)) {
+            abort(404);
+        }
+
+        return redirect()->route('landing.v1.course-details', $course->slug);
     }
 
     public function courseDetailsPaid()
     {
-        return view('landing_v1.pages.course-details-paid', [
-            'pageTitle' => 'إتقان إدارة المشاريع (PMP)',
+        $course = Webinar::where('status', 'active')
+            ->where('private', false)
+            ->where('price', '>', 0)
+            ->orderBy('id')
+            ->first();
+
+        if (empty($course)) {
+            abort(404);
+        }
+
+        return redirect()->route('landing.v1.course-details', $course->slug);
+    }
+
+    public function coursesPaid(Request $request)
+    {
+        $categories = $this->getPaidCourseFilterCategories();
+
+        $query = $this->paidCoursesBaseQuery()
+            ->with($this->webinarTeacherEagerLoad());
+
+        $activeCategory = $request->input('category_id');
+
+        if ($request->filled('category_id')) {
+            $categoryId = (int) $request->input('category_id');
+
+            if ($categories->contains('id', $categoryId)) {
+                $subCategoryIds = Category::where('parent_id', $categoryId)->pluck('id')->toArray();
+                $query->whereIn('category_id', array_merge([$categoryId], $subCategoryIds));
+            } else {
+                $activeCategory = null;
+            }
+        }
+
+        $courses = $query->orderByDesc('sales_count_number')->get();
+
+        $this->attachCategoryTranslations($courses);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('landing_v1.pages.courses_paid_list', [
+                    'courses' => $courses,
+                    'activeCategory' => $activeCategory,
+                ])->render(),
+                'count' => $courses->count(),
+            ]);
+        }
+
+        return view('landing_v1.pages.courses-paid', [
+            'pageTitle' => 'الدورات المعتمدة والبرامج المدفوعة',
+            'courses' => $courses,
+            'categories' => $categories,
+            'activeCategory' => $activeCategory,
         ]);
     }
 
-    public function coursesPaid()
+    private function paidCoursesBaseQuery()
     {
-        return view('landing_v1.pages.courses-paid', [
-            'pageTitle' => 'الدورات المعتمدة والبرامج المدفوعة',
-        ]);
+        return Webinar::where('status', Webinar::$active)
+            ->where('private', false)
+            ->where('price', '>', 0);
+    }
+
+    private function getPaidCourseFilterCategories()
+    {
+        $categories = Category::whereNull('parent_id')
+            ->where('enable', true)
+            ->with('translations')
+            ->orderBy('order', 'asc')
+            ->get();
+
+        return $categories->filter(function ($category) {
+            $subCategoryIds = Category::where('parent_id', $category->id)->pluck('id')->toArray();
+
+            return $this->paidCoursesBaseQuery()
+                ->whereIn('category_id', array_merge([$category->id], $subCategoryIds))
+                ->exists();
+        })->values();
     }
 
     public function contact()
@@ -102,26 +349,10 @@ class LandingV1Controller extends Controller
 
     public function instructors()
     {
-        $instructors = User::query()
-            ->select('id', 'full_name', 'username', 'avatar', 'avatar_settings', 'bio', 'headline', 'about', 'created_at')
-            ->where('role_name', Role::$teacher)
-            ->where('status', 'active')
-            ->orderByDesc('id')
-            ->get();
+        $instructors = $this->getActiveInstructors();
 
         foreach ($instructors as $instructor) {
-            $instructor->courses_count = Webinar::where('status', 'active')
-                ->where(function ($query) use ($instructor) {
-                    $query->where('creator_id', $instructor->id)
-                        ->orWhere('teacher_id', $instructor->id);
-                })
-                ->count();
-            
-            $instructor->students_count = Sale::where('seller_id', $instructor->id)
-                ->whereNotNull('webinar_id')
-                ->where('type', 'webinar')
-                ->whereNull('refund_at')
-                ->count();
+            $this->attachInstructorStats($instructor);
         }
 
         $data = [
@@ -130,6 +361,36 @@ class LandingV1Controller extends Controller
         ];
 
         return view('landing_v1.pages.instructors', $data);
+    }
+
+    public function instructorDetails($username)
+    {
+        $instructor = User::query()
+            ->select('id', 'full_name', 'username', 'avatar', 'avatar_settings', 'bio', 'headline', 'about', 'created_at')
+            ->where('username', $username)
+            ->where('role_name', Role::$teacher)
+            ->where('status', 'active')
+            ->firstOrFail();
+
+        $this->attachInstructorStats($instructor);
+
+        $courses = Webinar::where('status', Webinar::$active)
+            ->where('private', false)
+            ->where(function ($query) use ($instructor) {
+                $query->where('teacher_id', $instructor->id)
+                    ->orWhere('creator_id', $instructor->id);
+            })
+            ->with($this->webinarTeacherEagerLoad())
+            ->orderByDesc('created_at')
+            ->get();
+
+        $this->attachCategoryTranslations($courses);
+
+        return view('landing_v1.pages.instructor-details', [
+            'pageTitle' => $instructor->full_name,
+            'instructor' => $instructor,
+            'courses' => $courses,
+        ]);
     }
 
     public function courses(Request $request)
@@ -143,7 +404,7 @@ class LandingV1Controller extends Controller
         // Query webinars
         $query = Webinar::where('status', 'active')
             ->where('private', false)
-            ->with('teacher:id,full_name,avatar,avatar_settings');
+            ->with($this->webinarTeacherEagerLoad());
 
         // Filter by Category
         if ($request->filled('category_id')) {
@@ -190,6 +451,8 @@ class LandingV1Controller extends Controller
 
         $courses = $query->get();
 
+        $this->attachCategoryTranslations($courses);
+
         if ($request->ajax()) {
             return response()->json([
                 'html' => view('landing_v1.pages.courses_list', ['courses' => $courses])->render(),
@@ -216,7 +479,7 @@ class LandingV1Controller extends Controller
                 ->where('status', 'active')
                 ->where('private', false)
                 ->with([
-                    'teacher:id,full_name,avatar,avatar_settings,created_at,bio,headline',
+                    'teacher:id,full_name,avatar,avatar_settings,created_at,bio,headline,about,username',
                     'chapters' => function ($query) {
                         $query->where('status', 'active')
                             ->orderBy('order', 'asc');
@@ -244,7 +507,7 @@ class LandingV1Controller extends Controller
             $course = Webinar::where('status', 'active')
                 ->where('private', false)
                 ->with([
-                    'teacher:id,full_name,avatar,avatar_settings,created_at,bio,headline',
+                    'teacher:id,full_name,avatar,avatar_settings,created_at,bio,headline,about,username',
                     'chapters' => function ($query) {
                         $query->where('status', 'active')
                             ->orderBy('order', 'asc');
@@ -273,6 +536,8 @@ class LandingV1Controller extends Controller
             abort(404);
         }
 
+        $this->attachCategoryTranslations($course);
+
         // Calculate dynamic instructor stats
         $teacher = $course->teacher;
         $teacher_courses_count = 0;
@@ -292,13 +557,19 @@ class LandingV1Controller extends Controller
                 ->count();
         }
 
+        $teacher_rating = !empty($teacher) ? $this->getInstructorRating($teacher) : 0;
+
         // Query target outcomes ("What you will learn")
         $learningMaterials = $course->webinarExtraDescription()
             ->where('type', \App\Models\WebinarExtraDescription::$LEARNING_MATERIALS)
             ->get();
 
         // Calculate dynamic reviews distribution
-        $activeReviews = $course->reviews()->where('status', 'active')->get();
+        $activeReviews = $course->reviews()
+            ->where('status', 'active')
+            ->with('creator:id,full_name,avatar,avatar_settings')
+            ->orderByDesc('created_at')
+            ->get();
         $totalReviewsCount = $activeReviews->count();
         $ratesDistribution = [];
         for ($i = 5; $i >= 1; $i--) {
@@ -310,16 +581,67 @@ class LandingV1Controller extends Controller
             ];
         }
 
-        $data = [
+        $detailExtras = $this->buildCourseDetailExtras($course, $learningMaterials, $activeReviews);
+
+        $data = array_merge([
             'pageTitle' => $course->title,
             'course' => $course,
             'teacher_courses_count' => $teacher_courses_count,
             'teacher_students_count' => $teacher_students_count,
+            'teacher_rating' => $teacher_rating,
             'learningMaterials' => $learningMaterials,
             'ratesDistribution' => $ratesDistribution,
-        ];
+            'activeReviews' => $activeReviews,
+            'totalReviewsCount' => $totalReviewsCount,
+            'averageRating' => $totalReviewsCount > 0 ? round($activeReviews->avg('rates'), 1) : 0,
+            'isInCart' => $this->isWebinarInCart($course),
+        ], $detailExtras);
 
-        return view('landing_v1.pages.course-details', $data);
+        $view = ($course->price > 0)
+            ? 'landing_v1.pages.course-details-paid'
+            : 'landing_v1.pages.course-details-free';
+
+        return view($view, $data);
+    }
+
+    private function buildCourseDetailExtras(Webinar $course, $learningMaterials, $activeReviews): array
+    {
+        $learningOutcomes = $learningMaterials->isNotEmpty()
+            ? $learningMaterials->pluck('value')->filter()->values()->all()
+            : [];
+
+        $curriculumModules = $course->chapters->pluck('title')->filter()->values()->all();
+
+        $comments = $activeReviews->map(function ($review) {
+            return [
+                'name' => $review->creator->full_name ?? trans('public.user'),
+                'date' => !empty($review->created_at) ? dateTimeFormat($review->created_at, 'j M Y') : '',
+                'body' => $review->description,
+            ];
+        })->values()->all();
+
+        $heroYoutubeId = 'JXEXdbS5tsI';
+        if ($course->video_demo_source === 'youtube' && !empty($course->video_demo)) {
+            if (preg_match('/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/', $course->video_demo, $matches)) {
+                $heroYoutubeId = $matches[1];
+            }
+        }
+
+        return [
+            'learningOutcomes' => $learningOutcomes,
+            'curriculumModules' => $curriculumModules,
+            'comments' => $comments,
+            'heroYoutubeId' => $heroYoutubeId,
+        ];
+    }
+
+    private function isWebinarInCart(Webinar $course): bool
+    {
+        $cartManager = new CartManagerController();
+
+        return $cartManager->getCarts()->contains(function ($cart) use ($course) {
+            return !empty($cart->webinar_id) && (int) $cart->webinar_id === (int) $course->id;
+        });
     }
 
     public function checkout(\Illuminate\Http\Request $request)

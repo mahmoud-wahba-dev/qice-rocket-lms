@@ -10,9 +10,16 @@
         <section class="pb-8 lg:pb-32 my-0">
             <div class="container">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 xl:gap-8">
-                    @for ($i = 0; $i < 12; $i++)
-                        <x-landing_v1::instructor-card />
-                    @endfor
+                    @forelse ($instructors as $instructor)
+                        <x-landing_v1::instructor-card
+                            :name="$instructor->full_name"
+                            :avatar="$instructor->getAvatar()"
+                            :bio="$instructor->about ?? $instructor->bio ?? $instructor->headline ?? ''"
+                            :username="$instructor->username"
+                        />
+                    @empty
+                        <p class="col-span-full text-center font-medium text-primary/70 py-12">لا يوجد مدربون متاحون حالياً.</p>
+                    @endforelse
                 </div>
             </div>
         </section>
