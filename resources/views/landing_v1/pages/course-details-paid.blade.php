@@ -81,15 +81,13 @@
 
         {{-- Hero: full-bleed video (left) + gradient fade into teal + text (right, RTL) --}}
         <header class="relative flex items-center overflow-hidden bg-[#155554] text-white min-h-[520px] lg:min-h-[680px]">
-            <div id="course-hero-video"
-                class="absolute inset-y-0 left-0 z-0 w-full sm:w-[72%] lg:w-[58%] overflow-hidden">
+            <div id="course-hero-video" class="absolute inset-y-0 left-0 z-0 w-full sm:w-[72%] lg:w-[58%] overflow-hidden">
                 <iframe id="course-hero-youtube"
                     class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-h-full min-w-[177.78vh] w-[100vw] h-[56.25vw] border-0 pointer-events-auto"
                     src="https://www.youtube-nocookie.com/embed/{{ $heroYoutubeId }}?enablejsapi=1&autoplay=1&mute=1&loop=1&playlist={{ $heroYoutubeId }}&controls=0&modestbranding=1&rel=0&playsinline=1&origin={{ urlencode(url('/')) }}"
                     title="إدارة المشاريع في 15 دقيقة — معاينة الدورة"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    referrerpolicy="strict-origin-when-cross-origin"
-                    loading="lazy"></iframe>
+                    referrerpolicy="strict-origin-when-cross-origin" loading="lazy"></iframe>
                 <div class="absolute bottom-6 left-6 z-20 flex items-center gap-2">
                     <button type="button" id="course-hero-video-toggle"
                         class="flex size-12 items-center justify-center rounded-full border border-white/40 bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/55"
@@ -121,52 +119,71 @@
                     </p>
 
                     <div class="flex items-center gap-3 lg:gap-4 flex-wrap xl:flex-nowrap mb-10">
-                        <div class="flex items-center gap-2  px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap">
-                            <img src="http://training.qiec.local/assets/landing_v1/img/course_details/calendar.webp" alt="calendar" class="size-6 shrink-0">
+                        <div
+                            class="flex items-center gap-2  px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap">
+                            <img src="http://training.qiec.local/assets/landing_v1/img/course_details/calendar.webp"
+                                alt="calendar" class="size-6 shrink-0">
                             <span class="font-semibold text-14px text-white whitespace-nowrap">7 أيام تفاعلية</span>
                         </div>
-                        <div class="flex items-center gap-2  px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap">
-                            <img src="http://training.qiec.local/assets/landing_v1/img/course_details/clock.webp" alt="clock" class="size-6 shrink-0">
+                        <div
+                            class="flex items-center gap-2  px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap">
+                            <img src="http://training.qiec.local/assets/landing_v1/img/course_details/clock.webp"
+                                alt="clock" class="size-6 shrink-0">
                             <span class="font-medium text-14px text-white whitespace-nowrap">35 ساعة تدريبية
                                 معتمدة</span>
                         </div>
-                        <div class="flex items-center gap-2  px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap ">
-                            <img src="http://training.qiec.local/assets/landing_v1/img/course_details/waiting-room.webp" alt="waiting-room" class="size-6 shrink-0">
+                        <div
+                            class="flex items-center gap-2  px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap ">
+                            <img src="http://training.qiec.local/assets/landing_v1/img/course_details/waiting-room.webp"
+                                alt="waiting-room" class="size-6 shrink-0">
                             <span class="font-medium text-14px text-white whitespace-nowrap">حضور مَرِن (عن بُعد /
                                 حضوري)</span>
                         </div>
                     </div>
 
                     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+
+                        <div
+                            class="rounded-9px font-black text-13px text-[#155554] px-6 py-3   bg-white text-primary border border-[#00FF88]">
+                            بـــ
+                            <span
+                                class="shadow-[-3.32px_4.42px_19.57px_0px_#FFFFFF] font-bold text-22px text-[#C80A0A] px-1">1,299
+                                ر.س</span>
+                            <span>
+                                بدلا من
+                            </span>
+                            <span
+                                class="font-bold text-base text-[#2F2F2FA8] shadow-[-2.4px_3.21px_14.19px_0px_#FFFFFF] line-through ms-2">
+                                1,700 ر.س</span>
+                        </div>
                         <button type="button"
-                            class="btn h-14 rounded-9px font-bold text-18px px-8 inline-flex items-center gap-3 bg-white text-primary border-0 shadow-[0_0_24px_rgba(255,255,255,0.15)] hover:bg-[#f5f5f5]">
+                            class="btn h-14 rounded-9px font-bold text-18px px-8 inline-flex items-center gap-3 bg-white text-primary border border-[#00FF88] shadow-[0_0_24px_rgba(255,255,255,0.15)] hover:bg-[#f5f5f5]">
                             سجل مقعدك الآن
                             <img src="{{ $courseDetailsImg }}/seat.webp" alt="" class="size-6 shrink-0">
                         </button>
-                        <div
-                            class="rounded-9px px-6 py-3 font-bold text-16px lg:text-18px border border-white/50 bg-white text-primary">
-                            <span class="text-[#E85D5D]">1,299 ر.س</span>
-                            <span class="font-normal text-14px text-primary/60 line-through ms-2">بدلاً من 1,700 ر.س</span>
-                        </div>
+
                     </div>
                 </div>
             </div>
         </header>
 
-        <section class="my-0 course_details_page relative bg-[#0a3a36] text-white">
-            <div class="sticky top-[88px] z-40 border-b border-white/20 bg-[#0c4540]">
+        <section class="my-0 course_details_page relative bg-[#165554] text-white">
+            <div class="sticky top-[88px] z-40 border-b border-white/20 bg-[#0A3333]">
                 <div class="container">
                     <nav data-scrollspy="#course-content-scrollspy" class="course-scrollspy-nav"
                         style="--scrollspy-offset: 168px">
                         <a href="#about-course"
-                            class="course-scrollspy-link !text-white/75 hover:!text-white [&.active]:!text-white [&.active]:!border-white">عن
-                            الدورة</a>
+                            class="flex items-center justify-center py-[1.375rem] lg:py-6 px-2 font-medium text-20px lg:text-24px text-center whitespace-nowrap text-white border-b-[3px] border-b-transparent -mb-px transition-[border-color] duration-200 hover:text-white [&.active]:border-b-white"
+                            aria-current="false">عن الدورة</a>
                         <a href="#course-curriculum"
-                            class="course-scrollspy-link !text-white/75 hover:!text-white [&.active]:!text-white [&.active]:!border-white">المحتوى</a>
+                            class="flex items-center justify-center py-[1.375rem] lg:py-6 px-2 font-medium text-20px lg:text-24px text-center whitespace-nowrap text-white border-b-[3px] border-b-transparent -mb-px transition-[border-color] duration-200 hover:text-white [&.active]:border-b-white"
+                            aria-current="false">المحتوى</a>
                         <a href="#course-comments"
-                            class="course-scrollspy-link !text-white/75 hover:!text-white [&.active]:!text-white [&.active]:!border-white">التعليقات</a>
+                            class="flex items-center justify-center py-[1.375rem] lg:py-6 px-2 font-medium text-20px lg:text-24px text-center whitespace-nowrap text-white border-b-[3px] border-b-transparent -mb-px transition-[border-color] duration-200 hover:text-white [&.active]:border-b-white"
+                            aria-current="false">التعليقات</a>
                         <a href="#course-reviews"
-                            class="course-scrollspy-link !text-white/75 hover:!text-white [&.active]:!text-white [&.active]:!border-white">المراجعات</a>
+                            class="flex items-center justify-center py-[1.375rem] lg:py-6 px-2 font-medium text-20px lg:text-24px text-center whitespace-nowrap text-white border-b-[3px] border-b-transparent -mb-px transition-[border-color] duration-200 hover:text-white [&.active]:border-b-white"
+                            aria-current="false">المراجعات</a>
                     </nav>
                 </div>
             </div>
@@ -208,7 +225,8 @@
                     {{-- Instructor --}}
                     <div id="course-instructor" class="course-scrollspy-section mb-16">
                         <h3 class="font-medium text-32px lg:text-40px text-white mb-8">عن المدرب</h3>
-                        <div class="border border-white/25 rounded-10px bg-transparent flex flex-col md:flex-row items-start gap-10 px-6 lg:px-10 py-8 lg:py-11">
+                        <div
+                            class="border border-white/25 rounded-10px bg-transparent flex flex-col md:flex-row items-start gap-10 px-6 lg:px-10 py-8 lg:py-11">
                             <div class="w-[160px] h-[160px] rounded-8px overflow-hidden shrink-0 border border-white/20">
                                 <img src="{{ $landingImg }}/home/instructor.webp" alt="م. أحمد بن صالح آل سعود"
                                     class="w-full h-full object-cover">
@@ -309,9 +327,11 @@
                                             <div class="flex flex-wrap items-center gap-2 mb-2">
                                                 <span class="font-bold text-16px text-white">{{ $comment['name'] }}</span>
                                                 <span class="text-white/50 text-14px">·</span>
-                                                <span class="font-normal text-14px text-white/50">{{ $comment['date'] }}</span>
+                                                <span
+                                                    class="font-normal text-14px text-white/50">{{ $comment['date'] }}</span>
                                             </div>
-                                            <p class="font-normal text-16px text-white/80 leading-relaxed">{{ $comment['body'] }}</p>
+                                            <p class="font-normal text-16px text-white/80 leading-relaxed">
+                                                {{ $comment['body'] }}</p>
                                         </div>
                                     </div>
                                 @endforeach
@@ -375,7 +395,8 @@
                                         class="icon-[tabler--plus] accordion-item-active:hidden text-white size-5 block shrink-0"></span>
                                     <span
                                         class="icon-[tabler--minus] accordion-item-active:block text-white size-5 hidden shrink-0"></span>
-                                    <span class="font-medium text-20px lg:text-28px text-white flex-grow">{{ $faq['question'] }}</span>
+                                    <span
+                                        class="font-medium text-20px lg:text-28px text-white flex-grow">{{ $faq['question'] }}</span>
                                 </button>
                                 <div id="paid-faq-{{ $index + 1 }}-collapse"
                                     class="accordion-content {{ $index === 0 ? '' : 'hidden' }} w-full overflow-hidden"
@@ -414,69 +435,74 @@
 @endsection
 
 @push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    if (typeof window.initCourseHeroVideo === 'function') {
-        window.initCourseHeroVideo();
-    }
-
-    if (window.__courseScrollspyReady) return;
-    if (typeof window.initCourseScrollspy === 'function') {
-        window.initCourseScrollspy();
-        return;
-    }
-
-    window.__courseScrollspyReady = true;
-    var nav = document.querySelector('.course_details_page [data-scrollspy]');
-    if (!nav) return;
-
-    function getOffset() {
-        var sticky = nav.closest('.sticky') || nav;
-        var custom = getComputedStyle(nav).getPropertyValue('--scrollspy-offset').trim();
-        if (custom) {
-            var parsed = parseInt(custom, 10);
-            if (!isNaN(parsed)) return parsed;
-        }
-        return 88 + sticky.getBoundingClientRect().height + 16;
-    }
-
-    function scrollY() {
-        return window.pageYOffset || document.documentElement.scrollTop || 0;
-    }
-
-    document.addEventListener('click', function (e) {
-        var link = e.target.closest('.course_details_page [data-scrollspy] a[href^="#"]');
-        if (!link) return;
-        var id = (link.getAttribute('href') || '').slice(1);
-        var el = id ? document.getElementById(id) : null;
-        if (!el) return;
-        e.preventDefault();
-        var top = el.getBoundingClientRect().top + scrollY() - getOffset();
-        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
-        nav.querySelectorAll('a[href^="#"]').forEach(function (a) {
-            a.classList.toggle('active', a === link);
-            a.setAttribute('aria-current', a === link ? 'location' : 'false');
-        });
-    });
-
-    window.addEventListener('scroll', function () {
-        if (!nav) return;
-        var marker = scrollY() + getOffset();
-        var links = nav.querySelectorAll('a[href^="#"]');
-        var current = null;
-        links.forEach(function (link) {
-            var id = (link.getAttribute('href') || '').slice(1);
-            var el = id ? document.getElementById(id) : null;
-            if (el && el.getBoundingClientRect().top + scrollY() <= marker + 2) {
-                current = link;
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof window.initCourseHeroVideo === 'function') {
+                window.initCourseHeroVideo();
             }
-        });
-        if (current) {
-            links.forEach(function (a) {
-                a.classList.toggle('active', a === current);
+
+            if (window.__courseScrollspyReady) return;
+            if (typeof window.initCourseScrollspy === 'function') {
+                window.initCourseScrollspy();
+                return;
+            }
+
+            window.__courseScrollspyReady = true;
+            var nav = document.querySelector('.course_details_page [data-scrollspy]');
+            if (!nav) return;
+
+            function getOffset() {
+                var sticky = nav.closest('.sticky') || nav;
+                var custom = getComputedStyle(nav).getPropertyValue('--scrollspy-offset').trim();
+                if (custom) {
+                    var parsed = parseInt(custom, 10);
+                    if (!isNaN(parsed)) return parsed;
+                }
+                return 88 + sticky.getBoundingClientRect().height + 16;
+            }
+
+            function scrollY() {
+                return window.pageYOffset || document.documentElement.scrollTop || 0;
+            }
+
+            document.addEventListener('click', function(e) {
+                var link = e.target.closest('.course_details_page [data-scrollspy] a[href^="#"]');
+                if (!link) return;
+                var id = (link.getAttribute('href') || '').slice(1);
+                var el = id ? document.getElementById(id) : null;
+                if (!el) return;
+                e.preventDefault();
+                var top = el.getBoundingClientRect().top + scrollY() - getOffset();
+                window.scrollTo({
+                    top: Math.max(0, top),
+                    behavior: 'smooth'
+                });
+                nav.querySelectorAll('a[href^="#"]').forEach(function(a) {
+                    a.classList.toggle('active', a === link);
+                    a.setAttribute('aria-current', a === link ? 'location' : 'false');
+                });
             });
-        }
-    }, { passive: true });
-});
-</script>
+
+            window.addEventListener('scroll', function() {
+                if (!nav) return;
+                var marker = scrollY() + getOffset();
+                var links = nav.querySelectorAll('a[href^="#"]');
+                var current = null;
+                links.forEach(function(link) {
+                    var id = (link.getAttribute('href') || '').slice(1);
+                    var el = id ? document.getElementById(id) : null;
+                    if (el && el.getBoundingClientRect().top + scrollY() <= marker + 2) {
+                        current = link;
+                    }
+                });
+                if (current) {
+                    links.forEach(function(a) {
+                        a.classList.toggle('active', a === current);
+                    });
+                }
+            }, {
+                passive: true
+            });
+        });
+    </script>
 @endpush
