@@ -211,7 +211,7 @@
                                 </div>
 
                                 <a href="#"
-                                    class="btn btn-primary h-12 w-[40%] rounded-4px font-medium text-14px px-8 inline-flex items-center gap-2 shadow-sm hover:shadow-md transition-all">
+                                    class="btn btn-primary h-12 lg:w-[40%] rounded-4px font-medium text-14px px-8 inline-flex items-center gap-2 shadow-sm hover:shadow-md transition-all">
                                     <span class="icon-[tabler--user] size-5"></span>
                                     عرض الملف الشخصي
                                 </a>

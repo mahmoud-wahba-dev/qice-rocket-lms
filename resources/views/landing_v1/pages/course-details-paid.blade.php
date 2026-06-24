@@ -193,17 +193,17 @@
 
                     {{-- About --}}
                     <div id="about-course" class="course-scrollspy-section mb-16">
-                        <h3 class="font-medium text-32px lg:text-40px text-white mb-8">عن الدورة</h3>
-                        <div class="border border-white/25 rounded-10px bg-transparent px-6 lg:px-10 py-8 lg:py-11">
-                            <p class="font-normal text-18px lg:text-24px text-white/90 mb-8 leading-relaxed">
+                        <h3 class="font-medium text-36px text-white mb-9">عن الدورة</h3>
+                        <div class="border border-white rounded-10px bg-transparent px-6 lg:px-10 py-8 lg:py-11">
+                            <p class="font-normal text-24px text-white mb-6 leading-relaxed">
                                 برنامج متكامل لإعدادك لشهادة PMP المعتمدة عالمياً، يجمع بين المحتوى النظري العميق
                                 والتطبيق العملي على حالات واقعية في إدارة المشاريع المؤسسية.
                             </p>
-                            <h4 class="font-medium text-22px lg:text-28px text-white mb-4 pt-6 border-t border-white/20">
+                            <h4 class="font-medium text-32px text-white mb-2">
                                 ماذا ستتعلم؟</h4>
-                            <ul class="space-y-3 list-disc list-inside text-white/85">
+                            <ul class="space-y-3 list-disc list-inside text-white">
                                 @foreach ($learningOutcomes as $outcome)
-                                    <li class="font-normal text-18px lg:text-22px leading-relaxed">{{ $outcome }}</li>
+                                    <li class="font-normal text-24px leading-relaxed">{{ $outcome }}</li>
                                 @endforeach
                             </ul>
                         </div>
@@ -211,11 +211,11 @@
 
                     {{-- Curriculum --}}
                     <div id="course-curriculum" class="course-scrollspy-section mb-16">
-                        <h3 class="font-medium text-32px lg:text-40px text-white mb-8">منهج الدورة</h3>
-                        <div class="border border-white/25 rounded-10px bg-transparent px-6 lg:px-10 py-2 lg:py-4">
+                        <h3 class="font-medium  text-36px text-white mb-9">منهج الدورة</h3>
+                        <div class="border border-[#EEEEEE] rounded-10px bg-transparent px-6 lg:px-10 py-2 lg:py-4">
                             @foreach ($curriculumModules as $module)
                                 <div
-                                    class="py-5 border-b border-white/20 last:border-b-0 font-medium text-18px lg:text-24px text-white">
+                                    class="py-5 border-b border-[#EEEEEE] last:border-b-0 font-medium text-24px text-white">
                                     {{ $module }}
                                 </div>
                             @endforeach
@@ -223,51 +223,55 @@
                     </div>
 
                     {{-- Instructor --}}
-                    <div id="course-instructor" class="course-scrollspy-section mb-16">
-                        <h3 class="font-medium text-32px lg:text-40px text-white mb-8">عن المدرب</h3>
+                    <div id="course-instructor" class="course-scrollspy-section mb-16 bg-[#165554] text-white">
+                        <h3 class="font-medium text-32px lg:text-36px text-white mb-6">عن المدرب</h3>
                         <div
-                            class="border border-white/25 rounded-10px bg-transparent flex flex-col md:flex-row items-start gap-10 px-6 lg:px-10 py-8 lg:py-11">
-                            <div class="w-[160px] h-[160px] rounded-8px overflow-hidden shrink-0 border border-white/20">
+                            class="border border-white flex flex-col md:flex-row items-start gap-10 px-6 lg:px-8 py-8 lg:py-11 rounded-8px  shadow-sm">
+                            <div class="w-[160px] h-[160px] rounded-8px overflow-hidden shrink-0 border border-gray-100">
                                 <img src="{{ $landingImg }}/home/instructor.webp" alt="م. أحمد بن صالح آل سعود"
                                     class="w-full h-full object-cover">
                             </div>
                             <div class="flex-grow">
                                 <h6 class="font-semibold text-24px text-white mb-2">م. أحمد بن صالح آل سعود</h6>
-                                <p class="font-normal text-16px lg:text-18px text-white/75 mb-6">
-                                    خبير استراتيجيات التحول الرقمي ومستشار تطوير الأعمال
+                                <p class="font-normal text-18px text-white mb-6">خبير في التطوير المؤسسي والاستشارات
+                                    الإدارية
                                 </p>
-                                <div class="flex flex-wrap items-center gap-6 mb-8 border-t border-b border-white/20 py-4">
-                                    <div class="flex items-center gap-2">
-                                        <span class="icon-[tabler--calendar] size-5 text-white/70"></span>
-                                        <div class="font-medium text-10px text-white/80 flex flex-col">
+
+
+                                <div
+                                    class="flex flex-wrap items-center gap-6 mb-11 border-t border-b border-gray-100 py-4">
+                                    <div class="flex items-center gap-2 text-[#A6AAB5]">
+                                        <span class="icon-[tabler--calendar] size-5 shrink-0 text-white"></span>
+                                        <div class="font-medium text-10px text-white flex flex-col">
                                             <span>عضو منذ</span>
-                                            <span class="text-white">2018</span>
+                                            <span class=" text-white">2018</span>
                                         </div>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="icon-[tabler--video] size-5 text-white/70"></span>
-                                        <div class="font-medium text-10px text-white/80 flex flex-col">
+                                    <div class="flex items-center gap-2 text-[#A6AAB5]">
+                                        <span class="icon-[tabler--video] size-5 shrink-0 text-white"></span>
+                                        <div class="font-medium text-10px text-white flex flex-col">
                                             <span>عدد الدورات</span>
-                                            <span class="text-white">12</span>
+                                            <span class=" text-white">12</span>
                                         </div>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="icon-[tabler--users] size-5 text-white/70"></span>
-                                        <div class="font-medium text-10px text-white/80 flex flex-col">
+                                    <div class="flex items-center gap-2 text-[#A6AAB5]">
+                                        <span class="icon-[tabler--users] size-5 shrink-0 text-white"></span>
+                                        <div class="font-medium text-10px text-white flex flex-col">
                                             <span>عدد الطلاب</span>
-                                            <span class="text-white">1,240</span>
+                                            <span class=" text-white">1,240</span>
                                         </div>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="icon-[tabler--star-filled] size-5 text-[#FFAA00]"></span>
-                                        <div class="font-medium text-10px text-white/80 flex flex-col">
+                                    <div class="flex items-center gap-2 text-[#A6AAB5]">
+                                        <span class="icon-[tabler--star-filled] size-5 shrink-0 text-[#FFAA00]"></span>
+                                        <div class="font-medium text-10px text-white flex flex-col">
                                             <span>التقييم</span>
-                                            <span class="text-white">4.9</span>
+                                            <span class=" text-white">4.8</span>
                                         </div>
                                     </div>
                                 </div>
+
                                 <a href="#"
-                                    class="btn h-12 rounded-4px font-medium text-14px px-8 inline-flex items-center gap-2 bg-white text-primary border-0 hover:bg-[#f0f0f0]">
+                                    class="btn btn-white text-[#165554] h-12 lg:w-[40%] rounded-4px font-medium text-14px px-8 inline-flex items-center gap-2 shadow-sm hover:shadow-md transition-all">
                                     <span class="icon-[tabler--user] size-5"></span>
                                     عرض الملف الشخصي
                                 </a>
@@ -275,134 +279,141 @@
                         </div>
                     </div>
 
-                    {{-- Discovery accordion --}}
-                    <div id="course-discovery"
-                        class="course-scrollspy-section mb-16 bg-[#08322f] -mx-3.5 sm:mx-0 px-3.5 sm:px-0 py-12 lg:py-16 rounded-10px lg:rounded-none">
-                        <div class="text-center mb-10">
-                            <h3 class="font-bold text-28px lg:text-40px text-white mb-3">ماذا سنكتشف معاً؟</h3>
-                            <p class="font-normal text-16px lg:text-18px text-white/70 max-w-2xl mx-auto">
-                                رحلة معرفية شاملة تغطي كافة جوانب الإدارة الاحترافية للمشاريع
-                            </p>
+
+                </div>
+            </div>
+
+            {{-- Discovery accordion --}}
+            <div id="course-discovery"
+                class="course-scrollspy-section mb-16 bg-[#053535] px-3.5 sm:px-0 py-12 lg:py-16 rounded-10px lg:rounded-none">
+                <div class="container">
+                    <div class="text-center mb-10">
+                        <h3 class="font-bold text-32px  text-white mb-3">ماذا سنكتشف معاً؟</h3>
+                        <p class="font-normal text-20px text-white max-w-2xl mx-auto">
+                            رحلة معرفية شاملة تغطي كافة جوانب الإدارة الاحترافية للمشاريع
+                        </p>
+                    </div>
+                    <div class="rounded-10px bg-transparent overflow-hidden">
+                        <div class="accordion accordion-shadow">
+                            @foreach ($discoveryTopics as $index => $topic)
+                                <div class="accordion-item {{ $index === 0 ? 'active' : '' }} bg-transparent"
+                                    id="discovery-{{ $index + 1 }}">
+                                    <button
+                                        class="accordion-toggle shadow-none bg-transparent inline-flex items-center justify-between gap-4 px-6 lg:px-8 font-semibold text-18px lg:text-24px text-[#E2E8F0] py-5 border-b border-white/20 text-start w-full hover:bg-white/5 transition-colors"
+                                        aria-controls="discovery-{{ $index + 1 }}-collapse"
+                                        aria-expanded="{{ $index === 0 ? 'true' : 'false' }}">
+                                        <span>{{ $topic }}</span>
+                                        <span
+                                            class="icon-[tabler--chevron-down] accordion-item-active:rotate-180 size-5 shrink-0 transition-transform"></span>
+                                    </button>
+                                    <div id="discovery-{{ $index + 1 }}-collapse"
+                                        class="accordion-content {{ $index === 0 ? '' : 'hidden' }} w-full overflow-hidden transition-[height] duration-300"
+                                        role="region">
+                                        <div class="px-6 lg:px-8 pb-5 pt-2">
+                                            <p class="text-white/75 font-normal text-16px leading-relaxed pt-3">
+                                                محور تدريبي متخصص يغطي {{ $topic }} ضمن إطار PMP المعتمد
+                                                مع تطبيقات عملية ودراسات حالة من بيئة العمل السعودية.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
-                        <div class="border border-white/25 rounded-10px bg-transparent overflow-hidden">
-                            <div class="accordion accordion-shadow">
-                                @foreach ($discoveryTopics as $index => $topic)
-                                    <div class="accordion-item {{ $index === 0 ? 'active' : '' }} bg-transparent"
-                                        id="discovery-{{ $index + 1 }}">
-                                        <button
-                                            class="accordion-toggle shadow-none bg-transparent inline-flex items-center justify-between gap-4 px-6 lg:px-8 font-medium text-18px lg:text-24px text-white py-5 border-b border-white/20 text-start w-full hover:bg-white/5 transition-colors"
-                                            aria-controls="discovery-{{ $index + 1 }}-collapse"
-                                            aria-expanded="{{ $index === 0 ? 'true' : 'false' }}">
-                                            <span>{{ $topic }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container">
+                {{-- Comments --}}
+                <div id="course-comments" class="course-scrollspy-section mb-16">
+                    <h3 class="font-medium text-32px lg:text-40px text-white mb-8">التعليقات</h3>
+                    <div class="border border-[#CFCFCF] rounded-10px bg-transparent px-6 lg:px-10 py-8 lg:py-11">
+                        <div class="divide-y divide-white/20">
+                            @foreach ($comments as $comment)
+                                <div class="flex gap-4 py-6 first:pt-0 last:pb-0">
+                                    <div class="size-12 rounded-full bg-white/10 center shrink-0">
+                                        <span class="icon-[tabler--user] size-6 text-white/80"></span>
+                                    </div>
+                                    <div class="flex-grow min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2 mb-2">
+                                            <span class="font-bold text-16px text-white">{{ $comment['name'] }}</span>
+                                            <span class="text-white/50 text-14px">·</span>
                                             <span
-                                                class="icon-[tabler--chevron-down] accordion-item-active:rotate-180 size-5 shrink-0 transition-transform"></span>
-                                        </button>
-                                        <div id="discovery-{{ $index + 1 }}-collapse"
-                                            class="accordion-content {{ $index === 0 ? '' : 'hidden' }} w-full overflow-hidden transition-[height] duration-300"
-                                            role="region">
-                                            <div class="px-6 lg:px-8 pb-5 pt-2">
-                                                <p class="text-white/75 font-normal text-16px leading-relaxed">
-                                                    محور تدريبي متخصص يغطي {{ $topic }} ضمن إطار PMP المعتمد
-                                                    مع تطبيقات عملية ودراسات حالة من بيئة العمل السعودية.
-                                                </p>
-                                            </div>
+                                                class="font-normal text-14px text-white/50">{{ $comment['date'] }}</span>
                                         </div>
+                                        <p class="font-normal text-16px text-white/80 leading-relaxed">
+                                            {{ $comment['body'] }}</p>
                                     </div>
-                                @endforeach
-                            </div>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
+                </div>
 
-                    {{-- Comments --}}
-                    <div id="course-comments" class="course-scrollspy-section mb-16">
-                        <h3 class="font-medium text-32px lg:text-40px text-white mb-8">التعليقات</h3>
-                        <div class="border border-white/25 rounded-10px bg-transparent px-6 lg:px-10 py-8 lg:py-11">
-                            <div class="divide-y divide-white/20">
-                                @foreach ($comments as $comment)
-                                    <div class="flex gap-4 py-6 first:pt-0 last:pb-0">
-                                        <div class="size-12 rounded-full bg-white/10 center shrink-0">
-                                            <span class="icon-[tabler--user] size-6 text-white/80"></span>
-                                        </div>
-                                        <div class="flex-grow min-w-0">
-                                            <div class="flex flex-wrap items-center gap-2 mb-2">
-                                                <span class="font-bold text-16px text-white">{{ $comment['name'] }}</span>
-                                                <span class="text-white/50 text-14px">·</span>
-                                                <span
-                                                    class="font-normal text-14px text-white/50">{{ $comment['date'] }}</span>
-                                            </div>
-                                            <p class="font-normal text-16px text-white/80 leading-relaxed">
-                                                {{ $comment['body'] }}</p>
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Reviews --}}
-                    <div id="course-reviews" class="course-scrollspy-section mb-16">
-                        <h3 class="font-medium text-32px lg:text-40px text-white mb-8">التقييم</h3>
+                {{-- Reviews --}}
+                <div id="course-reviews" class="course-scrollspy-section pb-16">
+                    <h3 class="font-medium text-32px lg:text-40px text-white mb-8">التقييم</h3>
+                    <div
+                        class="border border-[#CFCFCF] rounded-10px bg-transparent px-6 lg:px-10 py-8 lg:py-11 flex flex-col md:flex-row justify-center items-center gap-8 lg:gap-12">
                         <div
-                            class="border border-white/25 rounded-10px bg-transparent px-6 lg:px-10 py-8 lg:py-11 flex flex-col md:flex-row justify-center items-center gap-8 lg:gap-12">
-                            <div
-                                class="w-[140px] h-[140px] bg-white/10 rounded-10px shrink-0 flex flex-col items-center justify-center border border-white/20">
-                                <span class="font-bold text-48px leading-none mb-1 text-white">4.9</span>
-                                <span class="font-semibold text-10px text-white/60">32 تقييم</span>
-                            </div>
-                            <div class="flex flex-col gap-3.5 w-full max-w-[320px]">
-                                @foreach ($ratesDistribution as $stars => $dist)
-                                    <div class="flex items-center gap-4">
-                                        <div class="flex items-center gap-1 w-[80px] justify-end">
-                                            @for ($j = 1; $j <= 5; $j++)
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                                                    <path
-                                                        d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
-                                                        fill="{{ $j <= $stars ? '#FFAA00' : 'rgba(255,255,255,0.2)' }}" />
-                                                </svg>
-                                            @endfor
-                                        </div>
-                                        <div class="h-2 flex-grow bg-white/15 rounded-full overflow-hidden">
-                                            <div class="h-full bg-[#FFAA00] rounded-full"
-                                                style="width: {{ $dist['percent'] }}%"></div>
-                                        </div>
-                                        <span class="font-bold text-12px text-white/70 w-8">{{ $dist['percent'] }}%</span>
+                            class="w-[140px] h-[140px] bg-white/10 rounded-10px shrink-0 flex flex-col items-center justify-center border border-white/20">
+                            <span class="font-bold text-48px leading-none mb-1 text-white">4.9</span>
+                            <span class="font-semibold text-10px text-white/60">32 تقييم</span>
+                        </div>
+                        <div class="flex flex-col gap-3.5 w-full max-w-[320px]">
+                            @foreach ($ratesDistribution as $stars => $dist)
+                                <div class="flex items-center gap-4">
+                                    <div class="flex items-center gap-1 w-[80px] justify-end">
+                                        @for ($j = 1; $j <= 5; $j++)
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                                <path
+                                                    d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+                                                    fill="{{ $j <= $stars ? '#FFAA00' : 'rgba(255,255,255,0.2)' }}" />
+                                            </svg>
+                                        @endfor
                                     </div>
-                                @endforeach
-                            </div>
+                                    <div class="h-2 flex-grow bg-white/15 rounded-full overflow-hidden">
+                                        <div class="h-full bg-[#FFAA00] rounded-full"
+                                            style="width: {{ $dist['percent'] }}%"></div>
+                                    </div>
+                                    <span class="font-bold text-12px text-white/70 w-8">{{ $dist['percent'] }}%</span>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
-
                 </div>
             </div>
         </section>
 
         {{-- FAQ --}}
-        <section class="bg-[#0a3a36] py-16 lg:py-24 my-0 text-white">
+        <section class="bg-[#165554] py-16 lg:py-24 my-0 text-white">
             <div class="container">
-                <h3 class="font-bold text-32px lg:text-48px mb-12 text-center">
-                    <span class="text-gold">إجابات</span> لاستفساراتك
+                <h3 class="font-bold text-32px lg:text-48px mb-15 text-center">
+                    <span class="text-white ">إجابات</span>
+                    <span class="text-[#FFD343]">لاستفساراتك</span>
+
                 </h3>
                 <div class="max-w-4xl mx-auto">
                     <div class="accordion accordion-shadow">
                         @foreach ($faqItems as $index => $faq)
-                            <div class="accordion-item {{ $index === 0 ? 'active' : '' }} bg-transparent border-b border-white/20"
+                            <div class="accordion-item {{ $index === 0 ? 'active' : '' }} bg-transparent border-b border-[#1D293D]"
                                 id="paid-faq-{{ $index + 1 }}">
                                 <button
-                                    class="accordion-toggle shadow-none bg-transparent inline-flex items-center gap-x-4 px-0 py-6 text-start w-full hover:bg-white/5 transition-colors text-white"
+                                    class="accordion-toggle shadow-none bg-transparent inline-flex items-center gap-x-4 px-0 py-6 text-start w-full hover:bg-white/5 transition-all duration-300 text-white"
                                     aria-controls="paid-faq-{{ $index + 1 }}-collapse"
                                     aria-expanded="{{ $index === 0 ? 'true' : 'false' }}">
                                     <span
-                                        class="icon-[tabler--plus] accordion-item-active:hidden text-white size-5 block shrink-0"></span>
+                                        class="icon-[tabler--plus] accordion-item-active:hidden text-white size-5 block shrink-0 transition-opacity duration-300"></span>
                                     <span
-                                        class="icon-[tabler--minus] accordion-item-active:block text-white size-5 hidden shrink-0"></span>
+                                        class="icon-[tabler--minus] accordion-item-active:block text-white size-5 hidden shrink-0 transition-opacity duration-300"></span>
                                     <span
-                                        class="font-medium text-20px lg:text-28px text-white flex-grow">{{ $faq['question'] }}</span>
+                                        class="font-medium text-20px lg:text-32px text-[#E2E8F0] flex-grow">{{ $faq['question'] }}</span>
                                 </button>
                                 <div id="paid-faq-{{ $index + 1 }}-collapse"
-                                    class="accordion-content {{ $index === 0 ? '' : 'hidden' }} w-full overflow-hidden"
+                                    class="accordion-content {{ $index === 0 ? '' : 'hidden' }} w-full overflow-hidden transition-[height] duration-300 ease-in-out"
                                     role="region">
                                     <div class="pb-6">
-                                        <p class="font-normal text-16px lg:text-20px text-white/75 leading-relaxed">
+                                        <p class="font-normal text-16px lg:text-24px text-white leading-relaxed">
                                             {{ $faq['answer'] }}
                                         </p>
                                     </div>
@@ -412,24 +423,38 @@
                     </div>
                 </div>
 
+
+            </div>
+        </section>
+
+        <section class="bg-[#0A3232] py-20 lg:py-28 my-0 min-h-[450px] center text-white">
+            <div class="container">
                 {{-- Payment options --}}
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto mt-16">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-16 max-w-4xl mx-auto max-sm:gap-14">
+                    {{-- Tamara --}}
                     <div
-                        class="p-6 flex flex-col items-center justify-center gap-4 text-center min-h-[140px] bg-black/20 border border-white/15 rounded-12px">
-                        <span class="px-5 py-2 rounded-6px font-bold text-18px bg-[#b8f5d8] text-[#1a3d36]">tabby</span>
-                        <p class="font-medium text-16px text-white">وقسّطها على دفعات</p>
+                        class="relative center min-h-[185px] rounded-22px bg-[#166060] px-6 pt-12 pb-6 text-center">
+                        <div
+                            class="absolute top-0 right-4 -translate-y-8 inline-flex items-center justify-center rounded-8px   w-[248px] h-[80px]">
+                            <img src="{{ $courseDetailsImg }}/tamara.webp" alt="tamara" class="size-full object-cover">
+                        </div>
+                        <p class="font-bold text-28px lg:text-30px text-white">ادفعها ولا تشيل هم</p>
                     </div>
+
+                    {{-- Tabby --}}
                     <div
-                        class="p-6 flex flex-col items-center justify-center gap-4 text-center min-h-[140px] bg-black/20 border border-white/15 rounded-12px">
-                        <span
-                            class="px-5 py-2 rounded-6px font-bold text-18px bg-gradient-to-br from-[#f5c4a8] to-[#e8b4f0] text-[#1a1a1a]">tamara</span>
-                        <p class="font-medium text-16px text-white">ادفعها ولا تشيل هم</p>
+                        class="relative center rounded-22px bg-[#166060] px-6 pt-12 pb-6 text-center min-h-[185px]">
+                        <div
+                            class="absolute top-0 right-4 -translate-y-8 inline-flex items-center justify-center rounded-8px   w-[248px] h-[80px] ">
+                            <img src="{{ $courseDetailsImg }}/tabby.webp" alt="tabby" class="size-full object-cover">
+                        </div>
+                        <p class="font-bold text-28px lg:text-30px text-white">وقسّطها على دفعات</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <x-landing_v1::prefooter-cta />
+  
 
     </main>
 @endsection
