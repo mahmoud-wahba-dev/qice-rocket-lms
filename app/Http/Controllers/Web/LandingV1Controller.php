@@ -72,6 +72,13 @@ class LandingV1Controller extends Controller
         ]);
     }
 
+    public function courseDetailsFree()
+    {
+        return view('landing_v1.pages.course-details-free', [
+            'pageTitle' => 'الدورة التدريبية المجانية',
+        ]);
+    }
+
     public function coursesPaid()
     {
         return view('landing_v1.pages.courses-paid', [
