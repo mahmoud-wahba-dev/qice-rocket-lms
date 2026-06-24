@@ -301,6 +301,50 @@ function handleNavbarLinks(\App\Models\Setting $setting)
 }
 
 /**
+ * Panel header nav: Landing V1 config links + admin "navbar_links" settings.
+ *
+ * @return array<int, array{title: string, link: string, order: int}>
+ */
+function getPanelHeaderNavLinks(): array
+{
+    $links = [];
+
+    foreach (config('landing_v1.panel_nav_links', []) as $index => $item) {
+        if (empty($item['title'])) {
+            continue;
+        }
+
+        $link = $item['link'] ?? null;
+
+        if (!empty($item['route']) && \Illuminate\Support\Facades\Route::has($item['route'])) {
+            $link = route($item['route']);
+        }
+
+        if (empty($link)) {
+            continue;
+        }
+
+        $links[] = [
+            'title' => $item['title'],
+            'link' => $link,
+            'order' => (int) ($item['order'] ?? (($index + 1) * 10)),
+        ];
+    }
+
+    $setting = \App\Models\Setting::where('name', \App\Models\Setting::$navbarLinkName)->first();
+
+    if (!empty($setting)) {
+        $links = array_merge($links, handleNavbarLinks($setting));
+    }
+
+    usort($links, function ($a, $b) {
+        return ($a['order'] ?? 0) <=> ($b['order'] ?? 0);
+    });
+
+    return $links;
+}
+
+/**
  * @return array
  */
 function getPanelSidebarSettings()

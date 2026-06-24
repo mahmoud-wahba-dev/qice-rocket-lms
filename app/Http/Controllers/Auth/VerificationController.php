@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Mixins\RegistrationBonus\RegistrationBonusAccounting;
+use App\Http\Controllers\Web\traits\LandingAuthRedirectTrait;
 use App\Models\Affiliate;
 use App\Models\Verification;
 use App\User;
@@ -13,6 +14,8 @@ use Illuminate\Validation\ValidationException;
 
 class VerificationController extends Controller
 {
+    use LandingAuthRedirectTrait;
+
     public function index()
     {
         $verificationId = session()->get('verificationId', null);
@@ -28,14 +31,21 @@ class VerificationController extends Controller
                 $user = User::find($verification->user_id);
 
                 if (!empty($user) and $user->status != User::$active) {
+                    $mailHost = env('MAIL_HOST');
+                    $mailer = env('MAIL_MAILER', config('mail.default'));
+                    $mailConfigured = !empty($mailHost) && !in_array($mailer, ['log', 'array'], true);
+
                     $data = [
                         'pageTitle' => trans('auth.email_confirmation'),
                         'username' => !empty($verification->mobile) ? 'mobile' : 'email',
                         'usernameValue' => !empty($verification->mobile) ? $verification->mobile : $verification->email,
+                        'resendDurationMinutes' => (int) (getGeneralOptionsSettings('duration_of_resend_verification_code') ?: 2),
+                        'authIntentMessage' => $this->landingAuthIntentMessage(),
+                        'mailNotConfigured' => !$mailConfigured,
+                        'isLocal' => app()->environment('local'),
                     ];
 
-                    $authTemplate = getThemeAuthenticationPagesStyleName();
-                    return view("design_1.web.auth.{$authTemplate}.verification.index", $data);
+                    return view('landing_v1.pages.auth.verification', $data);
                 }
             }
         }

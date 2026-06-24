@@ -287,18 +287,15 @@
                     <div class="carousel ">
                         <div class="carousel-body  h-full opacity-0 overflow-visible gap-4 xl:gap-8">
                             @forelse ($freeWorkshops as $workshop)
-                            <div class="carousel-slide">
-                                <x-landing_v1::workshop-card
-                                    :title="$workshop->title"
-                                    :summary="$workshop->summary ?? $workshop->description"
-                                    :categoryTitle="$workshop->category->title ?? ''"
-                                    :slug="$workshop->slug"
-                                />
-                            </div>
+                                <div class="carousel-slide">
+                                    <x-landing_v1::workshop-card :title="$workshop->title" :summary="$workshop->summary ?? $workshop->description" :categoryTitle="$workshop->category->title ?? ''"
+                                        :slug="$workshop->slug" />
+                                </div>
                             @empty
-                            <div class="carousel-slide">
-                                <p class="text-center text-secondary font-medium py-8">لا توجد ورش مجانية متاحة حالياً.</p>
-                            </div>
+                                <div class="carousel-slide">
+                                    <p class="text-center text-secondary font-medium py-8">لا توجد ورش مجانية متاحة حالياً.
+                                    </p>
+                                </div>
                             @endforelse
 
                         </div>
@@ -351,18 +348,15 @@
                     <div class="carousel">
                         <div class="carousel-body h-full opacity-0 overflow-visible gap-4 xl:gap-8">
                             @forelse ($trainers as $trainer)
-                            <div class="carousel-slide">
-                                <x-landing_v1::instructor-card
-                                    :name="$trainer->full_name"
-                                    :avatar="$trainer->getAvatar()"
-                                    :bio="$trainer->about ?? $trainer->bio ?? $trainer->headline ?? ''"
-                                    :username="$trainer->username"
-                                />
-                            </div>
+                                <div class="carousel-slide">
+                                    <x-landing_v1::instructor-card :name="$trainer->full_name" :avatar="$trainer->getAvatar()" :bio="$trainer->about ?? ($trainer->bio ?? ($trainer->headline ?? ''))"
+                                        :username="$trainer->username" />
+                                </div>
                             @empty
-                            <div class="carousel-slide">
-                                <p class="text-center text-primary/70 font-medium py-8">لا يوجد مدربون متاحون حالياً.</p>
-                            </div>
+                                <div class="carousel-slide">
+                                    <p class="text-center text-primary/70 font-medium py-8">لا يوجد مدربون متاحون حالياً.
+                                    </p>
+                                </div>
                             @endforelse
                         </div>
                     </div>
@@ -394,22 +388,17 @@
                     <div class="carousel ">
                         <div class="carousel-body  h-full opacity-0 overflow-visible gap-4 xl:gap-8">
                             @forelse ($paidCourses as $course)
-                            <div class="carousel-slide">
-                            <x-landing_v1::course-card
-                                    :title="$course->title"
-                                    :description="$course->description"
-                                    :teacherName="$course->teacher->full_name ?? ''"
-                                    :teacherAvatar="!empty($course->teacher) ? $course->teacher->getAvatar() : null"
-                                    :price="($course->price > 0) ? handlePrice($course->price) : 'مجاناً'"
-                                    :image="$course->image_cover ?? $course->thumbnail ?? asset('assets/landing_v1/img/home/course.webp')"
-                                    :categoryTitle="$course->category->title ?? ''"
-                                    :slug="$course->slug"
-                                />
-                            </div>
+                                <div class="carousel-slide">
+                                    <x-landing_v1::course-card :title="$course->title" :description="$course->description" :teacherName="$course->teacher->full_name ?? ''"
+                                        :teacherAvatar="!empty($course->teacher) ? $course->teacher->getAvatar() : null" :price="$course->price > 0 ? handlePrice($course->price) : 'مجاناً'" :image="$course->image_cover ??
+                                            ($course->thumbnail ?? asset('assets/landing_v1/img/home/course.webp'))" :categoryTitle="$course->category->title ?? ''"
+                                        :slug="$course->slug" />
+                                </div>
                             @empty
-                            <div class="carousel-slide">
-                                <p class="text-center text-secondary font-medium py-8">لا توجد دورات معتمدة متاحة حالياً.</p>
-                            </div>
+                                <div class="carousel-slide">
+                                    <p class="text-center text-secondary font-medium py-8">لا توجد دورات معتمدة متاحة
+                                        حالياً.</p>
+                                </div>
                             @endforelse
                         </div>
                     </div>
@@ -541,13 +530,10 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     @forelse ($latestPosts as $post)
-                        <x-landing_v1::blog-card
-                            :title="$post->title"
-                            :image="$post->image ?? asset('assets/landing_v1/img/home/news1.webp')"
-                            :slug="$post->slug"
-                        />
+                        <x-landing_v1::blog-card :title="$post->title" :image="$post->image ?? asset('assets/landing_v1/img/home/news1.webp')" :slug="$post->slug" />
                     @empty
-                        <p class="col-span-full text-center font-medium text-primary/70 py-12">لا توجد مقالات متاحة حالياً.</p>
+                        <p class="col-span-full text-center font-medium text-primary/70 py-12">لا توجد مقالات متاحة حالياً.
+                        </p>
                     @endforelse
                 </div>
 
@@ -555,165 +541,5 @@
         </section>
 
         <x-landing_v1::prefooter-cta />
-
-    
-
-        {{-- <section>
-            <div class="container">
-                <div class="flex justify-between items-center mb-15 flex-wrap ">
-                    <div>
-                        <h4 class="font-semibold text-36px mb-3 text-primary">انطلق في رحلتك التعليمية القادمة</h4>
-                        <p class="font-normal text-20px text-primary">برامج مكثفة مصممة لسد الفجوة المهارية وتعزيز
-                            التنافسية
-                            في القطاعات الحيوية</p>
-                    </div>
-                    <div>
-                        <a href="{{ route('landing.v1.courses') }}"
-                            class="btn btn-text font-semibold text-20px text-primary">
-                            عرض كل الكورسات
-                            <span class="icon-[tabler--arrow-left]"></span>
-                        </a>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    @foreach ($courses as $course)
-                        <x-landing_v1::course-card title="{{ $course->title }}" description="{{ $course->description }}"
-                            teacher-name="{{ $course->teacher->full_name ?? '' }}"
-                            teacher-avatar="{{ !empty($course->teacher) ? $course->teacher->getAvatar() : '' }}"
-                            price="{{ $course->price > 0 ? $course->price . ' ر.س' : 'مجاناً' }}"
-                            image="{{ $course->image_cover ?? asset('assets/landing_v1/img/contact/hero.webp') }}"
-                            slug="{{ $course->slug }}" />
-                    @endforeach
-                </div>
-            </div>
-        </section> --}}
-
-
-        {{-- <section class="section-gap bg-blue py-28 pb-36"
-            style="background-image: url('{{ $landingImg }}/home/bg-slide1.webp'); background-size: cover; background-repeat: no-repeat; background-position: bottom;">
-            <div class="container">
-                <div id="featured-courses"
-                    data-carousel='{ "loadingClasses": "opacity-0", "slidesQty": { "xs": 1, "lg": 1 }, "isRTL": true, "isInfiniteLoop": true, "dotsItemClasses": "carousel-dot", "isAutoPlay": true, "speed": 3500 }'
-                    class="relative w-full">
-                    <div class="carousel">
-                        <div class="carousel-body opacity-0">
-                            @forelse ($courses as $course)
-                                <div class="carousel-slide">
-                                    <div class="grid grid-cols-1 lg:grid-cols-12 items-center">
-                                        <div class="lg:col-span-8 text-white">
-                                            <div class="lg:w-[80%]">
-                                                <p class="font-semibold text-white text-36px md:w-[60%] mb-5">
-                                                    <span class="icon-[tabler--star-filled] text-[#F9AA00]"></span>
-                                                    <span class="icon-[tabler--star-filled] text-[#F9AA00]"></span>
-                                                    ابدأ رحلة التميز مع دوراتنا الأكثر طلباً
-                                                </p>
-                                                <h3 class="font-bold text-50px text-white mb-8 lg:w-[75%]">
-                                                    {{ $course->title }}
-                                                </h3>
-                                                <p class="font-normal text-20px mb-8 lg:w-[70%] line-clamp-4">
-                                                    {{ $course->summary ?? Str::limit(strip_tags(html_entity_decode($course->description)), 200) }}
-                                                </p>
-                                                <div>
-                                                    <a href="{{ route('landing.v1.course-details', $course->slug) }}"
-                                                        class="btn btn-gold h-12 px-20 font-medium text-24px"> اشترك الان
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="lg:col-span-4">
-                                            <x-landing_v1::course-card title="{{ $course->title }}"
-                                                description="{{ $course->description }}"
-                                                teacherName="{{ $course->teacher->full_name ?? '' }}"
-                                                teacherAvatar="{{ !empty($course->teacher) ? $course->teacher->getAvatar() : '' }}"
-                                                price="{{ $course->price > 0 ? $course->price . ' ر.س' : 'مجاناً' }}"
-                                                image="{{ $course->image_cover ?? asset('assets/landing_v1/img/contact/hero.webp') }}"
-                                                slug="{{ $course->slug }}" />
-                                        </div>
-                                    </div>
-                                </div>
-                            @empty
-                                <div class="carousel-slide">
-                                    <div class="grid grid-cols-1 lg:grid-cols-12 items-center">
-                                        <div class="lg:col-span-8 text-white">
-                                            <div class="lg:w-[80%]">
-                                                <p class="font-semibold text-white text-36px md:w-[60%] mb-5">
-                                                    <span class="icon-[tabler--star-filled] text-[#F9AA00]"></span>
-                                                    <span class="icon-[tabler--star-filled] text-[#F9AA00]"></span>
-                                                    ابدأ رحلة التميز مع دوراتنا الأكثر طلباً
-                                                </p>
-                                                <h3 class="font-bold text-50px text-white mb-8 lg:w-[75%]">
-                                                    الاستراتيجيات الحديثة في إدارة المشاريع الهندسية
-                                                </h3>
-                                                <p class="font-normal text-20px mb-8 lg:w-[70%]">
-                                                    دورة مكثفة صُممت خصيصاً لسد الفجوة بين المعرفة الأكاديمية التطبيق
-                                                    الميداني
-                                                    في كبرى الشركات.
-                                                </p>
-                                                <div>
-                                                    <a href="{{ route('landing.v1.course-details') }}"
-                                                        class="btn btn-gold h-12 px-20 font-medium text-24px"> اشترك الان
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="lg:col-span-4">
-                                            <x-landing_v1::course-card title="استشارات هندسية"
-                                                description="دورة مكثفة في إدارة المشاريع الهندسية والإنشائية."
-                                                teacher-name="المهندس الاستشاري" price="150 ر.س"
-                                                image="{{ $landingImg }}/home/course.webp" />
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforelse
-                        </div>
-                    </div>
-                    <div class="mt-6 flex flex-col items-center gap-3">
-                        <div class="carousel-pagination flex justify-center gap-3"></div>
-                        <div class="flex items-center gap-3">
-                            <button type="button" class="carousel-prev start-0 -translate-x-[-40%]">
-                                <span class="size-9.5 bg-base-100 flex items-center justify-center rounded-full shadow">
-                                    <span class="icon-[tabler--chevron-left] size-5 cursor-pointer rtl:rotate-180"></span>
-                                </span>
-                                <span class="sr-only">Previous</span>
-                            </button>
-                            <button type="button" class="carousel-next end-0 translate-x-[-40%]">
-                                <span class="sr-only">Next</span>
-                                <span class="size-9.5 bg-base-100 flex items-center justify-center rounded-full shadow">
-                                    <span class="icon-[tabler--chevron-right] size-5 cursor-pointer rtl:rotate-180"></span>
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section> --}}
-        {{-- <section class="section-gap">
-            <div class="container">
-                <h2 class="font-semibold text-36px text-primary mb-14">حلول تعليمية مخصصة لكل احتياج</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    @foreach ($instructors as $instructor)
-                        <div class="border border-[#00000029] rounded-8px overflow-hidden flex flex-col">
-                            <a href="{{ $instructor->getProfileUrl() }}"
-                                class="block mb-4 bg-e3 aspect-[4/3] overflow-hidden h-[242px]">
-                                <img src="{{ $instructor->getAvatar() }}" alt="{{ $instructor->full_name }}"
-                                    class="w-full h-full object-contain">
-                            </a>
-                            <div class="px-5 py-2 flex-1">
-                                <a href="{{ $instructor->getProfileUrl() }}">
-                                    <h6
-                                        class="font-semibold text-24px text-primary mb-1 hover:text-secondary transition-colors">
-                                        {{ $instructor->full_name }}</h6>
-                                </a>
-                                <p class="font-normal text-base text-primary leading-6">
-                                    {{ $instructor->bio }}
-                                </p>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        </section> --}}
     </main>
-
- 
 @endsection

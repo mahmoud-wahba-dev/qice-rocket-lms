@@ -5,80 +5,77 @@ namespace App\PaymentChannels\Drivers\Paymob;
 
 trait PaymobTrait
 {
+    private function paymobPost(string $url, array $payload): ?\stdClass
+    {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+
+        $response = curl_exec($ch);
+
+        if ($response === false) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            throw new \RuntimeException('Paymob request failed: ' . $error);
+        }
+
+        curl_close($ch);
+
+        $decoded = json_decode($response);
+
+        if (!is_object($decoded)) {
+            throw new \RuntimeException('Invalid Paymob response');
+        }
+
+        return $decoded;
+    }
+
+    private function paymobErrorMessage(?\stdClass $response): string
+    {
+        if (empty($response)) {
+            return 'Empty response from Paymob';
+        }
+
+        if (!empty($response->detail)) {
+            return is_string($response->detail) ? $response->detail : json_encode($response->detail);
+        }
+
+        if (!empty($response->message)) {
+            return is_string($response->message) ? $response->message : json_encode($response->message);
+        }
+
+        return 'Unknown Paymob error';
+    }
 
     public function AuthenticationRequest()
     {
-        $userInfo = [
+        if (!empty($this->api_key)) {
+            return $this->paymobPost('https://ksa.paymob.com/api/auth/tokens', [
+                'api_key' => $this->api_key,
+            ]);
+        }
+
+        return $this->paymobPost('https://ksa.paymob.com/api/auth/tokens', [
             'username' => $this->username,
             'password' => $this->password,
-        ];
-        
-
-        $postData = json_encode($userInfo);
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'https://ksa.paymob.com/api/auth/tokens');
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'Content-Type: application/json'
-        ));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-        curl_setopt($ch, CURLOPT_HEADER, 0);
-        $response = curl_exec($ch);
-               
-        
-        if ($response === false) {
-            echo curl_error($ch);
-        }
-        curl_close($ch);
-       
-        return json_decode($response);
+        ]);
     }
 
     public function OrderRegistrationAPI(array $requestData)
     {
-        $postData = json_encode($requestData);
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'https://ksa.paymob.com/api/ecommerce/orders');
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'Content-Type: application/json'
-        ));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-        curl_setopt($ch, CURLOPT_HEADER, 0);
-
-        $response = curl_exec($ch);
-        if ($response === false) {
-            echo curl_error($ch);
-        }
-        curl_close($ch);
-        return json_decode($response);
+        return $this->paymobPost('https://ksa.paymob.com/api/ecommerce/orders', $requestData);
     }
 
     public function PaymentKeyRequest($requestData)
     {
-    
         $requestData['expiration'] = 3600;
-        $requestData['integration_id'] = $this->integration_id;
-        $postData = json_encode($requestData);
-        $ch = curl_init();
+        $requestData['integration_id'] = (int) $this->integration_id;
 
-        curl_setopt($ch, CURLOPT_URL, 'https://ksa.paymob.com/api/acceptance/payment_keys');
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'Content-Type: application/json'
-        ));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-        curl_setopt($ch, CURLOPT_HEADER, 0);
-
-        $response = curl_exec($ch);
-        if ($response === false) {
-            echo curl_error($ch);
-        }
-        curl_close($ch);
-        return json_decode($response);
+        return $this->paymobPost('https://ksa.paymob.com/api/acceptance/payment_keys', $requestData);
     }
 
     public function calcHMAC($request)

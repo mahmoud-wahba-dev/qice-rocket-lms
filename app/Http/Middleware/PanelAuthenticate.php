@@ -31,6 +31,7 @@ class PanelAuthenticate
             view()->share('aiContentTemplates', $aiContentTemplates);
 
             view()->share('panelNavbarLinks', $this->getNavbarLinks());
+            view()->share('panelNavbarLinkItems', getPanelHeaderNavLinks());
 
 
             return $next($request);

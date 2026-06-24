@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\CartController;
 use App\Http\Controllers\Web\CartManagerController;
+use App\Http\Controllers\Web\traits\LandingAuthRedirectTrait;
 use App\Models\Role;
 use App\Models\Webinar;
 use App\User;
@@ -20,6 +21,8 @@ use Illuminate\Http\Request;
 
 class LandingV1Controller extends Controller
 {
+    use LandingAuthRedirectTrait;
+
     private function webinarTeacherEagerLoad(): array
     {
         return [
@@ -595,6 +598,7 @@ class LandingV1Controller extends Controller
             'totalReviewsCount' => $totalReviewsCount,
             'averageRating' => $totalReviewsCount > 0 ? round($activeReviews->avg('rates'), 1) : 0,
             'isInCart' => $this->isWebinarInCart($course),
+            'hasUserBought' => auth()->check() ? $course->checkUserHasBought(auth()->user()) : false,
         ], $detailExtras);
 
         $view = ($course->price > 0)
@@ -649,6 +653,10 @@ class LandingV1Controller extends Controller
         $user = auth()->user();
 
         if (empty($user)) {
+            $this->storeLandingAuthIntent('checkout', [
+                'discount_id' => $request->input('discount_id'),
+            ]);
+
             return redirect()->route('landing.v1.login');
         }
 

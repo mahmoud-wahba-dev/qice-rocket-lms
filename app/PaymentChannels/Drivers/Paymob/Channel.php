@@ -48,83 +48,91 @@ class Channel extends BasePaymentChannel implements IChannel
 
     public function paymentRequest(Order $order)
     {
-        //$generalSettings = getGeneralSettings();
         $user = $order->user;
         $amount = $this->makeAmountByCurrency($order->total_amount, $this->currency);
-        
+        $amountCents = (int) round($amount * 100);
+
+        if ($amountCents <= 0) {
+            return $this->paymobFailureResponse('Invalid order amount');
+        }
 
         $errorMsg = null;
+
         try {
-
             $paymentAuth = $this->AuthenticationRequest();
-            
-            
 
-            $orderItems = [];
-
-            foreach ($order->orderItems as $orderItem) {
-                $orderItems[] = [
-                    'name' => "order_item_{$orderItem->id}",
-                    'amount_cents' => $orderItem->total_amount * 100,
-                    'quantity' => 1,
-                    "description" => "order_item_{$orderItem->id}",
-                ];
+            if (empty($paymentAuth->token)) {
+                throw new \RuntimeException($this->paymobErrorMessage($paymentAuth));
             }
-                   
 
             $paymentOrder = $this->OrderRegistrationAPI([
                 'auth_token' => $paymentAuth->token,
-                'amount_cents' => $amount * 100,
-                'currency' => "SAR",
+                'amount_cents' => $amountCents,
+                'currency' => 'SAR',
                 'delivery_needed' => false,
                 'merchant_order_id' => $order->id,
-                'items' => $orderItems
+                'items' => [],
             ]);
-           
 
+            if (empty($paymentOrder->id)) {
+                throw new \RuntimeException($this->paymobErrorMessage($paymentOrder));
+            }
+
+            $nameParts = preg_split('/\s+/', trim($user->full_name ?? 'QIEC User'), 2);
+            $firstName = $nameParts[0] ?? 'QIEC';
+            $lastName = $nameParts[1] ?? 'User';
+            $phone = preg_replace('/\D+/', '', $user->mobile ?? '') ?: '0500000000';
 
             $paymentKey = $this->PaymentKeyRequest([
                 'auth_token' => $paymentAuth->token,
-                'amount_cents' => $amount * 100,
+                'amount_cents' => $amountCents,
                 'currency' => 'SAR',
                 'order_id' => $paymentOrder->id,
-                "billing_data" => [ // put your client information
-                    "apartment" => "01",
-                    "email" => $user->email,
-                    "floor" => "01",
-                    "first_name" => $user->full_name,
-                    "street" => "001",
-                    "building" => "002",
-                    "phone_number" => $user->mobile,
-                    "shipping_method" => null,
-                    "postal_code" => "01898",
-                    "city" => $user->getRegionByTypeId($user->city_id) ?? 'Jaskolskiburgh',
-                    "country" => $user->getRegionByTypeId($user->country_id) ?? 'CR',
-                    "last_name" => " user",
-                    "state" => $user->getRegionByTypeId($user->province_id) ?? 'Utah',
-                ]
+                'billing_data' => [
+                    'apartment' => 'NA',
+                    'email' => $user->email,
+                    'floor' => 'NA',
+                    'first_name' => $firstName,
+                    'last_name' => $lastName,
+                    'street' => 'NA',
+                    'building' => 'NA',
+                    'phone_number' => $phone,
+                    'shipping_method' => 'NA',
+                    'postal_code' => '00000',
+                    'city' => $user->getRegionByTypeId($user->city_id) ?: 'Riyadh',
+                    'country' => 'SA',
+                    'state' => $user->getRegionByTypeId($user->province_id) ?: 'Riyadh',
+                ],
             ]);
-             
-            if (!empty($paymentKey) and !empty($paymentKey->token)) {
-                $data = [
+
+            if (!empty($paymentKey->token)) {
+                return view('design_1.web.cart.payment.channels.paymob', [
                     'token' => $paymentKey->token,
                     'iframeId' => $this->iframe_id,
-                ];
-                  
-                return view('design_1.web.cart.payment.channels.paymob', $data);
-            } else if (!empty($paymentKey) and !empty($paymentAuth->message)) {
-                $errorMsg = $paymentAuth->message;
+                ]);
             }
 
-        } catch (\Exception $e) {
-            dd($e->getMessage());
+            $errorMsg = $this->paymobErrorMessage($paymentKey);
+        } catch (\Throwable $e) {
+            \Log::error('Paymob paymentRequest failed', [
+                'order_id' => $order->id,
+                'message' => $e->getMessage(),
+            ]);
+
+            $errorMsg = $e->getMessage();
         }
 
+        return $this->paymobFailureResponse($errorMsg);
+    }
+
+    private function paymobFailureResponse(?string $errorMsg)
+    {
         $toastData = [
             'title' => trans('cart.fail_purchase'),
-            'msg' => $errorMsg ?? trans('update.gateway_error_please_contact_support'),
-            'status' => 'error'
+            'msg' => $errorMsg ?: trans('update.gateway_error_please_contact_support'),
+            'status' => 'error',
         ];
+
         return redirect()->back()->with(['toast' => $toastData])->withInput();
     }
 
@@ -170,7 +178,7 @@ class Channel extends BasePaymentChannel implements IChannel
                     return $order;
                 }
             } catch (\Exception $e) {
-                dd($e->getMessage());
+                \Log::error('Paymob verify failed', ['message' => $e->getMessage()]);
             }
         }
 

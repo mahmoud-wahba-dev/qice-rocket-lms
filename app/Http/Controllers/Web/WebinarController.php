@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\traits\CheckContentLimitationTrait;
 use App\Http\Controllers\Web\traits\CourseShowTrait;
 use App\Http\Controllers\Web\traits\InstallmentsTrait;
+use App\Http\Controllers\Web\traits\LandingAuthRedirectTrait;
 use App\Mixins\Cashback\CashbackRules;
 use App\Mixins\Installment\InstallmentPlans;
 use App\Mixins\Logs\VisitLogMixin;
@@ -35,6 +36,7 @@ class WebinarController extends Controller
     use CheckContentLimitationTrait;
     use InstallmentsTrait;
     use CourseShowTrait;
+    use LandingAuthRedirectTrait;
 
     public function course(Request $request, $slug, $justReturnData = false)
     {
@@ -710,6 +712,10 @@ class WebinarController extends Controller
                 $checkCourseForSale = checkCourseForSale($course, $user);
 
                 if ($checkCourseForSale != 'ok') {
+                    if ($course->checkUserHasBought($user)) {
+                        return redirect($course->getLearningPageUrl());
+                    }
+
                     return back()->with(['toast' => $checkCourseForSale]);
                 }
 
@@ -742,18 +748,20 @@ class WebinarController extends Controller
                 ];
                 sendNotification("new_course_enrollment", $notifyOptions, 1);
 
-                $toastData = [
-                    'title' => '',
-                    'msg' => trans('cart.success_pay_msg_for_free_course'),
-                    'status' => 'success'
-                ];
-                return back()->with(['toast' => $toastData]);
+                return redirect($course->getLearningPageUrl())
+                    ->with('toast', [
+                        'title' => '',
+                        'msg' => trans('cart.success_pay_msg_for_free_course'),
+                        'status' => 'success',
+                    ]);
             }
 
             abort(404);
-        } else {
-            return redirect('/login');
         }
+
+        $this->storeLandingAuthIntent('free_enroll', ['slug' => $slug]);
+
+        return redirect()->route('landing.v1.login');
     }
 
     public function learningStatus(Request $request, $slug)

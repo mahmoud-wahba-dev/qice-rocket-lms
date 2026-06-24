@@ -153,6 +153,11 @@
                     <input type="hidden" id="cart-discount-id" value="">
 
                     {{-- Checkout Button --}}
+                    @guest
+                        <p class="font-medium text-13px text-primary/60 mb-3 text-center">
+                            يجب تسجيل الدخول لإتمام عملية الدفع
+                        </p>
+                    @endguest
                     <form action="{{ route('landing.v1.checkout') }}" method="post">
                         @csrf
                         <input type="hidden" name="discount_id" id="checkout-discount-id" value="">

@@ -12,7 +12,7 @@
         </a>
     </div>
 
-    <div class="panel-header__contents d-flex align-items-center justify-content-between h-100 border-bottom-gray-200">
+    <div class="panel-header__contents d-flex align-items-center justify-content-between h-100 border-bottom-gray-200 bg-primary">
 
         <div class="d-flex align-items-center">
 
@@ -22,18 +22,20 @@
                 <x-iconsax-lin-sun-1 class="light-icon icons text-gray-500" width="20px" height="20px"/>
             </div>
 
-            @if(!empty($panelNavbarLinks))
-                @php
-                    $panelNavbarLinksItems = handleNavbarLinks($panelNavbarLinks)
-                @endphp
+            @php
+                $panelNavbarLinksItems = $panelNavbarLinkItems ?? [];
+            @endphp
 
-                @if(!empty($panelNavbarLinksItems) and count($panelNavbarLinksItems))
-                    <div class="d-none d-lg-flex align-items-center">
-                        @foreach($panelNavbarLinksItems as $panelNavbarLinkItem)
-                            <a href="{{ $panelNavbarLinkItem['link'] }}" class="navbar-item navbar-item-h-70 d-flex align-items-center mr-16 mr-lg-32 text-gray-500">{{ $panelNavbarLinkItem['title'] }}</a>
-                        @endforeach
-                    </div>
-                @endif
+            @if(!empty($panelNavbarLinksItems) && count($panelNavbarLinksItems))
+                <div class="d-none d-lg-flex align-items-center">
+                    @foreach($panelNavbarLinksItems as $panelNavbarLinkItem)
+                        <a href="{{ $panelNavbarLinkItem['link'] }}"
+                            class="navbar-item navbar-item-h-70 d-flex align-items-center mr-16 mr-lg-32 text-gray-500"
+                            @if(!empty($panelNavbarLinkItem['open_in_new_tab'])) target="_blank" rel="noopener noreferrer" @endif>
+                            {{ $panelNavbarLinkItem['title'] }}
+                        </a>
+                    @endforeach
+                </div>
             @endif
         </div>
 

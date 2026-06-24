@@ -6,6 +6,7 @@
         $courseDetailsImg = asset('assets/landing_v1/img/course_details');
         $heroYoutubeId = $heroYoutubeId ?? 'JXEXdbS5tsI';
         $isInCart = $isInCart ?? false;
+        $hasUserBought = $hasUserBought ?? false;
         $averageRating = $averageRating ?? 0;
         $totalReviewsCount = $totalReviewsCount ?? 0;
         $learningOutcomes = $learningOutcomes ?? [];
@@ -145,6 +146,13 @@
                                     {{ handlePrice($course->price) }}</span>
                             @endif
                         </div>
+                        @if ($hasUserBought)
+                            <a href="{{ $course->getLearningPageUrl() }}"
+                                class="btn h-14 rounded-9px font-bold text-18px px-8 inline-flex items-center gap-3 bg-white text-primary border border-[#00FF88] shadow-[0_0_24px_rgba(255,255,255,0.15)] hover:bg-[#f5f5f5]">
+                                ابدأ التعلم
+                                <img src="{{ $courseDetailsImg }}/seat.webp" alt="" class="size-6 shrink-0">
+                            </a>
+                        @else
                         <form action="/cart/store" method="post" class="add-to-cart-form"
                             data-seat-icon="{{ $courseDetailsImg }}/seat.webp">
                             @csrf
@@ -157,6 +165,7 @@
                                 <img src="{{ $courseDetailsImg }}/seat.webp" alt="" class="size-6 shrink-0">
                             </button>
                         </form>
+                        @endif
 
                     </div>
                 </div>

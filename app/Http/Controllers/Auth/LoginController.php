@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\CartManagerController;
+use App\Http\Controllers\Web\traits\LandingAuthRedirectTrait;
 use App\Mixins\Logs\UserLoginHistoryMixin;
 use App\Models\Reward;
 use App\Models\RewardAccounting;
@@ -29,6 +30,7 @@ class LoginController extends Controller
     */
 
     use AuthenticatesUsers;
+    use LandingAuthRedirectTrait;
 
     /**
      * Where to redirect users after login.
@@ -58,6 +60,7 @@ class LoginController extends Controller
             'pageTitle' => $pageTitle,
             'pageDescription' => $pageDescription,
             'pageRobot' => $pageRobot,
+            'authIntentMessage' => $this->landingAuthIntentMessage(),
         ];
 
         return view('landing_v1.pages.auth.login', $data);
@@ -287,9 +290,13 @@ class LoginController extends Controller
 
         if ($user->isAdmin()) {
             return redirect(getAdminPanelUrl());
-        } else {
-            return redirect('/panel');
         }
+
+        if ($redirect = $this->resolveLandingAuthRedirect($request, $user)) {
+            return $redirect;
+        }
+
+        return redirect('/panel');
     }
 
     private function checkLoginDeviceLimit($user)

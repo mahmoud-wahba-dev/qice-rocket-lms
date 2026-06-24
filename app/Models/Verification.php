@@ -23,10 +23,32 @@ class Verification extends Model
         return $this->belongsTo('App\User');
     }
 
-    public function sendEmailCode()
+    protected function shouldSendVerificationEmail(): bool
     {
         if (app()->environment('production')) {
-            $this->notify(new SendVerificationEmailCode($this));
+            return true;
+        }
+
+        $mailer = env('MAIL_MAILER', config('mail.default'));
+
+        return !empty(env('MAIL_HOST'))
+            && !in_array($mailer, ['log', 'array'], true);
+    }
+
+    public function sendEmailCode()
+    {
+        if ($this->shouldSendVerificationEmail()) {
+            try {
+                $this->notify(new SendVerificationEmailCode($this));
+            } catch (\Throwable $e) {
+                \Log::error('Verification email failed: ' . $e->getMessage(), [
+                    'email' => $this->email,
+                ]);
+            }
+        }
+
+        if (app()->environment('local') && !empty($this->email)) {
+            \Log::info('[Verification] Code for ' . $this->email . ': ' . $this->code);
         }
 
         return true;

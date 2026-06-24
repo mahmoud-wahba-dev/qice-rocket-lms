@@ -10,6 +10,11 @@
                     <div class="">
                         <div>
                             <h1 class="font-semibold text-36px text-primary mb-2">مرحباً بعودتك!</h1>
+                            @if (!empty($authIntentMessage))
+                                <p class="font-medium text-16px text-primary/80 mb-4 rounded-8px bg-primary/5 border border-primary/15 px-4 py-3">
+                                    {{ $authIntentMessage }}
+                                </p>
+                            @endif
                             <p class="font-medium text-base text-primary mb-9">سعداء برؤيتك مرة أخرى، تابع رحلة تعلمك من حيث
                                 توقفت.</p>
 
@@ -206,7 +211,6 @@
                     </div>
                     <x-landing_v1::auth-slider />
                 </div>
-            </div>
             </div>
         </header>
 

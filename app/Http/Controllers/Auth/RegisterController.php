@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Web\CartManagerController;
+use App\Http\Controllers\Web\traits\LandingAuthRedirectTrait;
 use App\Http\Controllers\Web\traits\UserFormFieldsTrait;
+use App\Mixins\Logs\UserLoginHistoryMixin;
 use App\Mixins\RegistrationBonus\RegistrationBonusAccounting;
 use App\Models\Affiliate;
 use App\Models\Reward;
@@ -38,6 +41,7 @@ class RegisterController extends Controller
     */
 
     use RegistersUsers;
+    use LandingAuthRedirectTrait;
 
     /**
      * Where to redirect users after registration.
@@ -76,7 +80,8 @@ class RegisterController extends Controller
             'pageRobot' => $pageRobot,
             'referralCode' => $referralCode,
             'referralSettings' => $referralSettings,
-            'formFields' => $formFields
+            'formFields' => $formFields,
+            'authIntentMessage' => $this->landingAuthIntentMessage(),
         ];
 
         return view('landing_v1.pages.auth.register', $data);
@@ -306,6 +311,16 @@ class RegisterController extends Controller
 
             $registrationBonusAccounting = new RegistrationBonusAccounting();
             $registrationBonusAccounting->storeRegistrationBonusInstantly($user);
+
+            $cartManagerController = new CartManagerController();
+            $cartManagerController->storeCookieCartsToDB($request);
+
+            $userLoginHistoryMixin = new UserLoginHistoryMixin();
+            $userLoginHistoryMixin->storeUserLoginHistory($user);
+
+            if ($redirect = $this->resolveLandingAuthRedirect($request, $user)) {
+                return $redirect;
+            }
 
             if ($response = $this->registered($request, $user)) {
                 return $response;

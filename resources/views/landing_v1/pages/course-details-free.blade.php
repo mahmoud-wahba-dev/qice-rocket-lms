@@ -35,6 +35,8 @@
                 1 => ['percent' => 0],
             ];
         }
+
+        $hasUserBought = $hasUserBought ?? false;
     @endphp
 
     <main>
@@ -74,13 +76,21 @@
                         </div>
 
                         <div class="flex items-center gap-4">
-                            <form class="w-[70%]" action="/course/{{ $course->slug }}/free" method="get">
-                                <button type="submit"
-                                    class="btn w-full btn-primary h-15 rounded-9px  font-bold text-18px px-10  whitespace-nowrap  hover:shadow-lg transition-all duration-300">
-                                    سجل مقعدك الآن
-                                    <img src="{{ $courseDetailsImg }}/seat.webp" alt="user-plus" class="size-6 shrink-0">
-                                </button>
-                            </form>
+                            @if ($hasUserBought)
+                                <a href="{{ $course->getLearningPageUrl() }}"
+                                    class="btn w-[70%] btn-primary h-15 rounded-9px font-bold text-18px px-10 whitespace-nowrap hover:shadow-lg transition-all duration-300 inline-flex items-center justify-center gap-3">
+                                    ابدأ التعلم
+                                    <img src="{{ $courseDetailsImg }}/seat.webp" alt="" class="size-6 shrink-0">
+                                </a>
+                            @else
+                                <form class="w-[70%]" action="/course/{{ $course->slug }}/free" method="get">
+                                    <button type="submit"
+                                        class="btn w-full btn-primary h-15 rounded-9px  font-bold text-18px px-10  whitespace-nowrap  hover:shadow-lg transition-all duration-300">
+                                        سجل مقعدك الآن
+                                        <img src="{{ $courseDetailsImg }}/seat.webp" alt="user-plus" class="size-6 shrink-0">
+                                    </button>
+                                </form>
+                            @endif
                             <p class="font-bold text-18px text-primary">الدورة مجانية تماماً</p>
                         </div>
                     </div>
