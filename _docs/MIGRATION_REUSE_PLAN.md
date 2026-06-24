@@ -1,5 +1,7 @@
 # Migration & Reuse Plan — Siematplus → QIEC
 
+> **Note:** This was the original migration plan written at project start. For **current progress and status**, see [CLIENT_QIEC.md](CLIENT_QIEC.md) and [CHANGELOG.md](CHANGELOG.md). For the reusable process on future clients, see [CLIENT_PLAYBOOK.md](CLIENT_PLAYBOOK.md).
+
 ## Goal
 Replicate the proven custom landing layer architecture from siematplus into the qiec project, adapting branding/design while keeping the same technical structure and workflow.
 

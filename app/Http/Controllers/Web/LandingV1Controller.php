@@ -79,6 +79,13 @@ class LandingV1Controller extends Controller
         ]);
     }
 
+    public function courseDetailsPaid()
+    {
+        return view('landing_v1.pages.course-details-paid', [
+            'pageTitle' => 'إتقان إدارة المشاريع (PMP)',
+        ]);
+    }
+
     public function coursesPaid()
     {
         return view('landing_v1.pages.courses-paid', [

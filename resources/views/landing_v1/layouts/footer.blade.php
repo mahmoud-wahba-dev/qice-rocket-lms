@@ -105,8 +105,8 @@
                 <h6 class="footer-title font-semibold text-24px text-white mb-4">التواصل</h6>
                 <p href="#" class="link link-hover font-normal text-19px text-white">للتسجيل والاستفسارات، يرجى التواصل
                     معنا</p>
-                <a href="mailto:info@siematplus.com"
-                    class="link link-hover font-normal text-19px text-white">info@siematplus.com</a>
+                <a href="mailto:contact@training.qiec.sa"
+                    class="link link-hover font-normal text-19px text-white">contact@training.qiec.sa</a>
 
 
 
@@ -117,7 +117,6 @@
             <div class="center w-full ">
                 <aside class="grid-flow-col items-center">
                     <p class="font-normal text-white text-17px text-center">Quality & Excellence Center for Training
-                        <!-- <a class="link link-hover font-medium" href="{{ route('landing.v1.index') }}">SIEMATPLUS</a> -->
                     </p>
                 </aside>
 

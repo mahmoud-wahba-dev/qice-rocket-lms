@@ -194,8 +194,8 @@
                         </div>
 
                         <div class="flex items-center gap-4">
-                            <a href="mailto:info@siematplus.com"
-                                class="font-normal text-17px text-black link link-animated">info@siematplus.com</a>
+                            <a href="mailto:contact@training.qiec.sa"
+                                class="font-normal text-17px text-black link link-animated">contact@training.qiec.sa</a>
                         </div>
                     </div>
 

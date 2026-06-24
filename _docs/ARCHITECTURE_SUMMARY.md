@@ -21,7 +21,7 @@ qiec-project/
 ├── artisan                    – Laravel CLI entry point
 ├── composer.json              – PHP dependencies
 ├── firebase-auth.json         – ⚠️ Firebase service account key (SENSITIVE)
-├── package.json               – NPM dependencies (Mix only, no Vite)
+├── package.json               – NPM dependencies (Mix + Vite landing pipeline)
 ├── package-lock.json          – NPM lockfile
 ├── phpunit.xml                – PHPUnit config
 ├── quice-prod-db-u873288737_markaz.sql  – ⚠️ Production DB dump (1 MB)
@@ -63,6 +63,7 @@ qiec-project/
 │       ├── api/               – API views
 │       ├── components/        – Shared components
 │       ├── design_1/          – Frontend views (stock RocketLMS theme)
+│       ├── landing_v1/        – Custom public landing layer (Vite/Tailwind)
 │       ├── errors/            – Error pages
 │       ├── landingBuilder/    – Landing builder views
 │       ├── purchase_code/     – License activation views
@@ -80,80 +81,108 @@ qiec-project/
 │
 ├── storage/                   – Laravel storage
 ├── tests/                     – PHPUnit tests
+├── _docs/                     – Project documentation (see README.md)
+├── scripts/                   – Server setup scripts
 └── vendor/                    – ⚠️ Composer dependencies (should NOT be committed)
 ```
+
+---
+
+## Current State (landing_v1 implemented)
+
+The custom **landing_v1** public layer is active. Stock RocketLMS routes for `/`, `/contact`, `/instructors`, `/cart` are replaced by `LandingV1Controller`. Auth uses `landing_v1` login/register views.
+
+**Key files:**
+- `app/Http/Controllers/Web/LandingV1Controller.php` — 15+ page methods
+- `resources/views/landing_v1/` — layouts, components, pages
+- `resources/css/landing_v1.css` — QIEC design tokens
+- `vite.config.js`, `tailwind.config.js`, `postcss.config.js`
+- `public/build/` — Vite production output
+
+See [CLIENT_QIEC.md](CLIENT_QIEC.md) for route map and page status.
 
 ---
 
 ## Routes Analysis (`routes/web.php`)
 
 ### Current State
-The web routes are **stock RocketLMS** — no custom landing layer has been added yet.
+Landing V1 is the **primary public layer**. Custom routes block (near end of `web.php`):
 
-**Key differences from siematplus:**
-- Home route: `Route::get('/', 'HomeController@index')` (stock RocketLMS HomeController)
-- Contact: Uses stock `ContactController@index` under `/contact`
-- Instructors: Uses stock `InstructorsController@instructors` under `/instructors`
-- Cart: Uses stock `CartController@index` under `/cart`
-- **No LandingV1Controller** — does not exist in the project
-- **No `landing_v1` view directory** exists
-- **No custom route block** or route naming convention
+| Route | Controller | Notes |
+|-------|------------|-------|
+| `/` | `LandingV1Controller@index` | Home with DB courses/trainers |
+| `/about`, `/contact`, `/workshops` | Static/marketing pages | |
+| `/courses` | Dynamic listing + AJAX filters | |
+| `/courses-paid`, `/course-details-free`, `/course-details-paid` | Figma prototypes | Static |
+| `/blogs`, `/blog-details` | Prototypes | Static |
+| `/instructors` | Dynamic teacher stats | |
+| `/cart`, `/checkout` | Cart + payment flow | Guest cart supported |
+| `/webinar/{slug}` | Full course details | Dynamic |
+
+Auth: `/login`, `/register` → `landing_v1` auth views.
+
+### Before migration (historical)
+Stock RocketLMS routes were active: `HomeController@index`, `ContactController`, `InstructorsController`, `CartController`. These are now commented out or replaced.
 
 ### Additional Routes (not in siematplus)
 - `/events/*` — Full event system with ticket validation, reviews
 - `/meeting-packages/*` — Meeting package purchasing
 - `custom_admin.php` — Empty custom admin routes template (ready for use)
 
-### Routes that siematplus customized/commented out
-These are still active in qiec and will need to be replaced:
-- `GET /` → `HomeController@index` (stock)
-- `GET /classes` → `ClassesController@index` (stock)
-- `GET /contact` → `ContactController@index` (stock)
-- `GET /instructors` → `InstructorsController@instructors` (stock)
-- `GET /cart` → `CartController@index` (stock, inside auth middleware)
+### Routes that were replaced (now landing_v1)
+- `GET /` → `LandingV1Controller@index`
+- `GET /contact` → `LandingV1Controller@contact`
+- `GET /instructors` → `LandingV1Controller@instructors`
+- `GET /cart` → `LandingV1Controller@cart` (guest OK)
+- `GET /courses` → `LandingV1Controller@courses`
 
 ---
 
 ## Controllers Analysis
 
-### Web Controllers (57 files)
-All are **stock RocketLMS controllers**. Notable:
-- **No `LandingV1Controller.php`** — this needs to be created
-- `CartManagerController.php` exists (21 KB) — slightly different size from siematplus (21.3 KB vs 21.1 KB)
-- `PaymentController.php` — smaller than siematplus (12.5 KB vs 13.8 KB), missing `myfatoorah` and `payment-request GET` routes
-- `PurchaseCodeController.php` — slightly larger (3.8 KB vs 3.7 KB)
+### Web Controllers
+- **`LandingV1Controller.php`** — custom public layer (~451 lines)
+- 57 stock RocketLMS controllers remain for admin, panel, API, events, etc.
+- `CartManagerController.php` — guest + auth cart handling
+- Auth controllers return `landing_v1` views for login/register
+
+### Before migration (historical)
+- **No `LandingV1Controller.php`** existed — created during Phase 2 migration
 
 ---
 
 ## Asset Pipeline
 
-### Current: Laravel Mix Only
+### Dual pipeline
+
+| Layer | Tool | npm scripts | Output |
+|-------|------|-------------|--------|
+| `landing_v1` | Vite + Tailwind + FlyonUI | `dev:landing`, `build:landing` | `public/build/` |
+| `design_1` (stock) | Laravel Mix (prebuilt) | `dev`, `prod` | `public/assets/design_1/` |
+
+**Note:** `webpack.mix.js` is missing from repo — stock Mix assets are prebuilt in `public/assets/design_1/` (gitignored). Do not delete.
+
+### landing_v1 config files
+- `vite.config.js` — inputs: `landing_v1.css`, `landing_v1.js`
+- `tailwind.config.js` — scoped to `#landing-v1-app`, FlyonUI plugin
+- `postcss.config.js` — tailwindcss + autoprefixer
+
+### package.json scripts
 ```json
 {
-    "scripts": {
-        "dev": "npm run development",
-        "development": "mix",
-        "watch": "mix watch",
-        "prod": "npm run production",
-        "production": "mix --production"
-    }
+    "dev:landing": "vite",
+    "build:landing": "vite build",
+    "deploy": "deploy.bat",
+    "dev": "mix",
+    "prod": "mix --production"
 }
 ```
 
-### Missing (compared to siematplus)
-- ❌ No `vite.config.js`
-- ❌ No `tailwind.config.js`
-- ❌ No `postcss.config.js`
-- ❌ No `landing:dev` / `landing:build` npm scripts
-- ❌ No `resources/css/` directory at all
-- ❌ No `resources/js/landing_v1.js`
-- ❌ No Tailwind CSS dependency
-- ❌ No FlyonUI dependency
-- ❌ No Iconify dependencies
-
-### Present (stock)
-- `webpack.mix.js` (not present in root — assets compiled to `public/assets/` via Mix manifest)
-- `laravel-vite-plugin` in `devDependencies` but **not used** (no vite.config.js)
+### Before migration (historical)
+Missing compared to siematplus at project start:
+- ❌ No vite.config.js (now ✅ present)
+- ❌ No tailwind.config.js (now ✅ present)
+- ❌ No landing_v1 views (now ✅ present)
 
 ---
 
@@ -239,23 +268,33 @@ Both share identical RocketLMS dependency sets (90+ packages for payment gateway
 
 ## Git Status
 
-- **No `.git` directory** — Git is NOT initialized in this project
-- No remote repository configured
-- No commit history
+- **Git initialized** — remote: `git@github.com:mahmoud-wahba-dev/qice-rocket-lms.git`
+- Branch: `master`
+- Deploy scripts (`deploy.bat`, `deploy.ps1`) are gitignored — templates in `_docs/DEPLOY_TEMPLATE.md`
+- Documentation: `_docs/README.md` is the master index
 
 ---
 
 ## Database
 
-- Two SQL dump files exist in the project root:
-  - `quice-prod-db-u873288737_markaz.sql` (1.07 MB)
-  - `u873288737_markaz.sql` (1.64 MB)
-- Database name: `u873288737_markaz` (Hostinger format)
-- These are production database dumps and should be removed from the project directory
+- SQL dumps moved to `_backups/` (not in project root)
+- Database name (production): `u873288737_markaz` (Hostinger format)
+- Local dev: configure in `.env` (XAMPP: `root`, empty password)
+
+---
+
+## Deployment
+
+- **Method:** Local `npm run deploy` (build → git push → SSH git pull)
+- **Server path:** `domains/training.qiec.sa/public_html`
+- **Guide:** [_docs/DEPLOYMENT.md](DEPLOYMENT.md)
+- **First setup script:** `scripts/hostinger-first-setup.sh`
 
 ---
 
 ## Files to Clean Up Before Git Init
+
+> Historical — Phase 0 completed. See [PHASE0_CHANGELOG.md](PHASE0_CHANGELOG.md).
 
 | File / Pattern | Reason |
 |----------------|--------|

@@ -474,6 +474,166 @@ function initCourseScrollspy() {
 window.initCourseScrollspy = initCourseScrollspy;
 
 // ============================================================
+// Paid course hero — YouTube play / pause
+// ============================================================
+function initCourseHeroVideo() {
+	const wrap = document.getElementById("course-hero-video");
+	const iframe = document.getElementById("course-hero-youtube");
+	const toggle = document.getElementById("course-hero-video-toggle");
+	const muteToggle = document.getElementById("course-hero-video-mute");
+
+	if (!wrap || !iframe || !toggle || !muteToggle) {
+		return;
+	}
+
+	if (wrap.dataset.heroVideoInit === "true") {
+		return;
+	}
+
+	wrap.dataset.heroVideoInit = "true";
+
+	const iconPlay = toggle.querySelector("[data-icon-play]");
+	const iconPause = toggle.querySelector("[data-icon-pause]");
+	const iconMuted = muteToggle.querySelector("[data-icon-muted]");
+	const iconUnmuted = muteToggle.querySelector("[data-icon-unmuted]");
+	let player = null;
+	let apiReady = false;
+
+	const setPlayingUI = (playing) => {
+		toggle.dataset.playing = playing ? "true" : "false";
+		iconPlay?.classList.toggle("hidden", playing);
+		iconPause?.classList.toggle("hidden", !playing);
+		toggle.setAttribute(
+			"aria-label",
+			playing ? "إيقاف الفيديو" : "تشغيل الفيديو"
+		);
+	};
+
+	const setMutedUI = (muted) => {
+		muteToggle.dataset.muted = muted ? "true" : "false";
+		iconMuted?.classList.toggle("hidden", !muted);
+		iconUnmuted?.classList.toggle("hidden", muted);
+		muteToggle.setAttribute(
+			"aria-label",
+			muted ? "تشغيل الصوت" : "كتم الصوت"
+		);
+	};
+
+	const postCommand = (func) => {
+		iframe.contentWindow?.postMessage(
+			JSON.stringify({ event: "command", func, args: "" }),
+			"*"
+		);
+	};
+
+	const togglePlayback = () => {
+		const playing = toggle.dataset.playing === "true";
+
+		if (player && typeof player.getPlayerState === "function") {
+			const state = player.getPlayerState();
+			if (state === window.YT?.PlayerState?.PLAYING) {
+				player.pauseVideo();
+			} else {
+				player.playVideo();
+			}
+			return;
+		}
+
+		if (playing) {
+			postCommand("pauseVideo");
+			setPlayingUI(false);
+		} else {
+			postCommand("playVideo");
+			setPlayingUI(true);
+		}
+	};
+
+	const toggleMute = () => {
+		const muted = muteToggle.dataset.muted === "true";
+
+		if (player && typeof player.isMuted === "function") {
+			if (player.isMuted()) {
+				player.unMute();
+				setMutedUI(false);
+			} else {
+				player.mute();
+				setMutedUI(true);
+			}
+			return;
+		}
+
+		if (muted) {
+			postCommand("unMute");
+			setMutedUI(false);
+		} else {
+			postCommand("mute");
+			setMutedUI(true);
+		}
+	};
+
+	const bindPlayer = () => {
+		if (apiReady || !window.YT?.Player) {
+			return;
+		}
+
+		apiReady = true;
+		player = new window.YT.Player("course-hero-youtube", {
+			events: {
+				onStateChange(event) {
+					if (event.data === window.YT.PlayerState.PLAYING) {
+						setPlayingUI(true);
+					}
+					if (event.data === window.YT.PlayerState.PAUSED) {
+						setPlayingUI(false);
+					}
+				},
+			},
+		});
+	};
+
+	const loadYouTubeApi = () => {
+		if (window.YT?.Player) {
+			bindPlayer();
+			return;
+		}
+
+		if (window.__courseHeroApiLoading) {
+			return;
+		}
+
+		window.__courseHeroApiLoading = true;
+		const previousReady = window.onYouTubeIframeAPIReady;
+
+		window.onYouTubeIframeAPIReady = () => {
+			if (typeof previousReady === "function") {
+				previousReady();
+			}
+			bindPlayer();
+		};
+
+		const tag = document.createElement("script");
+		tag.src = "https://www.youtube.com/iframe_api";
+		document.head.appendChild(tag);
+	};
+
+	toggle.addEventListener("click", (event) => {
+		event.stopPropagation();
+		togglePlayback();
+	});
+
+	muteToggle.addEventListener("click", (event) => {
+		event.stopPropagation();
+		toggleMute();
+	});
+
+	loadYouTubeApi();
+	setPlayingUI(true);
+	setMutedUI(true);
+}
+
+window.initCourseHeroVideo = initCourseHeroVideo;
+
+// ============================================================
 // INIT on DOM ready
 // ============================================================
 document.addEventListener("DOMContentLoaded", () => {
@@ -487,8 +647,11 @@ document.addEventListener("DOMContentLoaded", () => {
 	handleAddToCartForms();
 
 	initCourseScrollspy();
+
+	initCourseHeroVideo();
 });
 
 if (document.readyState !== "loading") {
 	initCourseScrollspy();
+	initCourseHeroVideo();
 }

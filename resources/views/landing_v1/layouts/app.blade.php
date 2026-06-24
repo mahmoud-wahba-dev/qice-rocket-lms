@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ $pageTitle ?? 'Siemat Plus' }}</title>
+    <title>{{ $pageTitle ?? 'QIEC Training' }}</title>
     <meta name="description" content="{{ $pageDescription ?? '' }}">
     <meta name="robots" content="{{ $pageRobot ?? 'index,follow' }}">
 
