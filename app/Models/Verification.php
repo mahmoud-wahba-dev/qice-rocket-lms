@@ -40,11 +40,15 @@ class Verification extends Model
         if ($this->shouldSendVerificationEmail()) {
             try {
                 $this->notify(new SendVerificationEmailCode($this));
+                session()->forget('verification_mail_failed');
             } catch (\Throwable $e) {
                 \Log::error('Verification email failed: ' . $e->getMessage(), [
                     'email' => $this->email,
                 ]);
+                session()->flash('verification_mail_failed', true);
             }
+        } else {
+            session()->flash('verification_mail_failed', true);
         }
 
         if (app()->environment('local') && !empty($this->email)) {

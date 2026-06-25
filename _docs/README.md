@@ -67,6 +67,9 @@ Full guide: [DEPLOYMENT.md](DEPLOYMENT.md)
 | [CLIENT_QIEC.md](CLIENT_QIEC.md) | **This client** — routes, colors, pages, TODOs |
 | [ISSUES_AND_LESSONS.md](ISSUES_AND_LESSONS.md) | Problems faced and how to avoid them next time |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Hostinger SSH setup, first deploy, troubleshooting |
+| [ENV_PRODUCTION_CHECKLIST.md](ENV_PRODUCTION_CHECKLIST.md) | Local vs production `.env` validation |
+| [PRODUCTION_MAIL.md](PRODUCTION_MAIL.md) | Hostinger SMTP + registration verification emails |
+| [LOCAL_TO_PRODUCTION.md](LOCAL_TO_PRODUCTION.md) | Sync local DB + images to production |
 | [FIRST_DEPLOY_CHECKLIST.md](FIRST_DEPLOY_CHECKLIST.md) | Step-by-step first production deploy |
 | [DEPLOY_TEMPLATE.md](DEPLOY_TEMPLATE.md) | Copy-paste deploy script templates |
 | [CHANGELOG.md](CHANGELOG.md) | Rolling project log |
