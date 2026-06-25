@@ -331,10 +331,12 @@ function getPanelHeaderNavLinks(): array
         ];
     }
 
-    $setting = \App\Models\Setting::where('name', \App\Models\Setting::$navbarLinkName)->first();
+    if (config('landing_v1.merge_admin_navbar_links', false)) {
+        $setting = \App\Models\Setting::where('name', \App\Models\Setting::$navbarLinkName)->first();
 
-    if (!empty($setting)) {
-        $links = array_merge($links, handleNavbarLinks($setting));
+        if (!empty($setting)) {
+            $links = array_merge($links, handleNavbarLinks($setting));
+        }
     }
 
     usort($links, function ($a, $b) {

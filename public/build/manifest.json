@@ -1,11 +1,11 @@
 {
   "resources/css/landing_v1.css": {
-    "file": "assets/landing_v1-8bab6bec.css",
+    "file": "assets/landing_v1-cd0c09df.css",
     "isEntry": true,
     "src": "resources/css/landing_v1.css"
   },
   "resources/js/landing_v1.js": {
-    "file": "assets/landing_v1-3c56d76c.js",
+    "file": "assets/landing_v1-253a611a.js",
     "isEntry": true,
     "src": "resources/js/landing_v1.js"
   }

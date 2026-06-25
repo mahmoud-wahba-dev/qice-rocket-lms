@@ -624,19 +624,147 @@ class LandingV1Controller extends Controller
             ];
         })->values()->all();
 
-        $heroYoutubeId = 'JXEXdbS5tsI';
-        if ($course->video_demo_source === 'youtube' && !empty($course->video_demo)) {
-            if (preg_match('/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/', $course->video_demo, $matches)) {
-                $heroYoutubeId = $matches[1];
-            }
-        }
-
         return [
             'learningOutcomes' => $learningOutcomes,
             'curriculumModules' => $curriculumModules,
             'comments' => $comments,
-            'heroYoutubeId' => $heroYoutubeId,
+            'heroVideo' => $this->buildCourseHeroVideo($course),
         ];
+    }
+
+    private function buildCourseHeroVideo(Webinar $course): array
+    {
+        $poster = $course->getImage();
+        $source = $course->video_demo_source;
+        $path = $course->video_demo;
+
+        if (empty($source) || empty($path)) {
+            return [
+                'type' => 'poster',
+                'poster' => $poster,
+                'hasVideo' => false,
+                'hasControls' => false,
+            ];
+        }
+
+        $origin = urlencode(url('/'));
+
+        switch ($source) {
+            case 'youtube':
+                $youtubeId = $this->extractYoutubeId($path);
+
+                if (empty($youtubeId)) {
+                    break;
+                }
+
+                return [
+                    'type' => 'youtube',
+                    'youtubeId' => $youtubeId,
+                    'embedUrl' => "https://www.youtube-nocookie.com/embed/{$youtubeId}?enablejsapi=1&autoplay=1&mute=1&loop=1&playlist={$youtubeId}&controls=0&modestbranding=1&rel=0&playsinline=1&origin={$origin}",
+                    'hasVideo' => true,
+                    'hasControls' => true,
+                ];
+
+            case 'vimeo':
+                $vimeoUrl = $this->convertVimeoLinkToPlay($path);
+
+                return [
+                    'type' => 'vimeo',
+                    'embedUrl' => $vimeoUrl . '?autoplay=1&muted=1&loop=1&controls=0&api=1&title=0&byline=0&portrait=0&autopause=0',
+                    'hasVideo' => true,
+                    'hasControls' => true,
+                ];
+
+            case 'upload':
+                return [
+                    'type' => 'html5',
+                    'videoUrl' => url($path),
+                    'poster' => $poster,
+                    'hasVideo' => true,
+                    'hasControls' => true,
+                ];
+
+            case 'external_link':
+            case 's3':
+                return [
+                    'type' => 'html5',
+                    'videoUrl' => $path,
+                    'poster' => $poster,
+                    'hasVideo' => true,
+                    'hasControls' => true,
+                ];
+
+            case 'secure_host':
+                $bunnyEmbedUrl = $path;
+
+                if (!str_contains($bunnyEmbedUrl, '?')) {
+                    $bunnyEmbedUrl .= '?autoplay=true&loop=true&muted=true&preload=true';
+                }
+
+                return [
+                    'type' => 'bunny',
+                    'embedUrl' => $bunnyEmbedUrl,
+                    'hasVideo' => true,
+                    'hasControls' => true,
+                ];
+
+            case 'iframe':
+            case 'google_drive':
+                return [
+                    'type' => 'raw',
+                    'rawHtml' => $path,
+                    'hasVideo' => true,
+                    'hasControls' => false,
+                ];
+        }
+
+        return [
+            'type' => 'poster',
+            'poster' => $poster,
+            'hasVideo' => false,
+            'hasControls' => false,
+        ];
+    }
+
+    private function extractYoutubeId(string $path): ?string
+    {
+        if (preg_match('/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/', $path, $matches)) {
+            return $matches[1];
+        }
+
+        return null;
+    }
+
+    private function convertVimeoLinkToPlay(string $path): string
+    {
+        $path = trim($path);
+
+        if (str_contains($path, 'player.vimeo.com/video')) {
+            return $path;
+        }
+
+        if (!preg_match('/^https?:\/\//i', $path)) {
+            $path = 'https://' . $path;
+        }
+
+        $parsed = parse_url($path);
+
+        if (empty($parsed['host'])) {
+            return $path;
+        }
+
+        $hostname = preg_replace('/^www\./', '', strtolower($parsed['host']));
+
+        if ($hostname === 'vimeo.com' && !empty($parsed['path'])) {
+            $parts = explode('/', trim($parsed['path'], '/'));
+            $id = end($parts);
+
+            if (preg_match('/^\d+$/', $id)) {
+                return 'https://player.vimeo.com/video/' . $id;
+            }
+        }
+
+        return $path;
     }
 
     private function isWebinarInCart(Webinar $course): bool

@@ -58,6 +58,11 @@
     .centered {
         @apply flex items-center justify-center;
     }
+
+    .password-toggle .password-toggle-show.hidden,
+    .password-toggle .password-toggle-hide.hidden {
+        display: none !important;
+    }
 }
 
 .bg-linear {
@@ -146,6 +151,25 @@ main {
 
 #landing-v1-app .course_details_page .course-scrollspy-section {
     scroll-margin-top: 168px;
+}
+
+#landing-v1-app .course-hero-embed iframe {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-height: 100%;
+    min-width: 177.78vh;
+    width: 100vw;
+    height: 56.25vw;
+    border: 0;
+    pointer-events: auto;
+}
+
+/* Hide built-in Bunny/Vimeo chrome; use our hero overlay buttons */
+#landing-v1-app #course-hero-bunny,
+#landing-v1-app #course-hero-vimeo {
+    pointer-events: none;
 }
 
 #landing-v1-app .course_details_page .course-scrollspy-nav {

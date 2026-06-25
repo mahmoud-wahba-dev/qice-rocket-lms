@@ -22,7 +22,6 @@ use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\MessageBag;
-use Illuminate\Validation\ValidationException;
 
 class RegisterController extends Controller
 {
@@ -102,6 +101,7 @@ class RegisterController extends Controller
         }
 
         $rules = [
+            'account_type' => 'required|in:user,teacher,organization',
             'country_code' => ($registerMethod == 'mobile' || $registerMethod == 'email') ? 'required' : 'nullable',
             'mobile' => (($registerMethod == 'mobile' || $registerMethod == 'email') ? 'required' : 'nullable') . '|numeric|unique:users',
             'email' => (($registerMethod == 'email') ? 'required' : 'nullable') . '|email|max:255|unique:users',
@@ -117,6 +117,7 @@ class RegisterController extends Controller
         }
 
         return Validator::make($data, $rules, [], [
+            'account_type' => trans('update.select_a_role'),
             'mobile' => trans('auth.mobile'),
             'email' => trans('auth.email'),
             'term' => trans('update.terms'),
@@ -212,7 +213,9 @@ class RegisterController extends Controller
                 }
             }
 
-            throw new ValidationException($validate);
+            return redirect()->back()
+                ->withErrors($errors)
+                ->withInput($request->all());
         } else {
             $form = $this->getFormFieldsByType($accountType);
             $errors = [];

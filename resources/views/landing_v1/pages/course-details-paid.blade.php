@@ -4,7 +4,13 @@
     @php
         $landingImg = asset('assets/landing_v1/img');
         $courseDetailsImg = asset('assets/landing_v1/img/course_details');
-        $heroYoutubeId = $heroYoutubeId ?? 'JXEXdbS5tsI';
+        $heroVideo = $heroVideo ?? [
+            'type' => 'poster',
+            'poster' => $course->getImage(),
+            'hasVideo' => false,
+            'hasControls' => false,
+        ];
+        $heroVideoCoverClass = 'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-h-full min-w-[177.78vh] w-[100vw] h-[56.25vw] border-0 pointer-events-auto object-cover';
         $isInCart = $isInCart ?? false;
         $hasUserBought = $hasUserBought ?? false;
         $averageRating = $averageRating ?? 0;
@@ -54,13 +60,48 @@
 
         {{-- Hero: full-bleed video (left) + gradient fade into teal + text (right, RTL) --}}
         <header class="relative flex items-center overflow-hidden bg-[#155554] text-white min-h-[520px] lg:min-h-[680px]">
-            <div id="course-hero-video" class="absolute inset-y-0 left-0 z-0 w-full sm:w-[72%] lg:w-[58%] overflow-hidden">
-                <iframe id="course-hero-youtube"
-                    class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-h-full min-w-[177.78vh] w-[100vw] h-[56.25vw] border-0 pointer-events-auto"
-                    src="https://www.youtube-nocookie.com/embed/{{ $heroYoutubeId }}?enablejsapi=1&autoplay=1&mute=1&loop=1&playlist={{ $heroYoutubeId }}&controls=0&modestbranding=1&rel=0&playsinline=1&origin={{ urlencode(url('/')) }}"
-                    title="{{ $course->title }}"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    referrerpolicy="strict-origin-when-cross-origin" loading="lazy"></iframe>
+            <div id="course-hero-video"
+                class="absolute inset-y-0 left-0 z-0 w-full sm:w-[72%] lg:w-[58%] overflow-hidden"
+                data-video-type="{{ $heroVideo['type'] }}">
+                @if ($heroVideo['type'] === 'youtube')
+                    <iframe id="course-hero-youtube"
+                        class="{{ $heroVideoCoverClass }}"
+                        src="{{ $heroVideo['embedUrl'] }}"
+                        title="{{ $course->title }}"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        referrerpolicy="strict-origin-when-cross-origin" loading="lazy"></iframe>
+                @elseif ($heroVideo['type'] === 'vimeo')
+                    <iframe id="course-hero-vimeo"
+                        class="{{ $heroVideoCoverClass }}"
+                        src="{{ $heroVideo['embedUrl'] }}"
+                        title="{{ $course->title }}"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                        referrerpolicy="strict-origin-when-cross-origin" loading="lazy"></iframe>
+                @elseif ($heroVideo['type'] === 'bunny')
+                    <iframe id="course-hero-bunny"
+                        class="{{ $heroVideoCoverClass }}"
+                        src="{{ $heroVideo['embedUrl'] }}"
+                        title="{{ $course->title }}"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                        referrerpolicy="strict-origin-when-cross-origin" loading="lazy"></iframe>
+                @elseif ($heroVideo['type'] === 'html5')
+                    <video id="course-hero-html5"
+                        class="{{ $heroVideoCoverClass }}"
+                        autoplay muted loop playsinline
+                        poster="{{ $heroVideo['poster'] ?? $course->getImage() }}">
+                        <source src="{{ $heroVideo['videoUrl'] }}" type="video/mp4">
+                    </video>
+                @elseif ($heroVideo['type'] === 'raw')
+                    <div class="course-hero-embed absolute inset-0">
+                        {!! $heroVideo['rawHtml'] !!}
+                    </div>
+                @else
+                    <img src="{{ $heroVideo['poster'] ?? $course->getImage() }}"
+                        alt="{{ $course->title }}"
+                        class="absolute inset-0 size-full object-cover">
+                @endif
+
+                @if (!empty($heroVideo['hasControls']))
                 <div class="absolute bottom-6 left-6 z-20 flex items-center gap-2">
                     <button type="button" id="course-hero-video-toggle"
                         class="flex size-12 items-center justify-center rounded-full border border-white/40 bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/55"
@@ -75,6 +116,7 @@
                         <span class="icon-[tabler--volume] size-6 hidden" data-icon-unmuted></span>
                     </button>
                 </div>
+                @endif
             </div>
 
             <div class="absolute inset-0 z-[1] bg-gradient-to-r from-transparent from-5% via-[#155554]/60 via-40% to-[#155554] to-55% pointer-events-none sm:bg-gradient-to-r sm:from-transparent sm:from-10% sm:via-[#155554]/70 sm:via-45% sm:to-[#155554] sm:to-62%"

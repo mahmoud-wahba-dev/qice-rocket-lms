@@ -90,17 +90,16 @@
                                                 <label class="label label-text font-medium text-24px text-primary mb-4"
                                                     for="loginPasswordEmail">كلمة المرور</label>
                                                 <div class="relative">
-                                                    <input id="loginPasswordEmail" name="password" type="password"
+                                                    <input id="loginPasswordEmail" name="password" type="password" value="{{ old('password') }}"
                                                         placeholder="كلمة المرور"
                                                         class="input bg-f7 h-16 rounded-7px w-full text-primary text-start pe-12 @error('password') border-red-500 @enderror"
                                                         required />
                                                     <button type="button"
-                                                        class="password-toggle size-5 absolute end-3 top-1/2 -translate-y-1/2 text-primary/60 hover:text-primary"
+                                                        class="password-toggle absolute end-3 top-1/2 z-10 flex size-10 -translate-y-1/2 items-center justify-center rounded-full text-primary/60 hover:text-primary hover:bg-primary/5 transition-colors"
                                                         data-target="#loginPasswordEmail" aria-label="إظهار كلمة المرور"
                                                         aria-pressed="false">
-                                                        <span class="icon-[tabler--eye] size-5 password-toggle-show center"></span>
-                                                        <span
-                                                            class="icon-[tabler--eye-off] size-5 hidden password-toggle-hide"></span>
+                                                        <span class="password-toggle-show icon-[tabler--eye] size-5 shrink-0" aria-hidden="true"></span>
+                                                        <span class="password-toggle-hide icon-[tabler--eye-off] size-5 shrink-0 hidden" aria-hidden="true"></span>
                                                     </button>
                                                 </div>
                                                 @error('password')
@@ -164,18 +163,16 @@
                                                 <label class="label label-text font-medium text-24px text-primary mb-4"
                                                     for="loginPasswordPhone">كلمة المرور</label>
                                                 <div class="relative">
-                                                    <input id="loginPasswordPhone" name="password" type="password"
+                                                    <input id="loginPasswordPhone" name="password" type="password" value="{{ old('password') }}"
                                                         placeholder="كلمة المرور"
                                                         class="input bg-f7 h-16 rounded-7px w-full text-primary text-start pe-12 @error('password') border-red-500 @enderror"
                                                         required />
                                                     <button type="button"
-                                                        class="password-toggle absolute end-3 top-1/2 -translate-y-1/2 text-primary/60 hover:text-primary"
+                                                        class="password-toggle absolute end-3 top-1/2 z-10 flex size-10 -translate-y-1/2 items-center justify-center rounded-full text-primary/60 hover:text-primary hover:bg-primary/5 transition-colors"
                                                         data-target="#loginPasswordPhone" aria-label="إظهار كلمة المرور"
                                                         aria-pressed="false">
-                                                        <span
-                                                            class="icon-[tabler--eye] size-5 password-toggle-show center"></span>
-                                                        <span
-                                                            class="icon-[tabler--eye-off] size-5 hidden password-toggle-hide"></span>
+                                                        <span class="password-toggle-show icon-[tabler--eye] size-5 shrink-0" aria-hidden="true"></span>
+                                                        <span class="password-toggle-hide icon-[tabler--eye-off] size-5 shrink-0 hidden" aria-hidden="true"></span>
                                                     </button>
                                                 </div>
                                                 @error('password')
@@ -288,30 +285,6 @@
                     field.classList.toggle('validation-is-valid', hasControls && !hasInvalidControl);
                 });
             }
-
-            document.querySelectorAll('.password-toggle').forEach(button => {
-                button.addEventListener('click', () => {
-                    const target = document.querySelector(button.dataset.target);
-
-                    if (!target) {
-                        return;
-                    }
-
-                    const isPassword = target.type === 'password';
-                    target.type = isPassword ? 'text' : 'password';
-                    button.setAttribute('aria-pressed', String(isPassword));
-                    button.setAttribute('aria-label', isPassword ? 'إخفاء كلمة المرور' :
-                        'إظهار كلمة المرور');
-
-                    const showIcon = button.querySelector('.password-toggle-show');
-                    const hideIcon = button.querySelector('.password-toggle-hide');
-
-                    if (showIcon && hideIcon) {
-                        showIcon.classList.toggle('hidden', isPassword);
-                        hideIcon.classList.toggle('hidden', !isPassword);
-                    }
-                });
-            });
 
             Array.from(forms).forEach(form => {
                 form.querySelectorAll('input, select').forEach(control => {

@@ -14,6 +14,7 @@ use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
@@ -88,12 +89,16 @@ class LoginController extends Controller
             $rules['captcha'] = 'required|captcha';
         }
 
-        $this->validate($request, $rules, [], [
+        $validator = Validator::make($request->all(), $rules, [], [
             'mobile' => trans('auth.mobile'),
             'email' => trans('auth.email'),
             'captcha' => trans('site.captcha'),
             'password' => trans('auth.password'),
         ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput($request->all());
+        }
 
         if ($type == 'mobile') {
             $value = $this->getUsernameValue($request);
@@ -177,9 +182,11 @@ class LoginController extends Controller
 
     public function sendFailedLoginResponse(Request $request)
     {
-        throw ValidationException::withMessages([
-            $this->getUsername($request) => [trans('validation.password_or_username')],
-        ]);
+        return back()
+            ->withInput($request->all())
+            ->withErrors([
+                $this->getUsername($request) => trans('validation.password_or_username'),
+            ]);
     }
 
     protected function sendBanResponse(Request $request, $user)

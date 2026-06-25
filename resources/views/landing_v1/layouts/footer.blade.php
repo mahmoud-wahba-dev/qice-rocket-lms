@@ -5,7 +5,7 @@
                 <div class="flex items-center gap-2 text-xl font-bold mb-4">
                     <img src="{{ $landingImg }}/logo-footer.svg" alt="logo" class="">
                 </div>
-                <p class="font-normal text-20px mb-4 text-white lg:w-[90%]">
+                <p class="font-normal text-16px mb-4 text-white lg:w-[90%]">
                     مركز الجودة والتميز للتدريب مؤسسة متخصصة في تقديم التدريب النوعي الذي يركز على التطبيق العملي لتلبية
                     الاحتياجات التدريبية للمؤسسات والأفراد.
 

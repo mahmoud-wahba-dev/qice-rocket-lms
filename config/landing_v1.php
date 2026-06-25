@@ -7,11 +7,14 @@ return [
     | Panel header navigation (Landing V1)
     |--------------------------------------------------------------------------
     |
-    | Links shown in the user panel top bar (design_1/panel/includes/header).
-    | Use a named Laravel route OR a direct "link" URL. Set "order" to control position.
-    | These merge with links added from Admin → Additional Pages → Top Navbar.
+    | Rendered in: resources/views/design_1/panel/includes/header.blade.php
+    | Loaded via:  app/Http/Middleware/PanelAuthenticate.php → getPanelHeaderNavLinks()
     |
+    | Edit links here (title + route). Set merge_admin_navbar_links to true only if you
+    | also want links from Admin → Additional Pages → Top Navbar (old LMS links).
     */
+    'merge_admin_navbar_links' => false,
+
     'panel_nav_links' => [
         [
             'title' => 'الرئيسية',
@@ -33,30 +36,6 @@ return [
             'route' => 'landing.v1.instructors',
             'order' => 40,
         ],
-        [
-            'title' => 'المدونة',
-            'route' => 'landing.v1.blogs',
-            'order' => 50,
-        ],
-        [
-            'title' => 'تواصل معنا',
-            'route' => 'landing.v1.contact',
-            'order' => 60,
-        ],
-
-        // Example: add a static page by route name
-        // [
-        //     'title' => 'تفاصيل دورة مدفوعة',
-        //     'route' => 'landing.v1.course-details-paid',
-        //     'order' => 35,
-        // ],
-
-        // Example: external or custom URL
-        // [
-        //     'title' => 'رابط مخصص',
-        //     'link' => 'https://example.com',
-        //     'order' => 70,
-        // ],
     ],
 
 ];

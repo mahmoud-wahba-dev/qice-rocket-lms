@@ -1,7 +1,20 @@
 @extends('landing_v1.layouts.app')
 
 @section('content')
-@php($landingImg = asset('assets/landing_v1/img/auth'))
+@php
+    $landingImg = asset('assets/landing_v1/img/auth');
+    $registerAccountType = old('account_type', 'user');
+
+    if (!in_array($registerAccountType, ['user', 'teacher', 'organization'], true)) {
+        $registerAccountType = 'user';
+    }
+
+    $registerTabPanels = [
+        'user' => '#tabs-pill-icon-1',
+        'teacher' => '#tabs-pill-icon-2',
+        'organization' => '#tabs-pill-icon-3',
+    ];
+@endphp
 <main class="bg-[#F5F8F9] overflow-hidden">
 
     <header class="m-16 rounded-20px bg-white px-9 py-15 shadow">
@@ -18,13 +31,13 @@
                         <p class="font-medium text-base text-primary mb-9">خطوة واحدة تفصلك عن الوصول لمكتبة واسعة من
                             الخبرات الميدانية</p>
 
-                        <div>
+                        <div data-register-tabs data-active-register-tab="{{ $registerTabPanels[$registerAccountType] }}">
                             <nav class="tabs grid grid-cols-3 flex-nowrap h-20  space-x-1 rtl:space-x-reverse p-1 rounded-10px border mb-6 border-[#CCCCCC] h-16"
                                 aria-label="Tabs" role="tablist" aria-orientation="horizontal">
                                 <button type="button"
-                                    class="btn btn-text  active-tab:bg-primary h-full font-medium text-20px text-primary active-tab:text-white hover:text-primary active hover:bg-primary/20"
-                                    id="tabs-pill-icon-item-1" data-tab="#tabs-pill-icon-1"
-                                    aria-controls="tabs-pill-icon-1" role="tab" aria-selected="false">
+                                    class="register-tab-btn btn btn-text h-full font-medium text-20px hover:text-primary hover:bg-primary/20 {{ $registerAccountType === 'user' ? 'active bg-primary text-white' : 'text-primary' }}"
+                                    id="tabs-pill-icon-item-1" data-register-tab="#tabs-pill-icon-1"
+                                    aria-controls="tabs-pill-icon-1" role="tab" aria-selected="{{ $registerAccountType === 'user' ? 'true' : 'false' }}">
                                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="text-current"
                                         xmlns="http://www.w3.org/2000/svg">
                                         <g clip-path="url(#clip0_362_6135)">
@@ -44,9 +57,9 @@
                                     <span class="hidden sm:inline">مُتدرب</span>
                                 </button>
                                 <button type="button"
-                                    class="btn btn-text active-tab:bg-primary h-full font-medium text-20px text-primary active-tab:text-white hover:text-primary  hover:bg-primary/20"
-                                    id="tabs-pill-icon-item-2" data-tab="#tabs-pill-icon-2"
-                                    aria-controls="tabs-pill-icon-2" role="tab" aria-selected="false">
+                                    class="register-tab-btn btn btn-text h-full font-medium text-20px hover:text-primary hover:bg-primary/20 {{ $registerAccountType === 'teacher' ? 'active bg-primary text-white' : 'text-primary' }}"
+                                    id="tabs-pill-icon-item-2" data-register-tab="#tabs-pill-icon-2"
+                                    aria-controls="tabs-pill-icon-2" role="tab" aria-selected="{{ $registerAccountType === 'teacher' ? 'true' : 'false' }}">
                                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="text-current"
                                         xmlns="http://www.w3.org/2000/svg">
                                         <g clip-path="url(#clip0_362_6140)">
@@ -71,9 +84,9 @@
 
 
                                 <button type="button"
-                                    class="btn btn-text active-tab:bg-primary h-full font-medium text-20px text-primary active-tab:text-white hover:text-primary  hover:bg-primary/20"
-                                    id="tabs-pill-icon-item-3" data-tab="#tabs-pill-icon-3"
-                                    aria-controls="tabs-pill-icon-3" role="tab" aria-selected="false">
+                                    class="register-tab-btn btn btn-text h-full font-medium text-20px hover:text-primary hover:bg-primary/20 {{ $registerAccountType === 'organization' ? 'active bg-primary text-white' : 'text-primary' }}"
+                                    id="tabs-pill-icon-item-3" data-register-tab="#tabs-pill-icon-3"
+                                    aria-controls="tabs-pill-icon-3" role="tab" aria-selected="{{ $registerAccountType === 'organization' ? 'true' : 'false' }}">
                                     <svg width="17" height="19" viewBox="0 0 17 19" fill="none" class="text-current"
                                         xmlns="http://www.w3.org/2000/svg">
                                         <path
@@ -89,7 +102,7 @@
 
 
                             <div class="mt-3">
-                                <div id="tabs-pill-icon-1" role="tabpanel" aria-labelledby="tabs-pill-icon-item-1">
+                                <div id="tabs-pill-icon-1" data-register-panel role="tabpanel" aria-labelledby="tabs-pill-icon-item-1" @class(['hidden' => $registerAccountType !== 'user'])>
                                     <form method="POST" action="/register" class="needs-validation peer grid gap-y-5" novalidate>
                                         @csrf
                                         <input type="hidden" name="account_type" value="user">
@@ -147,13 +160,14 @@
                                         <div>
                                             <label class="label label-text font-medium text-24px text-primary mb-4" for="studentPassword">كلمة المرور</label>
                                             <div class="relative">
-                                                <input id="studentPassword" name="password" type="password" placeholder="كلمة المرور"
+                                                <input id="studentPassword" name="password" type="password" value="{{ old('password') }}" placeholder="كلمة المرور"
                                                     class="input bg-f7 h-16 rounded-7px w-full text-primary text-start pe-12 @error('password') border-red-500 @enderror"
                                                     required minlength="6" />
-                                                <button type="button" class="password-toggle size-5 absolute end-3 top-1/2 -translate-y-1/2 text-primary/60 hover:text-primary"
+                                                <button type="button"
+                                                    class="password-toggle absolute end-3 top-1/2 z-10 flex size-10 -translate-y-1/2 items-center justify-center rounded-full text-primary/60 hover:text-primary hover:bg-primary/5 transition-colors"
                                                     data-target="#studentPassword" aria-label="إظهار كلمة المرور" aria-pressed="false">
-                                                    <span class="icon-[tabler--eye] size-5 password-toggle-show"></span>
-                                                    <span class="icon-[tabler--eye-off] size-5 hidden password-toggle-hide"></span>
+                                                    <span class="password-toggle-show icon-[tabler--eye] size-5 shrink-0" aria-hidden="true"></span>
+                                                    <span class="password-toggle-hide icon-[tabler--eye-off] size-5 shrink-0 hidden" aria-hidden="true"></span>
                                                 </button>
                                             </div>
                                             @error('password')
@@ -167,13 +181,14 @@
                                         <div>
                                             <label class="label label-text font-medium text-24px text-primary mb-4" for="studentConfirmPassword">تأكيد كلمة المرور</label>
                                             <div class="relative">
-                                                <input id="studentConfirmPassword" name="password_confirmation" type="password" placeholder="تأكيد كلمة المرور"
+                                                <input id="studentConfirmPassword" name="password_confirmation" type="password" value="{{ old('password_confirmation') }}" placeholder="تأكيد كلمة المرور"
                                                     class="input bg-f7 h-16 rounded-7px w-full text-primary text-start pe-12 @error('password_confirmation') border-red-500 @enderror"
                                                     required />
-                                                <button type="button" class="password-toggle size-5 absolute end-3 top-1/2 -translate-y-1/2 text-primary/60 hover:text-primary"
+                                                <button type="button"
+                                                    class="password-toggle absolute end-3 top-1/2 z-10 flex size-10 -translate-y-1/2 items-center justify-center rounded-full text-primary/60 hover:text-primary hover:bg-primary/5 transition-colors"
                                                     data-target="#studentConfirmPassword" aria-label="إظهار كلمة المرور" aria-pressed="false">
-                                                    <span class="icon-[tabler--eye] size-5 password-toggle-show"></span>
-                                                    <span class="icon-[tabler--eye-off] size-5 hidden password-toggle-hide"></span>
+                                                    <span class="password-toggle-show icon-[tabler--eye] size-5 shrink-0" aria-hidden="true"></span>
+                                                    <span class="password-toggle-hide icon-[tabler--eye-off] size-5 shrink-0 hidden" aria-hidden="true"></span>
                                                 </button>
                                             </div>
                                             @error('password_confirmation')
@@ -216,7 +231,7 @@
                                         </div>
                                     </form>
                                 </div>
-                                <div id="tabs-pill-icon-2" class="hidden" role="tabpanel" aria-labelledby="tabs-pill-icon-item-2">
+                                <div id="tabs-pill-icon-2" data-register-panel role="tabpanel" aria-labelledby="tabs-pill-icon-item-2" @class(['hidden' => $registerAccountType !== 'teacher'])>
                                     <form method="POST" action="/register" class="needs-validation peer grid gap-y-5" novalidate>
                                         @csrf
                                         <input type="hidden" name="account_type" value="teacher">
@@ -274,13 +289,14 @@
                                         <div>
                                             <label class="label label-text font-medium text-24px text-primary mb-4" for="traineePassword">كلمة المرور</label>
                                             <div class="relative">
-                                                <input id="traineePassword" name="password" type="password" placeholder="كلمة المرور"
+                                                <input id="traineePassword" name="password" type="password" value="{{ old('password') }}" placeholder="كلمة المرور"
                                                     class="input bg-f7 h-16 rounded-7px w-full text-primary text-start pe-12 @error('password') border-red-500 @enderror"
                                                     required minlength="6" />
-                                                <button type="button" class="password-toggle size-5 absolute end-3 top-1/2 -translate-y-1/2 text-primary/60 hover:text-primary"
+                                                <button type="button"
+                                                    class="password-toggle absolute end-3 top-1/2 z-10 flex size-10 -translate-y-1/2 items-center justify-center rounded-full text-primary/60 hover:text-primary hover:bg-primary/5 transition-colors"
                                                     data-target="#traineePassword" aria-label="إظهار كلمة المرور" aria-pressed="false">
-                                                    <span class="icon-[tabler--eye] size-5 password-toggle-show"></span>
-                                                    <span class="icon-[tabler--eye-off] size-5 hidden password-toggle-hide"></span>
+                                                    <span class="password-toggle-show icon-[tabler--eye] size-5 shrink-0" aria-hidden="true"></span>
+                                                    <span class="password-toggle-hide icon-[tabler--eye-off] size-5 shrink-0 hidden" aria-hidden="true"></span>
                                                 </button>
                                             </div>
                                             @error('password')
@@ -294,13 +310,14 @@
                                         <div>
                                             <label class="label label-text font-medium text-24px text-primary mb-4" for="traineeConfirmPassword">تأكيد كلمة المرور</label>
                                             <div class="relative">
-                                                <input id="traineeConfirmPassword" name="password_confirmation" type="password" placeholder="تأكيد كلمة المرور"
+                                                <input id="traineeConfirmPassword" name="password_confirmation" type="password" value="{{ old('password_confirmation') }}" placeholder="تأكيد كلمة المرور"
                                                     class="input bg-f7 h-16 rounded-7px w-full text-primary text-start pe-12 @error('password_confirmation') border-red-500 @enderror"
                                                     required />
-                                                <button type="button" class="password-toggle size-5 absolute end-3 top-1/2 -translate-y-1/2 text-primary/60 hover:text-primary"
+                                                <button type="button"
+                                                    class="password-toggle absolute end-3 top-1/2 z-10 flex size-10 -translate-y-1/2 items-center justify-center rounded-full text-primary/60 hover:text-primary hover:bg-primary/5 transition-colors"
                                                     data-target="#traineeConfirmPassword" aria-label="إظهار كلمة المرور" aria-pressed="false">
-                                                    <span class="icon-[tabler--eye] size-5 password-toggle-show"></span>
-                                                    <span class="icon-[tabler--eye-off] size-5 hidden password-toggle-hide"></span>
+                                                    <span class="password-toggle-show icon-[tabler--eye] size-5 shrink-0" aria-hidden="true"></span>
+                                                    <span class="password-toggle-hide icon-[tabler--eye-off] size-5 shrink-0 hidden" aria-hidden="true"></span>
                                                 </button>
                                             </div>
                                             @error('password_confirmation')
@@ -343,7 +360,7 @@
                                         </div>
                                     </form>
                                 </div>
-                                <div id="tabs-pill-icon-3" class="hidden" role="tabpanel" aria-labelledby="tabs-pill-icon-item-3">
+                                <div id="tabs-pill-icon-3" data-register-panel role="tabpanel" aria-labelledby="tabs-pill-icon-item-3" @class(['hidden' => $registerAccountType !== 'organization'])>
                                     <form method="POST" action="/register" class="needs-validation peer grid gap-y-5" novalidate>
                                         @csrf
                                         <input type="hidden" name="account_type" value="organization">
@@ -401,13 +418,14 @@
                                         <div>
                                             <label class="label label-text font-medium text-24px text-primary mb-4" for="orgPassword">كلمة المرور</label>
                                             <div class="relative">
-                                                <input id="orgPassword" name="password" type="password" placeholder="كلمة المرور"
+                                                <input id="orgPassword" name="password" type="password" value="{{ old('password') }}" placeholder="كلمة المرور"
                                                     class="input bg-f7 h-16 rounded-7px w-full text-primary text-start pe-12 @error('password') border-red-500 @enderror"
                                                     required minlength="6" />
-                                                <button type="button" class="password-toggle size-5 absolute end-3 top-1/2 -translate-y-1/2 text-primary/60 hover:text-primary"
+                                                <button type="button"
+                                                    class="password-toggle absolute end-3 top-1/2 z-10 flex size-10 -translate-y-1/2 items-center justify-center rounded-full text-primary/60 hover:text-primary hover:bg-primary/5 transition-colors"
                                                     data-target="#orgPassword" aria-label="إظهار كلمة المرور" aria-pressed="false">
-                                                    <span class="icon-[tabler--eye] size-5 password-toggle-show"></span>
-                                                    <span class="icon-[tabler--eye-off] size-5 hidden password-toggle-hide"></span>
+                                                    <span class="password-toggle-show icon-[tabler--eye] size-5 shrink-0" aria-hidden="true"></span>
+                                                    <span class="password-toggle-hide icon-[tabler--eye-off] size-5 shrink-0 hidden" aria-hidden="true"></span>
                                                 </button>
                                             </div>
                                             @error('password')
@@ -421,13 +439,14 @@
                                         <div>
                                             <label class="label label-text font-medium text-24px text-primary mb-4" for="orgConfirmPassword">تأكيد كلمة المرور</label>
                                             <div class="relative">
-                                                <input id="orgConfirmPassword" name="password_confirmation" type="password" placeholder="تأكيد كلمة المرور"
+                                                <input id="orgConfirmPassword" name="password_confirmation" type="password" value="{{ old('password_confirmation') }}" placeholder="تأكيد كلمة المرور"
                                                     class="input bg-f7 h-16 rounded-7px w-full text-primary text-start pe-12 @error('password_confirmation') border-red-500 @enderror"
                                                     required />
-                                                <button type="button" class="password-toggle size-5 absolute end-3 top-1/2 -translate-y-1/2 text-primary/60 hover:text-primary"
+                                                <button type="button"
+                                                    class="password-toggle absolute end-3 top-1/2 z-10 flex size-10 -translate-y-1/2 items-center justify-center rounded-full text-primary/60 hover:text-primary hover:bg-primary/5 transition-colors"
                                                     data-target="#orgConfirmPassword" aria-label="إظهار كلمة المرور" aria-pressed="false">
-                                                    <span class="icon-[tabler--eye] size-5 password-toggle-show"></span>
-                                                    <span class="icon-[tabler--eye-off] size-5 hidden password-toggle-hide"></span>
+                                                    <span class="password-toggle-show icon-[tabler--eye] size-5 shrink-0" aria-hidden="true"></span>
+                                                    <span class="password-toggle-hide icon-[tabler--eye-off] size-5 shrink-0 hidden" aria-hidden="true"></span>
                                                 </button>
                                             </div>
                                             @error('password_confirmation')
@@ -474,9 +493,9 @@
 
                             <div class="mt-7">
                                 <p class="font-medium text-20px text-[#979797] center">
-                                    ليس لديك حساب ؟
+                                     لديك حساب ؟
                                     <a class="link link-animated font-semibold text-22px text-primary px-2"
-                                        href="{{ route('landing.v1.register') }}">انشاء حساب</a>
+                                        href="{{ route('landing.v1.login') }}">تسجيل الدخول</a>
                                 </p>
                             </div>
 

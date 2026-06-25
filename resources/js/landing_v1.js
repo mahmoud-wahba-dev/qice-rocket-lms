@@ -538,19 +538,32 @@ function initCourseScrollspy() {
 window.initCourseScrollspy = initCourseScrollspy;
 
 // ============================================================
-// Paid course hero — YouTube play / pause
+// Paid course hero — background video play / pause
 // ============================================================
 function initCourseHeroVideo() {
 	const wrap = document.getElementById("course-hero-video");
-	const iframe = document.getElementById("course-hero-youtube");
-	const toggle = document.getElementById("course-hero-video-toggle");
-	const muteToggle = document.getElementById("course-hero-video-mute");
 
-	if (!wrap || !iframe || !toggle || !muteToggle) {
+	if (!wrap || wrap.dataset.heroVideoInit === "true") {
 		return;
 	}
 
-	if (wrap.dataset.heroVideoInit === "true") {
+	const videoType = wrap.dataset.videoType || "poster";
+	const youtubeIframe = document.getElementById("course-hero-youtube");
+	const vimeoIframe = document.getElementById("course-hero-vimeo");
+	const bunnyIframe = document.getElementById("course-hero-bunny");
+	const html5 = document.getElementById("course-hero-html5");
+	const toggle = document.getElementById("course-hero-video-toggle");
+	const muteToggle = document.getElementById("course-hero-video-mute");
+
+	if (videoType === "poster") {
+		return;
+	}
+
+	if (!toggle || !muteToggle) {
+		return;
+	}
+
+	if (!youtubeIframe && !vimeoIframe && !bunnyIframe && !html5) {
 		return;
 	}
 
@@ -560,8 +573,10 @@ function initCourseHeroVideo() {
 	const iconPause = toggle.querySelector("[data-icon-pause]");
 	const iconMuted = muteToggle.querySelector("[data-icon-muted]");
 	const iconUnmuted = muteToggle.querySelector("[data-icon-unmuted]");
-	let player = null;
-	let apiReady = false;
+	let youtubePlayer = null;
+	let vimeoPlayer = null;
+	let bunnyPlayer = null;
+	let youtubeApiReady = false;
 
 	const setPlayingUI = (playing) => {
 		toggle.dataset.playing = playing ? "true" : "false";
@@ -583,65 +598,125 @@ function initCourseHeroVideo() {
 		);
 	};
 
-	const postCommand = (func) => {
-		iframe.contentWindow?.postMessage(
+	const postYouTubeCommand = (func) => {
+		youtubeIframe?.contentWindow?.postMessage(
 			JSON.stringify({ event: "command", func, args: "" }),
 			"*"
 		);
 	};
 
-	const togglePlayback = () => {
+	const togglePlayback = async () => {
+		if (html5) {
+			if (html5.paused) {
+				html5.play().catch(() => {});
+				setPlayingUI(true);
+			} else {
+				html5.pause();
+				setPlayingUI(false);
+			}
+			return;
+		}
+
+		if (vimeoPlayer) {
+			const paused = await vimeoPlayer.getPaused();
+			if (paused) {
+				await vimeoPlayer.play();
+			} else {
+				await vimeoPlayer.pause();
+			}
+			return;
+		}
+
+		if (bunnyPlayer) {
+			bunnyPlayer.getPaused((paused) => {
+				if (paused) {
+					bunnyPlayer.play();
+					setPlayingUI(true);
+				} else {
+					bunnyPlayer.pause();
+					setPlayingUI(false);
+				}
+			});
+			return;
+		}
+
 		const playing = toggle.dataset.playing === "true";
 
-		if (player && typeof player.getPlayerState === "function") {
-			const state = player.getPlayerState();
+		if (youtubePlayer && typeof youtubePlayer.getPlayerState === "function") {
+			const state = youtubePlayer.getPlayerState();
 			if (state === window.YT?.PlayerState?.PLAYING) {
-				player.pauseVideo();
+				youtubePlayer.pauseVideo();
 			} else {
-				player.playVideo();
+				youtubePlayer.playVideo();
 			}
 			return;
 		}
 
 		if (playing) {
-			postCommand("pauseVideo");
+			postYouTubeCommand("pauseVideo");
 			setPlayingUI(false);
 		} else {
-			postCommand("playVideo");
+			postYouTubeCommand("playVideo");
 			setPlayingUI(true);
 		}
 	};
 
-	const toggleMute = () => {
+	const toggleMute = async () => {
+		if (html5) {
+			html5.muted = !html5.muted;
+			setMutedUI(html5.muted);
+			return;
+		}
+
+		if (vimeoPlayer) {
+			const muted = await vimeoPlayer.getMuted();
+			await vimeoPlayer.setMuted(!muted);
+			setMutedUI(!muted);
+			return;
+		}
+
+		if (bunnyPlayer) {
+			bunnyPlayer.getMuted((muted) => {
+				if (muted) {
+					bunnyPlayer.unmute();
+					setMutedUI(false);
+				} else {
+					bunnyPlayer.mute();
+					setMutedUI(true);
+				}
+			});
+			return;
+		}
+
 		const muted = muteToggle.dataset.muted === "true";
 
-		if (player && typeof player.isMuted === "function") {
-			if (player.isMuted()) {
-				player.unMute();
+		if (youtubePlayer && typeof youtubePlayer.isMuted === "function") {
+			if (youtubePlayer.isMuted()) {
+				youtubePlayer.unMute();
 				setMutedUI(false);
 			} else {
-				player.mute();
+				youtubePlayer.mute();
 				setMutedUI(true);
 			}
 			return;
 		}
 
 		if (muted) {
-			postCommand("unMute");
+			postYouTubeCommand("unMute");
 			setMutedUI(false);
 		} else {
-			postCommand("mute");
+			postYouTubeCommand("mute");
 			setMutedUI(true);
 		}
 	};
 
-	const bindPlayer = () => {
-		if (apiReady || !window.YT?.Player) {
+	const bindYouTubePlayer = () => {
+		if (youtubeApiReady || !window.YT?.Player || !youtubeIframe) {
 			return;
 		}
 
-		apiReady = true;
-		player = new window.YT.Player("course-hero-youtube", {
+		youtubeApiReady = true;
+		youtubePlayer = new window.YT.Player("course-hero-youtube", {
 			events: {
 				onStateChange(event) {
 					if (event.data === window.YT.PlayerState.PLAYING) {
@@ -656,8 +731,12 @@ function initCourseHeroVideo() {
 	};
 
 	const loadYouTubeApi = () => {
+		if (!youtubeIframe) {
+			return;
+		}
+
 		if (window.YT?.Player) {
-			bindPlayer();
+			bindYouTubePlayer();
 			return;
 		}
 
@@ -672,12 +751,65 @@ function initCourseHeroVideo() {
 			if (typeof previousReady === "function") {
 				previousReady();
 			}
-			bindPlayer();
+			bindYouTubePlayer();
 		};
 
 		const tag = document.createElement("script");
 		tag.src = "https://www.youtube.com/iframe_api";
 		document.head.appendChild(tag);
+	};
+
+	const loadScript = (src, globalCheck) =>
+		new Promise((resolve) => {
+			if (globalCheck()) {
+				resolve();
+				return;
+			}
+
+			const existing = document.querySelector(`script[src="${src}"]`);
+			if (existing) {
+				existing.addEventListener("load", () => resolve(), { once: true });
+				return;
+			}
+
+			const tag = document.createElement("script");
+			tag.src = src;
+			tag.onload = () => resolve();
+			document.head.appendChild(tag);
+		});
+
+	const initVimeoPlayer = async () => {
+		if (!vimeoIframe) {
+			return;
+		}
+
+		await loadScript(
+			"https://player.vimeo.com/api/player.js",
+			() => Boolean(window.Vimeo?.Player)
+		);
+
+		vimeoPlayer = new window.Vimeo.Player(vimeoIframe);
+		vimeoPlayer.on("play", () => setPlayingUI(true));
+		vimeoPlayer.on("pause", () => setPlayingUI(false));
+		setPlayingUI(true);
+		setMutedUI(true);
+	};
+
+	const initBunnyPlayer = async () => {
+		if (!bunnyIframe) {
+			return;
+		}
+
+		await loadScript(
+			"https://assets.mediadelivery.net/playerjs/player-0.1.0.min.js",
+			() => Boolean(window.playerjs?.Player)
+		);
+
+		bunnyPlayer = new window.playerjs.Player(bunnyIframe);
+		bunnyPlayer.on("play", () => setPlayingUI(true));
+		bunnyPlayer.on("pause", () => setPlayingUI(false));
+		setPlayingUI(true);
+		setMutedUI(true);
 	};
 
 	toggle.addEventListener("click", (event) => {
@@ -690,12 +822,134 @@ function initCourseHeroVideo() {
 		toggleMute();
 	});
 
-	loadYouTubeApi();
-	setPlayingUI(true);
-	setMutedUI(true);
+	if (videoType === "youtube") {
+		loadYouTubeApi();
+		setPlayingUI(true);
+		setMutedUI(true);
+	} else if (videoType === "vimeo") {
+		initVimeoPlayer();
+	} else if (videoType === "bunny") {
+		initBunnyPlayer();
+	} else if (html5) {
+		html5.addEventListener("play", () => setPlayingUI(true));
+		html5.addEventListener("pause", () => setPlayingUI(false));
+		setPlayingUI(!html5.paused);
+		setMutedUI(html5.muted);
+	}
 }
 
 window.initCourseHeroVideo = initCourseHeroVideo;
+
+// ============================================================
+// Password show / hide toggles (login, register)
+// ============================================================
+let passwordToggleListenerBound = false;
+
+function initPasswordToggles() {
+	if (passwordToggleListenerBound) {
+		return;
+	}
+
+	passwordToggleListenerBound = true;
+
+	document.addEventListener("click", (event) => {
+		const button = event.target.closest(".password-toggle");
+
+		if (!button?.dataset.target) {
+			return;
+		}
+
+		const input = document.querySelector(button.dataset.target);
+
+		if (!input) {
+			return;
+		}
+
+		event.preventDefault();
+
+		const showIcon = button.querySelector(".password-toggle-show");
+		const hideIcon = button.querySelector(".password-toggle-hide");
+		const revealing = input.type === "password";
+
+		input.type = revealing ? "text" : "password";
+		button.setAttribute("aria-pressed", String(revealing));
+		button.setAttribute(
+			"aria-label",
+			revealing ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"
+		);
+
+		if (showIcon && hideIcon) {
+			showIcon.classList.toggle("hidden", revealing);
+			hideIcon.classList.toggle("hidden", !revealing);
+		}
+	});
+}
+
+window.initPasswordToggles = initPasswordToggles;
+
+// ============================================================
+// Register account-type tabs (student / instructor / organization)
+// ============================================================
+let registerAccountTabsInitialized = false;
+
+function initRegisterAccountTabs() {
+	if (registerAccountTabsInitialized) {
+		return;
+	}
+
+	const root = document.querySelector("[data-register-tabs]");
+
+	if (!root) {
+		return;
+	}
+
+	registerAccountTabsInitialized = true;
+
+	const tabButtons = root.querySelectorAll("[data-register-tab]");
+	const panels = root.querySelectorAll("[data-register-panel]");
+
+	const activate = (panelSelector) => {
+		tabButtons.forEach((button) => {
+			const isActive = button.dataset.registerTab === panelSelector;
+
+			button.classList.toggle("active", isActive);
+			button.classList.toggle("bg-primary", isActive);
+			button.classList.toggle("text-white", isActive);
+			button.classList.toggle("text-primary", !isActive);
+			button.setAttribute("aria-selected", isActive ? "true" : "false");
+		});
+
+		panels.forEach((panel) => {
+			const isActive = `#${panel.id}` === panelSelector;
+
+			panel.classList.toggle("hidden", !isActive);
+
+			const form = panel.querySelector("form");
+
+			if (!form) {
+				return;
+			}
+
+			form.querySelectorAll("input, select, textarea, button[type='submit']").forEach((control) => {
+				if (control.name === "_token") {
+					return;
+				}
+
+				control.disabled = !isActive;
+			});
+		});
+	};
+
+	tabButtons.forEach((button) => {
+		button.addEventListener("click", () => {
+			activate(button.dataset.registerTab);
+		});
+	});
+
+	activate(root.dataset.activeRegisterTab || "#tabs-pill-icon-1");
+}
+
+window.initRegisterAccountTabs = initRegisterAccountTabs;
 
 // ============================================================
 // INIT on DOM ready
@@ -716,9 +970,15 @@ document.addEventListener("DOMContentLoaded", () => {
 	initCourseScrollspy();
 
 	initCourseHeroVideo();
+
+	initPasswordToggles();
+
+	initRegisterAccountTabs();
 });
 
 if (document.readyState !== "loading") {
 	initCourseScrollspy();
 	initCourseHeroVideo();
+	initPasswordToggles();
+	initRegisterAccountTabs();
 }

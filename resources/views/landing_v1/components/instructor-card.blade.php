@@ -11,8 +11,8 @@
 @php($detailUrl = $profileUrl ?? (!empty($username) ? route('landing.v1.instructor-details', $username) : route('landing.v1.instructors')))
 
 <div class="trainer-card bg-white border border-[#0000001A] rounded-19px overflow-hidden h-full">
-    <a href="{{ $detailUrl }}" class="block h-60 overflow-hidden rounded-t-[19px]">
-        <img class="h-full w-full object-cover"
+    <a href="{{ $detailUrl }}" class="block h-52 overflow-hidden rounded-t-[19px]">
+        <img class="h-full w-full object-contain"
             src="{{ $avatarUrl }}" alt="{{ $name }}">
     </a>
     <div class="p-6">
