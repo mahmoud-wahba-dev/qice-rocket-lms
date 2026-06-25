@@ -4,12 +4,12 @@
     @php($landingImg = asset('assets/landing_v1/img'))
     <main class="mt-0">
 
-        <header class="relative  bg-white text-primary overflow-hidden pt-8 h-screen max-xl:mt-20"
+        <header class="relative  bg-white text-primary overflow-hidden pt-8 h-screen max-sm:h-[93vh] max-xl:mt-20"
             style="background-image: url('{{ $landingImg }}/home/hero-bg.webp'); background-size: cover; background-position: center;">
 
-            <div class="container relative z-10  flex justify-end items-center h-full">
+            <div class="container relative z-10  flex justify-end items-center h-full max-sm:items-start max-sm:pt-10">
 
-                <div class="mw-fit">
+                <div class="w-fit">
                     <h1 class="font-bold text-40px xl:text-57px  text-primary mb-5 ">تدريـب نوعي متخصص
 
                         <br>
@@ -157,7 +157,7 @@
         <section class="!my-0 lg:py-32 py-8 section-gap bg-secondary  pb-36"
             style="background-image: url('{{ $landingImg }}/home/triangles-exp.webp'); background-size: 100%; background-repeat: no-repeat; background-position: bottom;">
             <div class="container">
-                <div class="grid grid-cols-1 lg:grid-cols-2 items-center">
+                <div class="grid grid-cols-1 lg:grid-cols-2 items-center max-sm:gap-8">
                     <div>
                         <h2 class="font-bold text-38px text-primary mb-4">عناصر النجاح الرئيسية</h2>
                         <p class="font-normal text-20px text-7a">يعتمد المركز على مجموعة عناصر مهنية متكاملة تدعم
@@ -330,7 +330,7 @@
 
         <section class="my-0 lg:py-32 py-8 ">
             <div class="container">
-                <div class="flex justify-between items-end xl:flex-nowrap mb-20">
+                <div class="flex justify-between items-end flex-wrap gap-6 xl:flex-nowrap mb-20">
                     <div>
                         <h2 class="font-bold text-40px text-primary  mb-4 ">قائمة المدربين بالمركز
                         </h2>
@@ -343,7 +343,7 @@
                         عرض جميع المدربين </a>
                 </div>
                 <div id="trainers-carousel"
-                    data-carousel='{ "loadingClasses": "opacity-0", "slidesQty": { "xs": 1, "sm": 2, "lg": 3, "xl": 4 }, "isRTL": true, "dotsItemClasses": "carousel-dot", "isInfiniteLoop": true, "isAutoPlay": true, "speed": 3500 }'
+                    data-carousel='{ "loadingClasses": "opacity-0", "slidesQty": { "xs": 1, "sm": 2, "lg": 4, "xl": 4 }, "isRTL": true, "dotsItemClasses": "carousel-dot", "isInfiniteLoop": true, "isAutoPlay": false, "speed": 3500 }'
                     class="relative w-full">
                     <div class="carousel">
                         <div class="carousel-body h-full opacity-0 overflow-visible gap-4 xl:gap-8">
@@ -369,7 +369,7 @@
 
         <section class="my-0 lg:py-32 py-8 bg-primary text-white">
             <div class="container">
-                <div class="flex justify-between items-end flex-wrap mb-20">
+                <div class="flex justify-bp-6 pt-2 pb-0">
                     <div>
                         <h2 class="font-bold text-40px text-secondary  mb-4 ">الدورات المعتمدة والبرامج المدفوعة
                         </h2>
@@ -383,7 +383,7 @@
                     </a>
                 </div>
                 <div id="multi-slide mb-10"
-                    data-carousel='{ "loadingClasses": "opacity-0", "slidesQty": { "xs": 1, "sm": 2, "lg": 3 , "xl": 4 }, "isRTL": true ,"dotsItemClasses": "carousel-dot" ,"isInfiniteLoop": true }'
+                    data-carousel='{ "loadingClasses": "opacity-0", "slidesQty": { "xs": 1, "sm": 2, "lg": 4 , "xl": 4 }, "isRTL": true ,"dotsItemClasses": "carousel-dot" ,"isInfiniteLoop": true }'
                     class="relative w-full">
                     <div class="carousel ">
                         <div class="carousel-body  h-full opacity-0 overflow-visible gap-4 xl:gap-8">
@@ -440,7 +440,7 @@
                             </svg>
 
                         </div>
-                        <h4 class="font-semibold text-24px text-primary mb-4">شهادات مهنية معتمدة</h4>
+                        <h4 class="font-semibold text-24px text-primary mb-4 text-center">شهادات مهنية معتمدة</h4>
                         <p class="font-normal text-base  text-7a text-center">
                             من جهات دولية ومحلية موثوقة
                         </p>
@@ -463,7 +463,7 @@
 
 
                         </div>
-                        <h4 class="font-semibold text-24px text-primary mb-4">برامج حضورية وعن بُعد</h4>
+                        <h4 class="font-semibold text-24px text-primary mb-4 text-center">برامج حضورية وعن بُعد</h4>
                         <p class="font-normal text-base  text-7a text-center">
                             مرونة في اختيار نمط التدريب المناسب
                         </p>
@@ -490,7 +490,7 @@
 
 
                         </div>
-                        <h4 class="font-semibold text-24px text-primary mb-4"> ورش مجانية للتوعية</h4>
+                        <h4 class="font-semibold text-24px text-primary mb-4 text-center"> ورش مجانية للتوعية</h4>
                         <p class="font-normal text-base  text-7a text-center">
                             محاضرات تعريفية لمساعدتك في الاختيار
                         </p>
@@ -508,7 +508,7 @@
 
 
                         </div>
-                        <h4 class="font-semibold text-24px text-primary mb-4">مسارات مرتبطة بسوق العمل</h4>
+                        <h4 class="font-semibold text-24px text-primary mb-4 text-center">مسارات مرتبطة بسوق العمل</h4>
                         <p class="font-normal text-base  text-7a text-center">
                             برامج عملية تلبي احتياجات السوق السعودي
                         </p>

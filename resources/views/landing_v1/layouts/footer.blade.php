@@ -12,8 +12,8 @@
 
                 </p>
                 <div class="flex items-center gap-4 xl:flex-nowrap flex-wrap">
-                    <img src="{{ $landingImg }}/logo-footer3.webp" alt="logo" class="">
-                    <img src="{{ $landingImg }}/logo-footer2.webp" alt="logo" class="">
+                    <img src="{{ $landingImg }}/logo-footer3.webp" alt="logo" class="w-72">
+                    <img src="{{ $landingImg }}/logo-footer2.webp" alt="logo" class="w-72">
                 </div>
                 <!-- <div class="flex items-center gap-4 flex-wrap">
                     <a href="#" class="bg-[#7C849A] size-9 center rounded-full">
