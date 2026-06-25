@@ -330,11 +330,11 @@
 
         <section class="my-0 lg:py-32 py-8 ">
             <div class="container">
-                <div class="flex justify-between items-end flex-wrap gap-6 xl:flex-nowrap mb-20">
+                <div class="flex justify-between items-end flex-wrap gap-6 lg:flex-nowrap mb-20">
                     <div>
                         <h2 class="font-bold text-40px text-primary  mb-4 ">قائمة المدربين بالمركز
                         </h2>
-                        <p class="font-medium text-20px  text-primary xl:w-[60%] lg:w-[80%] ">
+                        <p class="font-medium text-20px  text-primary xl:w-[60%] lg:w-[70%] ">
                             نخبة من الخبراء والمستشارين والمدربين المعتمدين يقودون مسارات التدريب في المركز بخبرات متنوعة في
                             الحوكمة، الجودة، الإدارة الصحية، القانون، التدريب، التطوير المؤسسي والتميز. </p>
                     </div>
@@ -369,11 +369,11 @@
 
         <section class="my-0 lg:py-32 py-8 bg-primary text-white">
             <div class="container">
-                <div class="flex justify-bp-6 pt-2 pb-0">
+                <div class="flex justify-between items-end  flex-nowrap max-md:flex-wrap mb-20 max-sm:gap-6">
                     <div>
                         <h2 class="font-bold text-40px text-secondary  mb-4 ">الدورات المعتمدة والبرامج المدفوعة
                         </h2>
-                        <p class="font-normal text-20px  text-secondary ">
+                        <p class="font-normal text-20px  text-secondary lg:w-[90%] ">
                             برامج تدريبية احترافية ومعتمدة في مختلف المجالات
                         </p>
                     </div>
