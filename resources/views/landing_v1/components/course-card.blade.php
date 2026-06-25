@@ -20,7 +20,7 @@
             alt="{{ $title }}">
     </div>
 
-    <div class="p-6 pt-2 pb-0 max-sm:p-4">
+    <div class="p-6 pt-2 pb-2 max-sm:p-4">
         <h6 class="font-semibold text-20px text-primary mb-2 line-clamp-2">{{ $title }}</h6>
         @if (!empty($categoryTitle))
             <p class="font-normal text-12px text-7a mb-2">{{ $categoryTitle }}</p>
