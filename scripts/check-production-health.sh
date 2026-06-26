@@ -25,8 +25,9 @@ ssh -o ConnectTimeout=15 "${SSH_HOST}" "
 echo ""
 echo "--- HTTP timing (read-only) ---"
 for path in "/" "/login"; do
-  curl -s -o /dev/null -w "${SITE_URL}${path}  ttfb:%{time_starttransfer}s  total:%{time_total}s  http:%{http_code}\n" \
-    "${SITE_URL}${path}"
+  line=$(curl -s -o /dev/null -w "${SITE_URL}${path}  ttfb:%{time_starttransfer}s  total:%{time_total}s  http:%{http_code}" \
+    "${SITE_URL}${path}")
+  echo "$line"
 done
 
 echo ""
