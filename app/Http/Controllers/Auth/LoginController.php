@@ -76,12 +76,12 @@ class LoginController extends Controller
             $rules = [
                 'mobile' => 'required|numeric',
                 'country_code' => 'required',
-                'password' => 'required|min:6',
+                'password' => 'required|min:5',
             ];
         } else {
             $rules = [
                 'email' => 'required|email|exists:users,email',
-                'password' => 'required|min:6',
+                'password' => 'required|min:5',
             ];
         }
 

@@ -38,4 +38,36 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Footer social links (Landing V1)
+    |--------------------------------------------------------------------------
+    |
+    | Only entries with a non-empty url are shown in the footer.
+    | URLs below match QIEC official profiles (qiec.sa / @qxtc_qiec).
+    | Edit here if you add or change social accounts.
+    */
+    'social_links' => [
+        [
+            'icon' => 'telegram',
+            'label' => 'Telegram',
+            'url' => 'https://t.me/qxtc_qiec',
+        ],
+        [
+            'icon' => 'whatsapp',
+            'label' => 'WhatsApp',
+            'url' => 'https://wa.me/966562730122',
+        ],
+        [
+            'icon' => 'instagram',
+            'label' => 'Instagram',
+            'url' => 'https://www.instagram.com/qxtc_qiec/',
+        ],
+        [
+            'icon' => 'x',
+            'label' => 'X',
+            'url' => 'https://x.com/qxtc_qiec',
+        ],
+    ],
+
 ];

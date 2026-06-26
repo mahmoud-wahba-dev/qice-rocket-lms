@@ -41,24 +41,10 @@
 
                         </a>
 
-                        <a href="{{ route('landing.v1.workshops') }}"
-                            class="btn btn-text h-12 xl:h-16 font-medium text-16px xl:text-20px">
-
-                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <path
-                                    d="M15.466 11.0469V13.9925C15.466 14.3831 15.3109 14.7577 15.0347 15.0339C14.7585 15.3101 14.3839 15.4652 13.9933 15.4652H3.68373C3.29312 15.4652 2.91851 15.3101 2.64231 15.0339C2.36611 14.7577 2.21094 14.3831 2.21094 13.9925V11.0469"
-                                    stroke="#0F4C45" stroke-width="1.47279" stroke-linecap="round"
-                                    stroke-linejoin="round" />
-                                <path d="M5.15625 7.36328L8.83822 11.0453L12.5202 7.36328" stroke="#0F4C45"
-                                    stroke-width="1.47279" stroke-linecap="round" stroke-linejoin="round" />
-                                <path d="M8.83594 11.0457V2.20898" stroke="#0F4C45" stroke-width="1.47279"
-                                    stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-
-                            تحميل الخطة التدريبية
-
-
+                        <a href="https://wa.me/966562730122" target="_blank" rel="noopener noreferrer"
+                            class="btn btn-outline btn-primary gap-3 h-12 xl:h-16 font-medium text-16px xl:text-20px hover:border-[#25D366] hover:text-[#25D366] transition-colors">
+                            تواصل معنا على الواتساب
+                            <x-whatsapp-bol-icon class="text-[#25D366] shrink-0" width="22px" height="22px" />
                         </a>
                     </div>
                 </div>
