@@ -111,14 +111,30 @@ ssh hostinger-qiec "cd domains/training.qiec.sa/public_html && git fetch origin 
 
 | Branch | Purpose |
 |--------|---------|
-| `feat/performance-homepage` | Homepage query cache + remove unused DB query |
+| `feat/performance-homepage` | App-wide **landing_v1** speed improvements (not admin/panel) |
 
-Config: `config/landing_v1.php` → `homepage_cache_minutes` (default `10`, set `0` to disable).
+### What this branch optimizes
 
-Clear homepage cache after admin adds courses/posts:
+| Area | Change |
+|------|--------|
+| **Every landing page** | Lighter `Share` middleware — skips theme DB, full category tree, purchase notifications, floating bar |
+| **Every landing page** | Footer categories cached (was a DB query on every page) |
+| **Homepage** | Cached list queries + removed unused `$courses` query |
+| **Workshops** | Cached workshop list |
+| **Instructors** | Cached instructor list + stats (was N×3 queries per instructor) |
+| **Courses paid** | Cached category filter list (was N `exists()` queries) |
+
+**Not changed:** Admin `/admin`, user `/panel`, checkout/cart logic, course detail pages (stay fresh).
+
+Config: `config/landing_v1.php` → `page_cache_minutes` (default `10`, set `0` to disable).
+
+Clear cache after admin updates courses/instructors/posts:
 
 ```bash
+php artisan cache:clear
+# or specific keys, e.g.:
 php artisan cache:forget landing_v1.homepage.ar
+php artisan cache:forget landing_v1.footer_categories.ar
 ```
 
 (Use your locale code if not `ar`.)

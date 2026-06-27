@@ -17,8 +17,8 @@ use App\Models\Order;
 use App\Models\OfflineBank;
 use App\Models\Blog;
 use App\Models\PaymentChannel;
+use App\Services\LandingV1Cache;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 class LandingV1Controller extends Controller
 {
@@ -163,24 +163,12 @@ class LandingV1Controller extends Controller
 
     public function index()
     {
-        $cacheMinutes = (int) config('landing_v1.homepage_cache_minutes', 10);
-
-        if ($cacheMinutes <= 0) {
-            $data = $this->buildHomePageData();
-        } else {
-            $data = Cache::remember(
-                $this->homepageCacheKey(),
-                now()->addMinutes($cacheMinutes),
-                fn () => $this->buildHomePageData()
-            );
-        }
+        $data = LandingV1Cache::remember(
+            LandingV1Cache::key('homepage'),
+            fn () => $this->buildHomePageData()
+        );
 
         return view('landing_v1.pages.home', $data);
-    }
-
-    private function homepageCacheKey(): string
-    {
-        return 'landing_v1.homepage.' . app()->getLocale();
     }
 
     private function buildHomePageData(): array
@@ -206,7 +194,10 @@ class LandingV1Controller extends Controller
 
     public function workshops()
     {
-        $workshops = $this->getFreeWorkshops();
+        $workshops = LandingV1Cache::remember(
+            LandingV1Cache::key('workshops'),
+            fn () => $this->getFreeWorkshops()
+        );
 
         return view('landing_v1.pages.workshops', [
             'pageTitle' => 'ورش ومحاضرات مجانية',
@@ -341,19 +332,24 @@ class LandingV1Controller extends Controller
 
     private function getPaidCourseFilterCategories()
     {
-        $categories = Category::whereNull('parent_id')
-            ->where('enable', true)
-            ->with('translations')
-            ->orderBy('order', 'asc')
-            ->get();
+        return LandingV1Cache::remember(
+            LandingV1Cache::key('paid_course_filter_categories'),
+            function () {
+                $categories = Category::whereNull('parent_id')
+                    ->where('enable', true)
+                    ->with('translations')
+                    ->orderBy('order', 'asc')
+                    ->get();
 
-        return $categories->filter(function ($category) {
-            $subCategoryIds = Category::where('parent_id', $category->id)->pluck('id')->toArray();
+                return $categories->filter(function ($category) {
+                    $subCategoryIds = Category::where('parent_id', $category->id)->pluck('id')->toArray();
 
-            return $this->paidCoursesBaseQuery()
-                ->whereIn('category_id', array_merge([$category->id], $subCategoryIds))
-                ->exists();
-        })->values();
+                    return $this->paidCoursesBaseQuery()
+                        ->whereIn('category_id', array_merge([$category->id], $subCategoryIds))
+                        ->exists();
+                })->values();
+            }
+        );
     }
 
     public function contact()
@@ -365,18 +361,23 @@ class LandingV1Controller extends Controller
 
     public function instructors()
     {
-        $instructors = $this->getActiveInstructors();
+        $instructors = LandingV1Cache::remember(
+            LandingV1Cache::key('instructors'),
+            function () {
+                $list = $this->getActiveInstructors();
 
-        foreach ($instructors as $instructor) {
-            $this->attachInstructorStats($instructor);
-        }
+                foreach ($list as $instructor) {
+                    $this->attachInstructorStats($instructor);
+                }
 
-        $data = [
+                return $list;
+            }
+        );
+
+        return view('landing_v1.pages.instructors', [
             'pageTitle' => trans('home.instructors'),
             'instructors' => $instructors,
-        ];
-
-        return view('landing_v1.pages.instructors', $data);
+        ]);
     }
 
     public function instructorDetails($username)
@@ -411,11 +412,13 @@ class LandingV1Controller extends Controller
 
     public function courses(Request $request)
     {
-        // Get parent categories
-        $categories = Category::whereNull('parent_id')
-            ->where('enable', true)
-            ->orderBy('order', 'asc')
-            ->get();
+        $categories = LandingV1Cache::remember(
+            LandingV1Cache::key('course_filter_parent_categories'),
+            fn () => Category::whereNull('parent_id')
+                ->where('enable', true)
+                ->orderBy('order', 'asc')
+                ->get()
+        );
 
         // Query webinars
         $query = Webinar::where('status', 'active')

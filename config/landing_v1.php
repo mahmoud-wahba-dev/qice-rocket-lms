@@ -40,12 +40,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Homepage cache (Landing V1)
+    | Page cache (Landing V1 — all public landing pages)
     |--------------------------------------------------------------------------
     |
-    | Caches homepage DB queries to reduce TTFB. Set to 0 to disable.
-    | Clear after content changes: php artisan cache:forget landing_v1.homepage.ar
+    | Caches list/footer data to reduce DB load on every landing page request.
+    | Set to 0 to disable. Clear after content changes, e.g.:
+    |   php artisan cache:forget landing_v1.homepage.ar
+    |   php artisan cache:clear
     */
+    'page_cache_minutes' => 10,
+
+    // @deprecated use page_cache_minutes
     'homepage_cache_minutes' => 10,
 
     /*
