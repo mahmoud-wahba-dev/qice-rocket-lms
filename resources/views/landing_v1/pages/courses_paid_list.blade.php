@@ -20,3 +20,9 @@
         </p>
     @endforelse
 </div>
+
+@if ($courses instanceof \Illuminate\Pagination\AbstractPaginator && $courses->hasPages())
+    <div class="mt-10 flex justify-center">
+        {{ $courses->withQueryString()->links() }}
+    </div>
+@endif

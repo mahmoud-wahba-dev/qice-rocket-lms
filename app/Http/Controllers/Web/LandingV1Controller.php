@@ -273,7 +273,6 @@ class LandingV1Controller extends Controller
     public function coursesPaid(Request $request)
     {
         $activeCategory = $request->input('category_id');
-        $categoryKey = $request->filled('category_id') ? (int) $request->input('category_id') : 'all';
 
         $categories = Cache::remember(
             'landing_v1.paid_filter_categories',
@@ -281,32 +280,26 @@ class LandingV1Controller extends Controller
             fn () => $this->getPaidCourseFilterCategories()
         );
 
-        $courses = Cache::remember(
-            'landing_v1.paid_courses.' . $categoryKey,
-            now()->addMinutes(10),
-            function () use ($request, $categories) {
-                $query = $this->paidCoursesBaseQuery()
-                    ->with($this->webinarTeacherEagerLoad());
+        $query = $this->paidCoursesBaseQuery()
+            ->select([
+                'id', 'title', 'description', 'slug', 'price', 'image_cover',
+                'thumbnail', 'category_id', 'teacher_id', 'sales_count_number',
+            ])
+            ->with($this->webinarTeacherEagerLoad());
 
-                if ($request->filled('category_id')) {
-                    $categoryId = (int) $request->input('category_id');
+        if ($request->filled('category_id')) {
+            $categoryId = (int) $request->input('category_id');
 
-                    if ($categories->contains('id', $categoryId)) {
-                        $subCategoryIds = Category::where('parent_id', $categoryId)->pluck('id')->toArray();
-                        $query->whereIn('category_id', array_merge([$categoryId], $subCategoryIds));
-                    }
-                }
-
-                $result = $query->orderByDesc('sales_count_number')->get();
-                $this->attachCategoryTranslations($result);
-
-                return $result;
+            if ($categories->contains('id', $categoryId)) {
+                $subCategoryIds = Category::where('parent_id', $categoryId)->pluck('id')->toArray();
+                $query->whereIn('category_id', array_merge([$categoryId], $subCategoryIds));
+            } else {
+                $activeCategory = null;
             }
-        );
-
-        if ($request->filled('category_id') && !$categories->contains('id', (int) $request->input('category_id'))) {
-            $activeCategory = null;
         }
+
+        $courses = $query->orderByDesc('sales_count_number')->paginate(20);
+        $this->attachCategoryTranslations($courses);
 
         if ($request->ajax()) {
             return response()->json([
@@ -314,7 +307,7 @@ class LandingV1Controller extends Controller
                     'courses' => $courses,
                     'activeCategory' => $activeCategory,
                 ])->render(),
-                'count' => $courses->count(),
+                'count' => $courses->total(),
             ]);
         }
 
