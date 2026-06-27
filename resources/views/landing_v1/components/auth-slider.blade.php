@@ -17,7 +17,7 @@
                 @foreach ($slides as $slideText)
                     <div class="carousel-slide relative">
                         <div class="bg-primary rounded-10px py-11 px-7 h-full relative"
-                            style="background-image: url('{{ $sliderImg }}/home/hero-bg.webp'); background-size: cover; background-position: right;">
+                            style="background-image: url('{{ $sliderImg }}/home/hero-bg-opt.webp'); background-size: cover; background-position: right;">
                             <div class="layer bg-linear-login absolute inset-0 rounded-10px"></div>
                         </div>
                         <p

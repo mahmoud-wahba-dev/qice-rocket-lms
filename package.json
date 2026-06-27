@@ -10,6 +10,7 @@
         "production": "mix --production",
         "dev:landing": "vite",
         "build:landing": "vite build",
+        "optimize:landing-images": "node scripts/optimize-landing-images.js",
         "deploy": "deploy.bat",
         "health:production": "bash scripts/check-production-health.sh",
         "optimize:production": "bash scripts/optimize-production.sh"

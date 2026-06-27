@@ -10,9 +10,17 @@
     <meta name="description" content="{{ $pageDescription ?? '' }}">
     <meta name="robots" content="{{ $pageRobot ?? 'index,follow' }}">
 
+    @stack('head')
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&display=swap" rel="stylesheet">
+    <link rel="preload" as="style"
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap"
+        onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap">
+    </noscript>
     @vite(['resources/css/landing_v1.css', 'resources/js/landing_v1.js'])
 </head>
 

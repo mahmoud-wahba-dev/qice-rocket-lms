@@ -77,12 +77,23 @@ class Share
             }
         }
 
-        $cartManagerController = new CartManagerController();
-        $carts = $cartManagerController->getCarts();
+        $skipCart = !auth()->check()
+            && $request->isMethod('GET')
+            && !$request->is('cart*', 'checkout*');
 
-        $data['userCarts'] = $carts;
-        $data['totalCartsPrice'] = Cart::getCartsTotalPrice($carts);
-        $data['userCartCount'] = count($carts);
+        if ($skipCart) {
+            $data['userCarts'] = [];
+            $data['totalCartsPrice'] = 0;
+            $data['userCartCount'] = 0;
+        } else {
+            $cartManagerController = new CartManagerController();
+            $carts = $cartManagerController->getCarts();
+
+            $data['userCarts'] = $carts;
+            $data['totalCartsPrice'] = Cart::getCartsTotalPrice($carts);
+            $data['userCartCount'] = count($carts);
+        }
+
         $data['generalSettings'] = getGeneralSettings();
         $data['currency'] = currencySign();
 

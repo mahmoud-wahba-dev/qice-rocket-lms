@@ -10,7 +10,7 @@
                     @forelse ($posts as $post)
                         <x-landing_v1::blog-card
                             :title="$post->title"
-                            :image="$post->image ?? asset('assets/landing_v1/img/home/news1.webp')"
+                            :image="$post->image ?? asset('assets/landing_v1/img/home/news1-opt.webp')"
                             :slug="$post->slug"
                         />
                     @empty

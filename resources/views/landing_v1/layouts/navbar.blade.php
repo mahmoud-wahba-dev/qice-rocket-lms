@@ -3,7 +3,8 @@
         class="navbar rounded-box flex w-full items-center justify-between gap-2 shadow-[0px_4px_34.5px_-3px_#0000000D] mx-auto [@media(min-width:1600px)]:container">
     <div class="navbar-start max-xl:w-1/4">
         <a class="link link-neutral text-xl font-semibold no-underline" href="{{ route('landing.v1.index') }}">
-            <img src="{{ asset('assets/landing_v1/logo_nav.svg') }}" alt="Logo" class="h-16">
+            <img src="{{ asset('assets/landing_v1/logo_nav.svg') }}" alt="QIEC Training" class="h-16" width="200"
+                height="64" decoding="async">
         </a>
     </div>
     <div class="navbar-center max-md:hidden">
