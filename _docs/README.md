@@ -49,13 +49,22 @@ Open the site via your local vhost (e.g. `http://qiec.local`) or XAMPP default.
 
 ## Deploy to Hostinger
 
+**Routine (production on `master`):**
+
 ```powershell
 npm run deploy
 ```
 
-This runs: `build:landing` → git push → SSH `git pull` on server.
+This runs:
 
-Full guide: [DEPLOYMENT.md](DEPLOYMENT.md)
+1. `build:landing` (local Vite build)
+2. Git commit + push to `master`
+3. SSH `git pull` on server + artisan cache clear
+4. `optimize:production` — sync admin file-manager assets, clear caches, restart PHP
+
+**Feature branch** (before merge): push branch, SSH `git pull origin <branch>`, then `npm run optimize:production`. See [DEPLOYMENT.md](DEPLOYMENT.md).
+
+Merging to `master` on GitHub does **not** auto-deploy — you still run `npm run deploy` locally.
 
 ---
 

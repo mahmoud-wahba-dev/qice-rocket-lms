@@ -110,7 +110,7 @@ cd c:\xampp\htdocs\qiec-project
 npm run deploy
 ```
 
-This will: build landing assets → git push → SSH git pull on server.
+This will: build landing assets → git push → SSH git pull → post-deploy optimize (`laravel-filemanager` assets, cache clear, PHP restart).
 
 ### Step 6 — Verify site
 
@@ -144,10 +144,21 @@ Full troubleshooting: [DEPLOYMENT.md](DEPLOYMENT.md)
 
 ## After first deploy
 
-Routine updates:
+Routine updates (production on `master`):
 
 ```powershell
 npm run deploy
 ```
 
-No need to repeat Steps 2–4 unless you change servers or wipe `public_html`.
+Includes `optimize:production` automatically (Step 4). No need to repeat Steps 2–4 unless you change servers or wipe `public_html`.
+
+### Merging a feature branch to `master`
+
+1. Merge on GitHub (or locally) into `master`
+2. On server, switch to `master` once:
+
+```bash
+ssh hostinger-qiec "cd domains/training.qiec.sa/public_html && git fetch origin && git checkout master && git pull origin master"
+```
+
+3. From local: `npm run deploy` (or at minimum `npm run optimize:production`)
