@@ -18,6 +18,7 @@ use App\Models\OfflineBank;
 use App\Models\Blog;
 use App\Models\PaymentChannel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class LandingV1Controller extends Controller
 {
@@ -271,27 +272,41 @@ class LandingV1Controller extends Controller
 
     public function coursesPaid(Request $request)
     {
-        $categories = $this->getPaidCourseFilterCategories();
-
-        $query = $this->paidCoursesBaseQuery()
-            ->with($this->webinarTeacherEagerLoad());
-
         $activeCategory = $request->input('category_id');
+        $categoryKey = $request->filled('category_id') ? (int) $request->input('category_id') : 'all';
 
-        if ($request->filled('category_id')) {
-            $categoryId = (int) $request->input('category_id');
+        $categories = Cache::remember(
+            'landing_v1.paid_filter_categories',
+            now()->addMinutes(15),
+            fn () => $this->getPaidCourseFilterCategories()
+        );
 
-            if ($categories->contains('id', $categoryId)) {
-                $subCategoryIds = Category::where('parent_id', $categoryId)->pluck('id')->toArray();
-                $query->whereIn('category_id', array_merge([$categoryId], $subCategoryIds));
-            } else {
-                $activeCategory = null;
+        $courses = Cache::remember(
+            'landing_v1.paid_courses.' . $categoryKey,
+            now()->addMinutes(10),
+            function () use ($request, $categories) {
+                $query = $this->paidCoursesBaseQuery()
+                    ->with($this->webinarTeacherEagerLoad());
+
+                if ($request->filled('category_id')) {
+                    $categoryId = (int) $request->input('category_id');
+
+                    if ($categories->contains('id', $categoryId)) {
+                        $subCategoryIds = Category::where('parent_id', $categoryId)->pluck('id')->toArray();
+                        $query->whereIn('category_id', array_merge([$categoryId], $subCategoryIds));
+                    }
+                }
+
+                $result = $query->orderByDesc('sales_count_number')->get();
+                $this->attachCategoryTranslations($result);
+
+                return $result;
             }
+        );
+
+        if ($request->filled('category_id') && !$categories->contains('id', (int) $request->input('category_id'))) {
+            $activeCategory = null;
         }
-
-        $courses = $query->orderByDesc('sales_count_number')->get();
-
-        $this->attachCategoryTranslations($courses);
 
         if ($request->ajax()) {
             return response()->json([
@@ -320,18 +335,36 @@ class LandingV1Controller extends Controller
 
     private function getPaidCourseFilterCategories()
     {
-        $categories = Category::whereNull('parent_id')
+        $parentCategories = Category::whereNull('parent_id')
             ->where('enable', true)
             ->with('translations')
             ->orderBy('order', 'asc')
             ->get();
 
-        return $categories->filter(function ($category) {
-            $subCategoryIds = Category::where('parent_id', $category->id)->pluck('id')->toArray();
+        if ($parentCategories->isEmpty()) {
+            return collect();
+        }
 
-            return $this->paidCoursesBaseQuery()
-                ->whereIn('category_id', array_merge([$category->id], $subCategoryIds))
-                ->exists();
+        $parentIds = $parentCategories->pluck('id');
+
+        $subCategoriesByParent = Category::whereIn('parent_id', $parentIds)
+            ->get(['id', 'parent_id'])
+            ->groupBy('parent_id');
+
+        $paidCategoryIds = $this->paidCoursesBaseQuery()
+            ->whereNotNull('category_id')
+            ->distinct()
+            ->pluck('category_id')
+            ->flip();
+
+        return $parentCategories->filter(function ($category) use ($subCategoriesByParent, $paidCategoryIds) {
+            if (isset($paidCategoryIds[$category->id])) {
+                return true;
+            }
+
+            $subIds = $subCategoriesByParent->get($category->id, collect());
+
+            return $subIds->contains(fn ($sub) => isset($paidCategoryIds[$sub->id]));
         })->values();
     }
 

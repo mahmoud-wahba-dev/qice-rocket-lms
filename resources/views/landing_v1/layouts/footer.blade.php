@@ -38,11 +38,15 @@
                 <h6 class="footer-title font-semibold text-24px text-white mb-4">تصنيف الدورات</h6>
                 <div class="flex flex-col gap-2">
                     @php
-                        $footerCategories = $footerCategories ?? \App\Models\Category::whereNull('parent_id')
-                            ->where('enable', true)
-                            ->orderBy('order')
-                            ->limit(6)
-                            ->get();
+                        $footerCategories = $footerCategories ?? \Illuminate\Support\Facades\Cache::remember(
+                            'landing_v1.footer_categories',
+                            now()->addMinutes(30),
+                            fn () => \App\Models\Category::whereNull('parent_id')
+                                ->where('enable', true)
+                                ->orderBy('order')
+                                ->limit(6)
+                                ->get()
+                        );
                     @endphp
                     @forelse ($footerCategories as $category)
                         <a href="{{ route('landing.v1.courses-paid', ['category_id' => $category->id]) }}"
