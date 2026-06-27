@@ -25,13 +25,82 @@ class Share
      */
     public function handle($request, Closure $next)
     {
-        $data = $this->getShareData($request);
+        $data = $this->isLandingV1Request($request)
+            ? $this->getLandingShareData($request)
+            : $this->getShareData($request);
 
         foreach ($data as $key => $value) {
             view()->share($key, $value);
         }
 
         return $next($request);
+    }
+
+    private function isLandingV1Request($request): bool
+    {
+        if ($request->routeIs('landing.v1.*')) {
+            return true;
+        }
+
+        return $request->is(
+            'login',
+            'register',
+            'verification',
+            'verification/*',
+            'forget-password',
+            'reset-password',
+            'reset-password/*'
+        );
+    }
+
+    /**
+     * Minimal shared data for landing_v1 — skips theme DB, category tree,
+     * purchase notifications, and floating bar (not used by landing views).
+     */
+    public function getLandingShareData($request): array
+    {
+        $data = [];
+
+        if (!Session::has('locale')) {
+            Session::put('locale', mb_strtolower(getDefaultLocale()));
+        }
+        App::setLocale(session('locale'));
+
+        config()->set('app.timezone', getTimezone());
+
+        if (auth()->check()) {
+            $user = auth()->user();
+            $data['authUser'] = $user;
+
+            if (!$user->isAdmin()) {
+                $data['unReadNotifications'] = $user->getUnReadNotifications();
+            }
+        }
+
+        $cartManagerController = new CartManagerController();
+        $carts = $cartManagerController->getCarts();
+
+        $data['userCarts'] = $carts;
+        $data['totalCartsPrice'] = Cart::getCartsTotalPrice($carts);
+        $data['userCartCount'] = count($carts);
+        $data['generalSettings'] = getGeneralSettings();
+        $data['currency'] = currencySign();
+
+        if (getFinancialCurrencySettings('multi_currency')) {
+            $multiCurrency = new MultiCurrency();
+            $currencies = $multiCurrency->getCurrencies();
+
+            if ($currencies->isNotEmpty()) {
+                $data['currencies'] = $currencies;
+            }
+        }
+
+        $data['userDeviceType'] = 'desktop';
+        $data['categories'] = collect();
+        $data['userThemeColorMode'] = getUserThemeColorMode();
+        $data['userCartDiscount'] = 0;
+
+        return $data;
     }
 
     /**
