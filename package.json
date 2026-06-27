@@ -12,7 +12,8 @@
         "build:landing": "vite build",
         "deploy": "deploy.bat",
         "health:production": "bash scripts/check-production-health.sh",
-        "deploy:branch": "bash scripts/deploy-to-hostinger.sh"
+        "deploy:branch": "bash scripts/deploy-to-hostinger.sh",
+        "optimize:production": "bash scripts/optimize-production.sh"
     },
     "devDependencies": {
         "@iconify-json/tabler": "^1.2.35",

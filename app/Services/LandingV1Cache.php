@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class LandingV1Cache
 {
@@ -27,6 +29,21 @@ class LandingV1Cache
             return $callback();
         }
 
-        return Cache::remember($key, now()->addMinutes(self::minutes()), $callback);
+        try {
+            return Cache::remember($key, now()->addMinutes(self::minutes()), $callback);
+        } catch (Throwable $e) {
+            Log::warning('LandingV1Cache read failed, rebuilding', [
+                'key' => $key,
+                'message' => $e->getMessage(),
+            ]);
+
+            try {
+                Cache::forget($key);
+            } catch (Throwable) {
+                // ignore
+            }
+
+            return $callback();
+        }
     }
 }

@@ -48,5 +48,9 @@ ssh "${SSH_HOST}" "
 "
 
 echo ""
+echo "Running production optimization (cache + PHP restart)..."
+bash "$(dirname "$0")/optimize-production.sh"
+
+echo ""
 echo "Done. Test: https://training.qiec.sa/"
 echo "Rollback to master: $0 master"

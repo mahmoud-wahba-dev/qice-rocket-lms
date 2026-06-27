@@ -34,6 +34,16 @@
             <nav>
                 <h6 class="footer-title font-semibold text-24px text-white mb-4">تصنيف الدورات</h6>
                 <div class="flex flex-col gap-2">
+                    @php
+                        $footerCategories = $footerCategories ?? \App\Services\LandingV1Cache::remember(
+                            \App\Services\LandingV1Cache::key('footer_categories'),
+                            fn () => \App\Models\Category::whereNull('parent_id')
+                                ->where('enable', true)
+                                ->orderBy('order')
+                                ->limit(6)
+                                ->get()
+                        );
+                    @endphp
                     @forelse ($footerCategories as $category)
                         <a href="{{ route('landing.v1.courses-paid', ['category_id' => $category->id]) }}"
                             class="link link-hover font-normal text-19px text-white">{{ $category->title }}</a>

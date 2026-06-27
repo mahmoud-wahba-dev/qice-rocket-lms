@@ -163,19 +163,9 @@ class LandingV1Controller extends Controller
 
     public function index()
     {
-        $data = LandingV1Cache::remember(
-            LandingV1Cache::key('homepage'),
-            fn () => $this->buildHomePageData()
-        );
-
-        return view('landing_v1.pages.home', $data);
-    }
-
-    private function buildHomePageData(): array
-    {
         $trainers = $this->getActiveInstructors(12);
 
-        return [
+        $data = [
             'pageTitle' => trans('home.home_title'),
             'trainers' => $trainers,
             'instructors' => $trainers,
@@ -183,6 +173,8 @@ class LandingV1Controller extends Controller
             'paidCourses' => $this->getPaidCourses(12),
             'latestPosts' => $this->getLatestBlogPosts(4),
         ];
+
+        return view('landing_v1.pages.home', $data);
     }
 
     public function about()
@@ -194,14 +186,9 @@ class LandingV1Controller extends Controller
 
     public function workshops()
     {
-        $workshops = LandingV1Cache::remember(
-            LandingV1Cache::key('workshops'),
-            fn () => $this->getFreeWorkshops()
-        );
-
         return view('landing_v1.pages.workshops', [
             'pageTitle' => 'ورش ومحاضرات مجانية',
-            'workshops' => $workshops,
+            'workshops' => $this->getFreeWorkshops(),
         ]);
     }
 
@@ -361,18 +348,11 @@ class LandingV1Controller extends Controller
 
     public function instructors()
     {
-        $instructors = LandingV1Cache::remember(
-            LandingV1Cache::key('instructors'),
-            function () {
-                $list = $this->getActiveInstructors();
+        $instructors = $this->getActiveInstructors();
 
-                foreach ($list as $instructor) {
-                    $this->attachInstructorStats($instructor);
-                }
-
-                return $list;
-            }
-        );
+        foreach ($instructors as $instructor) {
+            $this->attachInstructorStats($instructor);
+        }
 
         return view('landing_v1.pages.instructors', [
             'pageTitle' => trans('home.instructors'),
