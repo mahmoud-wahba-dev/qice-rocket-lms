@@ -164,10 +164,18 @@ class LandingV1Controller extends Controller
     {
         $trainers = $this->getActiveInstructors(12);
 
+        $courses = Webinar::where('status', 'active')
+            ->where('private', false)
+            ->with('teacher:id,full_name,avatar,avatar_settings')
+            ->orderByDesc('id')
+            ->limit(8)
+            ->get();
+
         $data = [
             'pageTitle' => trans('home.home_title'),
             'trainers' => $trainers,
             'instructors' => $trainers,
+            'courses' => $courses,
             'freeWorkshops' => $this->getFreeWorkshops(12),
             'paidCourses' => $this->getPaidCourses(12),
             'latestPosts' => $this->getLatestBlogPosts(4),
