@@ -18,6 +18,7 @@ use App\Models\OfflineBank;
 use App\Models\Blog;
 use App\Models\PaymentChannel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class LandingV1Controller extends Controller
 {
@@ -162,26 +163,38 @@ class LandingV1Controller extends Controller
 
     public function index()
     {
+        $cacheMinutes = (int) config('landing_v1.homepage_cache_minutes', 10);
+
+        if ($cacheMinutes <= 0) {
+            $data = $this->buildHomePageData();
+        } else {
+            $data = Cache::remember(
+                $this->homepageCacheKey(),
+                now()->addMinutes($cacheMinutes),
+                fn () => $this->buildHomePageData()
+            );
+        }
+
+        return view('landing_v1.pages.home', $data);
+    }
+
+    private function homepageCacheKey(): string
+    {
+        return 'landing_v1.homepage.' . app()->getLocale();
+    }
+
+    private function buildHomePageData(): array
+    {
         $trainers = $this->getActiveInstructors(12);
 
-        $courses = Webinar::where('status', 'active')
-            ->where('private', false)
-            ->with('teacher:id,full_name,avatar,avatar_settings')
-            ->orderByDesc('id')
-            ->limit(8)
-            ->get();
-
-        $data = [
+        return [
             'pageTitle' => trans('home.home_title'),
             'trainers' => $trainers,
             'instructors' => $trainers,
-            'courses' => $courses,
             'freeWorkshops' => $this->getFreeWorkshops(12),
             'paidCourses' => $this->getPaidCourses(12),
             'latestPosts' => $this->getLatestBlogPosts(4),
         ];
-
-        return view('landing_v1.pages.home', $data);
     }
 
     public function about()

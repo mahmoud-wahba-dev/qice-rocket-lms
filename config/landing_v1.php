@@ -40,6 +40,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Homepage cache (Landing V1)
+    |--------------------------------------------------------------------------
+    |
+    | Caches homepage DB queries to reduce TTFB. Set to 0 to disable.
+    | Clear after content changes: php artisan cache:forget landing_v1.homepage.ar
+    */
+    'homepage_cache_minutes' => 10,
+
+    /*
+    |--------------------------------------------------------------------------
     | Footer social links (Landing V1)
     |--------------------------------------------------------------------------
     |

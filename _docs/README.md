@@ -67,6 +67,7 @@ Full guide: [DEPLOYMENT.md](DEPLOYMENT.md)
 | [CLIENT_QIEC.md](CLIENT_QIEC.md) | **This client** — routes, colors, pages, TODOs |
 | [ISSUES_AND_LESSONS.md](ISSUES_AND_LESSONS.md) | Problems faced and how to avoid them next time |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Hostinger SSH setup, first deploy, troubleshooting |
+| [DEPLOY_FEATURE_BRANCH.md](DEPLOY_FEATURE_BRANCH.md) | Test a feature branch on Hostinger without merging to master |
 | [PRODUCTION_ROLLBACK.md](PRODUCTION_ROLLBACK.md) | Rollback tags, server backups, emergency restore |
 | [ENV_PRODUCTION_CHECKLIST.md](ENV_PRODUCTION_CHECKLIST.md) | Local vs production `.env` validation |
 | [PRODUCTION_MAIL.md](PRODUCTION_MAIL.md) | Hostinger SMTP + registration verification emails |
