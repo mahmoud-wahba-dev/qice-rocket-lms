@@ -7,9 +7,7 @@
         <section class="mb-8 lg:mb-14 mt-0">
             <div class="container">
                 <div class="relative mb-25 h-[600px] rounded-10px overflow-hidden" >
-                    <img src="{{ $post->image ?? ($landingImg . '/home/hero-bg-opt.webp') }}" alt="{{ $post->title }}"
-                        class="size-full object-cover rounded-10px" width="1200" height="600" loading="eager"
-                        decoding="async">
+                    <img src="{{ $post->image ?? ($landingImg . '/home/hero-bg.webp') }}" alt="{{ $post->title }}" class="size-full object-cover rounded-10px">
                     <div class="absolute top-0 left-0 w-full h-full bg-linear-blog-details rounded-10px"></div>
                 </div>
 
@@ -41,7 +39,7 @@
                         @foreach ($recentPosts as $recentPost)
                             <x-landing_v1::blog-card
                                 :title="$recentPost->title"
-                                :image="$recentPost->image ?? asset('assets/landing_v1/img/home/news1-opt.webp')"
+                                :image="$recentPost->image ?? asset('assets/landing_v1/img/home/news1.webp')"
                                 :slug="$recentPost->slug"
                             />
                         @endforeach

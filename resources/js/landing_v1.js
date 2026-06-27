@@ -1,22 +1,5 @@
-// landing_v1.js — FlyonUI components used on landing pages only
-import "flyonui/dist/js/carousel.mjs";
-import "flyonui/dist/js/accordion.mjs";
-import "flyonui/dist/js/overlay.mjs";
-import "flyonui/dist/js/dropdown.mjs";
-import "flyonui/dist/js/toggle-count.mjs";
-import "flyonui/dist/js/select.mjs";
-import "flyonui/dist/js/tabs.mjs";
-import "flyonui/dist/js/collapse.mjs";
-
-function reinitFlyonUI() {
-	["HSCarousel", "HSAccordion", "HSOverlay", "HSDropdown", "HSToggleCount", "HSSelect", "HSTabs", "HSCollapse"].forEach(
-		(name) => {
-			if (window[name]?.autoInit) {
-				window[name].autoInit();
-			}
-		}
-	);
-}
+// landing_v1.js
+import "flyonui/flyonui";
 
 // ============================================================
 // Toggle Count (existing code)
@@ -59,8 +42,8 @@ window.addEventListener("load", () => {
 		return;
 	}
 
-	if (window.HSToggleCount?.autoInit) {
-		window.HSToggleCount.autoInit();
+	if (window.HSStaticMethods && window.HSStaticMethods.autoInit) {
+		window.HSStaticMethods.autoInit(["toggle-count"]);
 	}
 
 	if ("IntersectionObserver" in window) {
@@ -171,7 +154,9 @@ async function loadCartDrawer() {
 			bindDrawerRemoveButtons();
 
 			// Re-init FlyonUI tooltips if any
-			reinitFlyonUI();
+			if (window.HSStaticMethods && window.HSStaticMethods.autoInit) {
+				window.HSStaticMethods.autoInit();
+			}
 		}
 	} catch (err) {
 		drawerBody.innerHTML = `

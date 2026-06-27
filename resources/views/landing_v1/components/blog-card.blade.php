@@ -5,7 +5,7 @@
 ])
 
 @php($landingImg = asset('assets/landing_v1/img'))
-@php($cardImage = $image ?? ($landingImg . '/home/news1-opt.webp'))
+@php($cardImage = $image ?? ($landingImg . '/home/news1.webp'))
 @php($detailUrl = !empty($slug) ? route('landing.v1.blog-details', $slug) : route('landing.v1.blogs'))
 
 <a href="{{ $detailUrl }}"

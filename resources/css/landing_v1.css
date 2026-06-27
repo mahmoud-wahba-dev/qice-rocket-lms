@@ -1,4 +1,4 @@
-@import "flyonui/dist/styled.css";
+@import "flyonui/dist/full.css";
 
 @tailwind base;
 @tailwind components;

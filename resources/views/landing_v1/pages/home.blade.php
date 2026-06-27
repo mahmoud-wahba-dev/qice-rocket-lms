@@ -1,16 +1,11 @@
 @extends('landing_v1.layouts.app')
 
-@push('head')
-    @php($landingImg = asset('assets/landing_v1/img'))
-    <link rel="preload" as="image" href="{{ $landingImg }}/home/hero-img3-opt.webp" fetchpriority="high">
-@endpush
-
 @section('content')
     @php($landingImg = asset('assets/landing_v1/img'))
     <main class="mt-0">
 
         <header class="relative  bg-white text-primary overflow-hidden pt-8 h-screen max-sm:h-[93vh] max-xl:mt-20"
-            style="background-image: url('{{ $landingImg }}/home/hero-bg-opt.webp'); background-size: cover; background-position: center;">
+            style="background-image: url('{{ $landingImg }}/home/hero-bg.webp'); background-size: cover; background-position: center;">
 
             <div class="container relative z-10  flex justify-end items-center h-full max-sm:items-start max-sm:pt-10">
 
@@ -26,8 +21,8 @@
                         2030</p>
 
                     <div class="flex items-center mb-6 ">
-                        <img class="max-w-[450px] object-cover w-full" src="{{ $landingImg }}/home/hero-img3-opt.webp"
-                            alt="تدريب نوعي متخصص" width="900" height="137" fetchpriority="high" decoding="async">
+                        <img class="max-w-[450px] object-cover w-full" src="{{ $landingImg }}/home/hero-img3.webp"
+                            alt="">
                     </div>
                     <div class="flex items-center flex-wrap gap-4 h-14 font-medium text-20px">
                         <a href="{{ route('landing.v1.workshops') }}"
@@ -521,7 +516,7 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     @forelse ($latestPosts as $post)
-                        <x-landing_v1::blog-card :title="$post->title" :image="$post->image ?? asset('assets/landing_v1/img/home/news1-opt.webp')" :slug="$post->slug" />
+                        <x-landing_v1::blog-card :title="$post->title" :image="$post->image ?? asset('assets/landing_v1/img/home/news1.webp')" :slug="$post->slug" />
                     @empty
                         <p class="col-span-full text-center font-medium text-primary/70 py-12">لا توجد مقالات متاحة حالياً.
                         </p>

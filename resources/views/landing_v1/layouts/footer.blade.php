@@ -3,18 +3,15 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6 lg:gap-8 max-sm:gap-8">
             <div class="sm:col-span-2 md:col-span-1">
                 <div class="flex items-center gap-2 text-xl font-bold mb-4">
-                    <img src="{{ $landingImg }}/logo-footer.svg" alt="QIEC Training" width="180" height="48"
-                        decoding="async">
+                    <img src="{{ $landingImg }}/logo-footer.svg" alt="logo">
                 </div>
                 <p class="font-normal text-16px mb-4 text-white lg:w-[90%]">
                     مركز الجودة والتميز للتدريب مؤسسة متخصصة في تقديم التدريب النوعي الذي يركز على التطبيق العملي لتلبية
                     الاحتياجات التدريبية للمؤسسات والأفراد.
                 </p>
                 <div class="flex items-center gap-4 xl:flex-nowrap flex-wrap">
-                    <img src="{{ $landingImg }}/logo-footer3.webp" alt="QIEC accreditation" class="w-72" width="288"
-                        height="80" loading="lazy" decoding="async">
-                    <img src="{{ $landingImg }}/logo-footer2.webp" alt="QIEC partner" class="w-72" width="288"
-                        height="80" loading="lazy" decoding="async">
+                    <img src="{{ $landingImg }}/logo-footer3.webp" alt="logo" class="w-72">
+                    <img src="{{ $landingImg }}/logo-footer2.webp" alt="logo" class="w-72">
                 </div>
             </div>
 

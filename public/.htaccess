@@ -1,37 +1,9 @@
-# ── Static asset cache + compression (landing / Vite) ──
-<IfModule mod_headers.c>
-    <FilesMatch "\.(css|js|woff2?|webp|svg|png|jpg|jpeg|gif|ico)$">
-        Header set Cache-Control "public, max-age=2592000"
-    </FilesMatch>
-    <FilesMatch "\.(css|js)$">
-        Header append Vary "Accept-Encoding"
-    </FilesMatch>
-</IfModule>
-
-<IfModule mod_expires.c>
-    ExpiresActive On
-    ExpiresByType text/css "access plus 1 year"
-    ExpiresByType application/javascript "access plus 1 year"
-    ExpiresByType image/webp "access plus 30 days"
-    ExpiresByType image/svg+xml "access plus 30 days"
-    ExpiresByType image/png "access plus 30 days"
-    ExpiresByType image/jpeg "access plus 30 days"
-    ExpiresByType font/woff2 "access plus 1 year"
-</IfModule>
-
-<IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/css application/javascript application/json image/svg+xml text/html text/plain
-</IfModule>
-
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
     </IfModule>
 
     RewriteEngine On
-
-    # Long-lived cache for fingerprinted Vite assets
-    RewriteRule ^build/assets/ - [E=LONG_CACHE:1]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
@@ -46,8 +18,4 @@
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
-</IfModule>
-
-<IfModule mod_headers.c>
-    Header set Cache-Control "public, max-age=31536000, immutable" env=LONG_CACHE
 </IfModule>

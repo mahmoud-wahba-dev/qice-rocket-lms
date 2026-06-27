@@ -17,7 +17,7 @@
 <div class="bg-white  rounded-19px  border border-[#E0D4BC] h-full">
     <div class="h-52  overflow-hidden">
         <img class="h-full w-full object-cover rounded-tr-[19px] rounded-tl-[19px]" src="{{ $cardImage }}"
-            alt="{{ $title }}" width="400" height="208" loading="lazy" decoding="async">
+            alt="{{ $title }}">
     </div>
 
     <div class="p-6 pt-2 pb-2 max-sm:p-4">
@@ -33,8 +33,8 @@
         <div class="flex items-center gap-1.5 mb-5 border-t border-card-border pt-4 ">
             <div class="avatar">
                 <div class="size-10 rounded-full">
-                    <img src="{{ !empty($teacherAvatar) ? $teacherAvatar : asset('assets/landing_v1/img/home/instructor.webp') }}"
-                        alt="{{ $teacherName }}" width="40" height="40" loading="lazy" decoding="async" />
+                    <img src="{{ !empty($teacherAvatar) ? $teacherAvatar : 'https://cdn.flyonui.com/fy-assets/avatar/avatar-1.png' }}"
+                        alt="{{ $teacherName }}" />
                 </div>
             </div>
             <p class="font-medium text-77 text-base">{{ $teacherName }}</p>
