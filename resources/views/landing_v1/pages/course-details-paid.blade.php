@@ -174,12 +174,16 @@
 
                     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
 
-                        <div
+                        <a href="{{ route('landing.v1.checkout') }}"
                             class="rounded-9px font-black text-13px text-[#155554] px-6 py-3   bg-white text-primary border border-[#00FF88]">
                             بـــ
+
+                       
                             <span
                                 class="shadow-[-3.32px_4.42px_19.57px_0px_#FFFFFF] font-bold text-22px text-[#C80A0A] px-1">{{ handlePrice($effectivePrice) }}</span>
-                            @if ($hasDiscount)
+                                <span class="font-bold text-18px text-[#C80A0A]">اشتري الآن</span>
+                       
+                                @if ($hasDiscount)
                                 <span>
                                     بدلا من
                                 </span>
@@ -187,7 +191,7 @@
                                     class="font-bold text-base text-[#2F2F2FA8] shadow-[-2.4px_3.21px_14.19px_0px_#FFFFFF] line-through ms-2">
                                     {{ handlePrice($course->price) }}</span>
                             @endif
-                        </div>
+                            </a>
                         @if ($hasUserBought)
                             <a href="{{ $course->getLearningPageUrl() }}"
                                 class="btn h-14 rounded-9px font-bold text-18px px-8 inline-flex items-center gap-3 bg-white text-primary border border-[#00FF88] shadow-[0_0_24px_rgba(255,255,255,0.15)] hover:bg-[#f5f5f5]">
