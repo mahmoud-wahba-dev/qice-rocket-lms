@@ -281,10 +281,6 @@ class LandingV1Controller extends Controller
         );
 
         $query = $this->paidCoursesBaseQuery()
-            ->select([
-                'id', 'title', 'description', 'slug', 'price', 'image_cover',
-                'thumbnail', 'category_id', 'teacher_id', 'sales_count_number',
-            ])
             ->with($this->webinarTeacherEagerLoad());
 
         if ($request->filled('category_id')) {
