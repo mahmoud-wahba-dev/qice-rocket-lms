@@ -272,41 +272,36 @@
 
         {{-- FAQ (التعليمات from admin) --}}
         @if (!empty($faqItems))
-            <section id="course-faq" class="course-scrollspy-section bg-[#165554] py-16 lg:py-24 my-0 text-white">
+            <section id="course-faq" class="course-scrollspy-section bg-[#F5EFE5] py-16 lg:py-24 my-0">
                 <div class="container">
-                    <h3 class="font-bold text-32px lg:text-48px mb-15 text-center">
-                        <span class="text-[#FFD343]">إجابات</span>
-                        <span class="text-white">لاستفساراتك</span>
-                    </h3>
-                    <div class="max-w-4xl mx-auto">
-                        <div class="accordion accordion-shadow">
-                            @foreach ($faqItems as $index => $faq)
-                                <div class="accordion-item {{ $index === 0 ? 'active' : '' }} bg-transparent border-b border-[#1D293D]"
-                                    id="free-faq-{{ $index + 1 }}">
-                                    <button
-                                        class="accordion-toggle shadow-none bg-transparent inline-flex items-center gap-x-4 px-0 py-6 text-start w-full hover:bg-white/5 transition-all duration-300 text-white"
-                                        aria-controls="free-faq-{{ $index + 1 }}-collapse"
-                                        aria-expanded="{{ $index === 0 ? 'true' : 'false' }}">
-                                        <span
-                                            class="icon-[tabler--plus] accordion-item-active:hidden text-white size-5 block shrink-0 transition-opacity duration-300"></span>
-                                        <span
-                                            class="icon-[tabler--minus] accordion-item-active:block text-white size-5 hidden shrink-0 transition-opacity duration-300"></span>
-                                        <span
-                                            class="font-medium text-20px lg:text-32px text-[#E2E8F0] flex-grow">{{ $faq['question'] }}</span>
-                                    </button>
-                                    <div id="free-faq-{{ $index + 1 }}-collapse"
-                                        class="accordion-content {{ $index === 0 ? '' : 'hidden' }} w-full overflow-hidden transition-[height] duration-300 ease-in-out"
-                                        role="region">
-                                        <div class="pb-6">
-                                            <div
-                                                class="font-normal text-16px lg:text-24px text-white leading-relaxed [&_p]:mb-3 last:[&_p]:mb-0">
-                                                {!! clean($faq['answer']) !!}
-                                            </div>
+                    <h3 class="font-bold text-32px lg:text-48px text-primary mb-13 text-start">إجابات لاستفساراتك</h3>
+                    <div class="accordion accordion-shadow border border-primary rounded-10px overflow-hidden">
+                        @foreach ($faqItems as $index => $faq)
+                            <div class="accordion-item {{ $index === 0 ? 'active' : '' }} bg-transparent"
+                                id="free-faq-{{ $index + 1 }}">
+                                <button
+                                    class="accordion-toggle shadow-none bg-transparent inline-flex items-center gap-x-4 px-5 lg:px-8 {{ $index % 2 === 0 ? 'font-normal text-18px lg:text-32px' : 'font-semibold text-18px lg:text-22px' }} text-primary py-6 {{ $index === 0 ? 'border-b border-[#B4B4B4]' : 'border-t border-[#E7E7E7]' }} text-start w-full hover:bg-gray-50 transition-colors"
+                                    aria-controls="free-faq-{{ $index + 1 }}-collapse"
+                                    aria-expanded="{{ $index === 0 ? 'true' : 'false' }}">
+                                    <span
+                                        class="icon-[tabler--plus] accordion-item-active:hidden text-base-content size-5 block shrink-0"></span>
+                                    <span
+                                        class="icon-[tabler--minus] accordion-item-active:block text-base-content size-5 hidden shrink-0"></span>
+                                    {{ $faq['question'] }}
+                                </button>
+                                <div id="free-faq-{{ $index + 1 }}-collapse"
+                                    class="accordion-content {{ $index === 0 ? '' : 'hidden' }} w-full overflow-hidden transition-[height] duration-300"
+                                    aria-labelledby="free-faq-{{ $index + 1 }}" role="region">
+                                    <div
+                                        class="px-5 lg:px-8 pb-6 {{ $index === 0 ? 'border-t border-[#B4B4B4]' : 'border-t border-gray-100' }} pt-3">
+                                        <div
+                                            class="{{ $index === 0 ? 'text-primary font-normal text-24px' : 'text-primary/80 font-normal text-16px' }} leading-relaxed [&_p]:mb-3 last:[&_p]:mb-0">
+                                            {!! clean($faq['answer']) !!}
                                         </div>
                                     </div>
                                 </div>
-                            @endforeach
-                        </div>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
             </section>
