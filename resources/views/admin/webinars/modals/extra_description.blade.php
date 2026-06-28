@@ -27,7 +27,7 @@
 
             <div class="js-no-company-input form-group">
                 <label class="input-label">{{ trans('public.title') }}</label>
-                <input type="text" name="value" class="js-ajax-title form-control"/>
+                <input type="text" name="value" class="js-ajax-value form-control"/>
                 <div class="invalid-feedback"></div>
             </div>
         </div>

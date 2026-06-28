@@ -3,7 +3,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6 lg:gap-8 max-sm:gap-8">
             <div class="sm:col-span-2 md:col-span-1">
                 <div class="flex items-center gap-2 text-xl font-bold mb-4">
-                    <img src="{{ $landingImg }}/logo-footer.svg" alt="QIEC Training" width="180" height="48"
+                    <img src="{{ $landingImg }}/logo-footer.svg" alt="QIEC Training" width="auto" height="48"
                         decoding="async">
                 </div>
                 <p class="font-normal text-16px mb-4 text-white lg:w-[90%]">

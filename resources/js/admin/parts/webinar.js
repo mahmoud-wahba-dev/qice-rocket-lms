@@ -461,7 +461,7 @@
                 content: 'p-0 text-left',
             },
             width: '36rem',
-            onOpen: function () {
+            didOpen: function () {
 
                 const modal = $('#chapterModal' + random);
 
@@ -613,7 +613,7 @@
                 content: 'p-0 text-left',
             },
             width: '36rem',
-            onOpen: function () {
+            didOpen: function () {
 
                 const modal = $('#changeChapterModalHtml' + random);
 
@@ -952,7 +952,7 @@
                 content: 'p-0 text-left',
             },
             width: '48rem',
-            onOpen: () => {
+            didOpen: () => {
                 handleSearchableSelect2('prerequisites-select2', adminPanelPrefix + '/webinars/search', 'title');
 
             },
@@ -1012,7 +1012,7 @@
                 content: 'p-0 text-left',
             },
             width: '48rem',
-            onOpen: function () {
+            didOpen: function () {
                 $('#extraDescriptionModal input[name="type"]').val('learning_materials')
             }
         });
@@ -1057,7 +1057,7 @@
                 content: 'p-0 text-left',
             },
             width: '48rem',
-            onOpen: function () {
+            didOpen: function () {
                 $('#extraDescriptionModal input[name="type"]').val('company_logos')
             }
         });
@@ -1079,7 +1079,7 @@
                 content: 'p-0 text-left',
             },
             width: '48rem',
-            onOpen: function () {
+            didOpen: function () {
                 $('#extraDescriptionModal input[name="type"]').val('requirements')
             }
         });
@@ -1140,7 +1140,7 @@
                         content: 'p-0 text-left',
                     },
                     width: '48rem',
-                    onOpen: () => {
+                    didOpen: () => {
                         var $modal = $('#extraDescriptionModal');
 
                         Object.keys(webinarExtraDescription).forEach(key => {
@@ -1178,7 +1178,7 @@
                 content: 'p-0 text-left',
             },
             width: '30rem',
-            onOpen: () => {
+            didOpen: () => {
                 $(".quiz-select22").select2({
                     placeholder: $(this).data('placeholder'),
                     allowClear: true,
@@ -1225,7 +1225,7 @@
                         content: 'p-0 text-left',
                     },
                     width: '48rem',
-                    onOpen: () => {
+                    didOpen: () => {
                         $('.date-range-picker').daterangepicker({
                             locale: {format: 'YYYY-MM-DD'},
                             drops: 'down',
@@ -1304,7 +1304,7 @@
                         content: 'p-0 text-left',
                     },
                     width: '48rem',
-                    onOpen: () => {
+                    didOpen: () => {
                         var $modal = $('#editChapterModal');
 
                         Object.keys(chapter).forEach(key => {
@@ -1382,7 +1382,7 @@
                         content: 'p-0 text-left',
                     },
                     width: '48rem',
-                    onOpen: () => {
+                    didOpen: () => {
                         var $modal = $('#addSessionModal');
 
                         var datetimepicker = $('.datetimepicker');
@@ -1551,7 +1551,7 @@
                         content: 'p-0 text-left',
                     },
                     width: '48rem',
-                    onOpen: () => {
+                    didOpen: () => {
                         $('.prerequisites-select2').append('<option selected="selected" value="' + prerequisite.webinar_id + '">' + prerequisite.webinar_title + '</option>');
 
                         if (prerequisite.required === 1) {
@@ -1594,7 +1594,7 @@
                         content: 'p-0 text-left',
                     },
                     width: '48rem',
-                    onOpen: () => {
+                    didOpen: () => {
                         var $modal = $('#addFAQsModal');
 
                         Object.keys(faq).forEach(key => {
@@ -1682,7 +1682,7 @@
                         content: 'p-0 text-left',
                     },
                     width: '30rem',
-                    onOpen: () => {
+                    didOpen: () => {
 
                         $('.quiz-select22').append('<option selected="selected" value="' + webinar_quiz.id + '">' + webinar_quiz.title + '</option>');
                         $(".quiz-select22").select2({
@@ -1749,7 +1749,7 @@
                 content: 'p-0 text-left',
             },
             width: '48rem',
-            onOpen: () => {
+            didOpen: () => {
                 handleSearchableSelect2('bundleWebinars-select2', adminPanelPrefix + '/webinars/search', 'title');
             },
         });
@@ -1798,7 +1798,7 @@
                         content: 'p-0 text-left',
                     },
                     width: '48rem',
-                    onOpen: () => {
+                    didOpen: () => {
 
                         handleSearchableSelect2('bundleWebinars-select2', adminPanelPrefix + '/webinars/search', 'title');
                     }
