@@ -2,7 +2,9 @@
 
 **Production domain:** https://training.qiec.sa  
 **Git remote:** `git@github.com:mahmoud-wahba-dev/qice-rocket-lms.git`  
-**Deploy method:** Local scripts only (`npm run deploy` → build, git push, SSH pull)
+**Deploy method:** Local scripts only (`npm run deploy` → build, git push, SSH pull, post-deploy optimize)
+
+No GitHub Actions or auto-deploy — merging to `master` does not update the server by itself.
 
 ---
 
@@ -157,13 +159,48 @@ Safe templates are in [DEPLOY_TEMPLATE.md](DEPLOY_TEMPLATE.md).
 ### Deploy workflow
 
 ```
-npm run build:landing  →  git add/commit/push  →  ssh hostinger-qiec "git pull + artisan clear"
+npm run build:landing
+  → git add / commit / push origin master
+  → ssh git pull + artisan cache clear (if vendor present)
+  → npm run optimize:production
 ```
+
+| Step | Command | Where it runs |
+|------|---------|---------------|
+| 1 | `npm run build:landing` | Local |
+| 2 | `git push origin master` | Local → GitHub |
+| 3 | `git pull` + cache clear | Hostinger (SSH) |
+| 4 | `npm run optimize:production` | Hostinger (SSH via local script) |
 
 Run:
 
 ```powershell
 npm run deploy
+```
+
+### Post-deploy optimization (`optimize:production`)
+
+Implemented in [`scripts/optimize-production.sh`](../scripts/optimize-production.sh). Step 4 of `deploy.bat` calls this automatically.
+
+- Copies Laravel File Manager assets from `vendor/unisharp/laravel-filemanager/public/` to `public/vendor/laravel-filemanager/` (required for admin image uploads; `public/vendor/` is gitignored)
+- Clears bootstrap config/route cache files and framework cache data
+- Restarts LiteSpeed PHP workers (`pkill lsphp`)
+
+> **ionCube:** `php artisan` over SSH often fails on Hostinger CLI. The website still works. Do not rely on `php artisan vendor:publish` on the server — the optimize script copies LFM assets instead.
+
+### Feature branch vs `master`
+
+| Situation | Command |
+|-----------|---------|
+| Production on `master` (routine) | `npm run deploy` |
+| Production on a feature branch | Manual `git push` + SSH `git pull origin <branch>` + `npm run optimize:production` |
+| After merging feat → `master` | One-time: checkout `master` on server, then `npm run deploy` |
+
+Example — switch production to `master` after merge:
+
+```bash
+ssh hostinger-qiec "cd domains/training.qiec.sa/public_html && git fetch origin && git checkout master && git pull origin master"
+npm run optimize:production
 ```
 
 ---
@@ -249,11 +286,13 @@ Add the public key to GitHub → repo **Settings → Deploy keys** (read-only is
 
 ## Every Deploy (routine)
 
-From your local machine:
+From your local machine (production must be on `master`):
 
 ```powershell
 npm run deploy
 ```
+
+This runs all four steps: build → push → SSH pull → `optimize:production`.
 
 Or manually:
 
@@ -263,6 +302,7 @@ git add .
 git commit -m "deploy: description of changes"
 git push origin master
 ssh hostinger-qiec "cd domains/training.qiec.sa/public_html && git pull origin master && php artisan config:clear && php artisan cache:clear && php artisan view:clear"
+npm run optimize:production
 ```
 
 ---
@@ -290,6 +330,8 @@ ssh hostinger-qiec "cd domains/training.qiec.sa/public_html && git pull origin m
 | Images broken on landing | `landing_v1/img` not uploaded | Upload via File Manager |
 | 500 error after deploy | `.env` or permissions | Check `storage/logs/laravel.log`, fix `storage` permissions |
 | `npm run landing:build` fails | Wrong script name | Use `npm run build:landing` |
+| Admin upload broken (`filemanager is not a function`) | Missing `public/vendor/laravel-filemanager/` | Run `npm run optimize:production` (or full `npm run deploy`) |
+| `php artisan` fails over SSH | ionCube not in CLI PHP | Use optimize script; delete `bootstrap/cache/config.php` manually if needed |
 
 ---
 

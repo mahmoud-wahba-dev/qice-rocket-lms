@@ -3,7 +3,8 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6 lg:gap-8 max-sm:gap-8">
             <div class="sm:col-span-2 md:col-span-1">
                 <div class="flex items-center gap-2 text-xl font-bold mb-4">
-                    <img src="{{ $landingImg }}/logo-footer.svg" alt="logo">
+                    <img src="{{ $landingImg }}/logo-footer.svg" alt="QIEC Training" width="auto" height="48"
+                        decoding="async">
                 </div>
                 <p class="font-normal text-16px mb-4 text-white lg:w-[90%]">
                     مركز الجودة والتميز للتدريب مؤسسة متخصصة في تقديم التدريب النوعي الذي يركز على التطبيق العملي لتلبية
@@ -35,11 +36,15 @@
                 <h6 class="footer-title font-semibold text-24px text-white mb-4">تصنيف الدورات</h6>
                 <div class="flex flex-col gap-2">
                     @php
-                        $footerCategories = $footerCategories ?? \App\Models\Category::whereNull('parent_id')
-                            ->where('enable', true)
-                            ->orderBy('order')
-                            ->limit(6)
-                            ->get();
+                        $footerCategories = $footerCategories ?? \Illuminate\Support\Facades\Cache::remember(
+                            'landing_v1.footer_categories',
+                            now()->addMinutes(30),
+                            fn () => \App\Models\Category::whereNull('parent_id')
+                                ->where('enable', true)
+                                ->orderBy('order')
+                                ->limit(6)
+                                ->get()
+                        );
                     @endphp
                     @forelse ($footerCategories as $category)
                         <a href="{{ route('landing.v1.courses-paid', ['category_id' => $category->id]) }}"

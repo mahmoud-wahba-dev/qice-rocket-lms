@@ -197,7 +197,7 @@
                         content: 'p-0 text-left',
                     },
                     width: '48rem',
-                    onOpen: () => {
+                    didOpen: () => {
                         var $modal = $('#addFAQsModal');
 
                         Object.keys(faq).forEach(key => {
@@ -295,7 +295,7 @@
                 content: 'p-0 text-left',
             },
             width: '48rem',
-            onOpen: function () {
+            didOpen: function () {
                 $('#extraDescriptionModal input[name="type"]').val('learning_materials')
             }
         });
@@ -340,7 +340,7 @@
                 content: 'p-0 text-left',
             },
             width: '48rem',
-            onOpen: function () {
+            didOpen: function () {
                 $('#extraDescriptionModal input[name="type"]').val('company_logos')
             }
         });
@@ -362,7 +362,7 @@
                 content: 'p-0 text-left',
             },
             width: '48rem',
-            onOpen: function () {
+            didOpen: function () {
                 $('#extraDescriptionModal input[name="type"]').val('requirements')
             }
         });
@@ -423,7 +423,7 @@
                         content: 'p-0 text-left',
                     },
                     width: '48rem',
-                    onOpen: () => {
+                    didOpen: () => {
                         var $modal = $('#extraDescriptionModal');
 
                         Object.keys(webinarExtraDescription).forEach(key => {

@@ -48,6 +48,14 @@ ssh hostinger-qiec "cd domains/training.qiec.sa/public_html && git fetch origin 
 
 **Note:** `php artisan` may fail over SSH (ionCube CLI). The website PHP runtime is unaffected. Avoid running cache commands on production unless you know they work on this host.
 
+After any git rollback or checkout, run from local:
+
+```bash
+npm run optimize:production
+```
+
+This syncs `public/vendor/laravel-filemanager/` (gitignored), clears stale caches, and restarts PHP workers — without using `php artisan` on SSH.
+
 ---
 
 ## Rollback B — Full folder restore (emergency)

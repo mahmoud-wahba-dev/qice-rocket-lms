@@ -59,7 +59,20 @@ if %errorlevel% neq 0 (
 )
 
 echo Step 3: Deploying on Hostinger...
-ssh hostinger-qiec "cd domains/training.qiec.sa/public_html && git pull origin master && php artisan config:clear && php artisan cache:clear && php artisan view:clear"
+ssh hostinger-qiec "cd domains/training.qiec.sa/public_html && git pull origin master && (test -f vendor/autoload.php && php artisan config:clear && php artisan cache:clear && php artisan view:clear || echo WARNING: vendor missing - run composer install or copy vendor folder)"
+if %errorlevel% neq 0 (
+    echo Remote deploy failed. Check SSH and server git setup.
+    pause
+    exit /b %errorlevel%
+)
+
+echo Step 4: Post-deploy optimization on Hostinger...
+call npm run optimize:production
+if %errorlevel% neq 0 (
+    echo Post-deploy optimization failed.
+    pause
+    exit /b %errorlevel%
+)
 
 echo ========================================================
 echo Deployment completed.
@@ -104,10 +117,18 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "Step 3: Connecting to Hostinger via SSH..." -ForegroundColor Cyan
-ssh hostinger-qiec "cd domains/training.qiec.sa/public_html && git pull origin master && php artisan config:clear && php artisan cache:clear && php artisan view:clear"
+ssh hostinger-qiec "cd domains/training.qiec.sa/public_html && git pull origin master && (test -f vendor/autoload.php && php artisan config:clear && php artisan cache:clear && php artisan view:clear || echo WARNING: vendor missing - run composer install or copy vendor folder)"
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Remote commands finished with warnings or errors." -ForegroundColor Yellow
+    Write-Host "Remote deploy failed. Check SSH config and server path." -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "Step 4: Post-deploy optimization on Hostinger..." -ForegroundColor Cyan
+npm run optimize:production
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Post-deploy optimization failed." -ForegroundColor Red
     exit 1
 }
 
@@ -125,10 +146,43 @@ Ensure `package.json` includes:
     "scripts": {
         "dev:landing": "vite",
         "build:landing": "vite build",
-        "deploy": "deploy.bat"
+        "deploy": "deploy.bat",
+        "optimize:production": "bash scripts/optimize-production.sh"
     }
 }
 ```
+
+### What `optimize:production` does (Step 4)
+
+Runs [`scripts/optimize-production.sh`](../scripts/optimize-production.sh) over SSH. It does **not** build assets or run `git pull` — that is Step 3.
+
+| Action | Purpose |
+|--------|---------|
+| Sync `public/vendor/laravel-filemanager/` | Admin file upload JS (`stand-alone-button.js`) — folder is gitignored; `php artisan vendor:publish` fails on Hostinger SSH (ionCube CLI) |
+| Remove `bootstrap/cache/config.php` | Avoid stale config cache |
+| Clear `storage/framework/cache/data/*` | Fresh application cache |
+| `pkill lsphp` | Restart LiteSpeed PHP workers |
+
+**Nothing runs automatically on merge to `master`.** GitHub has no CI/CD — you still run `npm run deploy` locally (or manual pull + `npm run optimize:production`).
+
+### Feature branch deploy (before merge to master)
+
+`npm run deploy` always pushes/pulls **`master`**. While production tracks a feature branch:
+
+```powershell
+npm run build:landing
+git push origin feat/your-branch
+ssh hostinger-qiec "cd domains/training.qiec.sa/public_html && git pull origin feat/your-branch"
+npm run optimize:production
+```
+
+After merging to `master`, switch production to `master` once:
+
+```bash
+ssh hostinger-qiec "cd domains/training.qiec.sa/public_html && git fetch origin && git checkout master && git pull origin master"
+```
+
+Then use `npm run deploy` for routine updates.
 
 ---
 

@@ -18,6 +18,7 @@ use App\Models\OfflineBank;
 use App\Models\Blog;
 use App\Models\PaymentChannel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class LandingV1Controller extends Controller
 {
@@ -279,12 +280,12 @@ class LandingV1Controller extends Controller
 
     public function coursesPaid(Request $request)
     {
+        $activeCategory = $request->input('category_id');
+
         $categories = $this->getPaidCourseFilterCategories();
 
         $query = $this->paidCoursesBaseQuery()
             ->with($this->webinarTeacherEagerLoad());
-
-        $activeCategory = $request->input('category_id');
 
         if ($request->filled('category_id')) {
             $categoryId = (int) $request->input('category_id');
@@ -297,8 +298,7 @@ class LandingV1Controller extends Controller
             }
         }
 
-        $courses = $query->orderByDesc('sales_count_number')->get();
-
+        $courses = $query->orderByDesc('created_at')->orderByDesc('id')->paginate(20);
         $this->attachCategoryTranslations($courses);
 
         if ($request->ajax()) {
@@ -307,7 +307,7 @@ class LandingV1Controller extends Controller
                     'courses' => $courses,
                     'activeCategory' => $activeCategory,
                 ])->render(),
-                'count' => $courses->count(),
+                'count' => $courses->total(),
             ]);
         }
 
@@ -328,18 +328,36 @@ class LandingV1Controller extends Controller
 
     private function getPaidCourseFilterCategories()
     {
-        $categories = Category::whereNull('parent_id')
+        $parentCategories = Category::whereNull('parent_id')
             ->where('enable', true)
             ->with('translations')
             ->orderBy('order', 'asc')
             ->get();
 
-        return $categories->filter(function ($category) {
-            $subCategoryIds = Category::where('parent_id', $category->id)->pluck('id')->toArray();
+        if ($parentCategories->isEmpty()) {
+            return collect();
+        }
 
-            return $this->paidCoursesBaseQuery()
-                ->whereIn('category_id', array_merge([$category->id], $subCategoryIds))
-                ->exists();
+        $parentIds = $parentCategories->pluck('id');
+
+        $subCategoriesByParent = Category::whereIn('parent_id', $parentIds)
+            ->get(['id', 'parent_id'])
+            ->groupBy('parent_id');
+
+        $paidCategoryIds = $this->paidCoursesBaseQuery()
+            ->whereNotNull('category_id')
+            ->distinct()
+            ->pluck('category_id')
+            ->flip();
+
+        return $parentCategories->filter(function ($category) use ($subCategoriesByParent, $paidCategoryIds) {
+            if (isset($paidCategoryIds[$category->id])) {
+                return true;
+            }
+
+            $subIds = $subCategoriesByParent->get($category->id, collect());
+
+            return $subIds->contains(fn ($sub) => isset($paidCategoryIds[$sub->id]));
         })->values();
     }
 
@@ -441,25 +459,24 @@ class LandingV1Controller extends Controller
             });
         }
 
-        // Sort
-        $sort = $request->input('sort', 'popular');
-        if ($sort == 'latest') {
-            $query->orderByDesc('created_at');
-        } elseif ($sort == 'oldest') {
+        // Sort — default: newest first
+        $sort = $request->input('sort', 'latest');
+        if ($sort == 'oldest') {
             $query->orderBy('created_at');
+        } elseif ($sort == 'popular') {
+            $query->orderByDesc('sales_count_number')->orderByDesc('created_at');
         } else {
-            // popular
-            $query->orderByDesc('sales_count_number');
+            $query->orderByDesc('created_at')->orderByDesc('id');
         }
 
-        $courses = $query->get();
+        $courses = $query->paginate(20);
 
         $this->attachCategoryTranslations($courses);
 
         if ($request->ajax()) {
             return response()->json([
                 'html' => view('landing_v1.pages.courses_list', ['courses' => $courses])->render(),
-                'count' => $courses->count()
+                'count' => $courses->total(),
             ]);
         }
 
@@ -485,7 +502,8 @@ class LandingV1Controller extends Controller
                     'teacher:id,full_name,avatar,avatar_settings,created_at,bio,headline,about,username',
                     'chapters' => function ($query) {
                         $query->where('status', 'active')
-                            ->orderBy('order', 'asc');
+                            ->orderBy('order', 'asc')
+                            ->with('translations');
                     },
                     'chapters.sessions' => function ($query) {
                         $query->where('status', 'active');
@@ -501,6 +519,9 @@ class LandingV1Controller extends Controller
                     },
                     'chapters.quizzes' => function ($query) {
                         $query->where('status', 'active');
+                    },
+                    'faqs' => function ($query) {
+                        $query->orderBy('order', 'asc')->with('translations');
                     },
                 ])
                 ->first();
@@ -513,7 +534,8 @@ class LandingV1Controller extends Controller
                     'teacher:id,full_name,avatar,avatar_settings,created_at,bio,headline,about,username',
                     'chapters' => function ($query) {
                         $query->where('status', 'active')
-                            ->orderBy('order', 'asc');
+                            ->orderBy('order', 'asc')
+                            ->with('translations');
                     },
                     'chapters.sessions' => function ($query) {
                         $query->where('status', 'active');
@@ -529,6 +551,9 @@ class LandingV1Controller extends Controller
                     },
                     'chapters.quizzes' => function ($query) {
                         $query->where('status', 'active');
+                    },
+                    'faqs' => function ($query) {
+                        $query->orderBy('order', 'asc')->with('translations');
                     },
                 ])
                 ->orderBy('id', 'asc')
@@ -588,6 +613,7 @@ class LandingV1Controller extends Controller
 
         $data = array_merge([
             'pageTitle' => $course->title,
+            'pageDescription' => $course->seo_description,
             'course' => $course,
             'teacher_courses_count' => $teacher_courses_count,
             'teacher_students_count' => $teacher_students_count,
@@ -614,7 +640,19 @@ class LandingV1Controller extends Controller
             ? $learningMaterials->pluck('value')->filter()->values()->all()
             : [];
 
-        $curriculumModules = $course->chapters->pluck('title')->filter()->values()->all();
+        $curriculumModules = $course->chapters
+            ->map(function ($chapter) {
+                $title = trim((string) $chapter->title);
+
+                if ($title === '' && $chapter->relationLoaded('translations')) {
+                    $title = trim((string) ($chapter->translations->first()?->title ?? ''));
+                }
+
+                return $title;
+            })
+            ->filter()
+            ->values()
+            ->all();
 
         $comments = $activeReviews->map(function ($review) {
             return [
@@ -624,12 +662,42 @@ class LandingV1Controller extends Controller
             ];
         })->values()->all();
 
+        $faqItems = ($course->relationLoaded('faqs') ? $course->faqs : $course->faqs()->with('translations')->orderBy('order', 'asc')->get())
+            ->map(function ($faq) {
+                return [
+                    'question' => $this->resolveFaqField($faq, 'title'),
+                    'answer' => $this->resolveFaqField($faq, 'answer'),
+                ];
+            })
+            ->filter(fn ($item) => $item['question'] !== '' && $item['answer'] !== '')
+            ->values()
+            ->all();
+
         return [
             'learningOutcomes' => $learningOutcomes,
+            'discoveryTopics' => $learningOutcomes,
             'curriculumModules' => $curriculumModules,
+            'faqItems' => $faqItems,
             'comments' => $comments,
             'heroVideo' => $this->buildCourseHeroVideo($course),
         ];
+    }
+
+    private function resolveFaqField($faq, string $field): string
+    {
+        $value = trim((string) getTranslateAttributeValue($faq, $field, getDefaultLocale()));
+        if ($value !== '') {
+            return $value;
+        }
+
+        if ($faq->relationLoaded('translations')) {
+            $translation = $faq->translations->firstWhere('locale', 'ar')
+                ?? $faq->translations->first();
+
+            return trim((string) ($translation?->{$field} ?? ''));
+        }
+
+        return '';
     }
 
     private function buildCourseHeroVideo(Webinar $course): array

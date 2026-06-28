@@ -163,6 +163,14 @@ main {
     scroll-margin-top: 168px;
 }
 
+#landing-v1-app #course-faq.course-scrollspy-section {
+    scroll-margin-top: 168px;
+}
+
+#landing-v1-app #course-discovery.course-scrollspy-section {
+    scroll-margin-top: 168px;
+}
+
 #landing-v1-app .course-hero-embed iframe {
     position: absolute;
     top: 50%;
@@ -182,12 +190,30 @@ main {
     pointer-events: none;
 }
 
+#landing-v1-app .course_details_page .course-scrollspy-nav--paid .course-scrollspy-link,
+#landing-v1-app .course_details_page .course-scrollspy-nav--paid .course-scrollspy-link:hover {
+    color: #fff !important;
+}
+
+#landing-v1-app .course_details_page .course-scrollspy-nav--paid .course-scrollspy-link.active {
+    color: #fff !important;
+    border-bottom-color: #fff !important;
+}
+
 #landing-v1-app .course_details_page .course-scrollspy-nav {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     width: 100%;
     min-height: 4.75rem;
     align-items: stretch;
+}
+
+#landing-v1-app .course_details_page .course-scrollspy-nav--paid {
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+}
+
+#landing-v1-app .course_details_page .course-scrollspy-nav--free {
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
 }
 
 #landing-v1-app .course_details_page .course-scrollspy-link {
@@ -339,6 +365,95 @@ main {
 
 .paid-courses-filter__pill.is-active:hover {
     @apply border-primary bg-primary text-white;
+}
+
+/* Landing pages — course/blog pagination (plain CSS — survives without Tailwind scan) */
+#landing-v1-app .landing-pagination {
+    margin-top: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+}
+
+#landing-v1-app .landing-pagination__summary {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgba(15, 76, 69, 0.6);
+}
+
+#landing-v1-app .landing-pagination__list {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+#landing-v1-app .landing-pagination__list > li {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+#landing-v1-app .landing-pagination__control,
+#landing-v1-app .landing-pagination__page {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+    padding: 0 0.875rem;
+    border-radius: 9999px;
+    border: 1px solid #e5e5e5;
+    background: #ffffff;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+#landing-v1-app .landing-pagination__control {
+    padding: 0 0.75rem;
+}
+
+#landing-v1-app a.landing-pagination__link:hover {
+    border-color: rgba(15, 76, 69, 0.35);
+    background: rgba(15, 76, 69, 0.05);
+    color: var(--color-primary);
+}
+
+#landing-v1-app .landing-pagination__page.is-active {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: #ffffff;
+    cursor: default;
+}
+
+#landing-v1-app .landing-pagination__control.is-disabled {
+    border-color: #ececec;
+    background: #f8f8f8;
+    color: rgba(15, 76, 69, 0.3);
+    cursor: default;
+}
+
+#landing-v1-app .landing-pagination__ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgba(15, 76, 69, 0.4);
 }
 
 /* ── Cart drawer (sidebar) ── */
