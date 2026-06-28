@@ -513,7 +513,7 @@ class LandingV1Controller extends Controller
                         $query->where('status', 'active');
                     },
                     'faqs' => function ($query) {
-                        $query->orderBy('order', 'asc');
+                        $query->orderBy('order', 'asc')->with('translations');
                     },
                 ])
                 ->first();
@@ -545,7 +545,7 @@ class LandingV1Controller extends Controller
                         $query->where('status', 'active');
                     },
                     'faqs' => function ($query) {
-                        $query->orderBy('order', 'asc');
+                        $query->orderBy('order', 'asc')->with('translations');
                     },
                 ])
                 ->orderBy('id', 'asc')
@@ -654,11 +654,11 @@ class LandingV1Controller extends Controller
             ];
         })->values()->all();
 
-        $faqItems = ($course->relationLoaded('faqs') ? $course->faqs : $course->faqs()->orderBy('order', 'asc')->get())
+        $faqItems = ($course->relationLoaded('faqs') ? $course->faqs : $course->faqs()->with('translations')->orderBy('order', 'asc')->get())
             ->map(function ($faq) {
                 return [
-                    'question' => trim((string) $faq->title),
-                    'answer' => trim((string) $faq->answer),
+                    'question' => $this->resolveFaqField($faq, 'title'),
+                    'answer' => $this->resolveFaqField($faq, 'answer'),
                 ];
             })
             ->filter(fn ($item) => $item['question'] !== '' && $item['answer'] !== '')
@@ -673,6 +673,23 @@ class LandingV1Controller extends Controller
             'comments' => $comments,
             'heroVideo' => $this->buildCourseHeroVideo($course),
         ];
+    }
+
+    private function resolveFaqField($faq, string $field): string
+    {
+        $value = trim((string) getTranslateAttributeValue($faq, $field, getDefaultLocale()));
+        if ($value !== '') {
+            return $value;
+        }
+
+        if ($faq->relationLoaded('translations')) {
+            $translation = $faq->translations->firstWhere('locale', 'ar')
+                ?? $faq->translations->first();
+
+            return trim((string) ($translation?->{$field} ?? ''));
+        }
+
+        return '';
     }
 
     private function buildCourseHeroVideo(Webinar $course): array

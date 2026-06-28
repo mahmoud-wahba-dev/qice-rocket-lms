@@ -167,6 +167,10 @@ main {
     scroll-margin-top: 168px;
 }
 
+#landing-v1-app #course-discovery.course-scrollspy-section {
+    scroll-margin-top: 168px;
+}
+
 #landing-v1-app .course-hero-embed iframe {
     position: absolute;
     top: 50%;
@@ -205,6 +209,10 @@ main {
 }
 
 #landing-v1-app .course_details_page .course-scrollspy-nav--paid {
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+}
+
+#landing-v1-app .course_details_page .course-scrollspy-nav--free {
     grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
 }
 
