@@ -7,7 +7,9 @@ use App\Models\Translation\WebinarExtraDescriptionTranslation;
 use App\Models\UpcomingCourse;
 use App\Models\Webinar;
 use App\Models\WebinarExtraDescription;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class WebinarExtraDescriptionController extends Controller
 {
@@ -18,42 +20,60 @@ class WebinarExtraDescriptionController extends Controller
         $this->validate($request, [
             'type' => 'required|in:' . implode(',', WebinarExtraDescription::$types),
             'value' => 'required',
+            'webinar_id' => 'required_without:upcoming_course_id|nullable|integer|exists:webinars,id',
+            'upcoming_course_id' => 'required_without:webinar_id|nullable|integer|exists:upcoming_courses,id',
         ]);
 
         $data = $request->all();
+        $data['locale'] = mb_strtolower($data['locale'] ?? getDefaultLocale() ?: app()->getLocale());
 
-        if (empty($data['locale'])) {
-            $data['locale'] = getDefaultLocale();
+        $parent = $this->resolveParent($data);
+        if (empty($parent['creator'])) {
+            return response()->json([
+                'code' => 422,
+                'message' => trans('public.request_failed'),
+                'errors' => [
+                    'webinar_id' => [trans('update.something_went_wrong')],
+                ],
+            ], 422);
         }
 
-        $creator = $this->getCreator($data);
+        try {
+            $columnName = $parent['column'];
+            $columnValue = $parent['id'];
+            $creator = $parent['creator'];
 
-        if (!empty($creator)) {
-            $columnName = !empty($data['webinar_id']) ? 'webinar_id' : 'upcoming_course_id';
-            $columnValue = !empty($data['webinar_id']) ? $data['webinar_id'] : $data['upcoming_course_id'];
-
-            $order = WebinarExtraDescription::query()->where('creator_id', $creator->id)
-                    ->where($columnName, $columnValue)
-                    ->where('type', $data['type'])
-                    ->count() + 1;
+            $order = WebinarExtraDescription::query()
+                ->where($columnName, $columnValue)
+                ->where('type', $data['type'])
+                ->count() + 1;
 
             $webinarExtraDescription = WebinarExtraDescription::create([
                 'creator_id' => $creator->id,
-                'webinar_id' => !empty($data['webinar_id']) ? $data['webinar_id'] : null,
-                'upcoming_course_id' => !empty($data['upcoming_course_id']) ? $data['upcoming_course_id'] : null,
+                'webinar_id' => $columnName === 'webinar_id' ? $columnValue : null,
+                'upcoming_course_id' => $columnName === 'upcoming_course_id' ? $columnValue : null,
                 'type' => $data['type'],
                 'order' => $order,
-                'created_at' => time()
+                'created_at' => time(),
             ]);
 
-            if (!empty($webinarExtraDescription)) {
-                WebinarExtraDescriptionTranslation::updateOrCreate([
-                    'webinar_extra_description_id' => $webinarExtraDescription->id,
-                    'locale' => mb_strtolower($data['locale']),
-                ], [
-                    'value' => $data['value'],
-                ]);
-            }
+            WebinarExtraDescriptionTranslation::updateOrCreate([
+                'webinar_extra_description_id' => $webinarExtraDescription->id,
+                'locale' => $data['locale'],
+            ], [
+                'value' => $data['value'],
+            ]);
+        } catch (QueryException $exception) {
+            Log::error('webinar-extra-description store failed', [
+                'message' => $exception->getMessage(),
+                'webinar_id' => $data['webinar_id'] ?? null,
+                'type' => $data['type'] ?? null,
+            ]);
+
+            return response()->json([
+                'code' => 500,
+                'message' => trans('update.something_went_wrong'),
+            ], 500);
         }
 
         return response()->json([
@@ -61,21 +81,37 @@ class WebinarExtraDescriptionController extends Controller
         ], 200);
     }
 
-    private function getCreator($data)
+    private function resolveParent(array $data): array
     {
-        $creator = false;
-
         if (!empty($data['webinar_id'])) {
-            $webinar = Webinar::findOrFail($data['webinar_id']);
+            $webinar = Webinar::query()->find($data['webinar_id']);
+            if (empty($webinar)) {
+                return [];
+            }
 
-            $creator = $webinar->creator;
-        } elseif (!empty($data['upcoming_course_id'])) {
-            $upcomingCourse = UpcomingCourse::findOrFail($data['upcoming_course_id']);
+            $creator = $webinar->creator ?? $webinar->teacher;
 
-            $creator = $upcomingCourse->creator;
+            return [
+                'column' => 'webinar_id',
+                'id' => $webinar->id,
+                'creator' => $creator,
+            ];
         }
 
-        return $creator;
+        if (!empty($data['upcoming_course_id'])) {
+            $upcomingCourse = UpcomingCourse::query()->find($data['upcoming_course_id']);
+            if (empty($upcomingCourse)) {
+                return [];
+            }
+
+            return [
+                'column' => 'upcoming_course_id',
+                'id' => $upcomingCourse->id,
+                'creator' => $upcomingCourse->creator,
+            ];
+        }
+
+        return [];
     }
 
     public function edit(Request $request, $id)
@@ -95,7 +131,7 @@ class WebinarExtraDescriptionController extends Controller
             $webinarExtraDescription->locale = mb_strtoupper($locale);
 
             return response()->json([
-                'webinarExtraDescription' => $webinarExtraDescription
+                'webinarExtraDescription' => $webinarExtraDescription,
             ], 200);
         }
 
@@ -112,18 +148,14 @@ class WebinarExtraDescriptionController extends Controller
         ]);
 
         $data = $request->all();
-
-        if (empty($data['locale'])) {
-            $data['locale'] = getDefaultLocale();
-        }
+        $data['locale'] = mb_strtolower($data['locale'] ?? getDefaultLocale() ?: app()->getLocale());
 
         $webinarExtraDescription = WebinarExtraDescription::find($id);
 
         if ($webinarExtraDescription) {
-
             WebinarExtraDescriptionTranslation::updateOrCreate([
                 'webinar_extra_description_id' => $webinarExtraDescription->id,
-                'locale' => mb_strtolower($data['locale']),
+                'locale' => $data['locale'],
             ], [
                 'value' => $data['value'],
             ]);
@@ -138,7 +170,10 @@ class WebinarExtraDescriptionController extends Controller
     {
         $this->authorize('admin_webinars_edit');
 
-        WebinarExtraDescription::find($id)->delete();
+        $webinarExtraDescription = WebinarExtraDescription::find($id);
+        if (!empty($webinarExtraDescription)) {
+            $webinarExtraDescription->delete();
+        }
 
         return redirect()->back();
     }
