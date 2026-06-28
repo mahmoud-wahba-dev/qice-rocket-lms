@@ -38,3 +38,27 @@
         </div>
     </div>
 </div>
+
+@push('scripts_bottom')
+    <script>
+        (function () {
+            var extraDescTypes = ['learning_materials', 'company_logos', 'requirements'];
+            var pendingExtraDescType = null;
+
+            $('body').on('click', '[id^="add_new_"]', function () {
+                var type = this.id.replace('add_new_', '');
+                if (extraDescTypes.indexOf(type) !== -1) {
+                    pendingExtraDescType = type;
+                }
+            });
+
+            $('body').on('click', '#saveExtraDescription', function () {
+                if (!pendingExtraDescType) {
+                    return;
+                }
+
+                $('.swal2-html-container input[name="type"]').val(pendingExtraDescType);
+            });
+        })();
+    </script>
+@endpush

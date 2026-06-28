@@ -31,8 +31,22 @@ class WebinarExtraDescriptionController extends Controller
 
     public function store(Request $request)
     {
+        $ajax = $request->get('ajax');
+        if (!is_array($ajax) || !isset($ajax['new'])) {
+            if ($request->filled('webinar_id') || $request->filled('upcoming_course_id')) {
+                return app(\App\Http\Controllers\Admin\WebinarExtraDescriptionController::class)->store($request);
+            }
+
+            return response()->json([
+                'code' => 422,
+                'errors' => [
+                    'type' => [trans('validation.required', ['attribute' => 'type'])],
+                ],
+            ], 422);
+        }
+
         $user = auth()->user();
-        $data = $request->get('ajax')['new'];
+        $data = $ajax['new'];
         $columnName = $this->getItemColumnName($data);
 
         $validator = Validator::make($data, [
@@ -148,8 +162,22 @@ class WebinarExtraDescriptionController extends Controller
 
     public function update(Request $request, $id)
     {
+        $ajax = $request->get('ajax');
+        if (!is_array($ajax) || !isset($ajax[$id])) {
+            if ($request->filled('value') || $request->filled('type')) {
+                return app(\App\Http\Controllers\Admin\WebinarExtraDescriptionController::class)->update($request, $id);
+            }
+
+            return response()->json([
+                'code' => 422,
+                'errors' => [
+                    'value' => [trans('validation.required', ['attribute' => 'value'])],
+                ],
+            ], 422);
+        }
+
         $user = auth()->user();
-        $data = $request->get('ajax')[$id];
+        $data = $ajax[$id];
         $columnName = $this->getItemColumnName($data);
 
         $validator = Validator::make($data, [

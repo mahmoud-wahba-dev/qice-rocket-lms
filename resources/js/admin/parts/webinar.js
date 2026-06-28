@@ -993,6 +993,15 @@
         handleWebinarItemForm(form, $this);
     });
 
+    function buildExtraDescriptionModalHtml(type) {
+        let template = $('#extraDescriptionForm').html();
+        if (type) {
+            template = template.replace('name="type"', 'name="type" value="' + type + '"');
+        }
+
+        return '<div id="extraDescriptionModal">' + template + '</div>';
+    }
+
     /*
     * add extra description
     * */
@@ -1000,30 +1009,19 @@
         e.preventDefault();
         const key = randomString();
 
-        let html = '<div id="extraDescriptionModal">';
-        html += $('#extraDescriptionForm').html();
-        html += '</div>';
-
         Swal.fire({
-            html: html,
+            html: buildExtraDescriptionModalHtml('learning_materials'),
             showCancelButton: false,
             showConfirmButton: false,
             customClass: {
                 content: 'p-0 text-left',
             },
             width: '48rem',
-            didOpen: function () {
-                $('#extraDescriptionModal input[name="type"]').val('learning_materials')
-            }
         });
     });
 
     function handleCompanyLogosInputHtml(key) {
-        let html = '<div id="extraDescriptionModal">';
-        html += $('#extraDescriptionForm').html();
-        html += '</div>';
-
-        var modalHtml = $(html);
+        var modalHtml = $(buildExtraDescriptionModalHtml('company_logos'));
         modalHtml.find('.js-form-groups').children().remove();
         modalHtml.find('.js-form-groups').append('<div class="form-group">\n' +
             '            <label class="input-label">image</label>\n' +
@@ -1057,9 +1055,6 @@
                 content: 'p-0 text-left',
             },
             width: '48rem',
-            didOpen: function () {
-                $('#extraDescriptionModal input[name="type"]').val('company_logos')
-            }
         });
     });
 
@@ -1067,21 +1062,14 @@
         e.preventDefault();
         const key = randomString();
 
-        let html = '<div id="extraDescriptionModal">';
-        html += $('#extraDescriptionForm').html();
-        html += '</div>';
-
         Swal.fire({
-            html: html,
+            html: buildExtraDescriptionModalHtml('requirements'),
             showCancelButton: false,
             showConfirmButton: false,
             customClass: {
                 content: 'p-0 text-left',
             },
             width: '48rem',
-            didOpen: function () {
-                $('#extraDescriptionModal input[name="type"]').val('requirements')
-            }
         });
     });
 
