@@ -57,7 +57,7 @@
 
 
                 <div class="custom-control custom-checkbox mt-20">
-                    <input type="checkbox" name="remember" id="rememberSwitch" class="custom-control-input">
+                    <input type="checkbox" name="remember" id="rememberSwitch" class="custom-control-input" @checked(old('remember', true))>
                     <label class="custom-control__label cursor-pointer" for="rememberSwitch">{{ trans('auth.remember_me') }}</label>
                 </div>
 

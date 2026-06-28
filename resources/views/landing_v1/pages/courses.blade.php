@@ -14,7 +14,7 @@
 
                 <div
                     class="flex items-center justify-between flex-wrap px-10 py-6 mb-20 border border-[#CCCCCC] rounded-8px">
-                    <nav class="tabs gap-2 overflow-x-auto whitespace-nowrap" aria-label="Tabs" role="tablist"
+                    <nav class="tabs --prevent-on-load-init gap-2 overflow-x-auto whitespace-nowrap" aria-label="Tabs"
                         aria-orientation="horizontal">
                         <button type="button"
                             class="category-tab-btn btn btn-text font-medium text-22px text-primary active-tab:bg-primary active-tab:text-white hover:text-primary hover:bg-primary/20 active bg-primary text-white"
@@ -50,11 +50,11 @@
                                     <h4 class="font-bold text-20px mb-4 text-black">الترتيب حسب</h4>
                                     <div class="flex items-center gap-2">
                                         <button type="button" data-sort-val="popular"
-                                            class="sort-btn flex-1 py-2.5 text-center text-16px font-bold rounded-8px transition-colors bg-primary text-white">
+                                            class="sort-btn flex-1 py-2.5 text-center text-16px font-bold rounded-8px transition-colors bg-[#EBEBEB] text-black hover:bg-gray-100">
                                             الأشهر
                                         </button>
                                         <button type="button" data-sort-val="latest"
-                                            class="sort-btn flex-1 py-2.5 text-center text-16px font-bold rounded-8px transition-colors bg-[#EBEBEB] text-black hover:bg-gray-100">
+                                            class="sort-btn flex-1 py-2.5 text-center text-16px font-bold rounded-8px transition-colors bg-primary text-white">
                                             الأحدث
                                         </button>
                                         <button type="button" data-sort-val="oldest"
@@ -143,26 +143,27 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     let currentCategoryId = '';
-    let currentSort = 'popular';
+    let currentSort = 'latest';
+    let currentPage = @json($courses instanceof \Illuminate\Pagination\AbstractPaginator ? $courses->currentPage() : 1);
     let fetchController = null;
     
     const loader = document.getElementById('courses-loader');
     const container = document.getElementById('courses-container');
+    const baseUrl = @json(route('landing.v1.courses'));
     
     // Category Tabs click handler
     document.querySelectorAll('.category-tab-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            // Remove active style from all tab buttons
             document.querySelectorAll('.category-tab-btn').forEach(b => {
                 b.classList.remove('active', 'bg-primary', 'text-white');
                 b.classList.add('text-primary');
             });
             
-            // Add active style to clicked button
             this.classList.add('active', 'bg-primary', 'text-white');
             this.classList.remove('text-primary');
             
             currentCategoryId = this.getAttribute('data-category-id');
+            currentPage = 1;
             fetchCourses();
         });
     });
@@ -179,6 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.add('bg-primary', 'text-white');
             
             currentSort = this.getAttribute('data-sort-val');
+            currentPage = 1;
             fetchCourses();
         });
     });
@@ -187,6 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const applyBtn = document.getElementById('apply-filter-btn');
     if (applyBtn) {
         applyBtn.addEventListener('click', function() {
+            currentPage = 1;
             fetchCourses();
             const dropdown = document.getElementById('dropdown-default');
             if (dropdown) {
@@ -202,6 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.filter-type-checkbox').forEach(cb => {
                 cb.checked = false;
             });
+            currentPage = 1;
             fetchCourses();
             const dropdown = document.getElementById('dropdown-default');
             if (dropdown) {
@@ -209,6 +213,20 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    container.addEventListener('click', function (e) {
+        const link = e.target.closest('a.landing-pagination__link');
+        if (!link) {
+            return;
+        }
+        e.preventDefault();
+        const page = new URL(link.href, window.location.origin).searchParams.get('page');
+        if (page) {
+            currentPage = parseInt(page, 10);
+            fetchCourses();
+            container.closest('section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
     
     function fetchCourses() {
         if (fetchController) {
@@ -218,13 +236,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         loader.classList.remove('opacity-0', 'pointer-events-none');
         
-        // Gather types
         const types = [];
         document.querySelectorAll('.filter-type-checkbox:checked').forEach(cb => {
             types.push(cb.value);
         });
         
-        // Build query params
         const params = new URLSearchParams();
         if (currentCategoryId) {
             params.append('category_id', currentCategoryId);
@@ -235,9 +251,11 @@ document.addEventListener('DOMContentLoaded', function() {
         types.forEach(t => {
             params.append('types[]', t);
         });
+        if (currentPage > 1) {
+            params.set('page', String(currentPage));
+        }
         
-        // Fetch
-        fetch('{{ route("landing.v1.courses") }}?' + params.toString(), {
+        fetch(baseUrl + '?' + params.toString(), {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'
             },
@@ -246,6 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             container.innerHTML = data.html;
+            history.replaceState(null, '', baseUrl + '?' + params.toString());
         })
         .catch(err => {
             if (err.name !== 'AbortError') {

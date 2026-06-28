@@ -104,7 +104,7 @@ class LoginController extends Controller
         // validate the form data
         $this->validate($request, $rules);
 
-        $remember = ($request->get('remember') == 'on');
+        $remember = true;
 
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password], $remember)) {
             $user = auth()->user();

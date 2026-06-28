@@ -19,6 +19,7 @@ use App\Models\Blog;
 use App\Models\PaymentChannel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class LandingV1Controller extends Controller
 {
@@ -274,11 +275,7 @@ class LandingV1Controller extends Controller
     {
         $activeCategory = $request->input('category_id');
 
-        $categories = Cache::remember(
-            'landing_v1.paid_filter_categories',
-            now()->addMinutes(15),
-            fn () => $this->getPaidCourseFilterCategories()
-        );
+        $categories = $this->getPaidCourseFilterCategories();
 
         $query = $this->paidCoursesBaseQuery()
             ->with($this->webinarTeacherEagerLoad());
@@ -294,8 +291,10 @@ class LandingV1Controller extends Controller
             }
         }
 
-        $courses = $query->orderByDesc('sales_count_number')->paginate(20);
+        $courses = $query->orderByDesc('created_at')->orderByDesc('id')->paginate(20);
         $this->attachCategoryTranslations($courses);
+
+        $this->logCoursesPaidDebug($request, $courses, $activeCategory);
 
         if ($request->ajax()) {
             return response()->json([
@@ -320,6 +319,66 @@ class LandingV1Controller extends Controller
         return Webinar::where('status', Webinar::$active)
             ->where('private', false)
             ->where('price', '>', 0);
+    }
+
+    /**
+     * Debug log for courses-paid listing — check storage/logs/laravel.log
+     */
+    private function logCoursesPaidDebug(Request $request, $courses, $activeCategory): void
+    {
+        $debugCourseId = (int) $request->input('debug_course_id', 2083);
+
+        $rawCourse = Webinar::query()
+            ->select(['id', 'slug', 'status', 'private', 'price', 'category_id', 'created_at', 'sales_count_number'])
+            ->find($debugCourseId);
+
+        $debugCourseData = null;
+        if ($rawCourse) {
+            $debugCourseData = array_merge($rawCourse->toArray(), [
+                'title' => $rawCourse->title,
+            ]);
+        }
+
+        $filteredQuery = $this->paidCoursesBaseQuery();
+        if (!empty($activeCategory)) {
+            $subCategoryIds = Category::where('parent_id', $activeCategory)->pluck('id')->toArray();
+            $filteredQuery->whereIn('category_id', array_merge([(int) $activeCategory], $subCategoryIds));
+        }
+
+        $orderedIds = (clone $filteredQuery)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->pluck('id');
+
+        $rank = $rawCourse ? $orderedIds->search($debugCourseId) : false;
+        $pageSize = $courses instanceof \Illuminate\Pagination\AbstractPaginator ? $courses->perPage() : 20;
+        $pageNumber = ($rank !== false && $rank !== null) ? (int) floor($rank / $pageSize) + 1 : null;
+
+        Log::info('landing.coursesPaid', [
+            'category_filter' => $activeCategory,
+            'current_page' => $courses instanceof \Illuminate\Pagination\AbstractPaginator ? $courses->currentPage() : 1,
+            'per_page' => $pageSize,
+            'total_paid_courses' => $courses instanceof \Illuminate\Pagination\AbstractPaginator ? $courses->total() : $courses->count(),
+            'page_course_ids' => $courses instanceof \Illuminate\Pagination\AbstractPaginator
+                ? $courses->getCollection()->pluck('id')->values()->all()
+                : collect($courses)->pluck('id')->values()->all(),
+            'page_course_titles' => $courses instanceof \Illuminate\Pagination\AbstractPaginator
+                ? $courses->getCollection()->pluck('title')->values()->all()
+                : collect($courses)->pluck('title')->values()->all(),
+            'debug_course_id' => $debugCourseId,
+            'debug_course_db' => $debugCourseData,
+            'debug_in_paid_query' => $rawCourse
+                ? $this->paidCoursesBaseQuery()->where('id', $debugCourseId)->exists()
+                : false,
+            'debug_in_filtered_query' => $rawCourse
+                ? (clone $filteredQuery)->where('id', $debugCourseId)->exists()
+                : false,
+            'debug_rank_in_list' => $rank !== false ? $rank + 1 : null,
+            'debug_expected_page' => $pageNumber,
+            'debug_on_current_page' => $courses instanceof \Illuminate\Pagination\AbstractPaginator
+                ? $courses->getCollection()->contains('id', $debugCourseId)
+                : collect($courses)->contains('id', $debugCourseId),
+        ]);
     }
 
     private function getPaidCourseFilterCategories()
@@ -455,25 +514,24 @@ class LandingV1Controller extends Controller
             });
         }
 
-        // Sort
-        $sort = $request->input('sort', 'popular');
-        if ($sort == 'latest') {
-            $query->orderByDesc('created_at');
-        } elseif ($sort == 'oldest') {
+        // Sort — default: newest first
+        $sort = $request->input('sort', 'latest');
+        if ($sort == 'oldest') {
             $query->orderBy('created_at');
+        } elseif ($sort == 'popular') {
+            $query->orderByDesc('sales_count_number')->orderByDesc('created_at');
         } else {
-            // popular
-            $query->orderByDesc('sales_count_number');
+            $query->orderByDesc('created_at')->orderByDesc('id');
         }
 
-        $courses = $query->get();
+        $courses = $query->paginate(20);
 
         $this->attachCategoryTranslations($courses);
 
         if ($request->ajax()) {
             return response()->json([
                 'html' => view('landing_v1.pages.courses_list', ['courses' => $courses])->render(),
-                'count' => $courses->count()
+                'count' => $courses->total(),
             ]);
         }
 
@@ -602,6 +660,7 @@ class LandingV1Controller extends Controller
 
         $data = array_merge([
             'pageTitle' => $course->title,
+            'pageDescription' => $course->seo_description,
             'course' => $course,
             'teacher_courses_count' => $teacher_courses_count,
             'teacher_students_count' => $teacher_students_count,

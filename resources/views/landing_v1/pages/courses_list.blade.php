@@ -18,3 +18,7 @@
         </div>
     @endforelse
 </div>
+
+@if ($courses instanceof \Illuminate\Pagination\AbstractPaginator && $courses->hasPages())
+    {{ $courses->withQueryString()->links('vendor.pagination.landing_v1') }}
+@endif

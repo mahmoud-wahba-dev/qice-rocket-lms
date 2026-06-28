@@ -14,16 +14,16 @@
         @if ($categories->isNotEmpty())
             <div class="container mb-8 lg:mb-12">
                 <div class="flex justify-center">
-                    <nav class="paid-courses-filter flex max-w-full flex-wrap justify-center gap-2 overflow-x-auto px-1 pb-1 lg:gap-3"
-                        aria-label="تصفية الدورات حسب التصنيف" role="tablist">
-                        <button type="button" role="tab"
+                    <nav class="paid-courses-filter --prevent-on-load-init flex max-w-full flex-wrap justify-center gap-2 overflow-x-auto px-1 pb-1 lg:gap-3"
+                        aria-label="تصفية الدورات حسب التصنيف">
+                        <button type="button"
                             aria-selected="{{ empty($activeCategory) ? 'true' : 'false' }}"
                             data-category-id=""
                             class="paid-courses-filter__pill paid-courses-category-btn {{ empty($activeCategory) ? 'is-active' : '' }}">
                             الكل
                         </button>
                         @foreach ($categories as $category)
-                            <button type="button" role="tab"
+                            <button type="button"
                                 aria-selected="{{ (string) $activeCategory === (string) $category->id ? 'true' : 'false' }}"
                                 data-category-id="{{ $category->id }}"
                                 class="paid-courses-filter__pill paid-courses-category-btn {{ (string) $activeCategory === (string) $category->id ? 'is-active' : '' }}">
@@ -68,6 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     let activeCategoryId = @json($activeCategory ?? '');
+    let currentPage = @json($courses->currentPage());
     let fetchController = null;
 
     filterBtns.forEach(function (btn) {
@@ -79,6 +80,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             activeCategoryId = categoryId;
+            currentPage = 1;
 
             filterBtns.forEach(function (b) {
                 const isActive = (b.getAttribute('data-category-id') || '') === categoryId;
@@ -86,11 +88,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 b.setAttribute('aria-selected', isActive ? 'true' : 'false');
             });
 
-            fetchCourses(categoryId);
+            fetchCourses();
         });
     });
 
-    function fetchCourses(categoryId) {
+    container.addEventListener('click', function (e) {
+        const link = e.target.closest('a.landing-pagination__link');
+        if (!link) {
+            return;
+        }
+        e.preventDefault();
+        const page = new URL(link.href, window.location.origin).searchParams.get('page');
+        if (page) {
+            currentPage = parseInt(page, 10);
+            fetchCourses();
+            document.getElementById('courses-paid-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+
+    function fetchCourses() {
         if (fetchController) {
             fetchController.abort();
         }
@@ -99,8 +115,11 @@ document.addEventListener('DOMContentLoaded', function () {
         loader.classList.remove('opacity-0', 'pointer-events-none');
 
         const params = new URLSearchParams();
-        if (categoryId) {
-            params.set('category_id', categoryId);
+        if (activeCategoryId) {
+            params.set('category_id', activeCategoryId);
+        }
+        if (currentPage > 1) {
+            params.set('page', String(currentPage));
         }
 
         const url = params.toString() ? baseUrl + '?' + params.toString() : baseUrl;

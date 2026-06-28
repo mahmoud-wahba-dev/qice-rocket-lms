@@ -22,7 +22,5 @@
 </div>
 
 @if ($courses instanceof \Illuminate\Pagination\AbstractPaginator && $courses->hasPages())
-    <div class="mt-10 flex justify-center">
-        {{ $courses->withQueryString()->links() }}
-    </div>
+    {{ $courses->withQueryString()->links('vendor.pagination.landing_v1') }}
 @endif

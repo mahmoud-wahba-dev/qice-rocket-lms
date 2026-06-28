@@ -19,7 +19,7 @@
                 </div>
                 @if ($posts->hasPages())
                     <div class="mt-10 flex justify-center">
-                        {{ $posts->links() }}
+                        {{ $posts->withQueryString()->links('vendor.pagination.landing_v1') }}
                     </div>
                 @endif
             </div>

@@ -11,6 +11,7 @@ function buildPxScale(start, end, step = 1, unit = "rem", factor = 16) {
 module.exports = {
     content: [
         "./resources/views/landing_v1/**/*.blade.php",
+        "./resources/views/vendor/pagination/**/*.blade.php",
         "./resources/js/landing_v1.js",
         "./node_modules/flyonui/dist/js/*.js",
     ],

@@ -129,7 +129,7 @@
                         {{ $course->title }}
                     </h1>
                     <p class="font-normal text-16px lg:text-18px text-white mb-10 leading-relaxed max-w-2xl">
-                        {{ $course->summary ?? Str::limit(strip_tags(html_entity_decode($course->description)), 220) }}
+                        {{ $course->seo_description ?? $course->summary ?? Str::limit(strip_tags(html_entity_decode($course->description)), 160) }}
                     </p>
 
                     <div class="flex items-center gap-3 lg:gap-4 flex-wrap xl:flex-nowrap mb-10">
