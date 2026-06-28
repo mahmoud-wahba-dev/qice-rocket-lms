@@ -163,6 +163,10 @@ main {
     scroll-margin-top: 168px;
 }
 
+#landing-v1-app #course-faq.course-scrollspy-section {
+    scroll-margin-top: 168px;
+}
+
 #landing-v1-app .course-hero-embed iframe {
     position: absolute;
     top: 50%;
@@ -182,12 +186,26 @@ main {
     pointer-events: none;
 }
 
+#landing-v1-app .course_details_page .course-scrollspy-nav--paid .course-scrollspy-link,
+#landing-v1-app .course_details_page .course-scrollspy-nav--paid .course-scrollspy-link:hover {
+    color: #fff !important;
+}
+
+#landing-v1-app .course_details_page .course-scrollspy-nav--paid .course-scrollspy-link.active {
+    color: #fff !important;
+    border-bottom-color: #fff !important;
+}
+
 #landing-v1-app .course_details_page .course-scrollspy-nav {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     width: 100%;
     min-height: 4.75rem;
     align-items: stretch;
+}
+
+#landing-v1-app .course_details_page .course-scrollspy-nav--paid {
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
 }
 
 #landing-v1-app .course_details_page .course-scrollspy-link {

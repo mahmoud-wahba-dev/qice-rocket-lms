@@ -190,20 +190,24 @@
         <section class="my-0 course_details_page relative bg-[#165554] text-white">
             <div class="sticky top-[88px] z-40 border-b border-white/20 bg-[#0A3333]">
                 <div class="container">
-                    <nav data-scrollspy="#course-content-scrollspy" class="course-scrollspy-nav"
+                    <nav data-scrollspy="#course-content-scrollspy" class="course-scrollspy-nav course-scrollspy-nav--paid"
                         style="--scrollspy-offset: 168px">
                         <a href="#about-course"
-                            class="flex items-center justify-center py-[1.375rem] lg:py-6 px-2 font-medium text-20px lg:text-24px text-center whitespace-nowrap text-white border-b-[3px] border-b-transparent -mb-px transition-[border-color] duration-200 hover:text-white [&.active]:border-b-white"
+                            class="course-scrollspy-link flex items-center justify-center py-[1.375rem] lg:py-6 px-2 font-medium text-20px lg:text-24px text-center whitespace-nowrap text-white border-b-[3px] border-b-transparent -mb-px transition-[border-color] duration-200 hover:text-white [&.active]:border-b-white"
                             aria-current="false">عن الدورة </a>
                         <a href="#course-curriculum"
-                            class="flex items-center justify-center py-[1.375rem] lg:py-6 px-2 font-medium text-20px lg:text-24px text-center whitespace-nowrap text-white border-b-[3px] border-b-transparent -mb-px transition-[border-color] duration-200 hover:text-white [&.active]:border-b-white"
+                            class="course-scrollspy-link flex items-center justify-center py-[1.375rem] lg:py-6 px-2 font-medium text-20px lg:text-24px text-center whitespace-nowrap text-white border-b-[3px] border-b-transparent -mb-px transition-[border-color] duration-200 hover:text-white [&.active]:border-b-white"
                             aria-current="false">المحتوى</a>
-                        <a href="#course-comments"
-                            class="flex items-center justify-center py-[1.375rem] lg:py-6 px-2 font-medium text-20px lg:text-24px text-center whitespace-nowrap text-white border-b-[3px] border-b-transparent -mb-px transition-[border-color] duration-200 hover:text-white [&.active]:border-b-white"
-                            aria-current="false">التعليقات</a>
-                        <a href="#course-reviews"
-                            class="flex items-center justify-center py-[1.375rem] lg:py-6 px-2 font-medium text-20px lg:text-24px text-center whitespace-nowrap text-white border-b-[3px] border-b-transparent -mb-px transition-[border-color] duration-200 hover:text-white [&.active]:border-b-white"
-                            aria-current="false">المراجعات</a>
+                        @if (!empty($course->teacher))
+                        <a href="#course-instructor"
+                            class="course-scrollspy-link flex items-center justify-center py-[1.375rem] lg:py-6 px-2 font-medium text-20px lg:text-24px text-center whitespace-nowrap text-white border-b-[3px] border-b-transparent -mb-px transition-[border-color] duration-200 hover:text-white [&.active]:border-b-white"
+                            aria-current="false">المدرب</a>
+                        @endif
+                        @if (!empty($faqItems))
+                        <a href="#course-faq"
+                            class="course-scrollspy-link flex items-center justify-center py-[1.375rem] lg:py-6 px-2 font-medium text-20px lg:text-24px text-center whitespace-nowrap text-white border-b-[3px] border-b-transparent -mb-px transition-[border-color] duration-200 hover:text-white [&.active]:border-b-white"
+                            aria-current="false">استفساراتك</a>
+                        @endif
                     </nav>
                 </div>
             </div>
@@ -348,7 +352,7 @@
 
         {{-- FAQ (التعليمات from admin) --}}
         @if (!empty($faqItems))
-        <section class="bg-[#165554] py-16 lg:py-24 my-0 text-white">
+        <section id="course-faq" class="course-scrollspy-section bg-[#165554] py-16 lg:py-24 my-0 text-white">
             <div class="container">
                 <h3 class="font-bold text-32px lg:text-48px mb-15 text-center">
                     <span class="text-white ">إجابات</span>
