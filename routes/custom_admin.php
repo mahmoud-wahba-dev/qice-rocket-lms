@@ -34,7 +34,10 @@ $prefix = getAdminPanelUrlPrefix();
 // You can add as many route groups as needed
 
 Route::group(['prefix' => 'webinar-extra-description'], function () {
-    Route::post('/{id}/edit', 'WebinarExtraDescriptionController@edit');
+    Route::post('/store', [\App\Http\Controllers\Admin\WebinarExtraDescriptionController::class, 'store']);
+    Route::post('/{id}/edit', [\App\Http\Controllers\Admin\WebinarExtraDescriptionController::class, 'edit']);
+    Route::post('/{id}/update', [\App\Http\Controllers\Admin\WebinarExtraDescriptionController::class, 'update']);
+    Route::get('/{id}/delete', [\App\Http\Controllers\Admin\WebinarExtraDescriptionController::class, 'destroy']);
 });
 
 /**

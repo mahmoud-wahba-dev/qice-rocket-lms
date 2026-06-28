@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Web\PurchaseCodeController;
 use App\Http\Controllers\Web\LandingV1Controller;
+use App\Http\Controllers\Admin\WebinarExtraDescriptionController as AdminWebinarExtraDescriptionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -471,6 +472,16 @@ Route::group(['namespace' => 'Web', 'middleware' => ['check_mobile_app', 'impers
     Route::get('/webinar/{slug}', [LandingV1Controller::class, 'courseDetails'])->name('landing.v1.course-details');
 
 }); // end Web group
+
+// Admin AJAX: مواد التعلم / extra descriptions (flat form fields, not panel ajax[new])
+Route::middleware(['web', 'admin'])
+    ->prefix(getAdminPanelUrlPrefix())
+    ->group(function () {
+        Route::post('webinar-extra-description/store', [AdminWebinarExtraDescriptionController::class, 'store']);
+        Route::post('webinar-extra-description/{id}/edit', [AdminWebinarExtraDescriptionController::class, 'edit']);
+        Route::post('webinar-extra-description/{id}/update', [AdminWebinarExtraDescriptionController::class, 'update']);
+        Route::get('webinar-extra-description/{id}/delete', [AdminWebinarExtraDescriptionController::class, 'destroy']);
+    });
 
 // Purchase Code Routes
 Route::get('/purchase-code', [PurchaseCodeController::class, 'show'])->name('purchase.code.show');

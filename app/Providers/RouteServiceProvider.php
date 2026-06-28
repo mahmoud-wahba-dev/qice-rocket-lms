@@ -96,6 +96,10 @@ class RouteServiceProvider extends ServiceProvider
     {
         Route::namespace($this->namespace)
             ->group(base_path('routes/admin.php'));
+
+        Route::middleware(['web', 'admin'])
+            ->prefix(getAdminPanelUrlPrefix())
+            ->group(base_path('routes/custom_admin.php'));
     }
 
     protected function mapPanelRoutes()
