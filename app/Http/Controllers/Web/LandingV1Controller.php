@@ -166,7 +166,7 @@ class LandingV1Controller extends Controller
         $trainers = $this->getActiveInstructors(12);
 
         $data = [
-            'pageTitle' => trans('home.home_title'),
+            'pageTitle' => 'مركز الجودة والتميز للتدريب',
             'trainers' => $trainers,
             'instructors' => $trainers,
             'freeWorkshops' => $this->getFreeWorkshops(12),
@@ -369,7 +369,7 @@ class LandingV1Controller extends Controller
         }
 
         $data = [
-            'pageTitle' => trans('home.instructors'),
+            'pageTitle' => 'المدربين',
             'instructors' => $instructors,
         ];
 
@@ -473,7 +473,7 @@ class LandingV1Controller extends Controller
         }
 
         $data = [
-            'pageTitle' => trans('home.courses'),
+            'pageTitle' => 'الدورات',
             'categories' => $categories,
             'courses' => $courses,
             'activeCategory' => $request->input('category_id', null)

@@ -53,7 +53,7 @@ class LoginController extends Controller
     public function showLoginForm()
     {
         $seoSettings = getSeoMetas('login');
-        $pageTitle = !empty($seoSettings['title']) ? $seoSettings['title'] : trans('site.login_page_title');
+        $pageTitle = trans('site.login_page_title');
         $pageDescription = !empty($seoSettings['description']) ? $seoSettings['description'] : trans('site.login_page_title');
         $pageRobot = getPageRobot('login');
 

@@ -1,6 +1,6 @@
 <?php return array (
   'search_anything' => 'يبحث...',
-  'home' => 'بيت',
+  'home' => 'الرئيسية',
   'about_us' => 'معلومات عنا',
   'contact' => 'اتصال',
   'blog' => 'مدونة',
