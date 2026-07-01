@@ -306,14 +306,18 @@ class WebinarController extends Controller
         if ($step == 2) {
             $data['webinarTags'] = $webinar->tags->pluck('title')->toArray();
 
-            $webinarCategoryFilters = !empty($webinar->category) ? $webinar->category->filters : [];
+            $webinarCategoryFilters = [];
 
-            if (empty($webinar->category) and !empty($request->old('category_id'))) {
-                $category = Category::where('id', $request->old('category_id'))->first();
+            if (old('category_id')) {
+                $category = Category::with(['filters' => function ($query) {
+                    $query->with('options');
+                }])->find(old('category_id'));
 
                 if (!empty($category)) {
                     $webinarCategoryFilters = $category->filters;
                 }
+            } elseif (!empty($webinar->category)) {
+                $webinarCategoryFilters = $webinar->category->filters;
             }
 
             $data['webinarCategoryFilters'] = $webinarCategoryFilters;

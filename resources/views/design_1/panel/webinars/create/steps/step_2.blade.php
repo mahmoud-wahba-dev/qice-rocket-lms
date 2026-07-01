@@ -10,7 +10,7 @@
         <label class="form-group-label is-required">{{ trans('public.category') }}</label>
 
         <select name="category_id" id="categories" class="select2 @error('category_id')  is-invalid @enderror">
-            <option {{ (!empty($webinar) and !empty($webinar->category_id)) ? '' : 'selected' }} disabled>{{ trans('public.choose_category') }}</option>
+            <option {{ ((empty($webinar) || empty($webinar->category_id)) && !old('category_id')) ? 'selected' : '' }} disabled>{{ trans('public.choose_category') }}</option>
             @foreach($categories as $category)
                 @if(!empty($category->subCategories) and $category->subCategories->count() > 0)
                     <optgroup label="{{  $category->title }}">
@@ -42,11 +42,9 @@
                             <h5 class="font-14 font-weight-bold mb-16">{{ $filter->title }}</h5>
 
                             @php
-                                $webinarFilterOptions = $webinar->filterOptions->pluck('filter_option_id')->toArray();
-
-                                if (!empty(old('filters'))) {
-                                    $webinarFilterOptions = array_merge($webinarFilterOptions, old('filters'));
-                                }
+                                $webinarFilterOptions = !empty(old('filters'))
+                                    ? old('filters')
+                                    : $webinar->filterOptions->pluck('filter_option_id')->toArray();
                             @endphp
 
                             @foreach($filter->options as $option)

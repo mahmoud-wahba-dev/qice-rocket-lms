@@ -83,6 +83,57 @@
     );
 }
 
+/* Rich HTML from admin Summernote — match Rocket LMS course-show-description behavior */
+.course-description {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.course-description--rich {
+    font-size: clamp(1rem, 0.5vw + 0.9rem, 1.5rem);
+    line-height: 1.6;
+    color: #64748b;
+}
+
+.course-description--rich p {
+    color: inherit;
+}
+
+.course-description--rich img {
+    max-width: 100% !important;
+    height: auto;
+}
+
+.course-description--rich li {
+    list-style: inherit;
+}
+
+.course-description--rich table {
+    max-width: 100%;
+    border-collapse: collapse;
+}
+
+.course-description--rich a {
+    color: var(--color-primary);
+    text-decoration: underline;
+}
+
+.course-description ul {
+    list-style: disc;
+    padding-inline-start: 1.5rem;
+    margin-block: 0.75rem;
+}
+
+.course-description ol {
+    list-style: decimal;
+    padding-inline-start: 1.5rem;
+    margin-block: 0.75rem;
+}
+
+.course-description p + p {
+    margin-top: 0.75rem;
+}
+
 /* Solid landing buttons — keep FlyonUI outline/soft/text variants untouched. */
 .btn.btn-black:not(.btn-outline):not(.btn-soft):not(.btn-text) {
     background-color: var(--color-black);

@@ -238,10 +238,10 @@
                     {{-- Curriculum --}}
                     <div id="course-curriculum" class="course-scrollspy-section mb-16">
                         <h3 class="font-medium  text-36px text-white mb-9">محتوى الدورة</h3>
-                        <div class="border border-[#EEEEEE] rounded-10px bg-transparent px-6 lg:px-10 py-2 lg:py-4">
+                        <div class="border border-[#EEEEEE] rounded-10px bg-white px-6 lg:px-10 py-2 lg:py-4">
                             @if (!empty($course->description))
-                                <div class="course-description py-5 font-normal text-24px text-white leading-relaxed [&_p]:mb-4 [&_ul]:list-disc [&_ul]:list-inside [&_ol]:list-decimal [&_ol]:list-inside [&_a]:text-[#00D4AA] [&_a]:underline">
-                                    {!! clean($course->description) !!}
+                                <div class="course-description course-description--rich py-5 leading-relaxed">
+                                    {!! $course->description !!}
                                 </div>
                             @else
                                 <div class="py-5 font-medium text-24px text-white/70">لا يوجد وصف لهذه الدورة بعد.</div>

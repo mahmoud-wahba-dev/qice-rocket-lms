@@ -30,6 +30,13 @@ return [
             'AutoFormat.AutoParagraph' => true,
             'AutoFormat.RemoveEmpty'   => true,
         ],
+        'course_description' => [
+            'HTML.Doctype'             => 'HTML 4.01 Transitional',
+            'HTML.Allowed'             => 'div[style|class],b,strong,i,em,u,a[href|title|target|rel],ul[style|class],ol[style|class],li[style|class],p[style|class],br,span[style|class],img[width|height|alt|src|style|class],font[style|color],h1[style|class],h2[style|class],h3[style|class],h4[style|class],h5[style|class],h6[style|class],table[style|class],thead,tbody,tr[style|class],td[style|class|colspan|rowspan],th[style|class|colspan|rowspan]',
+            'CSS.AllowedProperties'    => 'font,font-size,font-weight,font-style,font-family,text-decoration,padding,padding-left,padding-right,padding-top,padding-bottom,margin,margin-left,margin-right,margin-top,margin-bottom,color,background-color,background-image,background-repeat,background-position,text-align,border,border-color,border-width,border-style,width,height,max-width,min-width,float,vertical-align,line-height',
+            'AutoFormat.AutoParagraph' => false,
+            'AutoFormat.RemoveEmpty'   => false,
+        ],
         'test'    => [
             'Attr.EnableID' => 'true',
         ],

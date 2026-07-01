@@ -89,7 +89,9 @@ Route::group(['namespace' => 'Web', 'middleware' => ['check_mobile_app', 'impers
     Route::post('/get-advertising-modal', 'AdvertisingModalController@getModal');
 
     Route::group(['prefix' => 'course'], function () {
-        Route::get('/{slug}', 'WebinarController@course');
+        Route::get('/{slug}', function ($slug) {
+            return redirect()->route('landing.v1.course-details', $slug, 301);
+        });
         Route::get('/{slug}/file/{file_id}/download', 'WebinarController@downloadFile');
         Route::get('/{slug}/file/{file_id}/showHtml', 'WebinarController@showHtmlFile');
         Route::get('/{slug}/lessons/{lesson_id}/read', 'WebinarController@getLesson');

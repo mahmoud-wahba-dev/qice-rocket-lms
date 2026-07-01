@@ -19,7 +19,7 @@
         @endphp
         @foreach($coursetypes as $coursetype => $coursetypeIcon)
             <div class="create-webinar-course-types custom-input-button position-relative">
-                <input type="radio" class="" name="type" id="course_type_{{ $coursetype }}" value="{{ $coursetype }}" {{ (!empty($webinar) and $webinar->type == $coursetype) ? 'checked' : '' }}>
+                <input type="radio" class="" name="type" id="course_type_{{ $coursetype }}" value="{{ $coursetype }}" {{ (old('type', !empty($webinar) ? $webinar->type : '') == $coursetype) ? 'checked' : '' }}>
                 <label for="course_type_{{ $coursetype }}" class="position-relative d-flex-center flex-column p-16 p-lg-32 rounded-16 border-gray-200 text-center bg-white">
                     <div class="create-webinar-course-types__icon-box d-flex-center size-64 rounded-16">
                         @svg("iconsax-bul-{$coursetypeIcon}", ['height' => 32, 'width' => 32, 'class' => ''])
@@ -50,10 +50,10 @@
             <label class="form-group-label is-required bg-white">{{ trans('public.select_a_teacher') }}</label>
 
             <select name="teacher_id" class="select2 @error('teacher_id')  is-invalid @enderror">
-                <option value="" {{ (!empty($webinar) and !empty($webinar->teacher_id)) ? '' : 'selected' }}>{{ trans('public.choose_instructor') }}</option>
+                <option value="" {{ (old('teacher_id', !empty($webinar) ? $webinar->teacher_id : '') ? '' : 'selected') }}>{{ trans('public.choose_instructor') }}</option>
 
                 @foreach($teachers as $teacher)
-                    <option value="{{ $teacher->id }}" {{ (!empty($webinar) && $webinar->teacher_id == $teacher->id) ? 'selected' : '' }}>{{ $teacher->full_name }}</option>
+                    <option value="{{ $teacher->id }}" {{ (old('teacher_id', !empty($webinar) ? $webinar->teacher_id : '') == $teacher->id) ? 'selected' : '' }}>{{ $teacher->full_name }}</option>
                 @endforeach
             </select>
 

@@ -95,8 +95,12 @@
 
             let value = ($field.val() || '').toString().trim();
 
-            if ($field.is('select') && ($field.prop('selectedIndex') === 0) && !$field.find('option:selected').val()) {
+            if ($field.is('select') && ($field.prop('selectedIndex') === 0) && $field.find('option:selected').is(':disabled')) {
                 value = '';
+            }
+
+            if ($field.is('select') && $field.hasClass('select2-hidden-accessible')) {
+                value = ($field.val() || '').toString().trim();
             }
 
             if (!value) {
@@ -1789,6 +1793,29 @@
             $startDate.removeAttr('required');
             clearFieldError($startDate);
         }
+    });
+
+    function restoreFormStateOnLoad() {
+        const $typeSelect = $('select[name="type"]');
+        if ($typeSelect.length) {
+            $typeSelect.trigger('change');
+        }
+
+        const $categorySelect = $('#categories');
+        if ($categorySelect.length && $categorySelect.val() && !$('#categoriesFiltersCard').children().length) {
+            $categorySelect.trigger('change');
+        }
+
+        const $firstInvalid = $('#webinarForm .is-invalid').first();
+        if ($firstInvalid.length) {
+            $('html, body').animate({
+                scrollTop: $firstInvalid.offset().top - 120
+            }, 300);
+        }
+    }
+
+    $(document).ready(function () {
+        restoreFormStateOnLoad();
     });
 
     $('body').on('change', '.js-sequence-content-switch', function () {

@@ -317,10 +317,31 @@ class WebinarController extends Controller
         $teachers = User::where('role_name', Role::$teacher)->get();
         $categories = Category::getCategories();
 
+        $oldTeacher = null;
+        $webinarCategoryFilters = null;
+        $webinarFilterOptions = old('filters', []);
+
+        if (old('teacher_id')) {
+            $oldTeacher = User::select('id', 'full_name')->find(old('teacher_id'));
+        }
+
+        if (old('category_id')) {
+            $category = Category::with(['filters' => function ($query) {
+                $query->with('options');
+            }])->find(old('category_id'));
+
+            if (!empty($category)) {
+                $webinarCategoryFilters = $category->filters;
+            }
+        }
+
         $data = [
             'pageTitle' => trans('admin/main.webinar_new_page_title'),
             'teachers' => $teachers,
-            'categories' => $categories
+            'categories' => $categories,
+            'oldTeacher' => $oldTeacher,
+            'webinarCategoryFilters' => $webinarCategoryFilters,
+            'webinarFilterOptions' => $webinarFilterOptions,
         ];
 
         return view('admin.webinars.create', $data);

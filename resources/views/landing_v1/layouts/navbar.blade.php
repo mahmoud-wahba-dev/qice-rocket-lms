@@ -15,7 +15,33 @@
        
             <li><a class="font-medium text-15px text-[#3D455D] "
                     href="{{ route('landing.v1.instructors') }}">المدربين</a></li>
-            <li><a class="font-medium text-15px text-[#3D455D] " href="{{ route('landing.v1.courses-paid') }}">الدورات المعتمدة</a>
+            <li class="dropdown relative justify-center inline-flex rtl:[--placement:bottom]">
+                <button id="paid-courses-nav-toggle" type="button"
+                    class="dropdown-toggle font-medium text-15px text-[#3D455D] flex items-center gap-1 bg-transparent border-0 cursor-pointer p-0"
+                    aria-haspopup="menu" aria-expanded="false" aria-label="الدورات المعتمدة">
+                    الدورات المعتمدة
+                    <span class="icon-[tabler--chevron-down] size-4 dropdown-open:rotate-180 transition-transform duration-200"></span>
+                </button>
+                <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-56 py-2" role="menu"
+                    aria-orientation="vertical" aria-labelledby="paid-courses-nav-toggle">
+                    <li>
+                        <a class="dropdown-item font-medium text-15px text-[#3D455D]"
+                            href="{{ route('landing.v1.courses-paid') }}">
+                            جميع الدورات المعتمدة
+                        </a>
+                    </li>
+                    @if (!empty($paidCourseCategories) && $paidCourseCategories->isNotEmpty())
+                        <li class="border-t border-gray-100 my-1"></li>
+                        @foreach ($paidCourseCategories as $category)
+                            <li>
+                                <a class="dropdown-item font-medium text-15px text-[#3D455D]"
+                                    href="{{ route('landing.v1.courses-paid', ['category_id' => $category->id]) }}">
+                                    {{ $category->title }}
+                                </a>
+                            </li>
+                        @endforeach
+                    @endif
+                </ul>
             </li>
         </ul>
     </div> 
@@ -36,8 +62,15 @@
                         href="{{ route('landing.v1.about') }}">من نحن</a></li> --}}
                 <li><a class="dropdown-item font-medium text-15px text-[#3D455D]"
                         href="{{ route('landing.v1.workshops') }}">دورات مجانية</a></li>
-                <li><a class="dropdown-item font-medium text-15px text-[#3D455D]"
-                        href="{{ route('landing.v1.courses-paid') }}">الدورات المعتمدة</a></li>
+                <li><span class="dropdown-item font-semibold text-15px text-[#3D455D]">الدورات المعتمدة</span></li>
+                <li><a class="dropdown-item font-medium text-15px text-[#3D455D] ps-6"
+                        href="{{ route('landing.v1.courses-paid') }}">جميع الدورات المعتمدة</a></li>
+                @if (!empty($paidCourseCategories) && $paidCourseCategories->isNotEmpty())
+                    @foreach ($paidCourseCategories as $category)
+                        <li><a class="dropdown-item font-medium text-15px text-[#3D455D] ps-6"
+                                href="{{ route('landing.v1.courses-paid', ['category_id' => $category->id]) }}">{{ $category->title }}</a></li>
+                    @endforeach
+                @endif
                 <li><a class="dropdown-item font-medium text-15px text-[#3D455D]"
                         href="{{ route('landing.v1.instructors') }}">المدربين</a></li>
                 {{-- <li><a class="dropdown-item font-medium text-15px text-[#3D455D]"

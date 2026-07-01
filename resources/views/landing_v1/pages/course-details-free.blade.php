@@ -146,9 +146,8 @@
                         <h3 class="font-medium text-32px lg:text-36px text-primary mb-6">محتوى الدورة</h3>
                         <div class="border border-primary px-6 lg:px-8 py-2 lg:py-4 rounded-10px bg-white shadow-sm">
                             @if (!empty($course->description))
-                                <div
-                                    class="course-description py-5 font-normal text-18px lg:text-24px text-primary leading-relaxed [&_p]:mb-4 [&_ul]:list-disc [&_ul]:list-inside [&_ol]:list-decimal [&_ol]:list-inside [&_a]:text-primary [&_a]:underline">
-                                    {!! clean($course->description) !!}
+                                <div class="course-description course-description--rich py-5 leading-relaxed">
+                                    {!! $course->description !!}
                                 </div>
                             @else
                                 <div class="py-5 font-medium text-18px lg:text-24px text-primary/70">لا يوجد وصف لهذه

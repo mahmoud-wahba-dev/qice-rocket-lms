@@ -318,7 +318,7 @@ class LandingV1Controller extends Controller
             ->where('price', '>', 0);
     }
 
-    private function getPaidCourseFilterCategories()
+    public function getPaidCourseFilterCategories()
     {
         $parentCategories = Category::whereNull('parent_id')
             ->where('enable', true)
@@ -484,76 +484,45 @@ class LandingV1Controller extends Controller
 
     public function courseDetails($slug = null)
     {
-        // Try to fetch webinar by slug or fallback to the first active webinar if slug is missing or not found
-        $course = null;
-        if (!empty($slug)) {
-            $course = Webinar::where('slug', $slug)
-                ->where('status', 'active')
-                ->where('private', false)
-                ->with([
-                    'teacher:id,full_name,avatar,avatar_settings,created_at,bio,headline,about,username',
-                    'chapters' => function ($query) {
-                        $query->where('status', 'active')
-                            ->orderBy('order', 'asc')
-                            ->with('translations');
-                    },
-                    'chapters.sessions' => function ($query) {
-                        $query->where('status', 'active');
-                    },
-                    'chapters.files' => function ($query) {
-                        $query->where('status', 'active');
-                    },
-                    'chapters.textLessons' => function ($query) {
-                        $query->where('status', 'active');
-                    },
-                    'chapters.assignments' => function ($query) {
-                        $query->where('status', 'active');
-                    },
-                    'chapters.quizzes' => function ($query) {
-                        $query->where('status', 'active');
-                    },
-                    'faqs' => function ($query) {
-                        $query->orderBy('order', 'asc')->with('translations');
-                    },
-                ])
-                ->first();
-        }
+        // Previous lookup (replaced Jul 2026 — see findCourseBySlugForDetails):
+        // - Only loaded active + public courses by slug
+        // - If slug was missing or not found, fell back to the first active course (wrong for admin/panel clicks)
+        //
+        // $course = null;
+        // if (!empty($slug)) {
+        //     $course = Webinar::where('slug', $slug)
+        //         ->where('status', 'active')
+        //         ->where('private', false)
+        //         ->with($this->courseDetailsEagerLoads())
+        //         ->first();
+        // }
+        // if (empty($course)) {
+        //     $course = Webinar::where('status', 'active')
+        //         ->where('private', false)
+        //         ->with($this->courseDetailsEagerLoads())
+        //         ->orderBy('id', 'asc')
+        //         ->first();
+        // }
+        // if (empty($course)) {
+        //     abort(404);
+        // }
 
-        if (empty($course)) {
+        if (!empty($slug)) {
+            $course = $this->findCourseBySlugForDetails($slug);
+
+            if (empty($course)) {
+                abort(404);
+            }
+        } else {
             $course = Webinar::where('status', 'active')
                 ->where('private', false)
-                ->with([
-                    'teacher:id,full_name,avatar,avatar_settings,created_at,bio,headline,about,username',
-                    'chapters' => function ($query) {
-                        $query->where('status', 'active')
-                            ->orderBy('order', 'asc')
-                            ->with('translations');
-                    },
-                    'chapters.sessions' => function ($query) {
-                        $query->where('status', 'active');
-                    },
-                    'chapters.files' => function ($query) {
-                        $query->where('status', 'active');
-                    },
-                    'chapters.textLessons' => function ($query) {
-                        $query->where('status', 'active');
-                    },
-                    'chapters.assignments' => function ($query) {
-                        $query->where('status', 'active');
-                    },
-                    'chapters.quizzes' => function ($query) {
-                        $query->where('status', 'active');
-                    },
-                    'faqs' => function ($query) {
-                        $query->orderBy('order', 'asc')->with('translations');
-                    },
-                ])
+                ->with($this->courseDetailsEagerLoads())
                 ->orderBy('id', 'asc')
                 ->first();
-        }
 
-        if (empty($course)) {
-            abort(404);
+            if (empty($course)) {
+                abort(404);
+            }
         }
 
         $this->attachCategoryTranslations($course);
@@ -624,6 +593,74 @@ class LandingV1Controller extends Controller
             : 'landing_v1.pages.course-details-free';
 
         return view($view, $data);
+    }
+
+    private function courseDetailsEagerLoads(): array
+    {
+        return [
+            'teacher:id,full_name,avatar,avatar_settings,created_at,bio,headline,about,username',
+            'chapters' => function ($query) {
+                $query->where('status', 'active')
+                    ->orderBy('order', 'asc')
+                    ->with('translations');
+            },
+            'chapters.sessions' => function ($query) {
+                $query->where('status', 'active');
+            },
+            'chapters.files' => function ($query) {
+                $query->where('status', 'active');
+            },
+            'chapters.textLessons' => function ($query) {
+                $query->where('status', 'active');
+            },
+            'chapters.assignments' => function ($query) {
+                $query->where('status', 'active');
+            },
+            'chapters.quizzes' => function ($query) {
+                $query->where('status', 'active');
+            },
+            'faqs' => function ($query) {
+                $query->orderBy('order', 'asc')->with('translations');
+            },
+        ];
+    }
+
+    private function findCourseBySlugForDetails(string $slug): ?Webinar
+    {
+        $relations = $this->courseDetailsEagerLoads();
+
+        $course = Webinar::where('slug', $slug)
+            ->where('status', 'active')
+            ->where('private', false)
+            ->with($relations)
+            ->first();
+
+        if (!empty($course)) {
+            return $course;
+        }
+
+        $user = auth()->user();
+        if (empty($user)) {
+            return null;
+        }
+
+        $previewCourse = Webinar::where('slug', $slug)
+            ->with($relations)
+            ->first();
+
+        if (empty($previewCourse)) {
+            return null;
+        }
+
+        if ($user->isAdmin()) {
+            return $previewCourse;
+        }
+
+        if ($previewCourse->teacher_id === $user->id || $previewCourse->creator_id === $user->id) {
+            return $previewCourse;
+        }
+
+        return null;
     }
 
     private function buildCourseDetailExtras(Webinar $course, $learningMaterials, $activeReviews): array
