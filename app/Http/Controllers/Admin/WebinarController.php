@@ -385,7 +385,7 @@ class WebinarController extends Controller
         $data['price'] = !empty($data['price']) ? convertPriceToDefaultCurrency($data['price']) : null;
         $data['organization_price'] = !empty($data['organization_price']) ? convertPriceToDefaultCurrency($data['organization_price']) : null;
 
-        $webinar = Webinar::create([
+        $webinarData = [
             'type' => $data['type'],
             'slug' => $data['slug'],
             'teacher_id' => $data['teacher_id'],
@@ -418,7 +418,13 @@ class WebinarController extends Controller
             'status' => Webinar::$pending,
             'created_at' => time(),
             'updated_at' => time(),
-        ]);
+        ];
+
+        if (!Webinar::supportsIconColumn()) {
+            unset($webinarData['icon']);
+        }
+
+        $webinar = Webinar::create($webinarData);
 
         if ($webinar) {
             WebinarTranslation::updateOrCreate([
@@ -721,7 +727,7 @@ class WebinarController extends Controller
         $data['price'] = !empty($data['price']) ? convertPriceToDefaultCurrency($data['price']) : null;
         $data['organization_price'] = !empty($data['organization_price']) ? convertPriceToDefaultCurrency($data['organization_price']) : null;
 
-        $webinar->update([
+        $webinarData = [
             'slug' => $data['slug'],
             'creator_id' => $newCreatorId,
             'teacher_id' => $data['teacher_id'],
@@ -753,7 +759,13 @@ class WebinarController extends Controller
             'message_for_reviewer' => $data['message_for_reviewer'] ?? null,
             'status' => $data['status'],
             'updated_at' => time(),
-        ]);
+        ];
+
+        if (!Webinar::supportsIconColumn()) {
+            unset($webinarData['icon']);
+        }
+
+        $webinar->update($webinarData);
 
         if ($webinar) {
             WebinarTranslation::updateOrCreate([

@@ -644,13 +644,19 @@ class WebinarController extends Controller
             $videoDemo = $this->uploadFile($request->file('demo_video_local'), "webinars/{$webinar->id}", "course_{$webinar->id}_video_demo", $webinar->creator_id, 'bunny');
         }
 
-        $webinar->update([
+        $webinarData = [
             'thumbnail' => $thumbnail,
             'image_cover' => $imageCover,
             'video_demo_source' => $videoDemoSource,
             'video_demo' => $videoDemo,
             'icon' => $icon,
-        ]);
+        ];
+
+        if (!Webinar::supportsIconColumn()) {
+            unset($webinarData['icon']);
+        }
+
+        $webinar->update($webinarData);
 
         return $webinar;
     }
@@ -671,9 +677,11 @@ class WebinarController extends Controller
             abort(404);
         }
 
-        $webinar->update([
-            'icon' => null,
-        ]);
+        if (Webinar::supportsIconColumn()) {
+            $webinar->update([
+                'icon' => null,
+            ]);
+        }
 
         return response()->json([
             'code' => 200,

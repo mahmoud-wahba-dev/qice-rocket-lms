@@ -16,6 +16,11 @@
         .select2-container {
             z-index: 1212 !important;
         }
+
+        .required-star {
+            color: #f63c3c;
+            margin-right: 4px;
+        }
     </style>
 @endpush
 
@@ -44,6 +49,7 @@
                                 {{ csrf_field() }}
                                 <section>
                                     <h2 class="section-title after-line">{{ trans('public.basic_information') }}</h2>
+                                    <div class="text-danger text-small mt-2">* الحقول المطلوبة</div>
 
                                     <div class="row">
                                         <div class="col-12 col-md-5">
@@ -67,9 +73,9 @@
                                             @endif
 
                                             <div class="form-group mt-15 ">
-                                                <label class="input-label d-block">{{ trans('panel.course_type') }}</label>
+                                                <label class="input-label d-block">{{ trans('panel.course_type') }} <span class="required-star">*</span></label>
 
-                                                <select name="type" class="custom-select @error('type')  is-invalid @enderror">
+                                                <select name="type" class="custom-select @error('type')  is-invalid @enderror" required>
                                                     <option value="webinar" @if((!empty($webinar) and $webinar->isWebinar()) or old('type') == \App\Models\Webinar::$webinar) selected @endif>{{ trans('webinars.webinar') }}</option>
                                                     <option value="course" @if((!empty($webinar) and $webinar->isCourse()) or old('type') == \App\Models\Webinar::$course) selected @endif>{{ trans('product.video_course') }}</option>
                                                     <option value="text_lesson" @if((!empty($webinar) and $webinar->isTextCourse()) or old('type') == \App\Models\Webinar::$textLesson) selected @endif>{{ trans('product.text_course') }}</option>
@@ -83,8 +89,8 @@
                                             </div>
 
                                             <div class="form-group mt-15">
-                                                <label class="input-label">{{ trans('public.title') }}</label>
-                                                <input type="text" name="title" value="{{ !empty($webinar) ? $webinar->title : old('title') }}" class="form-control @error('title')  is-invalid @enderror" placeholder=""/>
+                                                <label class="input-label">{{ trans('public.title') }} <span class="required-star">*</span></label>
+                                                <input type="text" name="title" value="{{ !empty($webinar) ? $webinar->title : old('title') }}" class="form-control @error('title')  is-invalid @enderror" placeholder="" required/>
                                                 @error('title')
                                                 <div class="invalid-feedback">
                                                     {{ $message }}
@@ -125,10 +131,11 @@
 
 
                                             <div class="form-group mt-15 ">
-                                                <label class="input-label d-block">{{ trans('admin/main.select_a_instructor') }}</label>
+                                                <label class="input-label d-block">{{ trans('admin/main.select_a_instructor') }} <span class="required-star">*</span></label>
 
-                                                <select name="teacher_id" data-search-option="except_user" class="form-control search-user-select22"
+                                                <select name="teacher_id" data-search-option="except_user" class="form-control search-user-select22 @error('teacher_id') is-invalid @enderror"
                                                         data-placeholder="{{ trans('public.select_a_teacher') }}"
+                                                        required
                                                 >
                                                     @if(!empty($webinar))
                                                         <option value="{{ $webinar->teacher->id }}" selected>{{ $webinar->teacher->full_name }}</option>
@@ -157,14 +164,14 @@
                                             </div>
 
                                             <div class="form-group mt-15">
-                                                <label class="input-label">{{ trans('public.thumbnail_image') }}</label>
+                                                <label class="input-label">{{ trans('public.thumbnail_image') }} <span class="required-star">*</span></label>
                                                 <div class="input-group">
                                                     <div class="input-group-prepend">
                                                         <button type="button" class="input-group-text admin-file-manager" data-input="thumbnail" data-preview="holder">
                                                             <i class="fa fa-upload"></i>
                                                         </button>
                                                     </div>
-                                                    <input type="text" name="thumbnail" id="thumbnail" value="{{ !empty($webinar) ? $webinar->thumbnail : old('thumbnail') }}" class="form-control @error('thumbnail')  is-invalid @enderror"/>
+                                                    <input type="text" name="thumbnail" id="thumbnail" value="{{ !empty($webinar) ? $webinar->thumbnail : old('thumbnail') }}" class="form-control @error('thumbnail')  is-invalid @enderror" required/>
                                                     <div class="input-group-append">
                                                         <button type="button" class="input-group-text admin-file-view" data-input="thumbnail">
                                                             <i class="fa fa-eye"></i>
@@ -180,14 +187,14 @@
 
 
                                             <div class="form-group mt-15">
-                                                <label class="input-label">{{ trans('public.cover_image') }}</label>
+                                                <label class="input-label">{{ trans('public.cover_image') }} <span class="required-star">*</span></label>
                                                 <div class="input-group">
                                                     <div class="input-group-prepend">
                                                         <button type="button" class="input-group-text admin-file-manager" data-input="cover_image" data-preview="holder">
                                                             <i class="fa fa-upload"></i>
                                                         </button>
                                                     </div>
-                                                    <input type="text" name="image_cover" id="cover_image" value="{{ !empty($webinar) ? $webinar->image_cover : old('image_cover') }}" class="form-control @error('image_cover')  is-invalid @enderror"/>
+                                                    <input type="text" name="image_cover" id="cover_image" value="{{ !empty($webinar) ? $webinar->image_cover : old('image_cover') }}" class="form-control @error('image_cover')  is-invalid @enderror" required/>
                                                     <div class="input-group-append">
                                                         <button type="button" class="input-group-text admin-file-view" data-input="cover_image">
                                                             <i class="fa fa-eye"></i>
@@ -277,8 +284,8 @@
                                             </div>
 
                                             <div class="form-group mt-15">
-                                                <label class="input-label">{{ trans('public.summary') }}</label>
-                                                <textarea name="summary" rows="5" class="form-control @error('summary')  is-invalid @enderror" placeholder="{{ trans('forms.webinar_summary_placeholder') }}">{!! !empty($webinar) ? $webinar->summary : old('summary')  !!}</textarea>
+                                                <label class="input-label">{{ trans('public.summary') }} <span class="required-star">*</span></label>
+                                                <textarea name="summary" rows="5" class="form-control @error('summary')  is-invalid @enderror" placeholder="{{ trans('forms.webinar_summary_placeholder') }}" required>{!! !empty($webinar) ? $webinar->summary : old('summary')  !!}</textarea>
                                                 @error('summary')
                                                 <div class="invalid-feedback">
                                                     {{ $message }}
@@ -292,8 +299,8 @@
                                     <div class="row">
                                         <div class="col-12">
                                             <div class="form-group mt-15">
-                                                <label class="input-label">{{ trans('public.description') }}</label>
-                                                <textarea id="summernote" name="description" class="form-control @error('description')  is-invalid @enderror" placeholder="{{ trans('forms.webinar_description_placeholder') }}">{!! !empty($webinar) ? $webinar->description : old('description')  !!}</textarea>
+                                                <label class="input-label">{{ trans('public.description') }} <span class="required-star">*</span></label>
+                                                <textarea id="summernote" name="description" class="form-control @error('description')  is-invalid @enderror" placeholder="{{ trans('forms.webinar_description_placeholder') }}" required>{!! !empty($webinar) ? $webinar->description : old('description')  !!}</textarea>
                                                 @error('description')
                                                 <div class="invalid-feedback">
                                                     {{ $message }}
@@ -336,14 +343,14 @@
                                                 @if(empty($webinar) or (!empty($webinar) and $webinar->isWebinar()))
                                                     <div class="col-12 col-md-6 js-start_date {{ (!empty(old('type')) and old('type') != \App\Models\Webinar::$webinar) ? 'd-none' : '' }}">
                                                         <div class="form-group">
-                                                            <label class="input-label">{{ trans('public.start_date') }}</label>
+                                                            <label class="input-label">{{ trans('public.start_date') }} <span class="required-star">*</span></label>
                                                             <div class="input-group">
                                                                 <div class="input-group-prepend">
                                                                     <span class="input-group-text" id="dateInputGroupPrepend">
                                                                         <i class="fa fa-calendar-alt "></i>
                                                                     </span>
                                                                 </div>
-                                                                <input type="text" name="start_date" value="{{ (!empty($webinar) and $webinar->start_date) ? dateTimeFormat($webinar->start_date, 'Y-m-d H:i', false, false, $webinar->timezone) : old('start_date') }}" class="form-control @error('start_date')  is-invalid @enderror datetimepicker" aria-describedby="dateInputGroupPrepend"/>
+                                                                <input type="text" name="start_date" value="{{ (!empty($webinar) and $webinar->start_date) ? dateTimeFormat($webinar->start_date, 'Y-m-d H:i', false, false, $webinar->timezone) : old('start_date') }}" class="form-control @error('start_date')  is-invalid @enderror datetimepicker" aria-describedby="dateInputGroupPrepend" {{ ((!empty($webinar) and $webinar->isWebinar()) or empty($webinar) or old('type') == \App\Models\Webinar::$webinar) ? 'required' : '' }}/>
                                                                 @error('start_date')
                                                                 <div class="invalid-feedback">
                                                                     {{ $message }}
@@ -356,7 +363,7 @@
 
                                                 <div class="col-12 col-md-6">
                                                     <div class="form-group">
-                                                        <label class="input-label">{{ trans('public.duration') }} ({{ trans('public.minutes') }})</label>
+                                                        <label class="input-label">{{ trans('public.duration') }} ({{ trans('public.minutes') }}) <span class="required-star">*</span></label>
                                                         <div class="input-group">
                                                             <div class="input-group-prepend">
                                                                 <span class="input-group-text" id="timeInputGroupPrepend">
@@ -365,7 +372,7 @@
                                                             </div>
 
 
-                                                            <input type="number" name="duration" value="{{ !empty($webinar) ? $webinar->duration : old('duration') }}" class="form-control @error('duration')  is-invalid @enderror"/>
+                                                            <input type="number" name="duration" value="{{ !empty($webinar) ? $webinar->duration : old('duration') }}" class="form-control @error('duration')  is-invalid @enderror" required/>
                                                             @error('duration')
                                                             <div class="invalid-feedback">
                                                                 {{ $message }}
@@ -537,7 +544,7 @@
 
 
                                             <div class="form-group mt-15">
-                                                <label class="input-label">{{ trans('public.category') }}</label>
+                                                <label class="input-label">{{ trans('public.category') }} <span class="required-star">*</span></label>
 
                                                 <select id="categories" class="custom-select @error('category_id')  is-invalid @enderror" name="category_id" required>
                                                     <option {{ !empty($webinar) ? '' : 'selected' }} disabled>{{ trans('public.choose_category') }}</option>

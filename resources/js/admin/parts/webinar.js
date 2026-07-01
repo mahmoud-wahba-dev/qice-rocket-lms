@@ -41,9 +41,83 @@
         makeSummernote($('#summernote'), 400)
     }
 
+    function upsertFieldError($field, message) {
+        $field.addClass('is-invalid');
+
+        let $error = $field.closest('.form-group, .input-group').find('.js-client-error').first();
+        if (!$error.length) {
+            $error = $('<div class="invalid-feedback js-client-error d-block"></div>');
+            const $group = $field.closest('.input-group');
+
+            if ($group.length) {
+                $group.after($error);
+            } else {
+                $field.after($error);
+            }
+        }
+
+        $error.text(message);
+    }
+
+    function clearFieldError($field) {
+        $field.removeClass('is-invalid');
+        $field.closest('.form-group, .input-group').find('.js-client-error').remove();
+    }
+
+    function validateWebinarForm() {
+        const type = $('select[name="type"]').val();
+        const fields = [
+            {selector: '[name="type"]', message: 'نوع الفصل الحقل مطلوب.'},
+            {selector: '[name="title"]', message: 'العنوان الحقل مطلوب.'},
+            {selector: '[name="teacher_id"]', message: 'المدرب الحقل مطلوب.'},
+            {selector: '#thumbnail', message: 'الصورة المصغرة الحقل مطلوب.'},
+            {selector: '#cover_image', message: 'image cover الحقل مطلوب.'},
+            {selector: '[name="summary"]', message: 'الملخص الحقل مطلوب.'},
+            {selector: '[name="description"]', message: 'الوصف الحقل مطلوب.'},
+            {selector: '[name="duration"]', message: 'المدة الحقل مطلوب.'},
+            {selector: '[name="category_id"]', message: 'الفئة الحقل مطلوب.'}
+        ];
+
+        if (type === 'webinar') {
+            fields.push({selector: '[name="start_date"]', message: 'start date الحقل مطلوب عندما type تساوي webinar.'});
+        }
+
+        let valid = true;
+
+        $('.js-client-error').remove();
+        $('#webinarForm .is-invalid').removeClass('is-invalid');
+
+        fields.forEach(field => {
+            const $field = $(field.selector).first();
+            if (!$field.length) {
+                return;
+            }
+
+            let value = ($field.val() || '').toString().trim();
+
+            if ($field.is('select') && ($field.prop('selectedIndex') === 0) && !$field.find('option:selected').val()) {
+                value = '';
+            }
+
+            if (!value) {
+                valid = false;
+                upsertFieldError($field, field.message);
+            }
+        });
+
+        return valid;
+    }
+
+    $('body').on('change input', '#webinarForm input, #webinarForm textarea, #webinarForm select', function () {
+        clearFieldError($(this));
+    });
+
 
     $('body').on('click', '#saveAndPublish', function (e) {
         e.preventDefault();
+        if (!validateWebinarForm()) {
+            return;
+        }
         $('#forDraft').val('publish');
         $('#webinarForm').trigger('submit');
     });
@@ -1693,6 +1767,7 @@
     $('body').on('change', 'select[name="type"]', function () {
         const value = this.value;
         const webinarItem = ['capacity', 'start_date'];
+        const $startDate = $('[name="start_date"]');
 
         let show = true;
 
@@ -1706,6 +1781,13 @@
             } else {
                 $('.js-' + item).addClass('d-none');
             }
+        }
+
+        if (show) {
+            $startDate.attr('required', 'required');
+        } else {
+            $startDate.removeAttr('required');
+            clearFieldError($startDate);
         }
     });
 

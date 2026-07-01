@@ -63,6 +63,10 @@ class Handler extends ExceptionHandler
             return $this->renderApi($request, $exception);
         }
 
+        if ($exception instanceof ValidationException) {
+            return parent::render($request, $exception);
+        }
+
         $modelNotFound = ($exception instanceof ModelNotFoundException);
 
         if (
@@ -82,6 +86,18 @@ class Handler extends ExceptionHandler
             }
 
             if (in_array($statusCode, [404, 403, 419, 500])) {
+                if ($statusCode === 500) {
+                    \Log::error('rendered_500_exception', [
+                        'exception_class' => get_class($exception),
+                        'message' => $exception->getMessage(),
+                        'file' => $exception->getFile(),
+                        'line' => $exception->getLine(),
+                        'code' => $exception->getCode(),
+                        'url' => $request->fullUrl(),
+                        'method' => $request->method(),
+                    ]);
+                }
+
                 $share = (new Share());
                 $shareData = $share->getShareData($request);
 

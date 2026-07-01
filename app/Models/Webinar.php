@@ -12,6 +12,7 @@ use Cviebrock\EloquentSluggable\Services\SlugService;
 use Cviebrock\EloquentSluggable\Sluggable;
 use Google\Service\Classroom\Student;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 use Jorenvh\Share\ShareFacade;
 use Spatie\CalendarLinks\Link;
 
@@ -44,8 +45,18 @@ class Webinar extends Model implements TranslatableContract
     ];
 
     static $videoDemoSource = ['upload', 'youtube', 'vimeo', 'external_link', 'secure_host'];
+    protected static $hasIconColumn = null;
 
     public $translatedAttributes = ['title', 'description', 'summary', 'seo_description'];
+
+    public static function supportsIconColumn(): bool
+    {
+        if (static::$hasIconColumn === null) {
+            static::$hasIconColumn = Schema::hasColumn((new static)->getTable(), 'icon');
+        }
+
+        return static::$hasIconColumn;
+    }
 
     public function getTitleAttribute()
     {
