@@ -9,7 +9,8 @@ ssh "${SSH_HOST}" "
   set -e
   cd ${REMOTE_APP}
   PHP_BIN=\$(bash scripts/hostinger-php.sh 2>/dev/null || echo /opt/alt/php82/usr/bin/php)
-  echo Using PHP: \${PHP_BIN} (\$({\${PHP_BIN}} -v 2>/dev/null | head -1 || true))
+  echo \"Using PHP: \${PHP_BIN}\"
+  \${PHP_BIN} -v 2>/dev/null | head -1 || true
   if command -v node >/dev/null 2>&1 && [ -f scripts/optimize-landing-images.js ]; then
     node scripts/optimize-landing-images.js 2>/dev/null || echo 'Image optimization skipped'
   fi
