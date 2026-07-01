@@ -19,6 +19,11 @@ ssh "${SSH_HOST}" "
     cp -r vendor/unisharp/laravel-filemanager/public/* public/vendor/laravel-filemanager/
     echo 'Synced laravel-filemanager public assets'
   fi
+  if [ -d vendor/stijnvanouplines/blade-country-flags/resources/svg ]; then
+    mkdir -p public/vendor/blade-country-flags
+    cp -r vendor/stijnvanouplines/blade-country-flags/resources/svg/* public/vendor/blade-country-flags/
+    echo 'Synced blade-country-flags SVG assets'
+  fi
   if [ -f vendor/autoload.php ] && \${PHP_BIN} artisan --version >/dev/null 2>&1; then
     \${PHP_BIN} artisan optimize:clear
     echo 'Laravel caches cleared via artisan'

@@ -183,10 +183,11 @@ npm run deploy
 Implemented in [`scripts/optimize-production.sh`](../scripts/optimize-production.sh). Step 4 of `deploy.bat` calls this automatically.
 
 - Copies Laravel File Manager assets from `vendor/unisharp/laravel-filemanager/public/` to `public/vendor/laravel-filemanager/` (required for admin image uploads; `public/vendor/` is gitignored)
+- Copies language flag SVGs from `vendor/stijnvanouplines/blade-country-flags/resources/svg/` to `public/vendor/blade-country-flags/` (required for language dropdown flags in admin, panel, and web)
 - Clears bootstrap config/route cache files and framework cache data
 - Restarts LiteSpeed PHP workers (`pkill lsphp`)
 
-> **ionCube:** `php artisan` over SSH often fails on Hostinger CLI. The website still works. Do not rely on `php artisan vendor:publish` on the server — the optimize script copies LFM assets instead.
+> **ionCube:** `php artisan` over SSH often fails on Hostinger CLI. The website still works. Do not rely on `php artisan vendor:publish` on the server — the optimize script copies LFM and flag assets instead.
 
 ### Feature branch vs `master`
 
@@ -268,8 +269,9 @@ These folders are gitignored and must be uploaded manually (File Manager or SFTP
 |------|----------|
 | `public/assets/design_1/` | Stock RocketLMS theme (admin, panel, legacy web) |
 | `public/assets/landing_v1/img/` | QIEC images exported from Figma |
+| `public/vendor/blade-country-flags/` | Language dropdown flag SVGs (synced by `optimize:production` from Composer vendor) |
 
-Without `design_1` assets, admin panel and stock pages break. Without `landing_v1/img`, landing images show broken links.
+Without `design_1` assets, admin panel and stock pages break. Without `landing_v1/img`, landing images show broken links. Without `blade-country-flags`, language dropdown flags show broken images in admin, panel, and web headers.
 
 ### Add GitHub deploy key on server (if git pull fails)
 
@@ -331,6 +333,7 @@ npm run optimize:production
 | 500 error after deploy | `.env` or permissions | Check `storage/logs/laravel.log`, fix `storage` permissions |
 | `npm run landing:build` fails | Wrong script name | Use `npm run build:landing` |
 | Admin upload broken (`filemanager is not a function`) | Missing `public/vendor/laravel-filemanager/` | Run `npm run optimize:production` (or full `npm run deploy`) |
+| Language dropdown flags broken (admin, panel, web) | Missing `public/vendor/blade-country-flags/` | Run `npm run optimize:production` (or full `npm run deploy`) |
 | `php artisan` fails over SSH | ionCube not in CLI PHP | Use optimize script; delete `bootstrap/cache/config.php` manually if needed |
 
 ---

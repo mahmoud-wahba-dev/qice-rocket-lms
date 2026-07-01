@@ -26,6 +26,12 @@ fi
 echo "Installing Composer dependencies..."
 composer install --no-dev --optimize-autoloader
 
+if [ -d vendor/stijnvanouplines/blade-country-flags/resources/svg ]; then
+    mkdir -p public/vendor/blade-country-flags
+    cp -r vendor/stijnvanouplines/blade-country-flags/resources/svg/* public/vendor/blade-country-flags/
+    echo "Synced blade-country-flags SVG assets"
+fi
+
 if [ ! -f ".env" ]; then
     echo "WARNING: .env not found. Copy from .env.example and configure DB credentials."
     if [ -f ".env.example" ]; then
