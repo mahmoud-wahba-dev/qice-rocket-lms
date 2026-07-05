@@ -334,6 +334,7 @@ npm run optimize:production
 | `npm run landing:build` fails | Wrong script name | Use `npm run build:landing` |
 | Admin upload broken (`filemanager is not a function`) | Missing `public/vendor/laravel-filemanager/` | Run `npm run optimize:production` (or full `npm run deploy`) |
 | Language dropdown flags broken (admin, panel, web) | Missing `public/vendor/blade-country-flags/` | Run `npm run optimize:production` (or full `npm run deploy`) |
+| Reset admin password | Need to change `admin@demo.com` credentials | Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`, then run `php artisan qiec:reset-admin-password` (on Hostinger use `PHP_BIN=$(bash scripts/hostinger-php.sh)` first) |
 | `php artisan` fails over SSH | ionCube not in CLI PHP | Use optimize script; delete `bootstrap/cache/config.php` manually if needed |
 
 ---

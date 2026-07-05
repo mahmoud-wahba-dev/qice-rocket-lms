@@ -118,6 +118,20 @@
     text-decoration: underline;
 }
 
+/* Paid course dark box — override admin inline text colors */
+.course-description--rich-on-dark,
+.course-description--rich-on-dark :where(
+    p, span, li, td, th, div, strong, em, b, i, u,
+    h1, h2, h3, h4, h5, h6, blockquote, font
+) {
+    color: #fff !important;
+}
+
+.course-description--rich-on-dark a {
+    color: #fff !important;
+    text-decoration: underline;
+}
+
 .course-description ul {
     list-style: disc;
     padding-inline-start: 1.5rem;
