@@ -11,10 +11,10 @@
 @php($detailUrl = $profileUrl ?? (!empty($username) ? route('landing.v1.instructor-details', $username) : route('landing.v1.instructors')))
 
 <div class="trainer-card bg-white border border-[#0000001A] rounded-19px overflow-hidden h-full">
-    {{-- Aspect-ratio box: uniform image area that scales with the card. Change aspect-[4/3] (e.g. aspect-square, aspect-[4/5]) --}}
-    <a href="{{ $detailUrl }}" class="block w-full aspect-[4/3] overflow-hidden rounded-t-[19px] bg-[#f5f6f8]">
+    {{-- Aspect-ratio box. Height knob (tall -> short): aspect-[3/4], aspect-[4/5], aspect-square, aspect-[4/3] --}}
+    <a href="{{ $detailUrl }}" class="block w-full aspect-square overflow-hidden rounded-t-[19px] bg-[#f5f6f8]">
         <img class="block h-full w-full object-cover object-top"
-            src="{{ $avatarUrl }}" alt="{{ $name }}" width="400" height="300" loading="lazy"
+            src="{{ $avatarUrl }}" alt="{{ $name }}" width="400" height="400" loading="lazy"
             decoding="async">
     </a>
     {{-- To shrink the overall card, reduce padding (p-3) and bio lines (line-clamp-2) here --}}
