@@ -144,8 +144,9 @@
 
                     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
 
-                        <a href="{{ route('landing.v1.checkout') }}"
-                            class="rounded-9px font-black text-13px text-[#155554] px-6 py-3   bg-white text-primary border border-[#00FF88]">
+                        <button type="button" id="buy-now-btn" data-course-id="{{ $course->id }}"
+                            data-checkout-url="{{ route('landing.v1.checkout') }}"
+                            class="rounded-9px font-black text-13px text-[#155554] px-6 py-3   bg-white text-primary border border-[#00FF88] cursor-pointer">
                             بـــ
 
 
@@ -161,7 +162,7 @@
                                     class="font-bold text-base text-[#2F2F2FA8] shadow-[-2.4px_3.21px_14.19px_0px_#FFFFFF] line-through ms-2">
                                     {{ handlePrice($course->price) }}</span>
                             @endif
-                        </a>
+                        </button>
                         @if ($hasUserBought)
                             <a href="{{ $course->getLearningPageUrl() }}"
                                 class="btn h-14 rounded-9px font-bold text-18px px-8 inline-flex items-center gap-3 bg-white text-primary border border-[#00FF88] shadow-[0_0_24px_rgba(255,255,255,0.15)] hover:bg-[#f5f5f5]">
@@ -493,6 +494,72 @@
                 }
             }, {
                 passive: true
+            });
+        });
+    </script>
+
+    <script>
+        // "اشتري الآن" (Buy now): add the course to the cart first, then go to checkout.
+        // Going straight to checkout with an empty cart bounces the user to the empty cart page.
+        document.addEventListener('DOMContentLoaded', function() {
+            var btn = document.getElementById('buy-now-btn');
+            if (!btn) return;
+
+            var originalContent = btn.innerHTML;
+
+            btn.addEventListener('click', async function() {
+                var courseId = btn.dataset.courseId;
+                var checkoutUrl = btn.dataset.checkoutUrl;
+
+                btn.disabled = true;
+                btn.innerHTML = '<span class="icon-[tabler--loader-2] size-5 animate-spin inline-block"></span> جاري التحميل...';
+
+                try {
+                    var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                    var formData = new FormData();
+                    formData.append('_token', csrfToken);
+                    formData.append('item_name', 'webinar_id');
+                    formData.append('item_id', courseId);
+
+                    var response = await fetch('/cart/store', {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: formData,
+                    });
+
+                    var data = await response.json();
+
+                    if (response.ok && (data.status === 'success' || data.code === 200)) {
+                        // Added successfully — go straight to checkout
+                        window.location.href = checkoutUrl;
+                        return;
+                    }
+
+                    var errMsg = data?.toast_alert?.msg || data?.msg || '';
+                    var alreadyInCart = errMsg.toLowerCase().includes('already') ||
+                        errMsg.includes('موجود') ||
+                        errMsg.includes('مضاف');
+
+                    if (alreadyInCart) {
+                        // Already in the cart — still go to checkout
+                        window.location.href = checkoutUrl;
+                        return;
+                    }
+
+                    window.showCartToast && showCartToast(
+                        data?.toast_alert?.title || 'خطأ',
+                        errMsg || 'حدث خطأ، يرجى المحاولة مجدداً',
+                        'error'
+                    );
+                    btn.disabled = false;
+                    btn.innerHTML = originalContent;
+                } catch (_) {
+                    window.showCartToast && showCartToast('خطأ', 'فشل الاتصال بالخادم', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = originalContent;
+                }
             });
         });
     </script>
