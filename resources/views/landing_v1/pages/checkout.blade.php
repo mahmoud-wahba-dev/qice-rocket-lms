@@ -21,9 +21,7 @@
         <form action="/payments/payment-request" method="post" enctype="multipart/form-data" id="checkout-form">
             @csrf
             <input type="hidden" name="order_id" value="{{ $order->id }}">
-            @if(!empty($discountCoupon))
-                <input type="hidden" name="discount_id" value="{{ $discountCoupon->id }}">
-            @endif
+            <input type="hidden" name="discount_id" id="checkout-discount-id" value="{{ !empty($discountCoupon) ? $discountCoupon->id : '' }}">
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
@@ -204,20 +202,20 @@
                         <div class="border-t border-gray-100 pt-4 space-y-3 mb-5">
                             <div class="flex justify-between items-center">
                                 <span class="font-medium text-14px text-primary/70">الإجمالي الفرعي</span>
-                                <span class="font-bold text-14px text-primary">{{ handlePrice($calculatePrices['sub_total']) }}</span>
+                                <span class="font-bold text-14px text-primary" id="checkout-subtotal">{{ handlePrice($calculatePrices['sub_total']) }}</span>
                             </div>
                             <div class="flex justify-between items-center">
                                 <span class="font-medium text-14px text-primary/70">الخصم</span>
                                 @if($calculatePrices['total_discount'] > 0)
-                                    <span class="font-bold text-14px text-green-600">- {{ handlePrice($calculatePrices['total_discount']) }}</span>
+                                    <span class="font-bold text-14px text-green-600" id="checkout-discount">- {{ handlePrice($calculatePrices['total_discount']) }}</span>
                                 @else
-                                    <span class="font-bold text-14px text-primary/40">{{ handlePrice(0) }}</span>
+                                    <span class="font-bold text-14px text-primary/40" id="checkout-discount">{{ handlePrice(0) }}</span>
                                 @endif
                             </div>
                             @if($calculatePrices['tax_price'] > 0)
                             <div class="flex justify-between items-center">
                                 <span class="font-medium text-14px text-primary/70">الضريبة ({{ $calculatePrices['tax'] }}%)</span>
-                                <span class="font-bold text-14px text-primary">{{ handlePrice($calculatePrices['tax_price']) }}</span>
+                                <span class="font-bold text-14px text-primary" id="checkout-tax">{{ handlePrice($calculatePrices['tax_price']) }}</span>
                             </div>
                             @endif
                             @if(!empty($calculatePrices['product_delivery_fee']) && $calculatePrices['product_delivery_fee'] > 0)
@@ -228,10 +226,51 @@
                             @endif
                         </div>
 
+                        {{-- Coupon --}}
+                        <div class="mb-6">
+                            <p class="font-bold text-14px text-primary mb-3">
+                                <span class="icon-[tabler--ticket] size-4 inline-block me-1"></span>
+                                هل لديك كوبون؟
+                            </p>
+
+                            @if(!empty($discountCoupon))
+                                <div class="flex items-center justify-between gap-3 p-3 rounded-8px bg-green-50 border border-green-200 mb-3">
+                                    <div class="min-w-0">
+                                        <p class="font-bold text-13px text-green-700 truncate">{{ $discountCoupon->code }}</p>
+                                        <p class="font-medium text-12px text-green-600">
+                                            تم تطبيق الخصم
+                                            @if(!empty($discountCoupon->percent))
+                                                ({{ $discountCoupon->percent }}%)
+                                            @endif
+                                        </p>
+                                    </div>
+                                    <button type="button" id="remove-coupon-btn"
+                                        class="btn btn-ghost btn-sm text-red-500 hover:bg-red-50 shrink-0"
+                                        onclick="removeCoupon()">
+                                        إزالة
+                                    </button>
+                                </div>
+                            @else
+                                <div class="flex gap-2" id="coupon-form-row">
+                                    <input type="text" id="coupon-code-input"
+                                        class="input input-bordered flex-1 text-14px font-medium text-primary h-10 rounded-8px focus:border-secondary"
+                                        placeholder="أدخل رمز الخصم هنا"
+                                        autocomplete="off">
+                                    <button type="button" id="apply-coupon-btn"
+                                        class="btn btn-outline btn-primary h-10 px-4 text-14px font-medium rounded-8px"
+                                        onclick="applyCoupon()">
+                                        تطبيق
+                                    </button>
+                                </div>
+                            @endif
+
+                            <div id="coupon-result" class="mt-2 text-13px font-medium hidden"></div>
+                        </div>
+
                         {{-- Total --}}
                         <div class="flex justify-between items-center py-4 border-t border-b border-gray-100 mb-6">
                             <span class="font-bold text-18px text-primary">المجموع</span>
-                            <span class="font-bold text-24px text-primary">{{ handlePrice($calculatePrices['total']) }}</span>
+                            <span class="font-bold text-24px text-primary" id="checkout-total">{{ handlePrice($calculatePrices['total']) }}</span>
                         </div>
 
                         {{-- Pay button --}}
@@ -332,5 +371,107 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 });
+
+/**
+ * Validate coupon via backend, then recreate checkout order with discount_id
+ * so totals are recalculated with handlePrice on the server.
+ */
+async function applyCoupon() {
+    const input = document.getElementById('coupon-code-input');
+    const result = document.getElementById('coupon-result');
+    const btn = document.getElementById('apply-coupon-btn');
+    const coupon = input ? input.value.trim() : '';
+
+    if (!coupon) {
+        result.className = 'mt-2 text-13px font-medium text-red-500';
+        result.textContent = 'الرجاء إدخال رمز الكوبون';
+        result.classList.remove('hidden');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="icon-[tabler--loader-2] size-4 animate-spin inline-block"></span>';
+
+    try {
+        const response = await fetch('/cart/coupon/validate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify({ coupon }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.code === 200) {
+            // Extract discount_id from the backend summary HTML (uses handlePrice)
+            let discountId = '';
+            if (data.html) {
+                const doc = new DOMParser().parseFromString(data.html, 'text/html');
+                discountId = doc.querySelector('input[name="discount_id"]')?.value || '';
+            }
+
+            if (!discountId) {
+                result.className = 'mt-2 text-13px font-medium text-red-500';
+                result.textContent = 'تعذر تطبيق الكوبون، يرجى المحاولة مجدداً';
+                result.classList.remove('hidden');
+                return;
+            }
+
+            result.className = 'mt-2 text-13px font-medium text-green-600';
+            result.innerHTML = '<span class="icon-[tabler--circle-check] size-4 inline-block me-1"></span>تم تطبيق الكوبون — جاري تحديث الطلب...';
+            result.classList.remove('hidden');
+
+            // Reload checkout so order is recreated with the coupon (payment uses order totals)
+            reloadCheckoutWithDiscount(discountId);
+            return;
+        }
+
+        const err = data.error || {};
+        result.className = 'mt-2 text-13px font-medium text-red-500';
+        result.textContent = err.msg || 'الكوبون غير صالح';
+        result.classList.remove('hidden');
+    } catch (_) {
+        result.className = 'mt-2 text-13px font-medium text-red-500';
+        result.textContent = 'خطأ في الاتصال بالخادم';
+        result.classList.remove('hidden');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = 'تطبيق';
+        }
+    }
+}
+
+function removeCoupon() {
+    reloadCheckoutWithDiscount('');
+}
+
+function reloadCheckoutWithDiscount(discountId) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ route('landing.v1.checkout') }}';
+    form.style.display = 'none';
+
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = '_token';
+    csrf.value = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    form.appendChild(csrf);
+
+    if (discountId) {
+        const discountInput = document.createElement('input');
+        discountInput.type = 'hidden';
+        discountInput.name = 'discount_id';
+        discountInput.value = discountId;
+        form.appendChild(discountInput);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+}
 </script>
 @endpush
