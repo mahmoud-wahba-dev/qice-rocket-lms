@@ -1,0 +1,79 @@
+name: Deploy Laravel to Production
+
+on:
+  push:
+    branches:
+      - master
+
+  workflow_dispatch:
+
+concurrency:
+  group: qiec-training-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          printf '%s\n' "${{ secrets.VPS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy to VPS
+        run: |
+          ssh \
+            -i ~/.ssh/id_ed25519 \
+            -o IdentitiesOnly=yes \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" << 'EOF'
+
+          set -e
+
+          APP_DIR="/home/qiec-training/htdocs/training.qiec.sa"
+
+          cd "$APP_DIR"
+
+          echo "================================="
+          echo "Starting deployment"
+          echo "================================="
+
+          echo "Current commit:"
+          git rev-parse --short HEAD
+
+          echo "Fetching master..."
+          git fetch origin master
+
+          echo "Updating application code..."
+          git reset --hard origin/master
+
+          echo "New commit:"
+          git rev-parse --short HEAD
+
+          echo "Installing Composer dependencies..."
+          php8.4 "$(command -v composer)" install \
+            --no-dev \
+            --no-interaction \
+            --prefer-dist \
+            --optimize-autoloader
+
+          echo "Clearing Laravel caches..."
+          php8.4 artisan optimize:clear
+
+          echo "Caching configuration..."
+          php8.4 artisan config:cache
+
+          echo "Caching views..."
+          php8.4 artisan view:cache
+
+          echo "Checking storage links..."
+          php8.4 artisan storage:link || true
+
+          echo "Deployment completed successfully."
+          EOF
