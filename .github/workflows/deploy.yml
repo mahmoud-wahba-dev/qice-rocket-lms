@@ -66,9 +66,6 @@ jobs:
           echo "Clearing Laravel caches..."
           php8.4 artisan optimize:clear
 
-          echo "Caching configuration..."
-          php8.4 artisan config:cache
-
           echo "Caching views..."
           php8.4 artisan view:cache
 
@@ -76,4 +73,3 @@ jobs:
           php8.4 artisan storage:link || true
 
           echo "Deployment completed successfully."
-          EOF
