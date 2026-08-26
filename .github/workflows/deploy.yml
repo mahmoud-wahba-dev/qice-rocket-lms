@@ -16,6 +16,44 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # --------------------------------------------------
+      # 1. Checkout source code
+      # --------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --------------------------------------------------
+      # 2. Build frontend assets on GitHub
+      # --------------------------------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build landing assets
+        run: npm run build:landing
+
+      - name: Verify Vite build
+        run: |
+          test -f public/build/manifest.json
+          echo "Vite build completed successfully."
+          ls -lah public/build
+
+      # --------------------------------------------------
+      # 3. Package generated frontend assets
+      # --------------------------------------------------
+      - name: Package frontend build
+        run: |
+          tar -czf /tmp/qiec-build.tar.gz -C public build
+          ls -lh /tmp/qiec-build.tar.gz
+
+      # --------------------------------------------------
+      # 4. Configure SSH
+      # --------------------------------------------------
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
@@ -27,6 +65,20 @@ jobs:
           printf '%s\n' "${{ secrets.VPS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
+      # --------------------------------------------------
+      # 5. Upload compiled frontend assets
+      # --------------------------------------------------
+      - name: Upload frontend build
+        run: |
+          scp \
+            -i ~/.ssh/id_ed25519 \
+            -o IdentitiesOnly=yes \
+            /tmp/qiec-build.tar.gz \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/qiec-build.tar.gz"
+
+      # --------------------------------------------------
+      # 6. Deploy Laravel application
+      # --------------------------------------------------
       - name: Deploy to VPS
         run: |
           ssh \
@@ -41,12 +93,15 @@ jobs:
           cd "$APP_DIR"
 
           echo "================================="
-          echo "Starting deployment"
+          echo "Starting QIEC deployment"
           echo "================================="
 
           echo "Current commit:"
           git rev-parse --short HEAD
 
+          # ----------------------------------------------
+          # Update application source
+          # ----------------------------------------------
           echo "Fetching master..."
           git fetch origin master
 
@@ -56,24 +111,88 @@ jobs:
           echo "New commit:"
           git rev-parse --short HEAD
 
+          # ----------------------------------------------
+          # PHP dependencies
+          # ----------------------------------------------
           echo "Installing Composer dependencies..."
+
           php8.4 "$(command -v composer)" install \
             --no-dev \
             --no-interaction \
             --prefer-dist \
             --optimize-autoloader
 
+          # ----------------------------------------------
+          # Deploy Vite assets built by GitHub Actions
+          # ----------------------------------------------
+          echo "Installing frontend assets..."
+
+          rm -rf public/build
+          tar -xzf /tmp/qiec-build.tar.gz -C public
+          rm -f /tmp/qiec-build.tar.gz
+
+          test -f public/build/manifest.json
+
+          echo "Frontend assets installed."
+
+          # ----------------------------------------------
+          # Sync package public assets
+          # ----------------------------------------------
+          echo "Syncing Laravel Filemanager assets..."
+
+          if [ -d vendor/unisharp/laravel-filemanager/public ]; then
+            mkdir -p public/vendor/laravel-filemanager
+            cp -r vendor/unisharp/laravel-filemanager/public/* \
+              public/vendor/laravel-filemanager/
+          fi
+
+          echo "Syncing country flag assets..."
+
+          if [ -d vendor/stijnvanouplines/blade-country-flags/resources/svg ]; then
+            mkdir -p public/vendor/blade-country-flags
+            cp -r vendor/stijnvanouplines/blade-country-flags/resources/svg/* \
+              public/vendor/blade-country-flags/
+          fi
+
+          # ----------------------------------------------
+          # Database
+          # ----------------------------------------------
           echo "Running database migrations..."
           php8.4 artisan migrate --force
 
+          # ----------------------------------------------
+          # Laravel caches
+          # ----------------------------------------------
           echo "Clearing Laravel caches..."
           php8.4 artisan optimize:clear
 
           echo "Caching views..."
           php8.4 artisan view:cache
 
+          # ----------------------------------------------
+          # Storage links
+          # ----------------------------------------------
           echo "Checking storage links..."
           php8.4 artisan storage:link || true
+
+          # ----------------------------------------------
+          # Health check
+          # ----------------------------------------------
+          echo "Running health check..."
+
+          HTTP_CODE=$(curl -k -s -o /dev/null \
+            -w "%{http_code}" \
+            --resolve training.qiec.sa:443:127.0.0.1 \
+            https://training.qiec.sa)
+
+          echo "HTTP status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 400 ]; then
+            echo "Health check failed."
+            exit 1
+          fi
+
+          echo "Health check passed."
 
           echo "================================="
           echo "Deployment completed successfully."
