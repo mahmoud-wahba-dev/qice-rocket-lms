@@ -1,6 +1,6 @@
 {
   "resources/css/landing_v1.css": {
-    "file": "assets/landing_v1-f91cc744.css",
+    "file": "assets/landing_v1-349637eb.css",
     "isEntry": true,
     "src": "resources/css/landing_v1.css"
   },
@@ -15,7 +15,7 @@
     "src": "resources/css/panel_v1/instructor.css"
   },
   "resources/css/panel_v1/student.css": {
-    "file": "assets/student-e56c6cd5.css",
+    "file": "assets/student-c851e1ff.css",
     "isEntry": true,
     "src": "resources/css/panel_v1/student.css"
   },
