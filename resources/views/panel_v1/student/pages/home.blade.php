@@ -19,6 +19,8 @@
 
                     </div>
 
+                    <p>dd</p>
+
                     <p class="font-semibold text-18px">الدورات النشطة</p>
 
                 </div>
