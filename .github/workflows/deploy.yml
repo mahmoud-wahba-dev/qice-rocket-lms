@@ -136,13 +136,19 @@ jobs:
           # ----------------------------------------------
           echo "Installing frontend assets..."
 
+          # If public/hot exists, Laravel @vite ignores the build
+          # and tries to load CSS/JS from the Vite dev server (broken in prod).
+          rm -f public/hot
+
           rm -rf public/build
           tar -xzf /tmp/qiec-build.tar.gz -C public
           rm -f /tmp/qiec-build.tar.gz
 
           test -f public/build/manifest.json
+          test ! -f public/hot
 
           echo "Frontend assets installed."
+          ls -lah public/build | head -20
 
           # ----------------------------------------------
           # Sync Laravel Filemanager public assets
