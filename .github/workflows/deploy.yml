@@ -63,6 +63,9 @@ jobs:
             --prefer-dist \
             --optimize-autoloader
 
+          echo "Running database migrations..."
+          php8.4 artisan migrate --force
+
           echo "Clearing Laravel caches..."
           php8.4 artisan optimize:clear
 
@@ -72,4 +75,8 @@ jobs:
           echo "Checking storage links..."
           php8.4 artisan storage:link || true
 
+          echo "================================="
           echo "Deployment completed successfully."
+          echo "================================="
+
+          EOF
