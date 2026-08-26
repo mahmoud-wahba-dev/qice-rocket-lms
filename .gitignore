@@ -47,3 +47,4 @@ storage/debugbar/.gitignore
 # === Misc ===
 /build_output.txt
 /.temp_backup_*
+/public/build
