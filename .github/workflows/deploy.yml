@@ -86,7 +86,7 @@ jobs:
             -o IdentitiesOnly=yes \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" << 'EOF'
 
-          set -e
+          set -Eeuo pipefail
 
           APP_DIR="/home/qiec-training/htdocs/training.qiec.sa"
 
@@ -95,6 +95,15 @@ jobs:
           echo "================================="
           echo "Starting QIEC deployment"
           echo "================================="
+
+          # --------------------------------------------------
+          # Safety: always bring Laravel back online
+          # if deployment fails after maintenance mode starts
+          # --------------------------------------------------
+          trap 'echo "Deployment interrupted - restoring application..."; php8.4 artisan up >/dev/null 2>&1 || true' EXIT
+
+          echo "Enabling maintenance mode..."
+          php8.4 artisan down --retry=60
 
           echo "Current commit:"
           git rev-parse --short HEAD
@@ -136,26 +145,41 @@ jobs:
           echo "Frontend assets installed."
 
           # ----------------------------------------------
-          # Sync package public assets
+          # Sync Laravel Filemanager public assets
           # ----------------------------------------------
           echo "Syncing Laravel Filemanager assets..."
 
           if [ -d vendor/unisharp/laravel-filemanager/public ]; then
             mkdir -p public/vendor/laravel-filemanager
-            cp -r vendor/unisharp/laravel-filemanager/public/* \
+
+            cp -r \
+              vendor/unisharp/laravel-filemanager/public/* \
               public/vendor/laravel-filemanager/
+
+            echo "Laravel Filemanager assets synced."
+          else
+            echo "Laravel Filemanager assets not found - skipping."
           fi
 
+          # ----------------------------------------------
+          # Sync Country Flags public assets
+          # ----------------------------------------------
           echo "Syncing country flag assets..."
 
           if [ -d vendor/stijnvanouplines/blade-country-flags/resources/svg ]; then
             mkdir -p public/vendor/blade-country-flags
-            cp -r vendor/stijnvanouplines/blade-country-flags/resources/svg/* \
+
+            cp -r \
+              vendor/stijnvanouplines/blade-country-flags/resources/svg/* \
               public/vendor/blade-country-flags/
+
+            echo "Country flag assets synced."
+          else
+            echo "Country flag assets not found - skipping."
           fi
 
           # ----------------------------------------------
-          # Database
+          # Database migrations
           # ----------------------------------------------
           echo "Running database migrations..."
           php8.4 artisan migrate --force
@@ -174,6 +198,16 @@ jobs:
           # ----------------------------------------------
           echo "Checking storage links..."
           php8.4 artisan storage:link || true
+
+          # ----------------------------------------------
+          # Bring application online
+          # ----------------------------------------------
+          echo "Disabling maintenance mode..."
+          php8.4 artisan up
+
+          # Application is online successfully.
+          # Disable automatic EXIT recovery.
+          trap - EXIT
 
           # ----------------------------------------------
           # Health check
