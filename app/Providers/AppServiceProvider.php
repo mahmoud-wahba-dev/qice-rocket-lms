@@ -35,7 +35,13 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\View::addNamespace('landing_v1', resource_path('views/landing_v1'));
         Blade::anonymousComponentPath(resource_path('views/landing_v1/components'), 'landing_v1');
 
-        View::composer('landing_v1.layouts.navbar', function ($view) {
+        // Panel v1 views + per-role anonymous Blade components
+        View::addNamespace('panel_v1', resource_path('views/panel_v1'));
+        Blade::anonymousComponentPath(resource_path('views/panel_v1/student/components'), 'panel_v1.student');
+        Blade::anonymousComponentPath(resource_path('views/panel_v1/instructor/components'), 'panel_v1.instructor');
+        Blade::anonymousComponentPath(resource_path('views/panel_v1/admin/components'), 'panel_v1.admin');
+
+        View::composer(['landing_v1.layouts.navbar', 'panel_v1.student.layouts.navbar'], function ($view) {
             $paidCourseCategories = Cache::remember(
                 'landing_v1.navbar_paid_categories',
                 now()->addMinutes(30),

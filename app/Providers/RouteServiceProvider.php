@@ -52,6 +52,8 @@ class RouteServiceProvider extends ServiceProvider
 
         $this->mapPanelRoutes();
 
+        $this->mapPanelV1Routes();
+
         //
     }
 
@@ -107,5 +109,12 @@ class RouteServiceProvider extends ServiceProvider
         Route::middleware('web')
             ->namespace($this->namespace)
             ->group(base_path('routes/panel.php'));
+    }
+
+    protected function mapPanelV1Routes()
+    {
+        Route::middleware('web')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/panel_v1.php'));
     }
 }
