@@ -50,6 +50,14 @@ class AppServiceProvider extends ServiceProvider
 
             $view->with('paidCourseCategories', $paidCourseCategories);
         });
+
+        // Student panel_v1: shared asset paths (available in layout, pages, components)
+        View::composer('panel_v1.student.*', function ($view) {
+            $view->with([
+                'panelStudentImg' => asset('assets/panel_v1/img/student'),
+                'landingImg' => asset('assets/landing_v1/img'),
+            ]);
+        });
         // Existing validation
         Validator::extend('check_price', function ($attribute, $value, $parameters, $validator) {
             return preg_match('/^\d*\.?\d*$/', $value);

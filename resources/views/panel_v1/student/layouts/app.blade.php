@@ -31,7 +31,6 @@
 <body>
     {{-- #landing-v1-app required: Tailwind/FlyonUI utilities are scoped to this id --}}
     <div id="landing-v1-app" class="min-h-screen panel-v1-student">
-        @php($landingImg = asset('assets/landing_v1/img'))
         @include('panel_v1.student.layouts.navbar')
         @yield('content')
         @include('landing_v1.components.prefooter-cta')

@@ -22,3 +22,39 @@
     line-height: 1.7;
     font-family: "Cairo", sans-serif;
 }
+
+.panel-v1-student .student-dash-tabs.tabs {
+    width: 100%;
+    display: flex;
+}
+
+.panel-v1-student .student-dash-tabs.tabs-bordered {
+    border-bottom-color: #e8e8e8;
+}
+
+.panel-v1-student .student-dash-tabs .tab {
+    flex: 1 1 0;
+    justify-content: center;
+    white-space: nowrap;
+    color: var(--color-gray);
+    font-size: 1.5rem; /* 24px at base 16 — also use text-24px utility */
+    font-weight: 600;
+}
+
+.panel-v1-student .student-dash-tabs .tab.active,
+.panel-v1-student .student-dash-tabs .tab.active-tab\:tab-active,
+.panel-v1-student .student-dash-tabs .tab[aria-selected="true"] {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+    font-weight: 600;
+}
+
+.panel-v1-student .student-dash-tabs .tab:hover {
+    color: var(--color-primary);
+}
+
+.panel-v1-student article .dropdown-menu {
+    box-shadow: 0 8px 28px rgba(15, 76, 69, 0.12);
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+}

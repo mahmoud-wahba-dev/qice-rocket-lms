@@ -51,6 +51,11 @@ module.exports = {
                 "card-text": "var(--color-card-text)",
                 "card-border": "var(--color-card-border)",
                 "7a": "var(--color-7a)",
+                d9: "var(--color-d9)",
+                fa: "var(--color-fa)",
+                gray: {
+                    DEFAULT: "var(--color-gray)",
+                },
             },
             borderRadius: { ...buildPxScale(4, 100) },
             boxShadow: { glow: "0 0 60px rgba(34, 211, 238, 0.15)" },

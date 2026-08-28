@@ -11,8 +11,20 @@ class InstructorController extends Controller
     {
         $user = $request->user();
 
-        if (!$user || !$user->isTeacher()) {
-            abort(403);
+        if (!$user) {
+            return redirect('/login');
+        }
+
+        if (!$user->isTeacher()) {
+            if ($user->isUser()) {
+                return redirect()->route('panel.v1.student.home');
+            }
+
+            if ($user->isAdmin()) {
+                return redirect()->route('panel.v1.admin.home');
+            }
+
+            return redirect('/panel');
         }
 
         return view('panel_v1.instructor.pages.home', [
