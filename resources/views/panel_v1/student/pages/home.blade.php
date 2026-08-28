@@ -130,7 +130,7 @@
         <nav class="student-dash-tabs tabs tabs-bordered tabs-lg w-[75%] overflow-x-auto mb-12"
             aria-label="أقسام لوحة المتدرب" role="tablist" aria-orientation="horizontal">
             <button type="button"
-                class="tab flex-1 justify-center font-semibold text-24px text-gray active-tab:text-primary active pb-5"
+                class="tab flex-1 justify-center font-semibold text-24px text-gray active-tab:text-primary pb-5 active"
                 id="tabs-large-item-1" data-tab="#tabs-large-1" aria-controls="tabs-large-1" role="tab"
                 aria-selected="true">
                 دوراتي
@@ -171,7 +171,7 @@
             <div id="tabs-large-1" role="tabpanel" aria-labelledby="tabs-large-item-1">
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-13">
                     <div class="lg:col-span-8">
-                        <div class="border border-d9 px-6 py-8 rounded-12px mb-12">
+                        <div class="relative border border-d9 px-6 py-8 rounded-12px mb-12">
                             <div class="flex items-center gap-5 mb-9">
                                 <div class="w-[67px] h-[62px] rounded-12px overflow-hidden center">
                                     <img src="https://www.shutterstock.com/image-photo/free-course-text-button-on-260nw-2387499657.jpg"
@@ -184,8 +184,8 @@
                                 </div>
                             </div>
 
-                            <div class="flex items-center gap-13 justify-between flex-wrap mb-12">  
-                                  <div>
+                            <div class="flex items-center gap-13 justify-between flex-wrap mb-12">
+                                <div>
                                     <div class="center gap-3 mb-2">
                                         <svg width="15" height="15" viewBox="0 0 15 15" fill="none"
                                             xmlns="http://www.w3.org/2000/svg">
@@ -202,7 +202,7 @@
                                     <p class="font-medium text-base text-primary text-center">
                                         دورة مسجلة
                                     </p>
-                                </div>  
+                                </div>
                                 <div>
                                     <div class="center gap-3 mb-2">
                                         <svg width="15" height="15" viewBox="0 0 15 15" fill="none"
@@ -299,22 +299,84 @@
                                         22 يوليو 2026
                                     </p>
                                 </div>
-                              
+
                             </div>
-                                 <div class="bg-fa px-4 py-6 flex items-center justify-between rounded-10px">
-                            <div class="grow">
-                                <p class="font-semibold text-12px text-black mb-3">72% متوسط معدل اتقدم</p>
-                                <div class="progress w-[70%] h-3 bg-[#F0EFEF]" role="progressbar" aria-label="Primary Progressbar"
-                                    aria-valuenow="75" aria-valuemin="0" aria-valuemax="100">
-                                    <div class="progress-bar progress-primary w-2/4"></div>
+                            <div class="bg-fa px-4 py-6 flex items-center justify-between rounded-10px">
+                                <div class="grow">
+                                    <p class="font-semibold text-12px text-black mb-3">72% متوسط معدل اتقدم</p>
+                                    <div class="progress w-[70%] h-3 bg-[#F0EFEF]" role="progressbar"
+                                        aria-label="Primary Progressbar" aria-valuenow="75" aria-valuemin="0"
+                                        aria-valuemax="100">
+                                        <div class="progress-bar progress-primary w-2/4"></div>
+                                    </div>
                                 </div>
+
+                                <button class="btn btn-primary font-semibold text-12px">استكمل الان</button>
                             </div>
 
-                            <button class="btn btn-primary font-semibold text-12px">استكمل الان</button>
+                            <div class="absolute top-6 end-6">
+                                <div class="dropdown relative inline-flex rtl:[--placement:bottom-end]">
+                                    <button id="dropdown-menu-icon" type="button"
+                                        class="dropdown-toggle btn btn-square " aria-haspopup="menu"
+                                        aria-expanded="false" aria-label="Dropdown">
+                                        <span class="icon-[tabler--dots] size-6"></span>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-60" role="menu"
+                                        aria-orientation="vertical" aria-labelledby="dropdown-menu-icon">
+                                        <li><a class="dropdown-item font-medium text-14px text-primary" href="#">
+
+                                                <svg width="11" height="2" viewBox="0 0 11 2" fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg">
+                                                    <line x1="10" y1="1" x2="1" y2="0.999999" stroke="#C99C69"
+                                                        stroke-width="2" stroke-linecap="round" />
+                                                </svg>
+
+                                                صفحة التعلم
+
+
+                                            </a></li>
+                                        <li><a class="dropdown-item font-medium text-14px text-primary" href="#">
+
+                                                <svg width="11" height="2" viewBox="0 0 11 2" fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg">
+                                                    <line x1="10" y1="1" x2="1" y2="0.999999" stroke="#C99C69"
+                                                        stroke-width="2" stroke-linecap="round" />
+                                                </svg>
+
+                                                صفحة تفاصيل الدورة
+
+
+                                            </a></li>
+
+                                        <li><a class="dropdown-item font-medium text-14px text-primary" href="#">
+
+                                                <svg width="11" height="2" viewBox="0 0 11 2" fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg">
+                                                    <line x1="10" y1="1" x2="1" y2="0.999999" stroke="#C99C69"
+                                                        stroke-width="2" stroke-linecap="round" />
+                                                </svg>
+                                                تفاصيل الدفع (فاتورة)
+
+
+                                            </a></li>
+
+                                        <li><a class="dropdown-item font-medium text-14px text-primary" href="#">
+
+                                                <svg width="11" height="2" viewBox="0 0 11 2" fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg">
+                                                    <line x1="10" y1="1" x2="1" y2="0.999999" stroke="#C99C69"
+                                                        stroke-width="2" stroke-linecap="round" />
+                                                </svg>
+
+                                                تقيم الدورة
+                                            </a></li>
+
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
-                        </div>
-                   
-                             <div class="border border-d9 px-6 py-8 rounded-12px mb-12">
+
+                        <div class="relative border border-d9 px-6 py-8 rounded-12px mb-12">
                             <div class="flex items-center gap-5 mb-9">
                                 <div class="w-[67px] h-[62px] rounded-12px overflow-hidden center">
                                     <img src="https://www.shutterstock.com/image-photo/free-course-text-button-on-260nw-2387499657.jpg"
@@ -327,8 +389,8 @@
                                 </div>
                             </div>
 
-                            <div class="flex items-center gap-13 justify-between flex-wrap mb-12">  
-                                  <div>
+                            <div class="flex items-center gap-13 justify-between flex-wrap mb-12">
+                                <div>
                                     <div class="center gap-3 mb-2">
                                         <svg width="15" height="15" viewBox="0 0 15 15" fill="none"
                                             xmlns="http://www.w3.org/2000/svg">
@@ -345,7 +407,7 @@
                                     <p class="font-medium text-base text-primary text-center">
                                         دورة مسجلة
                                     </p>
-                                </div>  
+                                </div>
                                 <div>
                                     <div class="center gap-3 mb-2">
                                         <svg width="15" height="15" viewBox="0 0 15 15" fill="none"
@@ -442,51 +504,115 @@
                                         22 يوليو 2026
                                     </p>
                                 </div>
-                              
+
                             </div>
-                                 <div class="bg-fa px-4 py-6 flex items-center justify-between rounded-10px">
-                            <div class="grow">
-                                <p class="font-semibold text-12px text-black mb-3">72% متوسط معدل اتقدم</p>
-                                <div class="progress w-[70%] h-3 bg-[#F0EFEF]" role="progressbar" aria-label="Primary Progressbar"
-                                    aria-valuenow="75" aria-valuemin="0" aria-valuemax="100">
-                                    <div class="progress-bar progress-primary w-2/4"></div>
+                            <div class="bg-fa px-4 py-6 flex items-center justify-between rounded-10px">
+                                <div class="grow">
+                                    <p class="font-semibold text-12px text-black mb-3">72% متوسط معدل اتقدم</p>
+                                    <div class="progress w-[70%] h-3 bg-[#F0EFEF]" role="progressbar"
+                                        aria-label="Primary Progressbar" aria-valuenow="75" aria-valuemin="0"
+                                        aria-valuemax="100">
+                                        <div class="progress-bar progress-primary w-2/4"></div>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-primary font-semibold text-12px">استكمل الان</button>
+                            </div>
+                            <div class="absolute top-6 end-6">
+                                <div class="dropdown relative inline-flex rtl:[--placement:bottom-end]">
+                                    <button id="dropdown-menu-icon" type="button"
+                                        class="dropdown-toggle btn btn-square " aria-haspopup="menu"
+                                        aria-expanded="false" aria-label="Dropdown">
+                                        <span class="icon-[tabler--dots] size-6"></span>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-60" role="menu"
+                                        aria-orientation="vertical" aria-labelledby="dropdown-menu-icon">
+                                        <li><a class="dropdown-item font-medium text-14px text-primary" href="#">
+
+                                                <svg width="11" height="2" viewBox="0 0 11 2" fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg">
+                                                    <line x1="10" y1="1" x2="1" y2="0.999999" stroke="#C99C69"
+                                                        stroke-width="2" stroke-linecap="round" />
+                                                </svg>
+
+                                                صفحة التعلم
+
+
+                                            </a></li>
+                                        <li><a class="dropdown-item font-medium text-14px text-primary" href="#">
+
+                                                <svg width="11" height="2" viewBox="0 0 11 2" fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg">
+                                                    <line x1="10" y1="1" x2="1" y2="0.999999" stroke="#C99C69"
+                                                        stroke-width="2" stroke-linecap="round" />
+                                                </svg>
+
+                                                صفحة تفاصيل الدورة
+
+
+                                            </a></li>
+
+                                        <li><a class="dropdown-item font-medium text-14px text-primary" href="#">
+
+                                                <svg width="11" height="2" viewBox="0 0 11 2" fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg">
+                                                    <line x1="10" y1="1" x2="1" y2="0.999999" stroke="#C99C69"
+                                                        stroke-width="2" stroke-linecap="round" />
+                                                </svg>
+                                                تفاصيل الدفع (فاتورة)
+
+
+                                            </a></li>
+
+                                        <li><a class="dropdown-item font-medium text-14px text-primary" href="#">
+
+                                                <svg width="11" height="2" viewBox="0 0 11 2" fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg">
+                                                    <line x1="10" y1="1" x2="1" y2="0.999999" stroke="#C99C69"
+                                                        stroke-width="2" stroke-linecap="round" />
+                                                </svg>
+
+                                                تقيم الدورة
+                                            </a></li>
+
+                                    </ul>
                                 </div>
                             </div>
-
-                            <button class="btn btn-primary font-semibold text-12px">استكمل الان</button>
-                        </div>
                         </div>
 
-                        
+
                     </div>
                     <div class="lg:col-span-4">
-                      <div class="border border-d9 rounded-12px mb-8 ">
+                        <div class="border border-d9 rounded-12px mb-8 ">
 
-                        <h5 class="px-10 py-8 font-medium text-28px text-black mb-8 text-center">اختر تاريخا لاضافة حدث جديد</h5>
-                        <div>
-                            @include('panel_v1.student.components.calendar-widget', [
+                            <h5 class="px-10 py-8 font-medium text-28px text-black mb-8 text-center">اختر تاريخا لاضافة
+                                حدث جديد</h5>
+                            <div>
+                                @include('panel_v1.student.components.calendar-widget', [
                                 'calendarYear' => 2026,
                                 'calendarMonth' => 7,
                                 'calendarSelected' => 22,
-                            ])
+                                ])
+                            </div>
+
+
                         </div>
 
-                 
-                      </div>
-
-                             <div class="px-10 py-8 border border-d9 rounded-12px ">
+                        <div class="px-10 py-8 border border-d9 rounded-12px ">
                             <h6 class="font-semibold text-24px text-black mb-3">
                                 لا توجد احداث حالية
                             </h6>
                             <p class="font-medium text-base text-gray">اضف احداث لتظهر</p>
-                         </div>
+                        </div>
                     </div>
                 </div>
 
 
             </div>
             <div id="tabs-large-2" class="hidden" role="tabpanel" aria-labelledby="tabs-large-item-2">
-                <p class="text-base-content/80 text-lg">المحاضرات المباشرة</p>
+                <div class="bg-[#FFF9F9] border border-[#EFEFEF]">
+
+                </div>
             </div>
             <div id="tabs-large-3" class="hidden" role="tabpanel" aria-labelledby="tabs-large-item-3">
                 <p class="text-base-content/80 text-lg">تكليفات المحاضرات</p>
