@@ -58,3 +58,47 @@
     border: 1px solid #e8e8e8;
     border-radius: 12px;
 }
+
+/* Student dashboard calendar */
+.panel-v1-student .student-dash-calendar__title {
+    font-family: var(--font-cairo);
+}
+
+.panel-v1-student .student-dash-calendar__day {
+    margin-inline: auto;
+    width: 2.25rem;
+    height: 2.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--color-black);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    font-family: var(--font-cairo);
+}
+
+.panel-v1-student .student-dash-calendar__day.is-muted {
+    color: var(--color-gray);
+}
+
+.panel-v1-student .student-dash-calendar__day:not(.is-muted):hover {
+    background: var(--color-secondary);
+    color: var(--color-primary);
+}
+
+.panel-v1-student .student-dash-calendar__day.is-selected {
+    background: rgba(37, 89, 119, 0.14);
+    color: var(--color-card-text);
+    font-weight: 600;
+}
+
+.panel-v1-student .student-dash-calendar__nav {
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+}

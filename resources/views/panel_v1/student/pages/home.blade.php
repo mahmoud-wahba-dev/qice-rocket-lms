@@ -460,14 +460,26 @@
                         
                     </div>
                     <div class="lg:col-span-4">
-                      <div class="border border-d9 rounded-12px px-">
+                      <div class="border border-d9 rounded-12px mb-8 ">
 
                         <h5 class="px-10 py-8 font-medium text-28px text-black mb-8 text-center">اختر تاريخا لاضافة حدث جديد</h5>
                         <div>
-                            <!-- calendar here -->
-
+                            @include('panel_v1.student.components.calendar-widget', [
+                                'calendarYear' => 2026,
+                                'calendarMonth' => 7,
+                                'calendarSelected' => 22,
+                            ])
                         </div>
+
+                 
                       </div>
+
+                             <div class="px-10 py-8 border border-d9 rounded-12px ">
+                            <h6 class="font-semibold text-24px text-black mb-3">
+                                لا توجد احداث حالية
+                            </h6>
+                            <p class="font-medium text-base text-gray">اضف احداث لتظهر</p>
+                         </div>
                     </div>
                 </div>
 
