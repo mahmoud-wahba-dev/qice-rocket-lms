@@ -7,9 +7,10 @@ import "flyonui/dist/js/toggle-count.mjs";
 import "flyonui/dist/js/select.mjs";
 import "flyonui/dist/js/tabs.mjs";
 import "flyonui/dist/js/collapse.mjs";
+import "flyonui/dist/js/remove-element.mjs";
 
 function reinitFlyonUI() {
-	["HSCarousel", "HSAccordion", "HSOverlay", "HSDropdown", "HSToggleCount", "HSSelect", "HSTabs", "HSCollapse"].forEach(
+	["HSCarousel", "HSAccordion", "HSOverlay", "HSDropdown", "HSToggleCount", "HSSelect", "HSTabs", "HSCollapse", "HSRemoveElement"].forEach(
 		(name) => {
 			if (window[name]?.autoInit) {
 				window[name].autoInit();

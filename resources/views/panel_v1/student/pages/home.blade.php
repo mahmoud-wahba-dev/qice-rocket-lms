@@ -2,6 +2,48 @@
 
 @section('content')
 @php($heroLogo = $panelStudentImg . '/hero-logo.webp')
+@php($noDataImg = $panelStudentImg . '/no-data.webp')
+
+<section class="removing:translate-x-5 removing:opacity-0 transition duration-300 ease-in-out" id="dismiss-alert">
+    <div
+        class="relative w-[75%] mx-auto flex items-end justify-between bg-[#F2F0ED85]  rounded-12px py-5 px-6 border border-[#874C09] ">
+
+        <div class="flex items-center gap-5">
+            <div class="size-13 rounded-12px bg-[#C99C6970] border border-[#C99C691C] p-4 center">
+                <svg width="25" height="23" viewBox="0 0 25 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M7.15463 3.06836H3.06587C1.93635 3.06836 1.02148 3.98363 1.02148 5.11274V19.4234C1.02148 20.5525 1.93635 21.4678 3.06587 21.4678H21.4653C22.5948 21.4678 23.5097 20.5525 23.5097 19.4234V5.11274C23.5097 3.98363 22.5948 3.06836 21.4653 3.06836H17.3765"
+                        stroke="#0F4C45" stroke-width="2.04445" stroke-linecap="round" />
+                    <path
+                        d="M9.19824 0.510742H15.3311C15.6133 0.510742 15.8418 0.7402 15.8418 1.02246V4.08887C15.8417 4.37108 15.6133 4.59961 15.3311 4.59961H9.19824C8.91602 4.59961 8.68658 4.37108 8.68652 4.08887V1.02246C8.68652 0.7402 8.91598 0.510742 9.19824 0.510742Z"
+                        fill="#0F4C45" stroke="#0F4C45" stroke-width="1.02223" />
+                </svg>
+
+            </div>
+            <div>
+                <p class="font-semibold text-12px text-primary mb-1">
+                    دورة الجودة الصحية CPHQ
+                </p>
+                <h5 class="font-bold text-20px text-primary mb-3">
+                    واجب المحاضرة الخامسة: إعداد تقرير تحسين الجودة
+                </h5>
+                <p>
+                    <span class="font-bold text-14px text-[#00C206]"> ⏱ غداً، 11:59 مساءً</span>
+                    <span class="font-semibold text-11px text-primary">
+                        الموعد النهائي للتسليم:
+                    </span>
+                </p>
+            </div>
+        </div>
+
+        <button class="btn btn-primary font-bold text-13px">حل الواجب الآن</button>
+
+        <button type="button" class="ms-auto leading-none absolute end-4 top-4" data-remove-element="#dismiss-alert"
+            aria-label="Close Button">
+            <span class="icon-[tabler--x] size-5"></span>
+        </button>
+    </div>
+</section>
 
 <header class="overflow-hidden text-white pt-8 mt-20 ">
     <div class="container ">
@@ -117,8 +159,8 @@
                 </div>
             </div>
 
-            <div class="absolute top-0 end-[-14%] w-[300px] h-[200px] ">
-                <img src="{{ $heroLogo }}" alt="" width="" height="" loading="lazy" decoding="async">
+            <div class="absolute top-0 end-0 w-[200px] h-[150px] ">
+                <img src="{{ $heroLogo }}" alt="" class="size-full object-contain" loading="lazy" decoding="async">
             </div>
         </div>
     </div>
@@ -130,15 +172,15 @@
         <nav class="student-dash-tabs tabs tabs-bordered tabs-lg w-[75%] overflow-x-auto mb-12"
             aria-label="أقسام لوحة المتدرب" role="tablist" aria-orientation="horizontal">
             <button type="button"
-                class="tab flex-1 justify-center font-semibold text-24px text-gray active-tab:text-primary pb-5 active"
+                class="tab flex-1 justify-center font-semibold text-24px text-gray active-tab:text-primary pb-5 "
                 id="tabs-large-item-1" data-tab="#tabs-large-1" aria-controls="tabs-large-1" role="tab"
-                aria-selected="true">
+                aria-selected="false">
                 دوراتي
             </button>
             <button type="button"
-                class="tab flex-1 justify-center font-semibold text-24px text-gray active-tab:text-primary pb-5"
+                class="tab flex-1 justify-center font-semibold text-24px text-gray  active-tab:text-primary pb-5 active"
                 id="tabs-large-item-2" data-tab="#tabs-large-2" aria-controls="tabs-large-2" role="tab"
-                aria-selected="false">
+                aria-selected="true">
                 المحاضرات المباشرة
             </button>
             <button type="button"
@@ -168,7 +210,7 @@
         </nav>
 
         <div class="mt-3.5">
-            <div id="tabs-large-1" role="tabpanel" aria-labelledby="tabs-large-item-1">
+            <div id="tabs-large-1" class="hidden" role="tabpanel" aria-labelledby="tabs-large-item-1">
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-13">
                     <div class="lg:col-span-8">
                         <div class="relative border border-d9 px-6 py-8 rounded-12px mb-12">
@@ -610,18 +652,151 @@
 
             </div>
             <div id="tabs-large-2" class="hidden" role="tabpanel" aria-labelledby="tabs-large-item-2">
-                <div class="bg-[#FFF9F9] border border-[#EFEFEF]">
+                <div class="bg-[#FFF9F9] px-10 py-11 border border-[#EFEFEF] rounded-12px mb-11">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-semibold text-32px text-primary mb-5">🔴 محاضرة مباشرة</h4>
+                            <h3 class="font-semibold text-30px text-black mb-5">عنوان المحاضرة : مناقشة أساليب ربط
+                                واجهات</h3>
+                            <p class="font-semibold text-24px text-black">المحاضر: د. إبراهيم المالكي</p>
+                        </div>
 
+                        <button class="btn btn-primary font-semibold text-16px mt-4">
+                            الانضمام إلى المحاضرة
+                        </button>
+                    </div>
+
+                    <div
+                        class="bg-[#FFD9D9] text-black *:font-semibold text-20px text-black flex justify-between items-center px-4 py-6 rounded-10px mt-8">
+                        <p>
+                            الموعد: اليوم | بدأت منذ 15 دقيقة (الساعة 7:00 مساءً)
+                        </p>
+                        <span>المدة المتوقعة: 90 دقيقة</span>
+
+                    </div>
                 </div>
+
+                <div class="border border-d9 px-10 py-11 rounded-12px ">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <span class="font-semibold text-32px text-primary mb-7">✅ محاضرة مكتملة</span>
+                            <h2 class="font-semibold text-30px text-black mb-5">عنوان المحاضرة : مقدمة في بناء الأنظمة
+                                المدمجة واستخدام الأيقونات
+                            </h2>
+                            <p class="font-semibold text-24px text-black mb-9">المحاضر: د. محمد أبو هيبة</p>
+                        </div>
+                        <div class="flex gap-4 items-center">
+                            <button class="btn btn-outline font-semibold text-16px text-primary h-13">تحميل ملفات
+                                المحاضرة (PDF)</button>
+                            <button class="btn btn-primary font-semibold text-16px text-white h-13"> اعادة
+                                المحاضرة</button>
+
+
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between bg-fa rounded-10px px-4 py-6">
+                        <span class="font-semibold text-24px text-black">تاريخ الانعقاد: 20 يوليو 2026 (تمت في الساعة
+                            5:00 مساءً)</span>
+                        <span class="font-semibold text-base text-black">
+                            مدة المحاضرة: ساعة و20 دقيقة
+                        </span>
+
+                    </div>
+                </div>
+
+
             </div>
             <div id="tabs-large-3" class="hidden" role="tabpanel" aria-labelledby="tabs-large-item-3">
-                <p class="text-base-content/80 text-lg">تكليفات المحاضرات</p>
+
+                <div class="mt-28 center flex-col">
+                    <div class="mb-5 w-[40%] h-[404px]">
+                        <img src="{{ $noDataImg }}" alt="لايوجد لديك واجب بعد" class="size-full" loading="lazy"
+                            decoding="async">
+                    </div>
+                    <p class="font-semibold text-32px text-black mb-9">
+                        لايوجد لديك واجب بعد
+                    </p>
+                </div>
             </div>
             <div id="tabs-large-4" class="hidden" role="tabpanel" aria-labelledby="tabs-large-item-4">
-                <p class="text-base-content/80 text-lg">الاختبارات</p>
+                <div class="mt-28 center flex-col">
+                    <div class="mb-5 w-[40%] h-[404px]">
+                        <img src="{{ $noDataImg }}" alt="لايوجد لديك واجب بعد" class="size-full" loading="lazy"
+                            decoding="async">
+                    </div>
+                    <p class="font-semibold text-32px text-black mb-9">
+                        لايوجد لديك اختبار بعد
+                    </p>
+                </div>
             </div>
-            <div id="tabs-large-5" class="hidden" role="tabpanel" aria-labelledby="tabs-large-item-5">
-                <p class="text-base-content/80 text-lg">الشهادات</p>
+            <div id="tabs-large-5" class="" role="tabpanel" aria-labelledby="tabs-large-item-5">
+                <div class="mt-15  gap-14 grid grid-cols-[repeat(auto-fill,minmax(25%,1fr))]">
+                    <div class="rounded-13px border border-d9 p-6 flex flex-col gap-5">
+                        <div class="bg-primary h-56 rounded-8px">
+
+                        </div>
+                        <div class="flex  justify-between">
+                            <div>
+                                <h5 class="font-semibold text-28px text-primary mb-4">
+                                    قياس النجاح والجودة
+                                </h5>
+                                <p class="fontmedium text-20px text-gray mb-7">
+                                    الادارة والتنفيذ
+                                </p>
+                                <p class="fontmedium text-base text-gray">اكتمل في 16 يوليو 2025</p>
+                            </div>
+
+                            <div class="btn btn-text h-fit justify-center ">
+                                <svg width="38" height="38" viewBox="0 0 38 38" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M4.75 17.416C4.75 18.8917 4.75 19.6295 4.99067 20.2106C5.14981 20.5951 5.38317 20.9444 5.6774 21.2386C5.97162 21.5328 6.32095 21.7662 6.70542 21.9253C7.2865 22.166 8.02433 22.166 9.5 22.166H10.5688C11.4887 22.166 11.9494 22.166 12.3167 22.3782C12.4094 22.4315 12.4964 22.4941 12.5764 22.565C12.8931 22.8468 13.0387 23.2823 13.3301 24.1563L13.528 24.7516C13.8763 25.7966 14.0505 26.3191 14.4653 26.6168C14.8802 26.916 15.4312 26.916 16.5332 26.916H21.4684C22.5688 26.916 23.1198 26.916 23.5347 26.6168C23.9495 26.3175 24.1237 25.7966 24.472 24.7516L24.6699 24.1563C24.9613 23.2823 25.1069 22.8468 25.4236 22.565C25.5036 22.4941 25.5906 22.4315 25.6833 22.3782C26.0506 22.166 26.5113 22.166 27.4313 22.166H28.5C29.9757 22.166 30.7135 22.166 31.2946 21.9253C31.679 21.7662 32.0284 21.5328 32.3226 21.2386C32.6168 20.9444 32.8502 20.5951 33.0093 20.2106C33.25 19.6295 33.25 18.8917 33.25 17.416M25.3333 14.2493L19 18.9993L12.6667 14.2493M19 18.9993V3.16602"
+                                        stroke="#0F4C45" stroke-width="3.16667" />
+                                    <path
+                                        d="M25.3333 7.91602H26.9167C29.9028 7.91602 31.3943 7.91602 32.3222 8.84385C33.25 9.77168 33.25 11.2632 33.25 14.2493V26.916C33.25 29.9022 33.25 31.3937 32.3222 32.3215C31.3943 33.2493 29.9028 33.2493 26.9167 33.2493H11.0833C8.09717 33.2493 6.60567 33.2493 5.67783 32.3215C4.75 31.3937 4.75 29.9022 4.75 26.916V14.2493C4.75 11.2632 4.75 9.77168 5.67783 8.84385C6.60567 7.91602 8.09717 7.91602 11.0833 7.91602H12.6667"
+                                        stroke="#0F4C45" stroke-width="3.16667" />
+                                </svg>
+
+
+                                <div class="text-center w-full font-semibold text-14px text-gray">تحميل</div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="rounded-13px border border-d9 p-6 flex flex-col gap-5">
+                        <div class="bg-primary h-56 rounded-8px">
+
+                        </div>
+                        <div class="flex  justify-between">
+                            <div>
+                                <h5 class="font-semibold text-28px text-primary mb-4">
+                                    قياس النجاح والجودة
+                                </h5>
+                                <p class="fontmedium text-20px text-gray mb-7">
+                                    الادارة والتنفيذ
+                                </p>
+                                <p class="fontmedium text-base text-gray">اكتمل في 16 يوليو 2025</p>
+                            </div>
+
+                            <div class="btn btn-text h-fit justify-center ">
+                                <svg width="38" height="38" viewBox="0 0 38 38" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M4.75 17.416C4.75 18.8917 4.75 19.6295 4.99067 20.2106C5.14981 20.5951 5.38317 20.9444 5.6774 21.2386C5.97162 21.5328 6.32095 21.7662 6.70542 21.9253C7.2865 22.166 8.02433 22.166 9.5 22.166H10.5688C11.4887 22.166 11.9494 22.166 12.3167 22.3782C12.4094 22.4315 12.4964 22.4941 12.5764 22.565C12.8931 22.8468 13.0387 23.2823 13.3301 24.1563L13.528 24.7516C13.8763 25.7966 14.0505 26.3191 14.4653 26.6168C14.8802 26.916 15.4312 26.916 16.5332 26.916H21.4684C22.5688 26.916 23.1198 26.916 23.5347 26.6168C23.9495 26.3175 24.1237 25.7966 24.472 24.7516L24.6699 24.1563C24.9613 23.2823 25.1069 22.8468 25.4236 22.565C25.5036 22.4941 25.5906 22.4315 25.6833 22.3782C26.0506 22.166 26.5113 22.166 27.4313 22.166H28.5C29.9757 22.166 30.7135 22.166 31.2946 21.9253C31.679 21.7662 32.0284 21.5328 32.3226 21.2386C32.6168 20.9444 32.8502 20.5951 33.0093 20.2106C33.25 19.6295 33.25 18.8917 33.25 17.416M25.3333 14.2493L19 18.9993L12.6667 14.2493M19 18.9993V3.16602"
+                                        stroke="#0F4C45" stroke-width="3.16667" />
+                                    <path
+                                        d="M25.3333 7.91602H26.9167C29.9028 7.91602 31.3943 7.91602 32.3222 8.84385C33.25 9.77168 33.25 11.2632 33.25 14.2493V26.916C33.25 29.9022 33.25 31.3937 32.3222 32.3215C31.3943 33.2493 29.9028 33.2493 26.9167 33.2493H11.0833C8.09717 33.2493 6.60567 33.2493 5.67783 32.3215C4.75 31.3937 4.75 29.9022 4.75 26.916V14.2493C4.75 11.2632 4.75 9.77168 5.67783 8.84385C6.60567 7.91602 8.09717 7.91602 11.0833 7.91602H12.6667"
+                                        stroke="#0F4C45" stroke-width="3.16667" />
+                                </svg>
+
+
+                                <div class="text-center w-full font-semibold text-14px text-gray">تحميل</div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
             </div>
             <div id="tabs-large-6" class="hidden" role="tabpanel" aria-labelledby="tabs-large-item-6">
                 <p class="text-base-content/80 text-lg">التعليقات</p>
