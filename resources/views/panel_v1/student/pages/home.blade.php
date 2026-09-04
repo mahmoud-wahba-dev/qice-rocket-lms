@@ -36,7 +36,9 @@
             </div>
         </div>
 
-        <button class="btn btn-primary font-bold text-13px">حل الواجب الآن</button>
+        <button type="button" class="btn btn-primary font-bold text-13px" aria-haspopup="dialog"
+            aria-expanded="false" aria-controls="assignment-submit-modal"
+            data-overlay="#assignment-submit-modal">حل الواجب الآن</button>
 
         <button type="button" class="ms-auto leading-none absolute end-4 top-4" data-remove-element="#dismiss-alert"
             aria-label="Close Button">
@@ -757,7 +759,9 @@
                                 </div>
 
                                 <div>
-                                    <button class="btn btn-primary btn-block">عرض التكليف</button>
+                                    <button type="button" class="btn btn-primary btn-block" aria-haspopup="dialog"
+                                        aria-expanded="false" aria-controls="assignment-submit-modal"
+                                        data-overlay="#assignment-submit-modal">عرض التكليف</button>
                                 </div>
                             </div>
                         </div>
@@ -818,7 +822,7 @@
                             </div>
                         </div>
 
-                               <div
+                        <div
                             class="border border-d9 rounded-10px px-7 py-6 flex items-center justify-between mb-8 gap-16">
                             <div>
                                 <span class="font-medium text-14px text-gray mb-1.5">العنوان والدورة</span>
@@ -966,5 +970,10 @@
                 </div>
             </div>
         </div>
+
+
+        @include('panel_v1.student.components.assignment-submit-modal')
 </section>
+
+
 @endsection
