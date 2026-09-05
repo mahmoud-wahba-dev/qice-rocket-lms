@@ -6,14 +6,14 @@
     $toggleTrack = 'relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full bg-d9 transition peer-checked:bg-[#0FC787] after:absolute after:top-0.5 after:start-0.5 after:size-6 after:rounded-full after:bg-white after:shadow after:transition-all peer-checked:after:translate-x-[-1.25rem] rtl:peer-checked:after:translate-x-[-1.25rem]';
 @endphp
 
-<section class="pt-28 pb-16">
+<section class="">
     <div class="container">
         <div class="mb-14">
             <h1 class="font-extrabold text-36px text-primary mb-3">اعدادات الحساب</h1>
             <p class="font-semibold text-24px text-gray">إدارة إعدادات حسابك</p>
         </div>
 
-        <nav class="student-dash-tabs tabs tabs-bordered tabs-lg w-full overflow-x-auto mb-12"
+        <nav class="student-dash-tabs w-[80%] tabs tabs-bordered tabs-lg w-full overflow-x-auto mb-12"
             aria-label="أقسام إعدادات الحساب" role="tablist" aria-orientation="horizontal">
             <button type="button"
                 class="tab flex-1 justify-center font-semibold text-20px md:text-24px text-gray active-tab:text-primary pb-5 active whitespace-nowrap"
@@ -99,12 +99,13 @@
                             <h2 class="font-bold text-24px text-primary mb-8">خيارات الحساب</h2>
                             <div class="divide-y divide-d9">
                                 @foreach (range(1, 5) as $i)
-                                    <div class="flex items-center justify-between gap-4 py-5 first:pt-0 last:pb-0">
-                                        <p class="font-medium text-16px text-black">تفعيل وضع الاجازة</p>
+                                    <div class="flex items-center  gap-4 py-5 first:pt-0 last:pb-0">
                                         <label class="inline-flex items-center cursor-pointer">
                                             <input type="checkbox" class="{{ $toggleClass }}">
                                             <span class="{{ $toggleTrack }}"></span>
                                         </label>
+                                        <p class="font-medium text-16px text-black">تفعيل وضع الاجازة</p>
+
                                     </div>
                                 @endforeach
                             </div>
@@ -131,12 +132,13 @@
 
                         <div class="border border-d9 rounded-20px bg-white px-8 py-8">
                             <h2 class="font-bold text-24px text-primary mb-8">وضع الاجازة</h2>
-                            <div class="flex items-center justify-between gap-4 mb-7">
-                                <p class="font-medium text-16px text-black">تفعيل وضع الاجازة</p>
-                                <label class="inline-flex items-center cursor-pointer">
+                            <div class="flex items-center  gap-4 mb-7">
+                                   <label class="inline-flex items-center cursor-pointer">
                                     <input type="checkbox" class="{{ $toggleClass }}">
                                     <span class="{{ $toggleTrack }}"></span>
                                 </label>
+                                <p class="font-medium text-16px text-black">تفعيل وضع الاجازة</p>
+
                             </div>
                             <div class="relative">
                                 <label class="absolute -top-2.5 start-4 z-[1] bg-white px-2 font-medium text-13px text-gray">رسالة وضع الإجازة</label>
@@ -145,8 +147,9 @@
                                     placeholder=""></textarea>
                             </div>
                         </div>
+                            
 
-                        <div class="border border-d9 rounded-20px bg-white min-h-40"></div>
+                        <!-- <div class="border border-d9 rounded-20px bg-white min-h-40"></div> -->
                     </div>
                 </div>
             </div>
