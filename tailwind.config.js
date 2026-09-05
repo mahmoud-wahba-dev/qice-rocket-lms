@@ -56,7 +56,11 @@ module.exports = {
                 gray: {
                     DEFAULT: "var(--color-gray)",
                 },
-                 color2: "var(--color2)",
+                color2: "var(--color2)",
+                colordd: "var(--color-dd)",
+                colorsub: "var(--color-sub)",
+                colorborder: "var(--color-border)",
+                colorTextPrimary: "var(--color-text-primary)",
             },
             borderRadius: { ...buildPxScale(4, 100) },
             boxShadow: { glow: "0 0 60px rgba(34, 211, 238, 0.15)" },
