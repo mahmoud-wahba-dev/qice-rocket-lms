@@ -149,3 +149,18 @@
 .panel-v1-student .student-notification-card__icon {
     background: rgba(15, 76, 69, 0.08);
 }
+
+/* Course player */
+.panel-v1-course-player .course-player-sidebar[data-open="true"] {
+    transform: translateX(0);
+}
+
+@media (max-width: 1023px) {
+    .panel-v1-course-player .course-player-sidebar:not([data-open="true"]) {
+        transform: translateX(100%);
+    }
+
+    [dir="ltr"] .panel-v1-course-player .course-player-sidebar:not([data-open="true"]) {
+        transform: translateX(-100%);
+    }
+}

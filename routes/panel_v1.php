@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PanelV1\StudentController;
+use App\Http\Controllers\PanelV1\CoursePlayerController;
 use App\Http\Controllers\PanelV1\InstructorController;
 use App\Http\Controllers\PanelV1\AdminController;
 
@@ -26,6 +27,14 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
             Route::get('/student/purchases', [StudentController::class, 'purchases'])->name('student.purchases');
             Route::get('/student/support', [StudentController::class, 'support'])->name('student.support');
             Route::get('/student/settings', [StudentController::class, 'settings'])->name('student.settings');
+
+            Route::prefix('student/courses/{slug}')->name('student.course.')->group(function () {
+                Route::get('/watch', [CoursePlayerController::class, 'watch'])->name('watch');
+                Route::get('/forum', [CoursePlayerController::class, 'forum'])->name('forum');
+                Route::get('/assignment', [CoursePlayerController::class, 'assignment'])->name('assignment');
+                Route::get('/quiz', [CoursePlayerController::class, 'quiz'])->name('quiz');
+                Route::get('/quiz/take', [CoursePlayerController::class, 'quizTake'])->name('quiz.take');
+            });
 
             Route::get('/instructor', [InstructorController::class, 'home'])->name('instructor.home');
         });

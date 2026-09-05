@@ -356,7 +356,8 @@
                                     </div>
                                 </div>
 
-                                <button class="btn btn-primary font-semibold text-12px">استكمل الان</button>
+                                <a href="{{ route('panel.v1.student.course.watch', ['slug' => 'demo']) }}"
+                                    class="btn btn-primary font-semibold text-12px">استكمل الان</a>
                             </div>
 
                             <div class="absolute top-6 end-6">
@@ -368,7 +369,8 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-60" role="menu"
                                         aria-orientation="vertical" aria-labelledby="dropdown-menu-icon">
-                                        <li><a class="dropdown-item font-medium text-14px text-primary" href="#">
+                                        <li><a class="dropdown-item font-medium text-14px text-primary"
+                                                href="{{ route('panel.v1.student.course.watch', ['slug' => 'demo']) }}">
 
                                                 <svg width="11" height="2" viewBox="0 0 11 2" fill="none"
                                                     xmlns="http://www.w3.org/2000/svg">
@@ -561,7 +563,8 @@
                                     </div>
                                 </div>
 
-                                <button class="btn btn-primary font-semibold text-12px">استكمل الان</button>
+                                <a href="{{ route('panel.v1.student.course.watch', ['slug' => 'demo']) }}"
+                                    class="btn btn-primary font-semibold text-12px">استكمل الان</a>
                             </div>
                             <div class="absolute top-6 end-6">
                                 <div class="dropdown relative inline-flex rtl:[--placement:bottom-end]">
@@ -572,7 +575,8 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-60" role="menu"
                                         aria-orientation="vertical" aria-labelledby="dropdown-menu-icon">
-                                        <li><a class="dropdown-item font-medium text-14px text-primary" href="#">
+                                        <li><a class="dropdown-item font-medium text-14px text-primary"
+                                                href="{{ route('panel.v1.student.course.watch', ['slug' => 'demo']) }}">
 
                                                 <svg width="11" height="2" viewBox="0 0 11 2" fill="none"
                                                     xmlns="http://www.w3.org/2000/svg">
