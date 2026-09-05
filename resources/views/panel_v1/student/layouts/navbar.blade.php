@@ -78,29 +78,32 @@
             </ul>
         </div>
         <div class="flex items-center gap-4">
-            <div class="flex items-center gap-4">
-                {{-- Cart Button with Badge --}}
+            <div class="flex items-center gap-3 md:gap-4">
+                {{-- Cart --}}
                 <button id="cart-drawer-btn" type="button" class="btn btn-text max-xl:px-1 cart-icon relative"
                     aria-haspopup="dialog" aria-expanded="false" aria-controls="cart-drawer"
                     data-overlay="#cart-drawer">
                     <svg width="20" height="20" viewBox="0 0 25 29" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path
                             d="M4.33074 8.58362H20.3943C20.8028 8.58357 21.2065 8.67186 21.5777 8.84244C21.949 9.01302 22.2789 9.26186 22.5449 9.57189C22.8109 9.88192 23.0068 10.2458 23.119 10.6386C23.2312 11.0314 23.2572 11.4438 23.1951 11.8476L21.4172 23.3963C21.2628 24.3999 20.7542 25.3151 19.9835 25.9762C19.2127 26.6373 18.2308 27.0006 17.2153 27.0003H7.50833C6.49314 27.0002 5.51151 26.6368 4.74105 25.9757C3.9706 25.3147 3.46222 24.3997 3.30791 23.3963L1.52999 11.8476C1.4679 11.4438 1.49385 11.0314 1.60607 10.6386C1.7183 10.2458 1.91414 9.88192 2.18016 9.57189C2.44619 9.26186 2.77612 9.01302 3.14732 8.84244C3.51852 8.67186 3.92222 8.58357 4.33074 8.58362Z"
-                            stroke="#3D455D" stroke-width="2.994" stroke-linecap="round" stroke-linejoin="round" />
+                            stroke="#0f4c45" stroke-width="2.994" stroke-linecap="round" stroke-linejoin="round" />
                         <path
                             d="M8.11328 12.8303V5.74695C8.11328 4.61978 8.56105 3.53877 9.35808 2.74174C10.1551 1.94471 11.2361 1.49695 12.3633 1.49695C13.4905 1.49695 14.5715 1.94471 15.3685 2.74174C16.1655 3.53877 16.6133 4.61978 16.6133 5.74695V12.8303"
-                            stroke="#3D455D" stroke-width="2.994" stroke-linecap="round" stroke-linejoin="round" />
+                            stroke="#0f4c45" stroke-width="2.994" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
-                    {{-- Badge (JS-controlled) --}}
                     <span id="cart-badge"
                         class="absolute -top-1 -start-1 hidden items-center justify-center size-5 rounded-full bg-blue text-white text-[13px] font-bold leading-none">0</span>
                 </button>
 
                 @auth
+                    <a href="/panel/courses/favorites" class="btn btn-text max-xl:px-1" aria-label="المفضلة">
+                        <span class="icon-[tabler--heart] size-6 text-primary"></span>
+                    </a>
+
                     <a href="{{ route('panel.v1.student.notifications') }}"
                         class="btn btn-text max-xl:px-1 relative"
                         aria-label="الإشعارات">
-                        <span class="icon-[tabler--bell] size-6 text-[#3D455D]"></span>
+                        <span class="icon-[tabler--bell] size-6 text-primary"></span>
                         @php($unreadCount = isset($unReadNotifications) ? (is_countable($unReadNotifications) ? count($unReadNotifications) : 0) : 0)
                         @if ($unreadCount > 0)
                             <span
@@ -119,97 +122,68 @@
                         class="dropdown-toggle flex items-center gap-2 btn btn-text h-12 px-2 hover:bg-primary/5 rounded-10px transition"
                         aria-haspopup="menu" aria-expanded="false" aria-label="User menu">
 
-                        {{-- Avatar --}}
-                        <div class="size-9 rounded-full overflow-hidden bg-gold flex items-center justify-center shrink-0 border-2 border-gold/30">
+                        <div class="size-9 rounded-full overflow-hidden bg-primary flex items-center justify-center shrink-0">
                             <img src="{{ auth()->user()->getAvatar() }}"
                                  alt="{{ auth()->user()->full_name }}"
                                  class="w-full h-full object-cover"
                                  onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                            <span class="hidden w-full h-full items-center justify-center font-bold text-14px text-white bg-gold">
-                                {{ strtoupper(substr(auth()->user()->full_name, 0, 2)) }}
+                            <span class="hidden w-full h-full items-center justify-center font-bold text-16px text-white bg-primary">
+                                {{ mb_substr(auth()->user()->full_name ?? 'م', 0, 1) }}
                             </span>
                         </div>
 
-                        {{-- Name --}}
                         <span class="max-md:hidden font-semibold text-14px text-primary">{{ auth()->user()->full_name }}</span>
                         <span class="icon-[tabler--chevron-down] size-4 text-primary/60 max-md:hidden dropdown-open:rotate-180 transition-transform duration-200"></span>
                     </button>
 
-                    {{-- Dropdown menu --}}
-                    <div class="dropdown-menu dropdown-open:opacity-100 hidden w-64 p-0 rounded-12px border border-gray-100 shadow-xl bg-white overflow-hidden"
+                    <div class="dropdown-menu dropdown-open:opacity-100 hidden w-72 p-3 rounded-16px border border-d9 shadow-[0_12px_40px_rgba(15,76,69,0.12)] bg-white"
                         role="menu" aria-orientation="vertical" aria-labelledby="user-dropdown-toggle">
 
-                        {{-- Header --}}
-                        <div class="flex items-center gap-3 px-4 py-4 bg-primary/5 border-b border-gray-100">
-                            <div class="size-11 rounded-full overflow-hidden bg-gold flex items-center justify-center shrink-0">
-                                <img src="{{ auth()->user()->getAvatar() }}"
-                                     alt="{{ auth()->user()->full_name }}"
-                                     class="w-full h-full object-cover"
-                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                                <span class="hidden w-full h-full items-center justify-center font-bold text-16px text-white bg-gold">
-                                    {{ strtoupper(substr(auth()->user()->full_name, 0, 2)) }}
-                                </span>
-                            </div>
-                            <div>
-                                <p class="font-bold text-15px text-primary">{{ auth()->user()->full_name }}</p>
-                                <p class="font-medium text-12px text-primary/50">{{ auth()->user()->role->caption ?? '' }}</p>
-                            </div>
-                        </div>
-
-                        {{-- Menu items --}}
-                        <ul class="py-2">
+                        <ul class="py-1">
                             <li>
-                                <a href="{{ auth()->user()->isAdmin() ? getAdminPanelUrl('/') : '/panel' }}"
-                                    class="dropdown-item flex items-center gap-3 px-4 py-2.5 font-medium text-14px text-primary hover:bg-primary/5 transition">
-                                    <span class="icon-[tabler--layout-dashboard] size-5 text-primary/50 shrink-0"></span>
-                                    لوحة التحكم
+                                <a href="{{ route('panel.v1.student.home') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.home') ? 'bg-fa' : '' }}">
+                                    لوحة التعلم
                                 </a>
                             </li>
                             <li>
-                                <a href="{{ route('panel.v1.student.notifications') }}"
-                                    class="dropdown-item flex items-center gap-3 px-4 py-2.5 font-medium text-14px text-primary hover:bg-primary/5 transition">
-                                    <span class="icon-[tabler--bell] size-5 text-primary/50 shrink-0"></span>
-                                    الاشعارات
+                                <a href="{{ route('panel.v1.student.purchases') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.purchases') ? 'bg-fa' : '' }}">
+                                    مشترياتي
                                 </a>
                             </li>
                             <li>
-                                <a href="/panel/courses"
-                                    class="dropdown-item flex items-center gap-3 px-4 py-2.5 font-medium text-14px text-primary hover:bg-primary/5 transition">
-                                    <span class="icon-[tabler--books] size-5 text-primary/50 shrink-0"></span>
-                                    فصولي
+                                <a href="{{ route('panel.v1.student.settings') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.settings') ? 'bg-fa' : '' }}">
+                                    الاعدادات
                                 </a>
                             </li>
-
-                            <li class="border-t border-gray-100 mt-1 pt-1">
-                                <a href="/panel/supports"
-                                    class="dropdown-item flex items-center gap-3 px-4 py-2.5 font-medium text-14px text-primary hover:bg-primary/5 transition">
-                                    <span class="icon-[tabler--help-circle] size-5 text-primary/50 shrink-0"></span>
+                            <li>
+                                <a href="{{ route('panel.v1.student.support') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.support') ? 'bg-fa' : '' }}">
                                     الدعم
                                 </a>
                             </li>
                             <li>
-                                <a href="{{ auth()->user()->getProfileUrl() }}"
-                                    class="dropdown-item flex items-center gap-3 px-4 py-2.5 font-medium text-14px text-primary hover:bg-primary/5 transition">
-                                    <span class="icon-[tabler--user] size-5 text-primary/50 shrink-0"></span>
-                                    الملف الشخصي
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/panel/setting"
-                                    class="dropdown-item flex items-center gap-3 px-4 py-2.5 font-medium text-14px text-primary hover:bg-primary/5 transition">
-                                    <span class="icon-[tabler--settings] size-5 text-primary/50 shrink-0"></span>
-                                    الاعدادات
-                                </a>
-                            </li>
-
-                            <li class="border-t border-gray-100 mt-1 pt-1">
                                 <a href="/logout"
-                                    class="dropdown-item flex items-center gap-3 px-4 py-2.5 font-medium text-14px text-red-500 hover:bg-red-50 transition">
-                                    <span class="icon-[tabler--logout] size-5 text-red-400 shrink-0"></span>
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-[#E11D48] hover:bg-red-50 transition">
                                     تسجيل الخروج
                                 </a>
                             </li>
                         </ul>
+
+                        <div class="border-t border-d9 mt-2 pt-3">
+                            <a href="{{ route('panel.v1.student.purchases') }}"
+                                class="flex items-center gap-3 rounded-14px bg-primary px-4 py-3.5 text-white hover:bg-primary/95 transition">
+                                <span class="size-11 rounded-full bg-white/10 center shrink-0">
+                                    <span class="icon-[tabler--rocket] size-6 text-[#0FC787]"></span>
+                                </span>
+                                <span class="flex flex-col gap-0.5 text-start">
+                                    <span class="font-bold text-14px leading-snug">الترقية إلى باقة PRO</span>
+                                    <span class="font-medium text-13px text-[#0FC787]">ترقية الآن</span>
+                                </span>
+                            </a>
+                        </div>
                     </div>
                 </div>
             @else

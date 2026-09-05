@@ -49,6 +49,34 @@ class StudentController extends Controller
         ]);
     }
 
+    public function support(Request $request)
+    {
+        $user = $this->resolveStudent($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        return view('panel_v1.student.pages.support', [
+            'pageTitle' => 'الدعم',
+            'authUser' => $user,
+        ]);
+    }
+
+    public function settings(Request $request)
+    {
+        $user = $this->resolveStudent($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        return view('panel_v1.student.pages.settings', [
+            'pageTitle' => 'اعدادات الحساب',
+            'authUser' => $user,
+        ]);
+    }
+
     public function markAllNotificationsRead(Request $request)
     {
         $user = $this->resolveStudent($request);

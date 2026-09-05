@@ -24,6 +24,8 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
             Route::post('/student/notifications/mark-all-read', [StudentController::class, 'markAllNotificationsRead'])
                 ->name('student.notifications.mark-all-read');
             Route::get('/student/purchases', [StudentController::class, 'purchases'])->name('student.purchases');
+            Route::get('/student/support', [StudentController::class, 'support'])->name('student.support');
+            Route::get('/student/settings', [StudentController::class, 'settings'])->name('student.settings');
 
             Route::get('/instructor', [InstructorController::class, 'home'])->name('instructor.home');
         });
