@@ -36,9 +36,8 @@
             </div>
         </div>
 
-        <button type="button" class="btn btn-primary font-bold text-13px" aria-haspopup="dialog"
-            aria-expanded="false" aria-controls="assignment-submit-modal"
-            data-overlay="#assignment-submit-modal">حل الواجب الآن</button>
+        <button type="button" class="btn btn-primary font-bold text-13px" aria-haspopup="dialog" aria-expanded="false"
+            aria-controls="assignment-submit-modal" data-overlay="#assignment-submit-modal">حل الواجب الآن</button>
 
         <button type="button" class="ms-auto leading-none absolute end-4 top-4" data-remove-element="#dismiss-alert"
             aria-label="Close Button">
@@ -165,6 +164,8 @@
                 <img src="{{ $heroLogo }}" alt="" class="size-full object-contain" loading="lazy" decoding="async">
             </div>
         </div>
+
+
     </div>
 
 </header>
@@ -624,6 +625,25 @@
                             </div>
                         </div>
 
+                        {{-- Empty state when student has no courses — set $hasCourses = true when courses exist --}}
+                        @php($hasCourses = false)
+                        @unless ($hasCourses)
+                        <div class="center flex-col text-center py-16">
+                            <div class="mb-8">
+                                <img src="{{ $noDataImg }}" alt="لم تشترك في أي دورة حتى الآن"
+                                    class="max-w-xs w-full mx-auto" width="" height="" loading="lazy" decoding="async">
+                            </div>
+                            <h2 class="font-bold text-32px text-black mb-4">لم تشترك في أي دورة حتى الآن</h2>
+                            <p class="font-medium text-18px text-gray mb-10 max-w-2xl leading-relaxed">
+                                ابدأ رحلتك التعليمية اليوم وتصفح مئات الدورات والورش المعتمدة المتاحة على المنصة.
+                            </p>
+                            <a href="{{ route('landing.v1.courses-paid') }}"
+                                class="btn btn-primary rounded-8px px-10 h-13 font-bold text-16px">
+                                🚀 استكشف الدورات المتاحة
+                            </a>
+                        </div>
+                        @endunless
+
 
                     </div>
                     <div class="lg:col-span-4">
@@ -709,9 +729,9 @@
 
 
             </div>
-            <div id="tabs-large-3" class="" role="tabpanel" aria-labelledby="tabs-large-item-3">
-                <div class="">
-                    <!-- if data -->
+            <div id="tabs-large-3" class="hidden" role="tabpanel" aria-labelledby="tabs-large-item-3">
+                @php($hasAssignments = true)
+                @if ($hasAssignments)
                     <div>
                         <div class="bg-[#F9F5F5] rounded-4px px-7 py-3 mb-10 ">
                             <p class="font-semibold text-24px text-primary">التكليفات المعلقة</p>
@@ -874,29 +894,26 @@
                         </div>
 
                     </div>
+                @else
+                    <div class="mt-16 center flex-col text-center">
+                        <div class="mb-8">
+                            <img src="{{ $noDataImg }}" alt="لا يوجد لديك واجب بعد"
+                                class="max-w-xs w-full mx-auto" width="" height="" loading="lazy" decoding="async">
+                        </div>
+                        <p class="font-semibold text-32px text-black">لا يوجد لديك واجب بعد</p>
+                    </div>
+                @endif
+            </div>
 
-                    <!-- if no data -->
-                    <div class="mt-28 center flex-col">
-                        <div class="mb-5 w-[40%] h-[404px]">
-                            <img src="{{ $noDataImg }}" alt="لايوجد لديك واجب بعد" class="size-full" loading="lazy"
-                                decoding="async">
-                        </div>
-                        <p class="font-semibold text-32px text-black mb-9">
-                            لايوجد لديك واجب بعد
-                        </p>
+            <div id="tabs-large-4" class="hidden" role="tabpanel" aria-labelledby="tabs-large-item-4">
+                <div class="mt-16 center flex-col text-center">
+                    <div class="mb-8">
+                        <img src="{{ $noDataImg }}" alt="لا توجد لديك اختبار بعد"
+                            class="max-w-xs w-full mx-auto" width="" height="" loading="lazy" decoding="async">
                     </div>
+                    <p class="font-semibold text-32px text-black">لا توجد لديك اختبار بعد</p>
                 </div>
-                <div id="tabs-large-4" class="hidden" role="tabpanel" aria-labelledby="tabs-large-item-4">
-                    <div class="mt-28 center flex-col">
-                        <div class="mb-5 w-[40%] h-[404px]">
-                            <img src="{{ $noDataImg }}" alt="لايوجد لديك واجب بعد" class="size-full" loading="lazy"
-                                decoding="async">
-                        </div>
-                        <p class="font-semibold text-32px text-black mb-9">
-                            لايوجد لديك اختبار بعد
-                        </p>
-                    </div>
-                </div>
+            </div>
                 <div id="tabs-large-5" class="hidden" role="tabpanel" aria-labelledby="tabs-large-item-5">
                     <div class="mt-15  gap-14 grid grid-cols-[repeat(auto-fill,minmax(25%,1fr))]">
                         <div class="rounded-13px border border-d9 p-6 flex flex-col gap-5">

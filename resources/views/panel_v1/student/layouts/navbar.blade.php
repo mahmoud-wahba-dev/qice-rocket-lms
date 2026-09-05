@@ -95,6 +95,21 @@
                     <span id="cart-badge"
                         class="absolute -top-1 -start-1 hidden items-center justify-center size-5 rounded-full bg-blue text-white text-[13px] font-bold leading-none">0</span>
                 </button>
+
+                @auth
+                    <a href="{{ route('panel.v1.student.notifications') }}"
+                        class="btn btn-text max-xl:px-1 relative"
+                        aria-label="الإشعارات">
+                        <span class="icon-[tabler--bell] size-6 text-[#3D455D]"></span>
+                        @php($unreadCount = isset($unReadNotifications) ? (is_countable($unReadNotifications) ? count($unReadNotifications) : 0) : 0)
+                        @if ($unreadCount > 0)
+                            <span
+                                class="absolute -top-1 -start-1 flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-[#EF4444] text-white text-[11px] font-bold leading-none">
+                                {{ $unreadCount > 99 ? '99+' : $unreadCount }}
+                            </span>
+                        @endif
+                    </a>
+                @endauth
             </div>
 
             @auth
@@ -151,7 +166,7 @@
                                 </a>
                             </li>
                             <li>
-                                <a href="/panel/notifications"
+                                <a href="{{ route('panel.v1.student.notifications') }}"
                                     class="dropdown-item flex items-center gap-3 px-4 py-2.5 font-medium text-14px text-primary hover:bg-primary/5 transition">
                                     <span class="icon-[tabler--bell] size-5 text-primary/50 shrink-0"></span>
                                     الاشعارات

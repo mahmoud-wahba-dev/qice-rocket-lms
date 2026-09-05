@@ -1,0 +1,42 @@
+---
+description: Panel V1 redesign conventions — routes, controllers, views, and assets
+alwaysApply: true
+---
+
+# Panel V1 redesign
+
+This project has a **new panel redesign** (`panel_v1`) running beside the legacy panel. Do not mix them.
+
+## Hard rules
+
+- **New panel pages/routes** → only in `routes/panel_v1.php` (prefix `/v1`, names `panel.v1.*`).
+- **Never** add redesign UI routes to `routes/panel.php` or legacy admin route files.
+- Controllers → `app/Http/Controllers/PanelV1/` (Student, Instructor, Admin).
+- Views → `resources/views/panel_v1/{student|instructor|admin}/` (`layouts/`, `pages/`, `components/`).
+- Assets → `resources/css/panel_v1/` and `resources/js/panel_v1/` (Vite entries already in `vite.config.js`).
+- Do **not** extend `design_1/panel` or old admin Blade for new redesign screens.
+- Leave legacy dashboards working; post-login redirects stay on the old panel until explicitly switched.
+
+## Student shell specifics
+
+- Layout wraps content in `#landing-v1-app` (required: Tailwind `important: "#landing-v1-app"`).
+- Load `landing_v1` CSS/JS plus `panel_v1/student` CSS/JS.
+- Reuse design tokens: `primary`, `secondary`, `gray`, `d9`, `fa`, `gold`, `text-*px`, Cairo font.
+- Shared image base: `$panelStudentImg` / `$landingImg` from `AppServiceProvider` view composer.
+
+## Route pattern
+
+```php
+// routes/panel_v1.php
+Route::prefix('v1')->name('panel.v1.')->group(function () {
+    Route::middleware(['impersonate', 'panel', 'share', 'check_maintenance', 'check_restriction'])
+        ->group(function () {
+            Route::get('/student/...', [StudentController::class, '...'])->name('student...');
+        });
+});
+```
+
+## Page pattern
+
+- Controller sets Arabic `pageTitle` and returns `panel_v1.student.pages.*`.
+- Page `@extends('panel_v1.student.layouts.app')` and fills `@section('content')`.

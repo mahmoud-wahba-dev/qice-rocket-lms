@@ -140,3 +140,12 @@
     border: 1px dashed var(--color-primary);
     font-family: var(--font-cairo);
 }
+
+/* Notifications page */
+.panel-v1-student .student-notifications-toolbar {
+    background: #f9f5f5;
+}
+
+.panel-v1-student .student-notification-card__icon {
+    background: rgba(15, 76, 69, 0.08);
+}
