@@ -78,133 +78,94 @@ class InstructorMockData
 
     public static function coursePerformance(string $slug): array
     {
+        $student = [
+            'name' => 'علا محمد',
+            'email' => 'ola@example.com',
+            'progress' => 38.4,
+            'activity' => '04:30 دقائق',
+            'exams' => 0,
+            'assignments' => '0/1',
+            'certificates' => 0,
+        ];
+
         return array_merge(self::common(), [
             'slug' => $slug ?: 'demo',
-            'courseTitle' => 'لوحة أداء الدورة',
-            'courseSubtitle' => 'الفارس المعتمد في جودة الرعاية الصحية (CPHQ)',
-            'alertText' => 'مهام تشغيلية تتطلب تدخلك اليوم: 10 واجبات تنتظر التصحيح والتقييم، 2 طلب تأخير عن موعد واحد',
+            'courseTitle' => 'لوحة اداء الدورة',
+            'courseSubtitle' => 'الممارس المعتمد في جودة الرعاية الصحية CPHQ',
+            'alertText' => 'مهام تشغيلية تتطلب تدخلك اليوم: • 3 واجبات بانتظار التصحيح والتقييم • 2 طلاب متأخرين عن جدول الدراسة',
             'perfStats' => [
-                ['value' => '3 واجبات', 'label' => 'بانتظار التصحيح', 'tone' => 'red'],
-                ['value' => '5 طلاب', 'label' => 'متأخرين عن جدول التقدم', 'tone' => 'yellow'],
                 ['value' => '12 طالب', 'label' => 'أكملوا كافة متطلبات الدورة', 'tone' => 'green'],
+                ['value' => '5 طلاب', 'label' => 'متأخرين عن جدول التقدم', 'tone' => 'yellow'],
+                ['value' => '3 واجبات', 'label' => 'بانتظار التصحيح', 'tone' => 'red'],
             ],
-            'students' => [
-                [
-                    'name' => 'علا محمد',
-                    'email' => 'ola@example.com',
-                    'progress' => 85,
-                    'activity' => '04:30',
-                    'lectures' => 12,
-                    'assignments' => 5,
-                    'certificates' => 2,
-                ],
-                [
-                    'name' => 'أحمد خالد',
-                    'email' => 'ahmed@example.com',
-                    'progress' => 62,
-                    'activity' => '02:10',
-                    'lectures' => 8,
-                    'assignments' => 3,
-                    'certificates' => 1,
-                ],
-                [
-                    'name' => 'سارة علي',
-                    'email' => 'sara@example.com',
-                    'progress' => 40,
-                    'activity' => '01:20',
-                    'lectures' => 5,
-                    'assignments' => 1,
-                    'certificates' => 0,
-                ],
-            ],
+            'students' => [$student, $student, $student, $student],
         ]);
     }
 
     public static function assignments(): array
     {
+        $current = [
+            'title' => 'تصميم خريطة رحلة المستخدم (User Journey)',
+            'course' => 'دبلومة UI/UX الشاملة',
+            'deadline' => '10 أغسطس 2026',
+            'submissions' => '45 / 50',
+            'pending' => '12 طالب',
+            'graded' => '33 طالب',
+            'progress' => 90,
+            'points' => 20,
+            'badge' => 12,
+        ];
+
+        $row = [
+            'title' => 'مخطط الواجهة UX',
+            'course' => 'دبلومة UI/UX الشاملة',
+            'grade' => 6,
+            'passGrade' => 6,
+            'submissions' => 50,
+            'pending' => 2,
+            'passed' => 2,
+            'failed' => 2,
+            'deadline' => '28 يوليو 2026',
+            'status' => 'نشط',
+        ];
+
         return array_merge(self::common(), [
             'assignmentStats' => [
                 ['value' => '12 تكليف', 'label' => 'بانتظار التصحيح'],
                 ['value' => '145 تكليف', 'label' => 'تم تصحيحها'],
-                ['value' => '157 تكليف', 'label' => 'تسلمت'],
+                ['value' => '157 تكليف', 'label' => 'تسليم'],
             ],
             'currentAssignments' => [
-                [
-                    'title' => 'تصميم تجربة واجهة المستخدم - User Experience Design',
-                    'date' => 'الإثنين 17 أغسطس 2024',
-                    'submissions' => '8 / 40',
-                    'corrected' => '12 طالب',
-                    'pending' => '13 طالب',
-                    'progress' => 40,
-                    'studentsCount' => 10,
-                ],
-                [
-                    'title' => 'تصميم تجربة واجهة المستخدم - User Experience Design',
-                    'date' => 'الثلاثاء 18 أغسطس 2024',
-                    'submissions' => '10 / 40',
-                    'corrected' => '15 طالب',
-                    'pending' => '10 طالب',
-                    'progress' => 55,
-                    'studentsCount' => 12,
-                ],
+                array_merge($current, ['cta' => 'عرض التسليمات']),
+                array_merge($current, ['cta' => 'تصحيح الإجابات']),
             ],
-            'resultsRows' => [
-                [
-                    'instructor' => 'علا محمد',
-                    'title' => 'UI مخطط الواجهة',
-                    'course' => 'قياس النجاح والجودة',
-                    'first' => '15 يوليو 2024',
-                    'last' => '15 أغسطس 2024',
-                    'attempts' => 2,
-                    'grade' => '25 / 50',
-                    'end' => '20 أغسطس 2024',
-                    'status' => 'في انتظار التقييم',
-                    'statusTone' => 'pending',
-                ],
-                [
-                    'instructor' => 'علا محمد',
-                    'title' => 'مقال معايير الجودة',
-                    'course' => 'قياس النجاح والجودة',
-                    'first' => '10 يوليو 2024',
-                    'last' => '12 أغسطس 2024',
-                    'attempts' => 1,
-                    'grade' => '40 / 50',
-                    'end' => '18 أغسطس 2024',
-                    'status' => 'فعال',
-                    'statusTone' => 'active',
-                ],
-            ],
+            'resultsRows' => [$row, $row, $row, $row],
         ]);
     }
 
     public static function courseAssignments(string $slug): array
     {
+        $row = [
+            'name' => 'علا محمد',
+            'joined_at' => '28 يوليو 2026',
+            'latest_at' => '12 أغسطس 2026',
+            'last_at' => '—',
+            'attempts' => '1 / 3',
+            'grade' => '25 / 50',
+            'status' => 'لن يتم التسليم',
+        ];
+
         return array_merge(self::common(), [
             'slug' => $slug ?: 'demo',
             'pageTitleMain' => 'متطلبات دوراتي / السلام',
             'pageSubtitle' => 'الممارس المعتمد في جودة الرعاية الصحية CPHQ',
             'summaryCards' => [
-                ['label' => 'إجمالي التكليفات', 'value' => '2', 'edge' => '#0f4c45'],
-                ['label' => 'التكليفات المكتملة', 'value' => '1', 'edge' => '#0FC787'],
-                ['label' => 'قيد المراجعة', 'value' => '2', 'edge' => '#F59E0B'],
-                ['label' => 'معدل انجاز المعلم', 'value' => '2', 'edge' => '#8B5CF6'],
+                ['label' => 'إجمالي التسليمات', 'value' => '2', 'edge' => '#0f4c45', 'valueClass' => 'text-primary'],
+                ['label' => 'التسليمات المجتازة', 'value' => '1', 'edge' => '#0FC787', 'valueClass' => 'text-[#0FC787]'],
+                ['label' => 'قيد المراجعة', 'value' => '2', 'edge' => '#F59E0B', 'valueClass' => 'text-[#F59E0B]'],
+                ['label' => 'معدل النجاح العام', 'value' => '2', 'edge' => '#6366F1', 'valueClass' => 'text-[#6366F1]'],
             ],
-            'submissions' => [
-                [
-                    'name' => 'علا محمد',
-                    'submitted_at' => '15 يوليو 2024',
-                    'updated_at' => '15 أغسطس 2024',
-                    'grade' => '25 / 50',
-                    'status' => 'تمت المراجعة',
-                ],
-                [
-                    'name' => 'أحمد خالد',
-                    'submitted_at' => '16 يوليو 2024',
-                    'updated_at' => '16 أغسطس 2024',
-                    'grade' => '30 / 50',
-                    'status' => 'تمت المراجعة',
-                ],
-            ],
+            'submissions' => [$row, $row, $row, $row],
         ]);
     }
 
