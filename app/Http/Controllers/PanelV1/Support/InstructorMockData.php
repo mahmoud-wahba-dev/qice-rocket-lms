@@ -60,29 +60,19 @@ class InstructorMockData
 
     public static function courses(): array
     {
+        $card = [
+            'title' => 'قياس النجاح والجودة',
+            'subtitle' => 'الإدارة والتنفيذ',
+            'type' => 'دورة مسجلة',
+            'activity' => '0:01',
+            'duration' => '30:00',
+            'lectures' => 12,
+            'assignments' => 0,
+            'progress' => 72,
+        ];
+
         return array_merge(self::common(), [
-            'courseCards' => [
-                [
-                    'title' => 'قياس النجاح والجودة',
-                    'subtitle' => 'الادارة والتنفيذ',
-                    'type' => 'دورة مسجلة',
-                    'activity' => '0:01',
-                    'duration' => '30:00',
-                    'lectures' => 12,
-                    'assignments' => 0,
-                    'progress' => 72,
-                ],
-                [
-                    'title' => 'قياس النجاح والجودة',
-                    'subtitle' => 'الادارة والتنفيذ',
-                    'type' => 'دورة مسجلة',
-                    'activity' => '0:01',
-                    'duration' => '30:00',
-                    'lectures' => 12,
-                    'assignments' => 0,
-                    'progress' => 72,
-                ],
-            ],
+            'courseCards' => [$card, $card, $card],
         ]);
     }
 

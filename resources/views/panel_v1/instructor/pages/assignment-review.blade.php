@@ -3,12 +3,12 @@
 @section('content')
 <div class="pb-10">
     <div class="border border-d9 rounded-20px bg-white px-5 sm:px-8 lg:px-10 py-8 sm:py-10">
-        <h1 class="font-extrabold text-24px sm:text-28px text-[#0F172A] mb-8 leading-snug text-start">
+        <h1 class="font-semibold text-20px text-black mb-8 leading-snug text-start">
             {{ $reviewTitle ?? '' }}
         </h1>
 
         <div class="mb-8 text-start">
-            <h2 class="font-bold text-18px text-[#0F172A] mb-4">
+            <h2 class="font-semibold text-20px text-black mb-4">
                 نص الواجب والمطلوب <span class="text-[#E11D48]">*</span>
             </h2>
             <div class="rounded-14px bg-[#F1F5F9] px-5 py-5">
