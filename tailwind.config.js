@@ -49,6 +49,7 @@ module.exports = {
                 black: "var(--color-black)",
                 77: "var(--color-77)",
                 f7: "var(--color-f7)",
+                f9: "var(--color-f9)",
                 e3: "var(--color-e3)",
                 e8: "var(--color-e8)",
                 "card-text": "var(--color-card-text)",
