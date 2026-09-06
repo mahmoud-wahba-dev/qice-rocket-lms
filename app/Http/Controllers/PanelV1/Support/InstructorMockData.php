@@ -129,6 +129,19 @@ class InstructorMockData
             'status' => 'نشط',
         ];
 
+        $studentRow = [
+            'name' => 'علا محمد',
+            'title' => 'مخطط الواجهة UX',
+            'course' => 'دورة قياس النجاح دورة قياس النجاح',
+            'first_at' => '—',
+            'last_at' => '—',
+            'attempts' => '—',
+            'grade' => '—',
+            'created_day' => '28',
+            'created_month' => 'يوليو 2026',
+            'status' => 'لم يتم التسليم',
+        ];
+
         return array_merge(self::common(), [
             'assignmentStats' => [
                 ['value' => '12 تكليف', 'label' => 'بانتظار التصحيح'],
@@ -140,6 +153,7 @@ class InstructorMockData
                 array_merge($current, ['cta' => 'تصحيح الإجابات']),
             ],
             'resultsRows' => [$row, $row, $row, $row],
+            'studentResultsRows' => [$studentRow, $studentRow, $studentRow, $studentRow],
         ]);
     }
 
@@ -171,41 +185,63 @@ class InstructorMockData
 
     public static function assignmentReview(int $id): array
     {
+        $chapters = [
+            [
+                'title' => 'الباب الأول',
+                'completed' => true,
+                'expanded' => true,
+                'subtitle' => 'هنا عنوان المحاضرة',
+                'items' => [
+                    ['title' => 'فيديو تعريفي', 'type' => 'video', 'active' => true],
+                    ['title' => 'نموذج تجريبي', 'type' => 'text', 'active' => false],
+                    ['title' => 'شرح نظري + أمثلة', 'type' => 'text', 'active' => false],
+                ],
+            ],
+        ];
+
+        for ($i = 2; $i <= 9; $i++) {
+            $chapters[] = [
+                'title' => 'الباب ' . ['', '', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'السابع', 'الثامن', 'التاسع'][$i],
+                'completed' => false,
+                'expanded' => false,
+                'subtitle' => 'هنا عنوان المحاضرة',
+                'items' => [],
+            ];
+        }
+
         return array_merge(self::common(), [
             'assignmentId' => $id ?: 1,
             'slug' => 'demo',
             'reviewTitle' => 'تكليف المحاضرة العاشرة: تطبيق معايير إشراك المريض في تحسين الجودة',
             'detailsTitle' => 'تفاصيل التكليف والمحتوى المطلوب',
-            'detailsBody' => 'اكتب مقالاً تحليلياً يناقش أهمية إشراك المريض في تحسين الجودة داخل أقسام الطوارئ.',
+            'detailsBody' => 'اكتب مقالاً تحليلياً يناقش دور أخصائي الجودة في إشراك المريض داخل أقسام الطوارئ، مع التركيز على قياس أثر المشاركة على مؤشرات الأداء ورضا المستفيدين.',
             'pointsTitle' => 'نقاط يجب تغطيتها في المقال',
             'points' => [
-                'مقدمة عن مفهوم إشراك المريض',
-                'أمثلة تطبيقية من بيئة العمل',
-                'خاتمة وتوصيات عملية',
+                'مقدمة عن مفهوم إشراك المريض وأهميته في تحسين الجودة',
+                'مؤشرات أداء (KPIs) يمكن ربطها بمشاركة المريض في الطوارئ',
+                'خاتمة وتوصيات عملية قابلة للتطبيق داخل القسم',
             ],
-            'studentAnswer' => 'يُعد إشراك المريض عنصراً أساسياً في تحسين جودة الخدمات الصحية، حيث يسهم في رفع مستوى الرضا وتقليل الأخطاء وتعزيز التواصل الفعّال بين الفريق الطبي والمريض.',
+            'studentAnswerParagraphs' => [
+                'السيد المحاضر / المقيم، تحية طيبة وبعد،',
+                'أتقدم لكم بإجابتي على تكليف إشراك المريض في تحسين الجودة داخل أقسام الطوارئ، وقد ركزت على ثلاثة محاور أساسية مرتبطة بمؤشرات الأداء:',
+            ],
+            'studentAnswerPoints' => [
+                'زمن الانتظار قبل الكشف الأول وكيفية تقليله عبر مشاركة المريض في ترتيب الأولويات.',
+                'رضا المريض عن التواصل مع الفريق الطبي أثناء الرحلة العلاجية في الطوارئ.',
+                'سرعة الاستجابة للشكاوى والملاحظات الواردة من المرضى وذويهم.',
+            ],
             'attachmentName' => 'خطة_تحسين_تجربة_المريض_الطوارئ.pdf',
+            'attachmentSize' => '2.4 MB',
+            'attachmentScan' => 'تم فحص الملف',
             'maxGrade' => 50,
             'passGrade' => 25,
             'course' => [
                 'title' => 'قياس النجاح والجودة',
                 'subtitle' => 'الادارة والتنفيذ',
-                'progress' => 85,
+                'progress' => 46,
+                'progress_label' => 'نسبة الإنجاز',
             ],
-            'chapters' => [
-                [
-                    'title' => 'الباب الأول',
-                    'completed' => true,
-                    'expanded' => true,
-                    'subtitle' => 'هنا عنوان المحاضرة',
-                    'items' => [
-                        ['title' => 'فيديو تعريفي', 'type' => 'video', 'active' => true],
-                        ['title' => 'شرح نظري + أمثلة', 'type' => 'text', 'active' => false],
-                    ],
-                ],
-                ['title' => 'الباب الثاني', 'completed' => false, 'expanded' => false, 'subtitle' => '', 'items' => []],
-                ['title' => 'الباب الثالث', 'completed' => false, 'expanded' => false, 'subtitle' => '', 'items' => []],
-            ],
+            'chapters' => $chapters,
         ]);
     }
 

@@ -4,12 +4,12 @@
 @endphp
 
 <div id="instructor-grade-modal"
-    class="overlay modal overlay-open:opacity-100 overlay-open:duration-300 hidden" role="dialog" tabindex="-1">
-    <div class="modal-dialog overlay-open:opacity-100 max-w-md">
-        <div class="modal-content rounded-20px border border-d9 p-0 overflow-hidden">
-            <div class="flex items-center justify-between gap-3 px-6 pt-6">
+    class="overlay modal overlay-open:opacity-100 overlay-open:duration-300 modal-middle hidden" role="dialog" tabindex="-1">
+    <div class="modal-dialog overlay-open:opacity-100 max-w-[40%]">
+        <div class="modal-content relative rounded-20px border border-d9 p-0 overflow-hidden">
+            <div class="flex items-center justify-between gap-3 px-6 pt-6 pe-14">
                 <h3 class="font-bold text-22px text-primary">تقييم التكليف</h3>
-                <button type="button" class="btn btn-text btn-circle btn-sm" aria-label="إغلاق"
+                <button type="button" class="btn btn-text btn-circle btn-sm absolute end-3 top-3" aria-label="إغلاق"
                     data-overlay="#instructor-grade-modal">
                     <span class="icon-[tabler--x] size-5"></span>
                 </button>

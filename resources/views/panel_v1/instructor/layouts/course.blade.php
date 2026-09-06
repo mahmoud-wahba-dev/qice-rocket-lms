@@ -46,7 +46,7 @@
                 class="fixed inset-0 z-30 bg-black/40 lg:hidden hidden"
                 data-instructor-course-sidebar-close aria-hidden="true"></div>
 
-            <main class="lg:col-span-9 bg-fa min-w-0">
+            <main class="lg:col-span-9 bg-fa min-w-0 mt-0">
                 <div class="px-4 sm:px-6 lg:px-10 py-6 lg:py-8">
                     @yield('content')
                 </div>

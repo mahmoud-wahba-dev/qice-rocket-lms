@@ -117,8 +117,8 @@
         </div>
     </div>
 
-    {{-- Table section --}}
-    <div class="bg-white border border-d9 p-5 sm:p-7 rounded-14px">
+    {{-- Tabs + tables --}}
+    <div>
         <nav class="tabs tabs-bordered flex w-full overflow-x-auto mb-5 border-b border-d9" role="tablist">
             <button type="button"
                 class="tab active justify-center whitespace-nowrap font-semibold text-16px sm:text-18px text-gray pb-4 active-tab:text-primary active-tab:border-b-primary"
@@ -128,97 +128,182 @@
                 data-tab="#a-panel-2" role="tab" aria-selected="false">نتائج تكليفات الطلاب</button>
         </nav>
 
-        <div class="flex flex-col lg:flex-row gap-3 mb-5">
-            <div class="relative flex-1">
-                <span class="icon-[tabler--search] size-5 absolute top-1/2 start-3 -translate-y-1/2 text-gray"></span>
-                <input type="search"
-                    placeholder="البحث عن طريق المعرف أو اسم الدورة أو غير ذلك..."
-                    class="input input-bordered w-full h-12 rounded-10px border-d9 bg-[#F8FAFC] ps-10 font-medium text-15px">
+        <div id="a-panel-1" role="tabpanel" class="bg-white border border-d9 p-5 sm:p-7 rounded-14px">
+            <div class="flex flex-col lg:flex-row gap-3 mb-5">
+                <div class="relative flex-1">
+                    <span class="icon-[tabler--search] size-5 absolute top-1/2 start-3 -translate-y-1/2 text-gray"></span>
+                    <input type="search"
+                        placeholder="البحث عن طريق المعرف أو اسم الدورة أو غير ذلك..."
+                        class="input input-bordered w-full h-12 rounded-10px border-d9 bg-[#F8FAFC] ps-10 font-medium text-15px">
+                </div>
+                <button type="button"
+                    class="inline-flex items-center justify-center gap-2 rounded-10px border border-d9 px-4 h-12 font-semibold text-15px text-primary bg-[#F8FAFC] hover:bg-fa transition">
+                    <span class="icon-[tabler--filter] size-4"></span>
+                    فلتر
+                </button>
+                <button type="button"
+                    class="inline-flex items-center justify-center gap-2 rounded-10px border border-d9 px-4 h-12 font-semibold text-15px text-primary bg-[#F8FAFC] hover:bg-fa transition">
+                    <span class="icon-[tabler--calendar] size-4"></span>
+                    April 11 - April 24
+                </button>
             </div>
-            <button type="button"
-                class="inline-flex items-center justify-center gap-2 rounded-10px border border-d9 px-4 h-12 font-semibold text-15px text-primary bg-[#F8FAFC] hover:bg-fa transition">
-                <span class="icon-[tabler--filter] size-4"></span>
-                فلتر
-            </button>
-            <button type="button"
-                class="inline-flex items-center justify-center gap-2 rounded-10px border border-d9 px-4 h-12 font-semibold text-15px text-primary bg-[#F8FAFC] hover:bg-fa transition">
-                <span class="icon-[tabler--calendar] size-4"></span>
-                April 11 - April 24
-            </button>
-        </div>
 
-        <div id="a-panel-1" role="tabpanel" class="border border-d9 rounded-14px overflow-x-auto">
-            <table class="table w-full text-15px">
-                <thead>
-                    <tr class="border-b border-d9 text-gray bg-f9">
-                        <th class="px-4 py-3.5 text-start font-semibold">العنوان والدورة</th>
-                        <th class="px-4 py-3.5 text-start font-semibold">الدرجة</th>
-                        <th class="px-4 py-3.5 text-start font-semibold">درجة النجاح</th>
-                        <th class="px-4 py-3.5 text-start font-semibold">التسليمات</th>
-                        <th class="px-4 py-3.5 text-start font-semibold">قيد الانتظار</th>
-                        <th class="px-4 py-3.5 text-start font-semibold">ناجح</th>
-                        <th class="px-4 py-3.5 text-start font-semibold">راسب</th>
-                        <th class="px-4 py-3.5 text-start font-semibold">موعد التسليم</th>
-                        <th class="px-4 py-3.5 text-start font-semibold">الحالة</th>
-                        <th class="px-4 py-3.5 text-start font-semibold">الإجراء</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($resultsRows ?? [] as $index => $row)
-                        <tr class="border-b border-d9 last:border-0">
-                            <td class="px-4 py-4 min-w-48">
-                                <p class="font-semibold text-16px text-primary">{{ $row['title'] }}</p>
-                                <p class="font-medium text-13px text-gray">{{ $row['course'] }}</p>
-                            </td>
-                            <td class="px-4 py-4 font-semibold">{{ $row['grade'] }}</td>
-                            <td class="px-4 py-4 font-semibold">{{ $row['passGrade'] }}</td>
-                            <td class="px-4 py-4 font-semibold">{{ $row['submissions'] }}</td>
-                            <td class="px-4 py-4 font-semibold">{{ $row['pending'] }}</td>
-                            <td class="px-4 py-4 font-semibold">{{ $row['passed'] }}</td>
-                            <td class="px-4 py-4 font-semibold">{{ $row['failed'] }}</td>
-                            <td class="px-4 py-4 font-medium whitespace-nowrap">{{ $row['deadline'] }}</td>
-                            <td class="px-4 py-4">
-                                <span class="inline-flex rounded-full bg-[#ECFDF5] px-3 py-1 font-semibold text-13px text-[#059669]">
-                                    {{ $row['status'] }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-4">
-                                <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end]">
-                                    <button type="button"
-                                        class="dropdown-toggle size-9 rounded-full bg-[#F1F5F9] !inline-flex !items-center !justify-center border-0 hover:bg-[#E8ECEA] transition"
-                                        aria-label="الإجراء" id="assign-row-menu-{{ $index }}">
-                                        <span class="icon-[tabler--dots-vertical] size-5 text-gray"></span>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-56 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20"
-                                        role="menu" aria-labelledby="assign-row-menu-{{ $index }}">
-                                        <li>
-                                            <a href="{{ route('panel.v1.instructor.assignments.review', ['id' => $reviewId]) }}"
-                                                class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">التسليمات بانتظار المراجعة</a>
-                                        </li>
-                                        <li>
-                                            <a href="{{ route('panel.v1.instructor.courses.assignments', ['slug' => $slug]) }}"
-                                                class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">جميع التسليمات</a>
-                                        </li>
-                                           <li>
-                                            <a href="{{ route('panel.v1.instructor.courses.assignments', ['slug' => $slug]) }}"
-                                                class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">يحرر</a>
-                                        </li>
-
-                                        <li>
-                                            <a href="{{ route('panel.v1.instructor.courses.performance', ['slug' => $slug]) }}"
-                                                class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض الدورة</a>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </td>
+            <div class="border border-d9 rounded-14px overflow-x-auto">
+                <table class="table w-full text-15px">
+                    <thead>
+                        <tr class="border-b border-d9 text-gray bg-f9">
+                            <th class="px-4 py-3.5 text-start font-semibold">العنوان والدورة</th>
+                            <th class="px-4 py-3.5 text-start font-semibold">الدرجة</th>
+                            <th class="px-4 py-3.5 text-start font-semibold">درجة النجاح</th>
+                            <th class="px-4 py-3.5 text-start font-semibold">التسليمات</th>
+                            <th class="px-4 py-3.5 text-start font-semibold">قيد الانتظار</th>
+                            <th class="px-4 py-3.5 text-start font-semibold">ناجح</th>
+                            <th class="px-4 py-3.5 text-start font-semibold">راسب</th>
+                            <th class="px-4 py-3.5 text-start font-semibold">موعد التسليم</th>
+                            <th class="px-4 py-3.5 text-start font-semibold">الحالة</th>
+                            <th class="px-4 py-3.5 text-start font-semibold">الإجراء</th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach ($resultsRows ?? [] as $index => $row)
+                            <tr class="border-b border-d9 last:border-0">
+                                <td class="px-4 py-4 min-w-48">
+                                    <p class="font-semibold text-16px text-primary">{{ $row['title'] }}</p>
+                                    <p class="font-medium text-13px text-gray">{{ $row['course'] }}</p>
+                                </td>
+                                <td class="px-4 py-4 font-semibold">{{ $row['grade'] }}</td>
+                                <td class="px-4 py-4 font-semibold">{{ $row['passGrade'] }}</td>
+                                <td class="px-4 py-4 font-semibold">{{ $row['submissions'] }}</td>
+                                <td class="px-4 py-4 font-semibold">{{ $row['pending'] }}</td>
+                                <td class="px-4 py-4 font-semibold">{{ $row['passed'] }}</td>
+                                <td class="px-4 py-4 font-semibold">{{ $row['failed'] }}</td>
+                                <td class="px-4 py-4 font-medium whitespace-nowrap">{{ $row['deadline'] }}</td>
+                                <td class="px-4 py-4">
+                                    <span class="inline-flex rounded-full bg-[#ECFDF5] px-3 py-1 font-semibold text-13px text-[#059669]">
+                                        {{ $row['status'] }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end]">
+                                        <button type="button"
+                                            class="dropdown-toggle size-9 rounded-full bg-[#F1F5F9] !inline-flex !items-center !justify-center border-0 hover:bg-[#E8ECEA] transition"
+                                            aria-label="الإجراء" id="assign-row-menu-{{ $index }}">
+                                            <span class="icon-[tabler--dots-vertical] size-5 text-gray"></span>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-56 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20"
+                                            role="menu" aria-labelledby="assign-row-menu-{{ $index }}">
+                                            <li>
+                                                <a href="{{ route('panel.v1.instructor.assignments.review', ['id' => $reviewId]) }}"
+                                                    class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">التسليمات بانتظار المراجعة</a>
+                                            </li>
+                                            <li>
+                                                <a href="{{ route('panel.v1.instructor.courses.assignments', ['slug' => $slug]) }}"
+                                                    class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">جميع التسليمات</a>
+                                            </li>
+                                            <li>
+                                                <a href="{{ route('panel.v1.instructor.courses.assignments', ['slug' => $slug]) }}"
+                                                    class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">يحرر</a>
+                                            </li>
+                                            <li>
+                                                <a href="{{ route('panel.v1.instructor.courses.performance', ['slug' => $slug]) }}"
+                                                    class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض الدورة</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <div id="a-panel-2" class="hidden" role="tabpanel">
-            @include('panel_v1.instructor.components.empty-state', ['title' => 'ستظهر نتائج تكليفات الطلاب هنا'])
+        <div id="a-panel-2" class="hidden bg-white border border-d9 p-5 sm:p-7 rounded-14px" role="tabpanel">
+            <div class="flex flex-col lg:flex-row gap-3 mb-5">
+                <div class="relative flex-1">
+                    <span class="icon-[tabler--search] size-5 absolute top-1/2 start-3 -translate-y-1/2 text-gray"></span>
+                    <input type="search"
+                        placeholder="البحث عن طريق المعرّف أو اسم الدورة أو غير ذلك..."
+                        class="input input-bordered w-full h-12 rounded-10px border-d9 bg-[#F8FAFC] ps-10 font-medium text-15px">
+                </div>
+                <button type="button"
+                    class="inline-flex items-center justify-center gap-2 rounded-10px border border-d9 px-4 h-12 font-semibold text-15px text-primary bg-[#F8FAFC] hover:bg-fa transition">
+                    <span class="icon-[tabler--filter] size-4"></span>
+                    فلتر
+                </button>
+                <button type="button"
+                    class="inline-flex items-center justify-center gap-2 rounded-10px border border-d9 px-4 h-12 font-semibold text-15px text-primary bg-[#F8FAFC] hover:bg-fa transition">
+                    <span class="icon-[tabler--calendar] size-4"></span>
+                    April 11 - April 24
+                </button>
+            </div>
+
+            <div class="border border-d9 rounded-14px overflow-x-auto">
+                <table class="table w-full text-15px">
+                    <thead>
+                        <tr class="border-b border-d9 text-gray bg-f9">
+                            <th class="px-4 py-3.5 text-start font-semibold">المتدرب</th>
+                            <th class="px-4 py-3.5 text-start font-semibold">العنوان والدورة</th>
+                            <th class="px-4 py-3.5 text-start font-semibold">التسليم الأول</th>
+                            <th class="px-4 py-3.5 text-start font-semibold">التسليم الأخير</th>
+                            <th class="px-4 py-3.5 text-start font-semibold">المحاولات</th>
+                            <th class="px-4 py-3.5 text-start font-semibold">الدرجة</th>
+                            <th class="px-4 py-3.5 text-start font-semibold">تاريخ الانشاء</th>
+                            <th class="px-4 py-3.5 text-start font-semibold">الحالة</th>
+                            <th class="px-4 py-3.5 text-start font-semibold">الاجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($studentResultsRows ?? [] as $index => $row)
+                            <tr class="border-b border-d9 last:border-0">
+                                <td class="px-4 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <span class="size-11 rounded-full bg-primary/10 center shrink-0">
+                                            <span class="font-bold text-16px text-primary">{{ mb_substr($row['name'], 0, 1) }}</span>
+                                        </span>
+                                        <span class="font-semibold text-16px text-primary whitespace-nowrap">{{ $row['name'] }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-4 min-w-48">
+                                    <p class="font-semibold text-16px text-primary">{{ $row['title'] }}</p>
+                                    <p class="font-medium text-13px text-gray">{{ $row['course'] }}</p>
+                                </td>
+                                <td class="px-4 py-4 font-medium text-gray">{{ $row['first_at'] }}</td>
+                                <td class="px-4 py-4 font-medium text-gray">{{ $row['last_at'] }}</td>
+                                <td class="px-4 py-4 font-medium text-gray">{{ $row['attempts'] }}</td>
+                                <td class="px-4 py-4 font-medium text-gray">{{ $row['grade'] }}</td>
+                                <td class="px-4 py-4">
+                                    <div class="leading-tight">
+                                        <p class="font-semibold text-20px text-primary">{{ $row['created_day'] }}</p>
+                                        <p class="font-medium text-13px text-gray whitespace-nowrap">{{ $row['created_month'] }}</p>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <span class="inline-flex rounded-full bg-[#FEF2F2] px-3 py-1 font-semibold text-13px text-[#DC2626]">
+                                        {{ $row['status'] }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end]">
+                                        <button type="button"
+                                            class="dropdown-toggle size-9 rounded-full bg-[#F1F5F9] !inline-flex !items-center !justify-center border-0 hover:bg-[#E8ECEA] transition"
+                                            aria-label="الاجراء" id="student-result-menu-{{ $index }}">
+                                            <span class="icon-[tabler--dots-vertical] size-5 text-gray"></span>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-44 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20"
+                                            role="menu" aria-labelledby="student-result-menu-{{ $index }}">
+                                            <li>
+                                                <a href="{{ route('panel.v1.instructor.assignments.review', ['id' => $reviewId]) }}"
+                                                    class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض التكليف</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

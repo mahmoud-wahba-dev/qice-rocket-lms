@@ -1,25 +1,30 @@
 @php
-    $courseData = $course ?? ['title' => '', 'subtitle' => '', 'progress' => 0];
+    $courseData = $course ?? ['title' => '', 'subtitle' => '', 'progress' => 0, 'progress_label' => 'نسبة الإنجاز'];
     $chapterList = $chapters ?? [];
 @endphp
 
 <div class="flex flex-col h-full">
-    <div class="bg-primary text-white px-5 py-6">
-        <div class="flex items-start justify-between gap-3 mb-4 lg:hidden">
-            <p class="font-bold text-18px leading-snug">{{ $courseData['title'] }}</p>
+    <div class="bg-primary text-white px-5 py-6 lg:px-6">
+        <div class="flex items-start justify-between gap-3 mb-5 lg:hidden">
+            <p class="font-bold text-22px leading-snug">{{ $courseData['title'] }}</p>
             <button type="button" class="btn btn-text btn-square text-white hover:bg-white/10"
                 data-instructor-course-sidebar-close aria-label="إغلاق">
                 <span class="icon-[tabler--x] size-5"></span>
             </button>
         </div>
-        <h2 class="hidden lg:block font-bold text-20px leading-snug mb-2">{{ $courseData['title'] }}</h2>
-        <p class="font-medium text-14px text-white/80 mb-5">{{ $courseData['subtitle'] }}</p>
-        <div class="flex items-center justify-between gap-2 mb-2">
-            <span class="font-medium text-13px">نسبة الإنجاز</span>
-            <span class="font-bold text-14px">{{ $courseData['progress'] ?? 0 }}%</span>
-        </div>
-        <div class="h-2 rounded-full bg-white/20 overflow-hidden">
-            <div class="h-full rounded-full bg-[#0FC787]" style="width: {{ (int) ($courseData['progress'] ?? 0) }}%"></div>
+
+        <h2 class="hidden lg:block font-bold text-22px lg:text-24px leading-snug mb-2">{{ $courseData['title'] }}</h2>
+        <p class="font-medium text-14px text-white/90 mb-5">{{ $courseData['subtitle'] }}</p>
+
+        <div>
+            <div class="flex items-center justify-between gap-2 mb-2">
+                <span class="font-medium text-13px text-white/90">{{ $courseData['progress_label'] ?? 'نسبة الإنجاز' }}</span>
+                <span class="font-bold text-14px">{{ $courseData['progress'] ?? 0 }}%</span>
+            </div>
+            <div class="h-2 rounded-full bg-white/20 overflow-hidden" role="progressbar"
+                aria-valuenow="{{ $courseData['progress'] ?? 0 }}" aria-valuemin="0" aria-valuemax="100">
+                <div class="h-full rounded-full bg-[#0FC787]" style="width: {{ (int) ($courseData['progress'] ?? 0) }}%"></div>
+            </div>
         </div>
     </div>
 
@@ -28,12 +33,18 @@
             @php
                 $isExpanded = !empty($chapter['expanded']);
                 $isCompleted = !empty($chapter['completed']);
+                $chapterSubtitle = $chapter['subtitle'] ?? 'هنا عنوان المحاضرة';
             @endphp
-            <div class="rounded-14px overflow-hidden border transition-colors {{ $isExpanded ? 'bg-[#FAF8F4] border-primary' : 'bg-white border-d9' }}"
-                data-course-accordion data-open="{{ $isExpanded ? 'true' : 'false' }}">
+
+            <div class="rounded-14px overflow-hidden transition-colors border
+                    {{ $isExpanded ? 'bg-[#FAF8F4] border-primary' : 'bg-white border-d9' }}"
+                data-course-accordion
+                data-open="{{ $isExpanded ? 'true' : 'false' }}">
+
                 <button type="button"
                     class="w-full flex items-start justify-between gap-3 px-4 py-3.5 text-start"
-                    data-course-accordion-toggle aria-expanded="{{ $isExpanded ? 'true' : 'false' }}">
+                    data-course-accordion-toggle
+                    aria-expanded="{{ $isExpanded ? 'true' : 'false' }}">
                     <span class="flex items-start gap-3 min-w-0">
                         @if ($isCompleted)
                             <span class="size-7 rounded-full bg-primary center shrink-0 mt-0.5">
@@ -44,27 +55,33 @@
                                 <span class="icon-[tabler--check] size-4 text-white"></span>
                             </span>
                         @endif
-                        <span class="min-w-0">
-                            <span class="block font-bold text-15px text-black">{{ $chapter['title'] }}</span>
-                            @if (!empty($chapter['subtitle']))
-                                <span class="block font-medium text-12px text-gray mt-1 {{ $isExpanded ? '' : 'hidden' }}"
-                                    data-course-accordion-subtitle>{{ $chapter['subtitle'] }}</span>
-                            @endif
+                        <span class="min-w-0 flex flex-col gap-1">
+                            <span class="font-bold text-15px sm:text-16px text-black leading-snug">{{ $chapter['title'] }}</span>
+                            <span class="font-medium text-12px text-gray leading-snug {{ $isExpanded ? '' : 'hidden' }}"
+                                data-course-accordion-subtitle>
+                                {{ $chapterSubtitle }}
+                            </span>
                         </span>
                     </span>
-                    <span class="icon-[tabler--chevron-down] size-5 text-black/50 shrink-0 mt-1 transition-transform {{ $isExpanded ? 'rotate-180' : '' }}"
+                    <span class="icon-[tabler--chevron-down] size-5 text-black/50 shrink-0 mt-1 transition-transform duration-200 {{ $isExpanded ? 'rotate-180' : '' }}"
                         data-course-accordion-chevron></span>
                 </button>
+
                 <div class="{{ $isExpanded ? '' : 'hidden' }} px-4 pb-4" data-course-accordion-panel>
-                    <div class="space-y-1 ps-10">
+                    <div class="relative ms-3 ps-6 space-y-1">
+                        <span class="pointer-events-none absolute top-3 bottom-3 start-[0.35rem] w-px bg-d9" aria-hidden="true"></span>
                         @foreach ($chapter['items'] ?? [] as $item)
-                            <div class="flex items-center gap-2 py-2 font-medium text-14px text-black">
+                            @php $isActive = !empty($item['active']); @endphp
+                            <div class="relative flex items-center gap-3 py-2.5 font-medium text-14px text-black">
+                                <span class="absolute -start-[1.4rem] top-1/2 -translate-y-1/2 size-3 rounded-full border-2 border-[#FAF8F4] shrink-0
+                                        {{ $isActive ? 'bg-primary' : 'bg-d9' }}"
+                                    aria-hidden="true"></span>
                                 @if (($item['type'] ?? '') === 'video')
-                                    <span class="icon-[tabler--player-play] size-4"></span>
+                                    <span class="icon-[tabler--player-play] size-5 shrink-0"></span>
                                 @else
-                                    <span class="icon-[tabler--file-text] size-4"></span>
+                                    <span class="icon-[tabler--file-text] size-5 shrink-0"></span>
                                 @endif
-                                {{ $item['title'] }}
+                                <span class="leading-snug">{{ $item['title'] }}</span>
                             </div>
                         @endforeach
                     </div>
