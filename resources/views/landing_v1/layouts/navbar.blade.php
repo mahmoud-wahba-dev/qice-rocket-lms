@@ -15,7 +15,7 @@
        
             <li><a class="font-medium text-15px text-[#3D455D] "
                     href="{{ route('landing.v1.instructors') }}">المدربين</a></li>
-            <li class="dropdown relative justify-center inline-flex rtl:[--placement:bottom]">
+            <li class="dropdown relative justify-center inline-flex [--auto-close:true] rtl:[--placement:bottom]">
                 <button id="paid-courses-nav-toggle" type="button"
                     class="dropdown-toggle font-medium text-15px text-[#3D455D] flex items-center gap-1 bg-transparent border-0 cursor-pointer p-0"
                     aria-haspopup="menu" aria-expanded="false" aria-label="الدورات المعتمدة">
@@ -47,7 +47,7 @@
     </div> 
     
     <div class="navbar-end items-center   gap-4 max-xl:w-fit">
-        <div class="dropdown relative inline-flex md:hidden rtl:[--placement:bottom-end]">
+        <div class="dropdown relative inline-flex md:hidden [--auto-close:true] rtl:[--placement:bottom-end]">
             <button id="dropdown-default" type="button"
                 class="dropdown-toggle btn btn-text bg-card-text text-white btn-square" aria-haspopup="menu"
                 aria-expanded="false" aria-label="Dropdown">
@@ -106,7 +106,7 @@
             </div>
 
             @auth
-                <div class="dropdown relative inline-flex rtl:[--placement:bottom-end]">
+                <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end]">
                     <button id="user-dropdown-toggle" type="button"
                         class="dropdown-toggle flex items-center gap-2 btn btn-text h-12 px-2 hover:bg-primary/5 rounded-10px transition"
                         aria-haspopup="menu" aria-expanded="false" aria-label="User menu">

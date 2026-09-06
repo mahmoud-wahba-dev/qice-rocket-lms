@@ -29,7 +29,7 @@
                             </button>
                         @endforeach
                     </nav>
-                    <div class="dropdown relative inline-flex rtl:[--placement:bottom-end]">
+                    <div class="dropdown relative inline-flex [--auto-close:inside] rtl:[--placement:bottom-end]">
                         <button id="dropdown-default" type="button"
                             class="dropdown-toggle btn h-14 btn-outline px-8 border border-[#CECECE]" aria-haspopup="menu"
                             aria-expanded="false" aria-label="Dropdown">

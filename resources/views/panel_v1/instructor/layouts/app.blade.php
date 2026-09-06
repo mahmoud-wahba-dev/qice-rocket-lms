@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="rtl">
+<html data-theme="light" lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="rtl">
 
 <head>
     <meta charset="utf-8">
@@ -19,15 +19,33 @@
         <link rel="stylesheet"
             href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap">
     </noscript>
-    @vite(['resources/css/panel_v1/instructor.css', 'resources/js/panel_v1/instructor.js'])
+
+    @vite([
+        'resources/css/landing_v1.css',
+        'resources/js/landing_v1.js',
+        'resources/css/panel_v1/instructor.css',
+        'resources/js/panel_v1/instructor.js',
+    ])
 </head>
 
-<body class="panel-v1-instructor">
-    <div id="panel-v1-instructor-app" class="panel-v1-app panel-v1-app--sidebar">
-        @include('panel_v1.instructor.layouts.sidebar')
-        <div class="panel-v1-workspace">
-            @include('panel_v1.instructor.layouts.header')
-            <main class="panel-v1-main panel-v1-main--panel">
+<body>
+    {{-- FlyonUI dashboard shell pattern (adapted RTL + Figma):
+         fixed drawer sidebar on start (right in RTL) + header/main with lg:ps-[280px] --}}
+    <div id="landing-v1-app" class="bg-[#F9FAF5] flex min-h-screen flex-col panel-v1-instructor">
+
+        {{-- ---------- HEADER ---------- --}}
+        <div class="bg-white border-[#E8E8E8] sticky top-0 z-50 flex border-b lg:ps-[280px]">
+            <div class="mx-auto w-full">
+                @include('panel_v1.instructor.components.header')
+            </div>
+        </div>
+
+        {{-- ---------- SIDEBAR (FlyonUI drawer) ---------- --}}
+        @include('panel_v1.instructor.components.sidebar')
+
+        {{-- ---------- MAIN ---------- --}}
+        <div class="flex grow flex-col lg:ps-[280px]">
+            <main class="mx-auto mt-0 w-full flex-1 space-y-6 p-4 sm:p-6 lg:p-8">
                 @yield('content')
             </main>
         </div>

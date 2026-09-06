@@ -29,7 +29,7 @@
                 الشهادة
             </button>
 
-            <div class="dropdown relative inline-flex rtl:[--placement:bottom-end]">
+            <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end]">
                 <button id="course-player-user-toggle" type="button"
                     class="dropdown-toggle flex items-center gap-2 rounded-10px px-1.5 py-1.5 hover:bg-white/10 transition"
                     aria-haspopup="menu" aria-expanded="false" aria-label="قائمة المستخدم">

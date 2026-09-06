@@ -12,8 +12,10 @@ module.exports = {
     content: [
         "./resources/views/landing_v1/**/*.blade.php",
         "./resources/views/panel_v1/student/**/*.blade.php",
+        "./resources/views/panel_v1/instructor/**/*.blade.php",
         "./resources/views/vendor/pagination/**/*.blade.php",
         "./resources/js/landing_v1.js",
+        "./resources/js/panel_v1/**/*.js",
         "./node_modules/flyonui/dist/js/*.js",
     ],
     important: "#landing-v1-app",
@@ -48,6 +50,7 @@ module.exports = {
                 77: "var(--color-77)",
                 f7: "var(--color-f7)",
                 e3: "var(--color-e3)",
+                e8: "var(--color-e8)",
                 "card-text": "var(--color-card-text)",
                 "card-border": "var(--color-card-border)",
                 "7a": "var(--color-7a)",

@@ -2,7 +2,7 @@
     $courseSlug = $slug ?? 'demo';
 @endphp
 
-<div class="dropdown relative inline-flex rtl:[--placement:bottom]">
+<div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom]">
     <button id="course-tools-toggle" type="button"
         class="dropdown-toggle inline-flex items-center gap-2 font-semibold text-14px sm:text-15px text-white hover:bg-white/10 rounded-10px px-2 sm:px-3 py-2 transition"
         aria-haspopup="menu" aria-expanded="false">

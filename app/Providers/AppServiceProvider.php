@@ -58,6 +58,14 @@ class AppServiceProvider extends ServiceProvider
                 'landingImg' => asset('assets/landing_v1/img'),
             ]);
         });
+
+        // Instructor panel_v1: shared asset paths
+        View::composer('panel_v1.instructor.*', function ($view) {
+            $view->with([
+                'panelInstructorImg' => asset('assets/panel_v1/img/instructor'),
+                'landingImg' => asset('assets/landing_v1/img'),
+            ]);
+        });
         // Existing validation
         Validator::extend('check_price', function ($attribute, $value, $parameters, $validator) {
             return preg_match('/^\d*\.?\d*$/', $value);

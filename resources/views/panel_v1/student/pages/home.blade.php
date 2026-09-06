@@ -361,7 +361,7 @@
                             </div>
 
                             <div class="absolute top-6 end-6">
-                                <div class="dropdown relative inline-flex rtl:[--placement:bottom-end]">
+                                <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end]">
                                     <button id="dropdown-menu-icon" type="button"
                                         class="dropdown-toggle btn btn-square " aria-haspopup="menu"
                                         aria-expanded="false" aria-label="Dropdown">
@@ -567,7 +567,7 @@
                                     class="btn btn-primary font-semibold text-12px">استكمل الان</a>
                             </div>
                             <div class="absolute top-6 end-6">
-                                <div class="dropdown relative inline-flex rtl:[--placement:bottom-end]">
+                                <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end]">
                                     <button id="dropdown-menu-icon" type="button"
                                         class="dropdown-toggle btn btn-square " aria-haspopup="menu"
                                         aria-expanded="false" aria-label="Dropdown">
