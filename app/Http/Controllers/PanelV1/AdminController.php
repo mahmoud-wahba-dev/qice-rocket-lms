@@ -3,11 +3,26 @@
 namespace App\Http\Controllers\PanelV1;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class AdminController extends Controller
 {
     public function home(Request $request)
+    {
+        $user = $this->resolveAdmin($request);
+
+        if ($user instanceof RedirectResponse) {
+            return $user;
+        }
+
+        return redirect()->route('panel.v1.admin.education.home');
+    }
+
+    /**
+     * @return \App\User|RedirectResponse
+     */
+    protected function resolveAdmin(Request $request)
     {
         $user = $request->user();
 
@@ -27,9 +42,20 @@ class AdminController extends Controller
             return redirect('/panel');
         }
 
-        return view('panel_v1.admin.pages.home', [
-            'pageTitle' => 'لوحة الإدارة',
+        return $user;
+    }
+
+    protected function renderAdmin(Request $request, string $view, string $pageTitle, array $data = [])
+    {
+        $user = $this->resolveAdmin($request);
+
+        if ($user instanceof RedirectResponse) {
+            return $user;
+        }
+
+        return view($view, array_merge($data, [
+            'pageTitle' => $pageTitle,
             'authUser' => $user,
-        ]);
+        ]));
     }
 }
