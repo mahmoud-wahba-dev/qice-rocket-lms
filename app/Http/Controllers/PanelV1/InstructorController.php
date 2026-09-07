@@ -123,6 +123,16 @@ class InstructorController extends Controller
         );
     }
 
+    public function settings(Request $request)
+    {
+        return $this->render(
+            $request,
+            'panel_v1.instructor.pages.settings',
+            'إعدادات الملف الشخصي',
+            InstructorMockData::settings()
+        );
+    }
+
     private function render(Request $request, string $view, string $pageTitle, array $data = [])
     {
         $user = $this->resolveInstructor($request);

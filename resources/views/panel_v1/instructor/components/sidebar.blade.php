@@ -139,7 +139,8 @@
                 <p class="{{ $navTitle }}">قسم الإعدادات والدعم</p>
                 <ul class="flex flex-col gap-1 mb-8" >
                     <li>
-                        <a href="#" class="{{ $navLink }}">
+                        <a href="{{ route('panel.v1.instructor.settings') }}"
+                            class="{{ $navLink }} {{ $is('panel.v1.instructor.settings') ? $navActive : '' }}">
                             <span class="icon-[tabler--settings] size-5 shrink-0 text-white"></span>
                             الإعدادات
                         </a>

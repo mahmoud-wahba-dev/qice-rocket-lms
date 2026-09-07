@@ -478,4 +478,63 @@ class InstructorMockData
             ],
         ]);
     }
+
+    public static function settings(): array
+    {
+        return array_merge(self::common(), [
+            'profileName' => 'Dr. Saudy Mohamed Hasanin',
+            'profileEmail' => 'drsaudyh@gmail.com',
+            'profilePhone' => '501234567',
+            'profileCountryCode' => '+966',
+            'profileBio' => 'Healthcare Quality leader with extensive experience in CPHQ training and hospital accreditation programs.',
+            'profileJobTitle' => 'مدرب جودة صحية',
+            'identityVerified' => false,
+            'paymentAccount' => 'ماي فاتورة',
+            'accountOptions' => [
+                'اشترك في النشرة الإخبارية عبر البريد الإلكتروني',
+                'السماح للمستخدمين بمراسلتك من صفحة ملفك الشخصي',
+                'تفعيل إحصائيات الملف الشخصي',
+                'التجديد التلقائي للاشتراك',
+            ],
+            'socialNetworks' => [
+                ['key' => 'instagram', 'label' => 'Instagram', 'icon' => 'instagram'],
+                ['key' => 'whatsapp', 'label' => 'Whatsapp', 'icon' => 'whatsapp'],
+                ['key' => 'messenger', 'label' => 'Messenger', 'icon' => 'messenger'],
+                ['key' => 'facebook', 'label' => 'Facebook', 'icon' => 'facebook'],
+            ],
+            'skillOptions' => [
+                'إدارة الجودة',
+                'سلامة المرضى',
+                'اعتماد المستشفيات',
+                'CPHQ',
+                'التحسين المستمر',
+            ],
+            'loginHistory' => [
+                [
+                    'os' => 'Windows 10.0',
+                    'browser' => 'Chrome',
+                    'device' => 'desktop',
+                    'ip' => '2a02:9b0:401e:a:0:0:0:1',
+                    'country' => 'Saudi Arabia',
+                    'city' => 'Riyadh',
+                    'session_start' => '10 فبراير 2026 11:42',
+                    'session_end' => '10 فبراير 2026 11:43',
+                    'duration' => '27 ثانية',
+                    'active' => false,
+                ],
+                [
+                    'os' => 'Windows 10.0',
+                    'browser' => 'Chrome',
+                    'device' => 'desktop',
+                    'ip' => '2a02:9b0:401e:a:0:0:0:1',
+                    'country' => 'Saudi Arabia',
+                    'city' => 'Riyadh',
+                    'session_start' => '9 فبراير 2026 18:10',
+                    'session_end' => null,
+                    'duration' => 'نشط',
+                    'active' => true,
+                ],
+            ],
+        ]);
+    }
 }

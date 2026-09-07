@@ -61,6 +61,8 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 ->name('instructor.marketing');
             Route::get('/instructor/support', [InstructorController::class, 'support'])
                 ->name('instructor.support');
+            Route::get('/instructor/settings', [InstructorController::class, 'settings'])
+                ->name('instructor.settings');
         });
 
     Route::middleware(['web', 'admin'])
