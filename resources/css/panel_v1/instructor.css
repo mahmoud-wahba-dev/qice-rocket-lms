@@ -86,3 +86,8 @@ body:has(.panel-v1-instructor)::-webkit-scrollbar-thumb:hover {
 .panel-v1-instructor .instructor-sidebar-scroll::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.5);
 }
+
+/* Override FlyonUI .table th base-content color with design-token gray */
+.panel-v1-instructor .table :where(thead, tfoot, th) {
+    color: var(--color-gray, #8e8f8f) !important;
+}

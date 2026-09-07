@@ -58,6 +58,71 @@ class InstructorController extends Controller
         return $this->render($request, 'panel_v1.instructor.pages.consultations', 'الجلسات الاستشارية', InstructorMockData::consultations());
     }
 
+    public function quizzes(Request $request)
+    {
+        return $this->render($request, 'panel_v1.instructor.pages.quizzes', 'إدارة الاختبارات', InstructorMockData::quizzes());
+    }
+
+    public function quizView(Request $request, int $id)
+    {
+        return $this->render(
+            $request,
+            'panel_v1.instructor.pages.quiz-view',
+            'عرض الاختبار',
+            InstructorMockData::quizView($id)
+        );
+    }
+
+    public function certificates(Request $request)
+    {
+        return $this->render(
+            $request,
+            'panel_v1.instructor.pages.certificates',
+            'إدارة الشهادات',
+            InstructorMockData::certificates()
+        );
+    }
+
+    public function finance(Request $request)
+    {
+        return $this->render(
+            $request,
+            'panel_v1.instructor.pages.finance',
+            'المالية والأرباح',
+            InstructorMockData::finance()
+        );
+    }
+
+    public function payouts(Request $request)
+    {
+        return $this->render(
+            $request,
+            'panel_v1.instructor.pages.payouts',
+            'ادارة المستحقات والسحب',
+            InstructorMockData::payouts()
+        );
+    }
+
+    public function marketing(Request $request)
+    {
+        return $this->render(
+            $request,
+            'panel_v1.instructor.pages.marketing',
+            'إدارة التسويق والعروض',
+            InstructorMockData::marketing()
+        );
+    }
+
+    public function support(Request $request)
+    {
+        return $this->render(
+            $request,
+            'panel_v1.instructor.pages.support',
+            'مركز الدعم الفني وإدارة التذاكر',
+            InstructorMockData::support()
+        );
+    }
+
     private function render(Request $request, string $view, string $pageTitle, array $data = [])
     {
         $user = $this->resolveInstructor($request);

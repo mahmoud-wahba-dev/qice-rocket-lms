@@ -245,30 +245,235 @@ class InstructorMockData
         ]);
     }
 
+    public static function quizzes(): array
+    {
+        $rowOpen = [
+            'title' => 'مخطط الواجهة UX',
+            'course' => 'دبلومة UI/UX الشاملة',
+            'questions' => 6,
+            'duration' => 'مفتوح',
+            'fullGrade' => 50,
+            'passGrade' => 2,
+            'students' => 2,
+            'status' => 'نشط',
+            'created_at' => '28 يوليو 2026',
+        ];
+
+        $rowTimed = array_merge($rowOpen, ['duration' => 6]);
+
+        $studentRow = [
+            'name' => 'علا محمد',
+            'title' => 'مخطط الواجهة UX',
+            'course' => 'دبلومة UI/UX الشاملة',
+            'grade' => '42 / 50',
+            'attempts' => '1 / 3',
+            'attempted_at' => '28 يوليو 2026',
+            'status' => 'ناجح',
+        ];
+
+        return array_merge(self::common(), [
+            'quizStats' => [
+                ['value' => '12 اختبار', 'label' => 'إجمالي الاختبارات'],
+                ['value' => '145 اختبار', 'label' => 'متوسط نسبة النجاح'],
+                ['value' => '157 اختبار', 'label' => 'إجابات بانتظار التصحيح'],
+            ],
+            'pendingQuizzes' => [
+                [
+                    'name' => 'علا محمد',
+                    'status' => 'بانتظار التصحيح',
+                    'title' => 'اختبار الدرس الثاني ( الترابط في الأنظمة )',
+                    'course' => 'دورة قياس النجاح',
+                    'date' => '28 يوليو 2026',
+                ],
+            ],
+            'quizReviewSubtitle' => 'اختبار كورس التست • دورة CPHQ',
+            'quizReviewQuestions' => [
+                [
+                    'question' => 'هل تتوافق معايير الجودة الصحية الحديثة مع تقليص تكاليف التشغيل؟ وضح ذلك.',
+                    'model' => 'الإجابة هي نعم. حيث يسهم تطبيق المعايير في تقليل الأخطاء وإعادة العمل، مما يعزز الكفاءة.',
+                    'submitted' => 'الإجابة هي نعم. حيث يسهم تطبيق المعايير في تقليل الأخطاء وإعادة العمل، مما يعزز الكفاءة.',
+                    'score' => 10,
+                    'max' => 10,
+                ],
+                [
+                    'question' => 'اذكر مؤشرَين من مؤشرات الأداء المرتبطة برضا المريض في أقسام الطوارئ.',
+                    'model' => 'زمن الانتظار قبل الكشف، ونسبة الشكاوى المستجابة خلال 48 ساعة.',
+                    'submitted' => 'زمن الانتظار، ومعدل رضا المرضى بعد الزيارة.',
+                    'score' => 7,
+                    'max' => 10,
+                ],
+            ],
+            'quizRows' => [$rowOpen, $rowTimed, $rowOpen, $rowTimed],
+            'quizStudentRows' => [$studentRow, $studentRow, $studentRow, $studentRow],
+        ]);
+    }
+
+    public static function quizView(int $id): array
+    {
+        $review = self::assignmentReview(1);
+
+        return array_merge(self::common(), [
+            'quizId' => $id ?: 1,
+            'slug' => 'demo',
+            'course' => $review['course'],
+            'chapters' => $review['chapters'],
+            'quizView' => [
+                'title' => 'اختبار كورس التست',
+                'subtitle' => 'المعايير المعتمدة في جودة الرعاية الصحية (CPHQ)',
+                'questions_count' => 12,
+                'current' => 10,
+                'total' => 12,
+                'question' => 'هذا سؤال للعرض',
+                'options' => [
+                    ['id' => 1, 'text' => 'تجربة 1', 'selected' => false, 'correct' => false],
+                    ['id' => 2, 'text' => 'تجربة 2', 'selected' => false, 'correct' => false],
+                    ['id' => 3, 'text' => 'تجربة 3', 'selected' => false, 'correct' => false],
+                    ['id' => 4, 'text' => 'تجربة 4', 'selected' => true, 'correct' => true],
+                ],
+            ],
+        ]);
+    }
+
+    public static function support(): array
+    {
+        $ticket = [
+            'id' => '#TK-8821',
+            'subject' => 'استفسار عن مواعيد تحويل الأرباح الشهرية',
+            'date' => '28 يوليو 2026',
+            'status' => 'تم الرد',
+        ];
+
+        return array_merge(self::common(), [
+            'supportTickets' => [$ticket, $ticket, $ticket, $ticket],
+            'courseSupportRows' => [],
+        ]);
+    }
+
+    public static function marketing(): array
+    {
+        $row = [
+            'name' => 'علا محمد',
+            'email' => 'ollamoh@gmail.com',
+            'course' => 'دورة قياس النجاح',
+            'course_id' => '2354',
+            'original_price' => '150 ر.س',
+            'discount' => '—',
+            'total' => '150 ر.س',
+            'net' => '120 ر.س',
+            'type' => 'دورة',
+            'date' => '29 يوليو 2026',
+            'time' => '09:43 ص',
+        ];
+
+        $subtitle = 'فتح طلب جديد وتوجيهه للفريق المختص';
+
+        return array_merge(self::common(), [
+            'marketingActions' => [
+                ['title' => 'إنشاء قسيمة خصم جديدة', 'subtitle' => $subtitle, 'href' => '#'],
+                ['title' => 'إنشاء تخفيض لدورتك', 'subtitle' => $subtitle, 'href' => '#'],
+                ['title' => 'إنشاء خطط ترويجية', 'subtitle' => $subtitle, 'href' => '#'],
+            ],
+            'couponRows' => [$row, $row, $row, $row],
+            'discountRows' => [$row, $row],
+            'promoRows' => [],
+        ]);
+    }
+
+    public static function payouts(): array
+    {
+        $row = [
+            'id' => '#PAY-11029',
+            'datetime' => '15 يوليو 2026 - 10:15',
+            'type_line1' => 'شراء دورة: CPHQ',
+            'type_line2' => 'الممارس المعتمد',
+            'amount' => '+ 1,199.00 ر.س',
+            'status' => 'مكتملة',
+        ];
+
+        return array_merge(self::common(), [
+            'payoutSummary' => [
+                'available' => '0.00',
+                'next_payout' => '15 أغسطس 2026',
+                'min_withdraw' => '500 ر.س',
+                'total_income' => '1,199.00',
+                'held' => '0.00',
+            ],
+            'payoutRows' => [$row, $row, $row, $row],
+        ]);
+    }
+
+    public static function finance(): array
+    {
+        $courseRow = [
+            'name' => 'علا محمد',
+            'email' => 'olamaah@gmail.com',
+            'service' => 'دورة قياس النجاح',
+            'service_id' => '2354',
+            'original_price' => '150 ر.س',
+            'discount' => '—',
+            'total' => '150 ر.س',
+            'net' => '120 ر.س',
+            'type' => 'course',
+            'type_label' => 'دورة',
+            'date' => '29 يوليو 2026',
+            'time' => '09:43 ص',
+        ];
+
+        $sessionRow = array_merge($courseRow, [
+            'type' => 'session',
+            'type_label' => 'جلسة',
+        ]);
+
+        return array_merge(self::common(), [
+            'salesRows' => [$courseRow, $sessionRow, $courseRow, $sessionRow],
+        ]);
+    }
+
+    public static function certificates(): array
+    {
+        return array_merge(self::common(), [
+            'certificateStats' => [
+                ['value' => '2', 'label' => 'إجمالي الشهادات الصادرة'],
+                ['value' => '2', 'label' => 'شهادات الإتمام'],
+                ['value' => '2', 'label' => 'شهادات الاختبارات'],
+                ['value' => '2', 'label' => 'القوالب المنشأة'],
+            ],
+            'recentCertificates' => [
+                ['title' => '', 'student' => '', 'preview' => null],
+                ['title' => '', 'student' => '', 'preview' => null],
+                ['title' => '', 'student' => '', 'preview' => null],
+                ['title' => '', 'student' => '', 'preview' => null],
+            ],
+            'completionRows' => [],
+            'examRows' => [],
+        ]);
+    }
+
     public static function consultations(): array
     {
         return array_merge(self::common(), [
             'session' => [
                 'title' => 'جلسة مراجعة متطلبات CPHQ',
-                'instructor' => 'سارة السليمان',
+                'instructor' => 'سارة السلمان',
+                'instructorInitials' => 'سس',
                 'price' => '200 ر.س',
-                'status' => 'مدفوع',
-                'date' => '10 أغسطس 2024',
-                'time' => '08:00 م - 09:45 م',
+                'status' => 'مجدولة',
+                'date' => 'غدًا، 16 أغسطس 2026',
+                'time' => '08:00 م - 08:45 م (45 دقيقة)',
                 'linkLabel' => 'لقاء أونلاين',
             ],
             'attendees' => [
                 [
                     'initials' => 'HI',
-                    'name' => 'Hala Ibrahim',
-                    'email' => 'hala@example.com',
-                    'joinType' => 'وجهًا لوجه',
-                    'day' => 'السبت',
-                    'date' => '25 أغسطس 2024',
-                    'time' => '09:00 - 10:30',
+                    'name' => 'hiba',
+                    'email' => 'hibagammer222@gmail.com',
+                    'joinType' => 'وجهاً لوجه',
+                    'day' => 'سبت',
+                    'date' => '15 أغسطس 2026',
+                    'time' => '03:31 - 02:46',
                     'amount' => '0',
-                    'files' => 1,
-                    'status' => 'تم الحضور',
+                    'students' => '1',
+                    'status' => 'تم الانتهاء من',
                 ],
             ],
         ]);

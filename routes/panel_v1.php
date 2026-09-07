@@ -47,6 +47,20 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 ->name('instructor.assignments.review');
             Route::get('/instructor/consultations', [InstructorController::class, 'consultations'])
                 ->name('instructor.consultations');
+            Route::get('/instructor/quizzes', [InstructorController::class, 'quizzes'])
+                ->name('instructor.quizzes');
+            Route::get('/instructor/quizzes/{id}/view', [InstructorController::class, 'quizView'])
+                ->name('instructor.quizzes.view');
+            Route::get('/instructor/certificates', [InstructorController::class, 'certificates'])
+                ->name('instructor.certificates');
+            Route::get('/instructor/finance', [InstructorController::class, 'finance'])
+                ->name('instructor.finance');
+            Route::get('/instructor/payouts', [InstructorController::class, 'payouts'])
+                ->name('instructor.payouts');
+            Route::get('/instructor/marketing', [InstructorController::class, 'marketing'])
+                ->name('instructor.marketing');
+            Route::get('/instructor/support', [InstructorController::class, 'support'])
+                ->name('instructor.support');
         });
 
     Route::middleware(['web', 'admin'])

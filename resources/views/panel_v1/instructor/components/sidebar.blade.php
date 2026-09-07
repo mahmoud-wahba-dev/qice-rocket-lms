@@ -84,7 +84,8 @@
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="{{ $navLink }}">
+                        <a href="{{ route('panel.v1.instructor.quizzes') }}"
+                            class="{{ $navLink }} {{ $is('panel.v1.instructor.quizzes') ? $navActive : '' }}">
                             <span class="icon-[tabler--file-check] size-5 shrink-0 text-white"></span>
                             الاختبارات
                         </a>
@@ -102,7 +103,8 @@
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="{{ $navLink }}">
+                        <a href="{{ route('panel.v1.instructor.certificates') }}"
+                            class="{{ $navLink }} {{ $is('panel.v1.instructor.certificates') ? $navActive : '' }}">
                             <span class="icon-[tabler--certificate] size-5 shrink-0 text-white"></span>
                             الشهادات
                         </a>
@@ -112,19 +114,22 @@
                 <p class="{{ $navTitle }}">قسم المالية والتسويق</p>
                 <ul class="flex flex-col gap-1 mb-8">
                     <li>
-                        <a href="#" class="{{ $navLink }}">
+                        <a href="{{ route('panel.v1.instructor.finance') }}"
+                            class="{{ $navLink }} {{ $is('panel.v1.instructor.finance') ? $navActive : '' }}">
                             <span class="icon-[tabler--wallet] size-5 shrink-0 text-white"></span>
                             المحفظة والمبيعات
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="{{ $navLink }}">
+                        <a href="{{ route('panel.v1.instructor.payouts') }}"
+                            class="{{ $navLink }} {{ $is('panel.v1.instructor.payouts') ? $navActive : '' }}">
                             <span class="icon-[tabler--cash] size-5 shrink-0 text-white"></span>
                             المستحقات والسحب
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="{{ $navLink }}">
+                        <a href="{{ route('panel.v1.instructor.marketing') }}"
+                            class="{{ $navLink }} {{ $is('panel.v1.instructor.marketing') ? $navActive : '' }}">
                             <span class="icon-[tabler--ticket] size-5 shrink-0 text-white"></span>
                             التسويق والقسائم
                         </a>
@@ -140,7 +145,8 @@
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="{{ $navLink }}">
+                        <a href="{{ route('panel.v1.instructor.support') }}"
+                            class="{{ $navLink }} {{ $is('panel.v1.instructor.support') ? $navActive : '' }}">
                             <span class="icon-[tabler--help-circle] size-5 shrink-0 text-white"></span>
                             المساعدة والدعم
                         </a>
