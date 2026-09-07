@@ -9,7 +9,7 @@
         'subtitle' => 'إليك ملخص أداء دوراتك، نشاط الطلاب، والأرباح لهذا اليوم.',
     ])
         @slot('actions')
-            <a href="#"
+            <a href="{{ route('panel.v1.instructor.courses.create') }}"
                 class="inline-flex items-center justify-center gap-2 rounded-12px bg-color2 px-5 h-12 font-semibold text-16px text-white shrink-0 hover:opacity-95 transition">
                 <span class="icon-[tabler--plus] size-5"></span>
                 إنشاء دورة جديدة
@@ -55,7 +55,7 @@
                                     <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-56 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20"
                                         role="menu" aria-labelledby="course-menu-{{ $index }}">
                                         <li>
-                                            <a href="{{ route('panel.v1.instructor.courses.performance', ['slug' => $slug]) }}"
+                                            <a href="{{ route('panel.v1.instructor.courses.watch', ['slug' => $slug]) }}"
                                                 class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary">
                                                 <span class="icon-[tabler--minus] size-3.5 text-gray shrink-0"></span>
                                                 صفحة التعلم
@@ -69,7 +69,7 @@
                                             </a>
                                         </li>
                                         <li>
-                                            <a href="#"
+                                            <a href="{{ route('panel.v1.instructor.courses.watch', ['slug' => $slug]) }}"
                                                 class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary">
                                                 <span class="icon-[tabler--minus] size-3.5 text-gray shrink-0"></span>
                                                 محتوى المحاضرات

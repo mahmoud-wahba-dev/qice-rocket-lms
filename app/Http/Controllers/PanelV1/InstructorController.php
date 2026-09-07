@@ -18,6 +18,38 @@ class InstructorController extends Controller
         return $this->render($request, 'panel_v1.instructor.pages.courses', 'إدارة الدورات', InstructorMockData::courses());
     }
 
+    public function createCourse(Request $request, ?int $step = 1)
+    {
+        $step = max(1, min(5, $step ?? 1));
+
+        return $this->render(
+            $request,
+            'panel_v1.instructor.pages.create-course',
+            'إنشاء دورة جديدة',
+            array_merge(InstructorMockData::createCourse(), ['wizardStep' => $step])
+        );
+    }
+
+    public function courseWatch(Request $request, string $slug)
+    {
+        return $this->render(
+            $request,
+            'panel_v1.instructor.pages.course-watch',
+            'مشاهدة المحاضرة',
+            InstructorMockData::courseWatch($slug)
+        );
+    }
+
+    public function courseAssignment(Request $request, string $slug)
+    {
+        return $this->render(
+            $request,
+            'panel_v1.instructor.pages.assignment-review',
+            'تقييم التكليف',
+            InstructorMockData::assignmentReview(1, $slug)
+        );
+    }
+
     public function coursePerformance(Request $request, string $slug)
     {
         return $this->render(

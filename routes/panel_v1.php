@@ -38,6 +38,13 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
 
             Route::get('/instructor', [InstructorController::class, 'home'])->name('instructor.home');
             Route::get('/instructor/courses', [InstructorController::class, 'courses'])->name('instructor.courses');
+            Route::get('/instructor/courses/create/{step?}', [InstructorController::class, 'createCourse'])
+                ->where('step', '[1-5]')
+                ->name('instructor.courses.create');
+            Route::get('/instructor/courses/{slug}/watch', [InstructorController::class, 'courseWatch'])
+                ->name('instructor.courses.watch');
+            Route::get('/instructor/courses/{slug}/assignment', [InstructorController::class, 'courseAssignment'])
+                ->name('instructor.courses.assignment');
             Route::get('/instructor/courses/{slug}/performance', [InstructorController::class, 'coursePerformance'])
                 ->name('instructor.courses.performance');
             Route::get('/instructor/courses/{slug}/assignments', [InstructorController::class, 'courseAssignments'])

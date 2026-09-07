@@ -20,6 +20,112 @@ export function initInstructorShell() {
     initQuizBuilderModal(root);
     initQuizReviewModal(root);
     initInstructorSupport(root);
+    initCreateCourseWizard(root);
+}
+
+function initCreateCourseWizard(root) {
+    const wrap = root.querySelector('[data-create-course]');
+    if (!wrap) {
+        return;
+    }
+
+    // Course type cards
+    const typeGroup = wrap.querySelector('[data-course-type-group]');
+    if (typeGroup) {
+        typeGroup.querySelectorAll('[data-course-type]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                typeGroup.querySelectorAll('[data-course-type]').forEach((el) => {
+                    el.classList.remove('border-primary', 'bg-[#F7F0E6]');
+                    el.classList.add('border-d9', 'bg-white');
+                    el.querySelector('[data-type-check]')?.classList.add('hidden');
+                });
+                btn.classList.add('border-primary', 'bg-[#F7F0E6]');
+                btn.classList.remove('border-d9', 'bg-white');
+                btn.querySelector('[data-type-check]')?.classList.remove('hidden');
+            });
+        });
+    }
+
+    // Promo video tabs
+    const promoTabs = wrap.querySelector('[data-promo-tabs]');
+    if (promoTabs) {
+        promoTabs.querySelectorAll('[data-promo-tab]').forEach((tab) => {
+            tab.addEventListener('click', () => {
+                const name = tab.getAttribute('data-promo-tab');
+                promoTabs.querySelectorAll('[data-promo-tab]').forEach((t) => {
+                    const active = t === tab;
+                    t.classList.toggle('bg-primary', active);
+                    t.classList.toggle('text-white', active);
+                    t.classList.toggle('bg-white', !active);
+                    t.classList.toggle('text-gray', !active);
+                });
+                wrap.querySelectorAll('[data-promo-panel]').forEach((panel) => {
+                    panel.classList.toggle('hidden', panel.getAttribute('data-promo-panel') !== name);
+                });
+            });
+        });
+    }
+
+    // Meta description counter
+    const meta = wrap.querySelector('[data-meta-desc]');
+    const metaCount = wrap.querySelector('[data-meta-count]');
+    if (meta && metaCount) {
+        const sync = () => {
+            metaCount.textContent = String(meta.value.length);
+        };
+        meta.addEventListener('input', sync);
+        sync();
+    }
+
+    // Tags
+    const tagRoot = wrap.querySelector('[data-tag-input]');
+    if (tagRoot) {
+        const list = tagRoot.querySelector('[data-tag-list]');
+        const field = tagRoot.querySelector('[data-tag-field]');
+        const addTag = (value) => {
+            const text = value.trim();
+            if (!text || !list) {
+                return;
+            }
+            const chip = document.createElement('span');
+            chip.className = 'inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 font-medium text-13px text-primary';
+            chip.setAttribute('data-tag', '');
+            chip.innerHTML = `${text}<button type="button" class="hover:opacity-70" data-tag-remove aria-label="حذف وسم"><span class="icon-[tabler--x] size-3.5"></span></button>`;
+            list.appendChild(chip);
+        };
+        list?.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-tag-remove]');
+            if (btn) {
+                btn.closest('[data-tag]')?.remove();
+            }
+        });
+        field?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addTag(field.value);
+                field.value = '';
+            }
+        });
+    }
+
+    // Pricing model cards
+    const pricing = wrap.querySelector('[data-pricing-model]');
+    if (pricing) {
+        const paidFields = pricing.querySelector('[data-paid-fields]');
+        pricing.querySelectorAll('[data-price-type]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                pricing.querySelectorAll('[data-price-type]').forEach((el) => {
+                    el.classList.remove('border-primary', 'bg-[#F7F0E6]');
+                    el.classList.add('border-d9', 'bg-white');
+                });
+                btn.classList.add('border-primary', 'bg-[#F7F0E6]');
+                btn.classList.remove('border-d9', 'bg-white');
+                if (paidFields) {
+                    paidFields.classList.toggle('hidden', btn.getAttribute('data-price-type') === 'free');
+                }
+            });
+        });
+    }
 }
 
 function initInstructorSupport(root) {

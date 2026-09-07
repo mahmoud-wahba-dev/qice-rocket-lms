@@ -7,35 +7,31 @@
 @endphp
 
 <div class="pb-10">
-    <div class="border border-d9 rounded-20px bg-white px-5 sm:px-8 lg:px-12 py-8 sm:py-10 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-        {{-- Title --}}
-        <h1 class="font-bold text-22px sm:text-24px lg:text-26px text-[#0F172A] mb-8 sm:mb-10 leading-snug text-center">
+    <div class="border border-d9 rounded-20px bg-white px-5 sm:px-8 lg:px-10 py-7 sm:py-9 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+        <h1 class="font-bold text-20px sm:text-24px lg:text-26px text-primary mb-7 sm:mb-9 leading-snug text-start">
             {{ $reviewTitle ?? '' }}
         </h1>
 
-        {{-- Assignment prompt --}}
+        {{-- Requirements --}}
         <div class="mb-8 text-start">
-            <h2 class="font-bold text-18px sm:text-20px text-[#0F172A] mb-4 inline-flex items-center gap-2">
-                <span class="icon-[tabler--star-filled] size-5 text-[#E11D48] shrink-0"></span>
-                نص الواجب والمطلوب:
+            <h2 class="font-bold text-17px sm:text-19px text-primary mb-4 inline-flex items-center gap-2">
+                نص الواجب والمطلوب
+                <span class="text-[#E11D48]">*</span>
             </h2>
 
-            <div class="rounded-14px bg-[#F1F5F9] border border-[#E2E8F0] px-5 sm:px-6 py-5 sm:py-6">
+            <div class="rounded-14px bg-[#EFF6FF] border border-[#BFDBFE] border-s-[4px] border-s-[#3B82F6] px-5 sm:px-6 py-5 sm:py-6">
                 <div class="flex items-start gap-2.5 mb-3">
-                    <span class="icon-[tabler--notebook] size-5 text-[#0F172A] shrink-0 mt-0.5"></span>
-                    <p class="font-bold text-16px text-[#0F172A] leading-snug">{{ $detailsTitle ?? '' }}:</p>
+                    <span class="icon-[tabler--notes] size-5 text-[#1D4ED8] shrink-0 mt-0.5"></span>
+                    <p class="font-bold text-16px text-primary leading-snug">{{ $detailsTitle ?? '' }}</p>
                 </div>
-
-                <p class="font-medium text-14px sm:text-15px text-[#64748B] leading-relaxed mb-5 pe-7">
+                <p class="font-medium text-14px sm:text-15px text-[#475569] leading-relaxed mb-5">
                     {{ $detailsBody ?? '' }}
                 </p>
-
                 <div class="flex items-start gap-2.5 mb-3">
-                    <span class="icon-[tabler--pinned] size-5 text-[#E11D48] shrink-0 mt-0.5"></span>
-                    <p class="font-bold text-15px sm:text-16px text-[#0F172A] leading-snug">{{ $pointsTitle ?? '' }}:</p>
+                    <span class="icon-[tabler--list-check] size-5 text-[#1D4ED8] shrink-0 mt-0.5"></span>
+                    <p class="font-bold text-15px text-primary leading-snug">{{ $pointsTitle ?? '' }}</p>
                 </div>
-
-                <ul class="space-y-2 font-medium text-14px sm:text-15px text-[#64748B] leading-relaxed pe-7 list-disc list-inside marker:text-[#64748B]">
+                <ul class="space-y-2 font-medium text-14px sm:text-15px text-[#475569] leading-relaxed list-disc list-inside">
                     @foreach ($points ?? [] as $point)
                         <li>{{ $point }}</li>
                     @endforeach
@@ -43,30 +39,26 @@
             </div>
         </div>
 
-        {{-- Dashed divider --}}
-        <div class="border-t border-dashed border-[#CBD5E1] mb-8" aria-hidden="true"></div>
-
         {{-- Student answer --}}
         <div class="mb-8 text-start">
-            <h2 class="font-bold text-18px sm:text-20px text-[#0F172A] mb-4 inline-flex items-center gap-2">
-                <span class="icon-[tabler--pencil] size-5 text-[#0F172A] shrink-0"></span>
+            <h2 class="font-bold text-17px sm:text-19px text-primary mb-4 inline-flex items-center gap-2">
+                <span class="icon-[tabler--pencil] size-5 text-primary shrink-0"></span>
                 إجابة الطالب
             </h2>
 
-            <div class="rounded-14px bg-[#ECFDF5] border border-[#A7F3D0]/60 border-s-[3px] border-s-[#10B981] px-5 sm:px-6 py-5 sm:py-6">
+            <div class="rounded-14px bg-[#ECFDF5] border border-[#A7F3D0]/70 border-s-[4px] border-s-[#10B981] px-5 sm:px-6 py-5 sm:py-6">
                 @foreach ($answerParagraphs as $paragraph)
-                    <p class="font-medium text-15px text-[#0F172A] leading-relaxed mb-4">{{ $paragraph }}</p>
+                    <p class="font-medium text-15px text-primary leading-relaxed mb-4">{{ $paragraph }}</p>
                 @endforeach
 
                 @if (count($answerPoints))
-                    <ol class="list-decimal list-inside space-y-2 font-medium text-15px text-[#0F172A] leading-relaxed mb-5 pe-1">
+                    <ol class="list-decimal list-inside space-y-2 font-medium text-15px text-primary leading-relaxed mb-5">
                         @foreach ($answerPoints as $point)
                             <li>{{ $point }}</li>
                         @endforeach
                     </ol>
                 @endif
 
-                {{-- Attachment --}}
                 <div class="rounded-12px bg-white border border-d9 shadow-sm px-4 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div class="flex items-center gap-3 min-w-0">
                         <span class="size-11 rounded-10px bg-[#FEF2F2] center shrink-0">
@@ -91,7 +83,6 @@
             </div>
         </div>
 
-        {{-- Grade CTA --}}
         <div class="flex justify-end">
             <button type="button"
                 class="inline-flex items-center justify-center gap-2 rounded-12px bg-primary h-12 px-6 sm:px-8 font-bold text-15px sm:text-16px text-white hover:opacity-95 transition shadow-[0_6px_20px_rgba(15,76,69,0.18)]"

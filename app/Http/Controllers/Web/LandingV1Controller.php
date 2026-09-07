@@ -403,6 +403,66 @@ class LandingV1Controller extends Controller
             'pageTitle' => $instructor->full_name,
             'instructor' => $instructor,
             'courses' => $courses,
+            'profileMeta' => [
+                'headline' => 'خبير جودة الرعاية الصحية والتحول الرقمي',
+                'about' => "خبير رائد في جودة الرعاية الصحية والتحول الرقمي بخبرة تمتد لأكثر من 20 عاماً في قيادة برامج الاعتماد والتحسين المستمر داخل المؤسسات الصحية.\n\nعمل على تصميم وتنفيذ أنظمة الجودة وفق معايير CBAHI وJCI، ودرّب آلاف المتخصصين على مفاهيم سلامة المرضى والحوكمة السريرية والتميز المؤسسي.",
+                'badges' => ['CBAHI', 'JCI', 'مدرب معتمد'],
+                'statCards' => [
+                    [
+                        'value' => number_format(max((int) $instructor->students_count, 15240)),
+                        'label' => 'إجمالي الطلاب',
+                        'icon' => 'icon-[tabler--school]',
+                        'iconBg' => 'bg-[#DBEAFE]',
+                        'iconColor' => 'text-[#2563EB]',
+                    ],
+                    [
+                        'value' => (is_numeric($instructor->rating) && $instructor->rating > 0
+                            ? number_format((float) $instructor->rating, 1)
+                            : '4.9').' / 5',
+                        'label' => 'متوسط التقييم',
+                        'icon' => 'icon-[tabler--star-filled]',
+                        'iconBg' => 'bg-[#FFEDD5]',
+                        'iconColor' => 'text-[#F59E0B]',
+                    ],
+                    [
+                        'value' => '38',
+                        'label' => 'المقالات والبحوث',
+                        'icon' => 'icon-[tabler--file-text]',
+                        'iconBg' => 'bg-[#E5E7EB]',
+                        'iconColor' => 'text-[#4B5563]',
+                    ],
+                    [
+                        'value' => '16',
+                        'label' => 'الشهادات والشارات',
+                        'icon' => 'icon-[tabler--trophy]',
+                        'iconBg' => 'bg-[#D1FAE5]',
+                        'iconColor' => 'text-[#059669]',
+                    ],
+                ],
+                'achievements' => [
+                    'أكثر من 20 عاماً في قيادة برامج الجودة والاعتماد الصحي',
+                    'قاد أكثر من 40 مؤسسة نحو الاعتماد الوطني والدولي',
+                    'مدرب معتمد في CBAHI وJCI وCPHQ',
+                    'مؤلف ومشارك في عدة إصدارات بحثية وتطبيقية',
+                    'متحدث رئيسي في مؤتمرات الجودة والتحول الرقمي',
+                ],
+                'certifications' => [
+                    ['abbr' => 'JCI', 'title' => 'Joint Commission International', 'subtitle' => 'اعتماد المستشفيات الدولي', 'badgeBg' => 'bg-primary/15', 'badgeColor' => 'text-primary'],
+                    ['abbr' => 'CBAHI', 'title' => 'السباهي', 'subtitle' => 'المركز السعودي لاعتماد المنشآت الصحية', 'badgeBg' => 'bg-[#DBEAFE]', 'badgeColor' => 'text-[#2563EB]'],
+                    ['abbr' => 'Lean', 'title' => 'Lean Six Sigma', 'subtitle' => 'تحسين العمليات وتقليل الهدر', 'badgeBg' => 'bg-[#D1FAE5]', 'badgeColor' => 'text-[#059669]'],
+                    ['abbr' => 'CPHQ', 'title' => 'Certified Professional in Healthcare Quality', 'subtitle' => 'شهادة محترف جودة الرعاية الصحية', 'badgeBg' => 'bg-[#FFEDD5]', 'badgeColor' => 'text-[#EA580C]'],
+                    ['abbr' => 'ISO', 'title' => 'ISO 9001 Lead Auditor', 'subtitle' => 'تدقيق أنظمة إدارة الجودة', 'badgeBg' => 'bg-[#E0E7FF]', 'badgeColor' => 'text-[#4F46E5]'],
+                    ['abbr' => 'PMP', 'title' => 'Project Management Professional', 'subtitle' => 'إدارة المشاريع الاحترافية', 'badgeBg' => 'bg-[#FCE7F3]', 'badgeColor' => 'text-[#DB2777]'],
+                ],
+                'consultation' => [
+                    'chips' => [
+                        ['label' => 'أقرب موعد متاح', 'value' => '15 أغسطس 2026', 'icon' => 'icon-[tabler--calendar]'],
+                        ['label' => 'سعر الساعة', 'value' => '80 ر.س / ساعة', 'icon' => 'icon-[tabler--cash]'],
+                        ['label' => 'جلسة حضورية', 'value' => 'مجاناً', 'icon' => 'icon-[tabler--map-pin]'],
+                        ['label' => 'جلسة جماعية', 'value' => '16 ر.س / مقعد', 'icon' => 'icon-[tabler--users-group]'],
+                    ],
+                ],
+            ],
         ]);
     }
 

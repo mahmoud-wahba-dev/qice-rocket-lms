@@ -20,7 +20,7 @@
                     <span class="icon-[tabler--check] size-8 text-white"></span>
                 </div>
                 <h4 class="font-bold text-20px text-primary mb-2">اعتماد وتقييم درجة الطالب</h4>
-                <p class="font-medium text-14px text-gray leading-relaxed mb-8">
+                <p class="font-medium text-14px text-gray leading-relaxed mb-8 max-w-md mx-auto">
                     بمجرد إرسال الدرجة، سيتم إغلاق الواجب ولن يتمكن الطالب من إضافة تعديلات أخرى.
                 </p>
 
@@ -38,16 +38,17 @@
                     </div>
                 </div>
 
-                <p class="font-medium text-14px text-start mb-8">
-                    <span class="text-[#E11D48]">*</span>
-                    <span class="text-gray">درجة النجاح المطلوبة</span>
-                    <span class="font-bold text-[#0FC787] ms-2">{{ $passGrade }} / {{ $maxGrade }}</span>
-                </p>
+                <div class="rounded-10px bg-[#ECFDF5] border border-[#A7F3D0]/60 px-4 py-3 mb-8 text-start">
+                    <p class="font-medium text-14px">
+                        <span class="text-gray">درجة النجاح المطلوبة</span>
+                        <span class="font-bold text-[#0FC787] ms-2">{{ $passGrade }} / {{ $maxGrade }}</span>
+                    </p>
+                </div>
 
                 <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3">
                     <button type="button" class="btn btn-ghost rounded-12px h-12 px-6 font-semibold text-15px text-gray"
                         data-overlay="#instructor-grade-modal">
-                        إلغاء
+                        السابق
                     </button>
                     <button type="button" class="btn btn-primary rounded-12px h-12 px-6 font-bold text-15px"
                         data-overlay="#instructor-grade-modal">

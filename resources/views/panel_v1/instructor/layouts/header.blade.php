@@ -5,7 +5,7 @@
 
 <header class="panel-v1-panel-header">
     <div class="panel-v1-panel-header__actions">
-        <button type="button" class="panel-v1-btn panel-v1-btn--accent">+ إنشاء دورة جديدة</button>
+        <a href="{{ route('panel.v1.instructor.courses.create') }}" class="panel-v1-btn panel-v1-btn--accent">+ إنشاء دورة جديدة</a>
     </div>
     <div class="panel-v1-panel-header__user">
         <button type="button" class="panel-v1-icon-btn" aria-label="الإشعارات">تنبيه</button>

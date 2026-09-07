@@ -42,7 +42,7 @@ class InstructorMockData
                 ],
             ],
             'quickActions' => [
-                ['label' => 'انشاء دورة جديدة', 'route' => 'panel.v1.instructor.courses'],
+                ['label' => 'انشاء دورة جديدة', 'route' => 'panel.v1.instructor.courses.create'],
                 ['label' => 'انشاء اختبار جديد', 'route' => null],
                 ['label' => 'عرض جميع الطلاب', 'route' => null],
                 ['label' => 'عرض جميع التكليفات', 'route' => 'panel.v1.instructor.assignments'],
@@ -183,35 +183,107 @@ class InstructorMockData
         ]);
     }
 
-    public static function assignmentReview(int $id): array
+    public static function courseShell(string $slug = 'demo', string $active = 'video'): array
     {
         $chapters = [
             [
-                'title' => 'الباب الأول',
+                'title' => 'المحاضرة الأولى',
                 'completed' => true,
                 'expanded' => true,
                 'subtitle' => 'هنا عنوان المحاضرة',
                 'items' => [
-                    ['title' => 'فيديو تعريفي', 'type' => 'video', 'active' => true],
-                    ['title' => 'نموذج تجريبي', 'type' => 'text', 'active' => false],
-                    ['title' => 'شرح نظري + أمثلة', 'type' => 'text', 'active' => false],
+                    [
+                        'title' => 'فيديو تعريفي',
+                        'type' => 'video',
+                        'active' => $active === 'video',
+                        'route' => 'panel.v1.instructor.courses.watch',
+                    ],
+                    [
+                        'title' => 'شرح نظري + أمثلة تطبيقية',
+                        'type' => 'text',
+                        'active' => false,
+                        'route' => 'panel.v1.instructor.courses.watch',
+                    ],
+                    [
+                        'title' => 'تكليف المحاضرة',
+                        'type' => 'assignment',
+                        'active' => $active === 'assignment',
+                        'route' => 'panel.v1.instructor.courses.assignment',
+                    ],
                 ],
             ],
         ];
 
-        for ($i = 2; $i <= 9; $i++) {
+        $ordinals = ['', '', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة', 'السادسة', 'السابعة', 'الثامنة', 'التاسعة'];
+        for ($i = 2; $i <= 6; $i++) {
             $chapters[] = [
-                'title' => 'الباب ' . ['', '', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'السابع', 'الثامن', 'التاسع'][$i],
+                'title' => 'المحاضرة ' . $ordinals[$i],
                 'completed' => false,
                 'expanded' => false,
                 'subtitle' => 'هنا عنوان المحاضرة',
-                'items' => [],
+                'items' => [
+                    [
+                        'title' => 'فيديو المحاضرة',
+                        'type' => 'video',
+                        'active' => false,
+                        'route' => 'panel.v1.instructor.courses.watch',
+                    ],
+                ],
             ];
         }
 
-        return array_merge(self::common(), [
+        return [
+            'slug' => $slug ?: 'demo',
+            'course' => [
+                'title' => 'قياس النجاح والجودة',
+                'subtitle' => 'الإدارة والتنفيذ',
+                'progress' => 46,
+                'progress_label' => 'نسبة الإنجاز',
+            ],
+            'chapters' => $chapters,
+        ];
+    }
+
+    public static function courseWatch(string $slug = 'demo'): array
+    {
+        return array_merge(self::common(), self::courseShell($slug, 'video'), [
+            'lesson' => [
+                'title' => 'اسم المحاضرة هنا',
+            ],
+            'lectureQuiz' => [
+                'title' => 'اختبار المحاضرة الأولى',
+                'subtitle' => 'تحقق من استيعاب مفاهيم الجودة الأساسية',
+                'duration' => '20 دقيقة',
+                'questions_count' => '10 أسئلة',
+                'pass_score' => '70%',
+                'attempts' => '3 محاولات',
+            ],
+            'lectureAssignment' => [
+                'title' => 'تكليف المحاضرة العاشرة: تطبيق معايير إشراك المريض',
+                'subtitle' => 'مقال تحليلي',
+                'deadline' => 'غير محدود',
+                'attempts' => 'غير محدود',
+                'grade' => '50',
+                'pass_grade' => '25',
+                'description' => 'اكتب مقالاً تحليلياً يناقش دور أخصائي الجودة في إشراك المريض داخل أقسام الطوارئ.',
+                'file_name' => 'مصادر_التكليف.pdf',
+                'file_size' => '1.2 MB',
+            ],
+            'files' => [
+                ['name' => 'شرائح المحاضرة.pdf', 'size' => '3.1 MB'],
+                ['name' => 'ملخص نظري.docx', 'size' => '840 KB'],
+            ],
+            'hasLectureQuiz' => true,
+            'hasLectureAssignment' => true,
+            'hasComments' => false,
+            'hasFiles' => true,
+        ]);
+    }
+
+    public static function assignmentReview(int $id, string $slug = 'demo'): array
+    {
+        return array_merge(self::common(), self::courseShell($slug, 'assignment'), [
             'assignmentId' => $id ?: 1,
-            'slug' => 'demo',
             'reviewTitle' => 'تكليف المحاضرة العاشرة: تطبيق معايير إشراك المريض في تحسين الجودة',
             'detailsTitle' => 'تفاصيل التكليف والمحتوى المطلوب',
             'detailsBody' => 'اكتب مقالاً تحليلياً يناقش دور أخصائي الجودة في إشراك المريض داخل أقسام الطوارئ، مع التركيز على قياس أثر المشاركة على مؤشرات الأداء ورضا المستفيدين.',
@@ -235,13 +307,6 @@ class InstructorMockData
             'attachmentScan' => 'تم فحص الملف',
             'maxGrade' => 50,
             'passGrade' => 25,
-            'course' => [
-                'title' => 'قياس النجاح والجودة',
-                'subtitle' => 'الادارة والتنفيذ',
-                'progress' => 46,
-                'progress_label' => 'نسبة الإنجاز',
-            ],
-            'chapters' => $chapters,
         ]);
     }
 
@@ -476,6 +541,78 @@ class InstructorMockData
                     'status' => 'تم الانتهاء من',
                 ],
             ],
+        ]);
+    }
+
+    public static function createCourse(): array
+    {
+        return array_merge(self::common(), [
+            'draftTitle' => 'دورة تدريبية بدون عنوان',
+            'wizardSteps' => [
+                1 => [
+                    'label' => 'البيانات الأساسية',
+                    'title' => 'البيانات الأساسية والتصنيف',
+                    'next' => 'التالي: المنهج والمحتوى',
+                    'prev' => null,
+                    'progress' => 20,
+                ],
+                2 => [
+                    'label' => 'المنهج والمحتوى',
+                    'title' => 'المنهج والمحتوى التعليمي',
+                    'next' => 'التالي: الاختبارات والشهادات',
+                    'prev' => 'السابق',
+                    'progress' => 40,
+                ],
+                3 => [
+                    'label' => 'الاختبارات والشهادات',
+                    'title' => 'الاختبارات والشهادات',
+                    'next' => 'التالي: التسعير والسعة',
+                    'prev' => 'السابق',
+                    'progress' => 60,
+                ],
+                4 => [
+                    'label' => 'التسعير والسعة',
+                    'title' => 'التسعير والسعة',
+                    'next' => 'التالي: النشر والمراجعة',
+                    'prev' => 'السابق',
+                    'progress' => 80,
+                ],
+                5 => [
+                    'label' => 'النشر والمراجعة',
+                    'title' => 'النشر والمراجعة',
+                    'next' => 'إرسال للمراجعة',
+                    'prev' => 'السابق',
+                    'progress' => 100,
+                ],
+            ],
+            'courseTypes' => [
+                ['key' => 'recorded', 'label' => 'دورة فيديو مسجلة', 'hint' => 'محتوى مسجل يشاهده الطالب في أي وقت'],
+                ['key' => 'live', 'label' => 'دورة تفاعلية مباشرة', 'hint' => 'جلسات مباشرة عبر Zoom أو Teams'],
+                ['key' => 'text', 'label' => 'دورة نصية', 'hint' => 'محتوى مقروء ومواد مكتوبة'],
+            ],
+            'categories' => ['إدارة الجودة', 'سلامة المرضى', 'القيادة الصحية', 'التمريض'],
+            'languages' => ['العربية', 'English'],
+            'tags' => ['تطوير الويب', 'NodeJS'],
+            'curriculumUnits' => [
+                [
+                    'title' => 'الوحدة الأولى: مقدمة الدورة',
+                    'lessons' => [
+                        ['type' => 'video', 'title' => 'مقدمة الدورة وأهدافها', 'duration' => '08:20', 'preview' => true],
+                        ['type' => 'text', 'title' => 'المتطلبات الأساسية', 'duration' => '05:00', 'preview' => false],
+                    ],
+                ],
+            ],
+            'faqs' => [
+                ['question' => 'هل الدورة مناسبة للمبتدئين؟', 'answer' => 'نعم، تبدأ من الأساسيات تدريجياً.'],
+            ],
+            'requirements' => ['أساسيات HTML'],
+            'relatedCourses' => [
+                'أساسيات JavaScript الحديثة',
+                'تصميم UI/UX باستخدام Figma',
+                'إدارة الجودة في الرعاية الصحية',
+            ],
+            'suggestedPrice' => '299',
+            'currency' => 'SAR',
         ]);
     }
 
