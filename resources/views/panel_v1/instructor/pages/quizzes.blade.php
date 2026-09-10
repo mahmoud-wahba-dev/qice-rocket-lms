@@ -13,13 +13,11 @@
                 class="inline-flex items-center gap-2 rounded-12px border border-color2 px-5 h-12 font-semibold text-16px text-color2 hover:opacity-90 transition bg-white">
                 عرض جميع الاختبارات
             </a>
-            <button type="button"
-                class="inline-flex items-center gap-2 rounded-12px bg-color2 px-5 h-12 font-semibold text-16px text-white hover:opacity-95 transition"
-                aria-haspopup="dialog" aria-expanded="false" aria-controls="instructor-quiz-builder-modal"
-                data-overlay="#instructor-quiz-builder-modal">
+            <a href="{{ route('panel.v1.instructor.quizzes.create') }}"
+                class="inline-flex items-center gap-2 rounded-12px bg-color2 px-5 h-12 font-semibold text-16px text-white hover:opacity-95 transition">
                 <span class="icon-[tabler--plus] size-5"></span>
                 إضافة اختبار جديد
-            </button>
+            </a>
         @endslot
     @endcomponent
 
@@ -45,10 +43,8 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach ($pendingQuizzes ?? [] as $item)
-                <article class="rounded-14px border border-d9 bg-white p-5 shadow-sm cursor-pointer hover:border-primary/40 transition"
-                    role="button" tabindex="0"
-                    aria-haspopup="dialog" aria-controls="instructor-quiz-review-modal"
-                    data-overlay="#instructor-quiz-review-modal">
+                <a href="{{ route('panel.v1.instructor.quiz-results.grade', ['resultId' => $item['result_id']]) }}"
+                    class="rounded-14px border border-d9 bg-white p-5 shadow-sm cursor-pointer hover:border-primary/40 transition block">
                     <div class="flex items-center justify-between gap-3 mb-4">
                         <div class="flex items-center gap-2.5 min-w-0">
                             <span class="size-10 rounded-full bg-primary/10 center shrink-0 overflow-hidden">
@@ -66,7 +62,7 @@
                     </h3>
                     <p class="font-medium text-14px text-gray mb-3">{{ $item['course'] }}</p>
                     <p class="font-medium text-13px text-gray">{{ $item['date'] }}</p>
-                </article>
+                </a>
             @endforeach
         </div>
     </div>
@@ -147,17 +143,24 @@
                                         <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-48 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20"
                                             role="menu" aria-labelledby="quiz-row-menu-{{ $index }}">
                                             <li>
-                                                <a href="{{ route('panel.v1.instructor.quizzes.view', ['id' => 1]) }}"
+                                                <a href="{{ route('panel.v1.instructor.quizzes.view', ['id' => $row['id']]) }}"
                                                     class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض الاختبار</a>
                                             </li>
                                             <li>
-                                                <a href="#"
-                                                    class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary"
-                                                    aria-haspopup="dialog" aria-controls="instructor-quiz-review-modal"
-                                                    data-overlay="#instructor-quiz-review-modal">عرض النتائج</a>
+                                                <a href="{{ route('panel.v1.instructor.quizzes.edit', ['id' => $row['id']]) }}"
+                                                    class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">تعديل</a>
                                             </li>
                                             <li>
-                                                <a href="#" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">تعديل</a>
+                                                <form method="POST" action="{{ route('panel.v1.instructor.quizzes.delete', ['id' => $row['id']]) }}"
+                                                    onsubmit="return confirm('حذف الاختبار؟');">
+                                                    @csrf
+                                                    <button type="submit"
+                                                        class="dropdown-item px-4 py-2.5 font-medium text-15px text-[#EF4444] w-full text-start">حذف</button>
+                                                </form>
+                                            </li>
+                                            <li>
+                                                <a href="{{ route('panel.v1.instructor.quizzes.view', ['id' => $row['id']]) }}"
+                                                    class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض النتائج</a>
                                             </li>
                                             <li>
                                                 <a href="{{ route('panel.v1.instructor.courses.performance', ['slug' => $slug]) }}"

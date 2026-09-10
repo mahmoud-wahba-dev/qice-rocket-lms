@@ -2347,6 +2347,12 @@ function handlePrice($price, $showCurrency = true, $format = true, $coursePagePr
 
 function convertPriceToUserCurrency($price, $userCurrencyItem = null)
 {
+    // NOTE(local-fix): fresh installs have no financial/currency settings, so $price
+    // (or tax) can arrive as '' — guard for PHP 8 strict arithmetic.
+    if (!is_numeric($price)) {
+        return 0;
+    }
+
     if (empty($userCurrencyItem)) {
         $userCurrencyItem = getUserCurrencyItem();
     }
@@ -2362,6 +2368,12 @@ function convertPriceToUserCurrency($price, $userCurrencyItem = null)
 
 function convertPriceToDefaultCurrency($price, $userCurrencyItem = null)
 {
+    // NOTE: same PHP 8 guard as convertPriceToUserCurrency — non-numeric
+    // values (e.g. '' from missing financial settings) must not reach arithmetic.
+    if (!is_numeric($price)) {
+        return 0;
+    }
+
     if (empty($userCurrencyItem)) {
         $userCurrencyItem = getUserCurrencyItem();
     }
@@ -2662,4 +2674,39 @@ function getAvailableUploadFileSources()
     }
 
     return $sources;
+}
+
+if (!function_exists('panelV1HomeUrl')) {
+    /**
+     * Role-based home URL for the redesigned (V1) panels.
+     * Admin keeps the legacy admin URL; organization uses the new org section.
+     */
+    function panelV1HomeUrl($user = null)
+    {
+        if (empty($user)) {
+            $user = auth()->user();
+        }
+
+        if (empty($user)) {
+            return '/panel';
+        }
+
+        if ($user->isAdmin()) {
+            return getAdminPanelUrl('/');
+        }
+
+        if ($user->isTeacher()) {
+            return route('panel.v1.instructor.home');
+        }
+
+        if ($user->isOrganization()) {
+            return route('panel.v1.organization.home');
+        }
+
+        if ($user->isUser()) {
+            return route('panel.v1.student.home');
+        }
+
+        return '/panel';
+    }
 }

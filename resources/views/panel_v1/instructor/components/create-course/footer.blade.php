@@ -14,7 +14,7 @@
                 class="font-semibold text-15px sm:text-16px text-red-500 hover:opacity-80 transition">
                 إلغاء
             </a>
-            <button type="button"
+            <button type="submit" name="save_only" value="1"
                 class="inline-flex items-center gap-2 font-semibold text-15px sm:text-16px text-primary hover:opacity-80 transition">
                 <span class="icon-[tabler--device-floppy] size-5"></span>
                 حفظ المسودة
@@ -27,7 +27,7 @@
 
         <div class="flex items-center gap-2.5 sm:gap-3 order-3 ms-auto sm:ms-0">
             @if ($prevStep)
-                <a href="{{ route('panel.v1.instructor.courses.create', ['step' => $prevStep]) }}"
+                <a href="{{ route('panel.v1.instructor.courses.create', array_filter(['step' => $prevStep, 'draft' => $draftId ?? null])) }}"
                     class="inline-flex items-center gap-1.5 h-11 sm:h-12 px-4 sm:px-5 rounded-10px border border-d9 bg-white font-semibold text-15px sm:text-16px text-primary hover:bg-[#FAFAF4] transition">
                     <span class="icon-[tabler--chevron-right] size-5"></span>
                     السابق
@@ -41,13 +41,13 @@
             @endif
 
             @if ($nextStep)
-                <a href="{{ route('panel.v1.instructor.courses.create', ['step' => $nextStep]) }}"
+                <button type="submit" name="go_next" value="{{ $nextStep }}"
                     class="inline-flex items-center gap-2 h-11 sm:h-12 px-5 sm:px-6 rounded-10px bg-primary text-white font-semibold text-15px sm:text-16px hover:opacity-90 transition">
                     {{ $meta['next'] ?? 'التالي' }}
                     <span class="icon-[tabler--chevron-left] size-5"></span>
-                </a>
+                </button>
             @else
-                <button type="button"
+                <button type="submit" name="go_next" value="done"
                     class="inline-flex items-center gap-2 h-11 sm:h-12 px-5 sm:px-6 rounded-10px bg-primary text-white font-semibold text-15px sm:text-16px hover:opacity-90 transition">
                     {{ $meta['next'] ?? 'إرسال للمراجعة' }}
                     <span class="icon-[tabler--send] size-5"></span>

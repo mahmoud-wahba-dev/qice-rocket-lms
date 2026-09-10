@@ -6,7 +6,10 @@
 <div id="instructor-grade-modal"
     class="overlay modal overlay-open:opacity-100 overlay-open:duration-300 modal-middle hidden" role="dialog" tabindex="-1">
     <div class="modal-dialog overlay-open:opacity-100 max-w-[40%]">
-        <div class="modal-content relative rounded-20px border border-d9 p-0 overflow-hidden">
+        <form method="POST"
+            action="{{ isset($historyId) ? route('panel.v1.instructor.assignments.grade', ['id' => $historyId]) : '#' }}"
+            class="modal-content relative rounded-20px border border-d9 p-0 overflow-hidden">
+            @csrf
             <div class="flex items-center justify-between gap-3 px-6 pt-6 pe-14">
                 <h3 class="font-bold text-22px text-primary">تقييم التكليف</h3>
                 <button type="button" class="btn btn-text btn-circle btn-sm absolute end-3 top-3" aria-label="إغلاق"
@@ -30,7 +33,8 @@
                         درجة الواجب *
                     </label>
                     <div class="flex items-center border-2 border-primary rounded-12px overflow-hidden">
-                        <input id="grade-input" type="number" value="25" min="0" max="{{ $maxGrade }}"
+                        <input id="grade-input" name="grade" type="number"
+                            value="{{ old('grade', $historyGrade ?? 25) }}" min="0" max="{{ $maxGrade }}"
                             class="input border-0 w-full h-14 font-bold text-24px text-primary focus:outline-none">
                         <span class="px-4 font-medium text-13px text-gray whitespace-nowrap">
                             الدرجة العظمى: {{ $maxGrade }}
@@ -50,12 +54,11 @@
                         data-overlay="#instructor-grade-modal">
                         السابق
                     </button>
-                    <button type="button" class="btn btn-primary rounded-12px h-12 px-6 font-bold text-15px"
-                        data-overlay="#instructor-grade-modal">
+                    <button type="submit" class="btn btn-primary rounded-12px h-12 px-6 font-bold text-15px">
                         إرسال الدرجة والاعتماد
                     </button>
                 </div>
             </div>
-        </div>
+        </form>
     </div>
 </div>

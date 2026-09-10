@@ -55,7 +55,9 @@
 
         <div>
             <div id="settings-tabs-1" role="tabpanel" aria-labelledby="settings-tabs-item-1">
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <form action="{{ route('panel.v1.student.settings.update') }}" method="POST">
+                    @csrf
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     {{-- Main column --}}
                     <div class="lg:col-span-7 flex flex-col gap-8">
                         <div class="border border-d9 rounded-20px bg-white px-8 py-8">
@@ -64,32 +66,32 @@
                             <div class="space-y-7">
                                 <div class="relative">
                                     <label class="absolute -top-2.5 start-4 z-[1] bg-white px-2 font-medium text-13px text-gray">الاسم</label>
-                                    <input type="text" value="{{ $authUser->full_name ?? '' }}"
+                                    <input type="text" name="full_name" value="{{ old('full_name', $authUser->full_name ?? '') }}"
                                         class="input input-bordered w-full h-14 rounded-10px border-d9 font-medium text-16px text-black focus:outline-none focus:border-primary">
                                 </div>
                                 <div class="relative">
                                     <label class="absolute -top-2.5 start-4 z-[1] bg-white px-2 font-medium text-13px text-gray">البريد الإلكتروني</label>
-                                    <input type="email" value="{{ $authUser->email ?? '' }}"
+                                    <input type="email" name="email" value="{{ old('email', $authUser->email ?? '') }}"
                                         class="input input-bordered w-full h-14 rounded-10px border-d9 font-medium text-16px text-black focus:outline-none focus:border-primary">
                                 </div>
                                 <div class="relative">
                                     <label class="absolute -top-2.5 start-4 z-[1] bg-white px-2 font-medium text-13px text-gray">هاتف</label>
-                                    <input type="text" value="{{ $authUser->mobile ?? '' }}"
+                                    <input type="text" name="mobile" value="{{ old('mobile', $authUser->mobile ?? '') }}"
                                         class="input input-bordered w-full h-14 rounded-10px border-d9 font-medium text-16px text-black focus:outline-none focus:border-primary">
                                 </div>
                                 <div class="relative">
                                     <label class="absolute -top-2.5 start-4 z-[1] bg-white px-2 font-medium text-13px text-gray">كلمة المرور</label>
-                                    <input type="password" value=""
+                                    <input type="password" name="password" value=""
                                         class="input input-bordered w-full h-14 rounded-10px border-d9 font-medium text-16px text-black focus:outline-none focus:border-primary">
                                 </div>
                                 <div class="relative">
                                     <label class="absolute -top-2.5 start-4 z-[1] bg-white px-2 font-medium text-13px text-gray">اعد كتابة كلمة المرور</label>
-                                    <input type="password" value=""
+                                    <input type="password" name="password_confirmation" value=""
                                         class="input input-bordered w-full h-14 rounded-10px border-d9 font-medium text-16px text-black focus:outline-none focus:border-primary">
                                 </div>
                                 <div class="relative">
                                     <label class="absolute -top-2.5 start-4 z-[1] bg-white px-2 font-medium text-13px text-gray">كلمة المرور الحالية</label>
-                                    <input type="password" value=""
+                                    <input type="password" name="current_password" value=""
                                         class="input input-bordered w-full h-14 rounded-10px border-d9 font-medium text-16px text-black focus:outline-none focus:border-primary">
                                 </div>
                             </div>
@@ -119,12 +121,12 @@
                             <div class="space-y-7">
                                 <div class="relative">
                                     <label class="absolute -top-2.5 start-4 z-[1] bg-white px-2 font-medium text-13px text-gray">لغة</label>
-                                    <input type="text" value="العربية"
+                                    <input type="text" name="language" value="{{ old('language', $authUser->language ?? 'العربية') }}"
                                         class="input input-bordered w-full h-14 rounded-10px border-d9 font-medium text-16px text-black focus:outline-none focus:border-primary">
                                 </div>
                                 <div class="relative">
                                     <label class="absolute -top-2.5 start-4 z-[1] bg-white px-2 font-medium text-13px text-gray">المنطقة الزمنية</label>
-                                    <input type="text" value="Asia/Riyadh"
+                                    <input type="text" name="timezone" value="{{ old('timezone', $authUser->timezone ?? 'Asia/Riyadh') }}"
                                         class="input input-bordered w-full h-14 rounded-10px border-d9 font-medium text-16px text-black focus:outline-none focus:border-primary">
                                 </div>
                             </div>
@@ -151,7 +153,13 @@
 
                         <!-- <div class="border border-d9 rounded-20px bg-white min-h-40"></div> -->
                     </div>
-                </div>
+
+                    <div class="mt-8">
+                        <button type="submit" class="btn btn-primary rounded-10px h-14 px-10 font-bold text-18px">
+                            حفظ الإعدادات
+                        </button>
+                    </div>
+                </form>
             </div>
 
             @foreach ([

@@ -39,6 +39,8 @@
         @endforeach
     </nav>
 
+    <form method="POST" action="{{ route('panel.v1.instructor.settings.update') }}">
+        @csrf
     {{-- ===================== Tab 1: Basic ===================== --}}
     <div id="instructor-settings-1" role="tabpanel" aria-labelledby="instructor-settings-tab-1">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 items-start">
@@ -49,11 +51,11 @@
                     <div class="space-y-6">
                         <div class="relative">
                             <label class="{{ $label }}">الاسم</label>
-                            <input type="text" value="{{ $name }}" class="{{ $input }}">
+                            <input type="text" name="full_name" value="{{ old('full_name', $name) }}" class="{{ $input }}">
                         </div>
                         <div class="relative">
                             <label class="{{ $label }}">البريد الإلكتروني</label>
-                            <input type="email" value="{{ $email }}" class="{{ $input }}">
+                            <input type="email" name="email" value="{{ old('email', $email) }}" class="{{ $input }}">
                         </div>
                         <div class="relative">
                             <label class="{{ $label }}">هاتف</label>
@@ -64,16 +66,16 @@
                                     <option value="+20">مصر (+20)</option>
                                     <option value="+962">الأردن (+962)</option>
                                 </select>
-                                <input type="tel" value="{{ $phone }}" class="{{ $input }} flex-1" placeholder="5xxxxxxxx">
+                                <input type="tel" name="mobile" value="{{ old('mobile', $phone) }}" class="{{ $input }} flex-1" placeholder="5xxxxxxxx">
                             </div>
                         </div>
                         <div class="relative">
-                            <label class="{{ $label }}">كلمة المرور</label>
-                            <input type="password" class="{{ $input }}">
+                            <label class="{{ $label }}">كلمة المرور الجديدة (اتركها فارغة للإبقاء)</label>
+                            <input type="password" name="password" class="{{ $input }}">
                         </div>
                         <div class="relative">
                             <label class="{{ $label }}">أعد كتابة كلمة المرور</label>
-                            <input type="password" class="{{ $input }}">
+                            <input type="password" name="password_confirmation" class="{{ $input }}">
                         </div>
                     </div>
                 </div>
@@ -97,14 +99,14 @@
                     <div class="space-y-6">
                         <div class="relative">
                             <label class="{{ $label }}">لغة</label>
-                            <select class="{{ $select }}">
-                                <option selected>العربية</option>
-                                <option>English</option>
+                            <select name="language" class="{{ $select }}">
+                                <option value="ar" selected>العربية</option>
+                                <option value="en">English</option>
                             </select>
                         </div>
                         <div class="relative">
                             <label class="{{ $label }}">المنطقة الزمنية</label>
-                            <select class="{{ $select }}">
+                            <select name="timezone" class="{{ $select }}">
                                 <option value="">اختر</option>
                                 <option selected>Asia/Riyadh</option>
                                 <option>Asia/Dubai</option>
@@ -118,11 +120,11 @@
                     <h2 class="font-bold text-20px sm:text-22px text-primary mb-6 sm:mb-8 text-start">وضع الإجازة</h2>
                     <div class="flex items-center justify-between gap-4 mb-6">
                         <p class="font-medium text-15px sm:text-16px text-primary text-start">تفعيل وضع الإجازة</p>
-                        <input type="checkbox" class="switch switch-primary shrink-0" aria-label="تفعيل وضع الإجازة">
+                        <input type="checkbox" name="offline" value="1" class="switch switch-primary shrink-0" aria-label="تفعيل وضع الإجازة">
                     </div>
                     <div class="relative mb-4">
                         <label class="{{ $label }}">رسالة أوفلاين</label>
-                        <textarea rows="5" class="{{ $textarea }}"></textarea>
+                        <textarea rows="5" name="offline_message" class="{{ $textarea }}"></textarea>
                     </div>
                     <p class="font-medium text-13px sm:text-14px text-gray leading-relaxed text-start">
                         عند عدم نشاط حسابك، ستظهر رسالة في ملفك الشخصي. يمكنك إضافة رسالة شخصية أدناه.
@@ -600,10 +602,11 @@
     </div>
 
     <div class="flex justify-end pt-2">
-        <button type="button"
+        <button type="submit"
             class="inline-flex items-center justify-center min-w-44 h-12 sm:h-14 px-8 rounded-10px bg-primary text-white font-semibold text-16px sm:text-18px hover:opacity-90 transition">
             حفظ التغييرات
         </button>
     </div>
+    </form>
 </div>
 @endsection

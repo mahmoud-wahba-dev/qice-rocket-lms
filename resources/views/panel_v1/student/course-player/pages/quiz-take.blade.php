@@ -20,35 +20,53 @@
         </p>
     </div>
 
+    <form method="POST" action="{{ route('panel.v1.student.course.quiz.answer', ['slug' => $courseSlug]) }}">
+        @csrf
+        <input type="hidden" name="quiz_id" value="{{ $take['quiz_id'] ?? '' }}">
+        <input type="hidden" name="question_id" value="{{ $take['question_id'] ?? '' }}">
+        <input type="hidden" name="q" value="{{ $take['current'] ?? 1 }}">
+
     <div class="border border-d9 rounded-20px bg-white px-5 sm:px-8 py-8">
         <h2 class="font-extrabold text-24px sm:text-28px text-primary mb-2">{{ $take['question_title'] ?? '' }}</h2>
         <p class="font-medium text-15px text-gray mb-8">{{ $take['instruction'] ?? '' }}</p>
 
-        <div class="space-y-4" role="radiogroup" aria-label="خيارات الإجابة">
-            @foreach ($options as $option)
-                @php $selected = !empty($option['selected']); @endphp
-                <label
-                    class="flex items-center gap-4 rounded-14px border px-4 sm:px-5 py-4 cursor-pointer transition
-                           {{ $selected ? 'border-primary bg-primary/5' : 'border-d9 bg-white hover:border-primary/40' }}">
-                    <input type="radio" name="quiz_option" value="{{ $option['id'] }}"
-                        class="radio radio-primary" {{ $selected ? 'checked' : '' }}>
-                    <span class="font-medium text-15px sm:text-16px text-black leading-snug">{{ $option['text'] }}</span>
-                </label>
-            @endforeach
-        </div>
+        @if (!empty($take['is_descriptive']))
+            <textarea name="answer_text" rows="6"
+                class="textarea textarea-bordered w-full rounded-14px border-d9 font-medium text-16px focus:outline-none focus:border-primary min-h-40"
+                placeholder="اكتب إجابتك هنا...">{{ old('answer_text', $take['saved_text'] ?? '') }}</textarea>
+        @else
+            <div class="space-y-4" role="radiogroup" aria-label="خيارات الإجابة">
+                @foreach ($options as $option)
+                    <label
+                        class="flex items-center gap-4 rounded-14px border px-4 sm:px-5 py-4 cursor-pointer transition
+                               {{ (string) old('quiz_option', $take['saved_option'] ?? '') === (string) $option['id'] ? 'border-primary bg-primary/5' : 'border-d9 bg-white hover:border-primary/40' }}">
+                        <input type="radio" name="quiz_option" value="{{ $option['id'] }}"
+                            class="radio radio-primary" {{ (string) old('quiz_option', $take['saved_option'] ?? '') === (string) $option['id'] ? 'checked' : '' }}>
+                        <span class="font-medium text-15px sm:text-16px text-black leading-snug">{{ $option['text'] }}</span>
+                    </label>
+                @endforeach
+            </div>
+        @endif
     </div>
 
     <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
-           <button type="button" class="btn btn-ghost rounded-12px h-12 px-6 font-semibold text-15px text-gray border border-d9"
-            disabled>
-            السابق
-        </button>
-        <a href="{{ route('panel.v1.student.course.quiz.take', ['slug' => $courseSlug]) }}"
+        @if (($take['current'] ?? 1) > 1)
+            <a href="{{ route('panel.v1.student.course.quiz.take', ['slug' => $courseSlug, 'q' => ($take['current'] ?? 1) - 1]) }}"
+                class="btn btn-ghost rounded-12px h-12 px-6 font-semibold text-15px text-gray border border-d9">
+                السابق
+            </a>
+        @else
+            <button type="button" class="btn btn-ghost rounded-12px h-12 px-6 font-semibold text-15px text-gray border border-d9"
+                disabled>
+                السابق
+            </button>
+        @endif
+        <button type="submit"
             class="btn btn-primary rounded-12px h-12 px-6 font-bold text-15px gap-2">
-            السؤال التالي 
+            {{ !empty($take['is_last']) ? 'إنهاء الاختبار' : 'السؤال التالي' }}
             <span class="icon-[tabler--arrow-left] size-5"></span>
-        </a>
-
+        </button>
     </div>
+    </form>
 </div>
 @endsection

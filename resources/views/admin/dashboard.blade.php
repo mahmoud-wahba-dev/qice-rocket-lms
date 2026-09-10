@@ -8,47 +8,34 @@
 
 @section('content')
 
-    <section class="section">
-        <div class="row">
-            <div class="col-12 mb-3">
-                <div class="hero rounded-12 text-white hero-bg-image bg-secondary" data-background="{{ !empty(getThemePageBackgroundSettings('admin_dashboard')) ? getThemePageBackgroundSettings('admin_dashboard') : '' }}">
-                    <div class="hero-inner">
-                        <h2>{{trans('admin/main.welcome')}}, {{ $authUser->full_name }}!</h2>
-
-                        <div class="d-flex flex-column flex-lg-row align-items-center justify-content-between">
-                            @can('admin_general_dashboard_quick_access_links')
-                                <div>
-                                    <p class="lead">{{trans('admin/main.welcome_card_text')}}</p>
-
-                                    <div class="mt-4 mb-2 d-flex align-items-center gap-16 rounded-24 flex-column flex-md-row">
-                                        <a href="{{ getAdminPanelUrl() }}/comments/webinars" class="mt-2 mt-md-0 rounded-16 btn btn-outline-white btn-lg btn-icon icon-left">
-                                            <x-iconsax-lin-message class="mr-1 icons" width="24px" height="24px"/>{{trans('admin/main.comments')}} </a>
-                                        <a href="{{ getAdminPanelUrl() }}/supports" class="mt-2 mt-md-0 btn rounded-16 btn-outline-white btn-lg btn-icon icon-left">
-                                            <x-iconsax-lin-sms class="mr-1 icons" width="24px" height="24px"/>{{trans('admin/main.tickets')}}</a>
-                                        <a href="{{ getAdminPanelUrl() }}/reports/webinars" class="mt-2 mt-md-0 btn rounded-16 btn-outline-white btn-lg btn-icon icon-left">
-                                            <x-iconsax-lin-info-circle class="mr-1 icons" width="24px" height="24px"/>{{trans('admin/main.reports')}}</a>
-                                    </div>
-                                </div>
-                            @endcan
-
-                            @can('admin_clear_cache')
-                                <div class="w-xs-to-lg-100">
-                                    <p class="lead d-none d-lg-block">&nbsp;</p>
-
-                                    @include('admin.includes.delete_button',[
-                                                     'url' => getAdminPanelUrl().'/clear-cache',
-                                                     'btnClass' => 'rounded-16 text-white border btn-outline-white font-14 btn-lg btn-icon icon-left mt-6',
-                                                     'btnText' => trans('admin/main.clear_all_cache'),
-                                                     'btnIcon' => 'trash',
-                                                     'iconType' => 'lin',
-                                                     'iconClass' => 'text-white mr-2',
-                                                  ])
-                                </div>
-                            @endcan
-                        </div>
-                    </div>
+    <section class="qiec-dashboard">
+        <div class="qiec-hero mb-4 d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-4">
+            <div>
+                <h2 class="mb-2">{{trans('admin/main.welcome')}}, {{ $authUser->full_name }}!</h2>
+                <p class="mb-0" style="opacity:0.75; max-width:520px;">{{trans('admin/main.welcome_card_text')}}</p>
+                <div class="mt-4 d-flex flex-wrap gap-2">
+                    <a href="{{ getAdminPanelUrl() }}/comments/webinars" class="btn btn-outline-white btn-sm">
+                        <i class="fas fa-comments mr-1"></i> {{trans('admin/main.comments')}}
+                    </a>
+                    <a href="{{ getAdminPanelUrl() }}/supports" class="btn btn-outline-white btn-sm">
+                        <i class="fas fa-headset mr-1"></i> {{trans('admin/main.tickets')}}
+                    </a>
+                    <a href="{{ getAdminPanelUrl() }}/reports/webinars" class="btn btn-outline-white btn-sm">
+                        <i class="fas fa-chart-bar mr-1"></i> {{trans('admin/main.reports')}}
+                    </a>
                 </div>
             </div>
+            @can('admin_clear_cache')
+                <div>
+                    @include('admin.includes.delete_button',[
+                        'url' => getAdminPanelUrl().'/clear-cache',
+                        'btnClass' => 'btn btn-outline-white btn-sm',
+                        'btnText' => trans('admin/main.clear_all_cache'),
+                        'btnIcon' => 'trash',
+                        'iconType' => 'lin',
+                    ])
+                </div>
+            @endcan
         </div>
 
         <div class="row">

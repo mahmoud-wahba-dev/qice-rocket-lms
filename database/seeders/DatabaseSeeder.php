@@ -21,5 +21,9 @@ class DatabaseSeeder extends Seeder
         $this->call(ThemeHeaderFooterSeeder::class);
 
         $this->call(DefaultThemeSeeder::class);
+
+        $this->call(DefaultGeneralSeeder::class);
+
+        $this->call(DefaultFinancialSeeder::class);
     }
 }

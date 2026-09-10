@@ -3,6 +3,9 @@
     $rtlLanguages = !empty($generalSettings['rtl_languages']) ? $generalSettings['rtl_languages'] : [];
     $isRtl = ((in_array(mb_strtoupper(app()->getLocale()), $rtlLanguages)) or (!empty($generalSettings['rtl_layout']) and $generalSettings['rtl_layout'] == 1));
     $themeCustomCssAndJs = getThemeCustomCssAndJs();
+    // Cache-busting for locally built theme files (filemtime changes on rebuild)
+    $qiecCssVer = @filemtime(public_path('assets/admin/css/custom.css')) ?: time();
+    $qiecStyleVer = @filemtime(public_path('assets/admin/css/style.css')) ?: time();
 @endphp
 <head>
     @include('design_1.web.includes.metas')
@@ -15,10 +18,11 @@
 
     @stack('libraries_top')
 
-    <link rel="stylesheet" href="/assets/admin/css/style.css">
-    <link rel="stylesheet" href="/assets/admin/css/custom.css">
+    <link rel="stylesheet" href="/assets/admin/css/style.css?v={{ $qiecStyleVer }}">
     <link rel="stylesheet" href="/assets/admin/css/components.css">
     <link rel="stylesheet" href="/assets/admin/css/extra.min.css">
+    {{-- QIEC theme must load last to override Stisla defaults --}}
+    <link rel="stylesheet" href="/assets/admin/css/custom.css?v={{ $qiecCssVer }}">
     @if($isRtl)
         <link rel="stylesheet" href="/assets/admin/css/rtl.css">
     @endif

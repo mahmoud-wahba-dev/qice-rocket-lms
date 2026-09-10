@@ -55,7 +55,7 @@
                                     <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-56 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20"
                                         role="menu" aria-labelledby="course-menu-{{ $index }}">
                                         <li>
-                                            <a href="{{ route('panel.v1.instructor.courses.watch', ['slug' => $slug]) }}"
+                                            <a href="{{ route('panel.v1.instructor.courses.watch', ['slug' => ($course['slug'] ?? $slug)]) }}"
                                                 class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary">
                                                 <span class="icon-[tabler--minus] size-3.5 text-gray shrink-0"></span>
                                                 صفحة التعلم
@@ -69,21 +69,21 @@
                                             </a>
                                         </li>
                                         <li>
-                                            <a href="{{ route('panel.v1.instructor.courses.watch', ['slug' => $slug]) }}"
+                                            <a href="{{ route('panel.v1.instructor.courses.watch', ['slug' => ($course['slug'] ?? $slug)]) }}"
                                                 class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary">
                                                 <span class="icon-[tabler--minus] size-3.5 text-gray shrink-0"></span>
                                                 محتوى المحاضرات
                                             </a>
                                         </li>
                                         <li>
-                                            <a href="{{ route('panel.v1.instructor.courses.performance', ['slug' => $slug]) }}"
+                                            <a href="{{ route('panel.v1.instructor.courses.performance', ['slug' => ($course['slug'] ?? $slug)]) }}"
                                                 class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary">
                                                 <span class="icon-[tabler--minus] size-3.5 text-gray shrink-0"></span>
                                                 لوحة أداء الدورة
                                             </a>
                                         </li>
                                         <li>
-                                            <a href="{{ route('panel.v1.instructor.courses.assignments', ['slug' => $slug]) }}"
+                                            <a href="{{ route('panel.v1.instructor.courses.assignments', ['slug' => ($course['slug'] ?? $slug)]) }}"
                                                 class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary">
                                                 <span class="icon-[tabler--minus] size-3.5 text-gray shrink-0"></span>
                                                 الحضور والغياب

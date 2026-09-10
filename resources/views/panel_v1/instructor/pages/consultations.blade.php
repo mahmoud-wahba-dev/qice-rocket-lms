@@ -9,7 +9,7 @@
         'subtitle' => 'إدارة وجدولة الورش والجلسات التفاعلية المباشرة مع الطلاب',
     ])
         @slot('actions')
-            <a href="#"
+            <a href="{{ url('/panel/meetings/settings') }}"
                 class="inline-flex items-center justify-center gap-2 rounded-12px bg-color2 px-5 h-12 font-semibold text-16px text-white shrink-0 hover:opacity-95 transition">
                 <span class="icon-[tabler--plus] size-5"></span>
                 جدولة جلسة جديدة

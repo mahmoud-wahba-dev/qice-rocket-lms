@@ -2,23 +2,12 @@
     <x-iconsax-lin-add class="close-icon text-white" width="40px" height="40px"/>
 </button>
 
-<div class="main-sidebar">
+<div class="main-sidebar qiec-sidebar">
     <aside id="sidebar-wrapper">
-        <div class="sidebar-brand">
-            <a href="/">
-                @if(!empty($generalSettings['site_name']))
-                    {{ strtoupper($generalSettings['site_name']) }}
-                @else
-                    Platform Title
-                @endif
-            </a>
-        </div>
-        <div class="sidebar-brand sidebar-brand-sm">
-            <a href="/">
-                @if(!empty($generalSettings['site_name']))
-                    {{ strtoupper(substr($generalSettings['site_name'],0,2)) }}
-                @endif
-            </a>
+        <div class="qiec-brand">
+            <img src="/assets/admin/img/qiec-logo.svg" alt="QIEC" width="64" height="64"
+                onerror="this.style.display='none'">
+            <p class="qiec-brand__title">لوحة التحكم</p>
         </div>
 
         <ul class="sidebar-menu">

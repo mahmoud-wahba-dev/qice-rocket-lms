@@ -13,8 +13,19 @@ class AddColumnToPaymentChannelsTable extends Migration
      */
     public function up()
     {
+        // NOTE(local-fix): payment_channels has `credentials`, not `settings`; anchor safely + idempotent.
         Schema::table('payment_channels', function (Blueprint $table) {
-            $table->text('currencies')->nullable()->after('settings');
+            if (Schema::hasColumn('payment_channels', 'currencies')) {
+                return;
+            }
+            $anchor = Schema::hasColumn('payment_channels', 'settings')
+                ? 'settings'
+                : (Schema::hasColumn('payment_channels', 'credentials') ? 'credentials' : null);
+            if ($anchor) {
+                $table->text('currencies')->nullable()->after($anchor);
+            } else {
+                $table->text('currencies')->nullable();
+            }
         });
     }
 }

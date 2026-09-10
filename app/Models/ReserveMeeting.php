@@ -24,7 +24,9 @@ class ReserveMeeting extends Model
 
     public function meeting()
     {
-        return $this->belongsTo('App\Models\Meeting', 'meeting_id', 'id');
+        // NOTE: reserve_meetings.meeting_id was renamed to meeting_time_id by an old
+        // migration (2020_11_11), so the meeting is reached through the meeting time.
+        return $this->hasOneThrough('App\Models\Meeting', 'App\Models\MeetingTime', 'id', 'id', 'meeting_time_id', 'meeting_id');
     }
 
     public function sale()

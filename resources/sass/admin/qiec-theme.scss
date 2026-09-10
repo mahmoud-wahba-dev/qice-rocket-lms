@@ -1,0 +1,682 @@
+/* ==========================================================================
+   QIEC admin theme — matches Figma (dark green sidebar + gold accents)
+   Source: resources/sass/admin/qiec-theme.scss
+   Output: public/assets/admin/css/custom.css (overrides Stisla defaults)
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --qiec-primary: #0f4c45;
+    --qiec-primary-dark: #0a3833;
+    --qiec-primary-light: #1a6b60;
+    --qiec-gold: #c99c69;
+    --qiec-gold-dark: #b08a58;
+    --qiec-bg: #faf8f4;
+    --qiec-card-border: #e8e4dc;
+    --qiec-text: #1f2937;
+    --qiec-gray: #6b7280;
+    --qiec-green-soft: #e8f5e9;
+    --qiec-green: #00b31b;
+}
+
+body {
+    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif !important;
+    background-color: var(--qiec-bg) !important;
+    color: var(--qiec-text);
+}
+
+/* ---------- Sidebar ---------- */
+.main-sidebar {
+    background: var(--qiec-primary) !important;
+    box-shadow: none !important;
+}
+
+.main-sidebar .sidebar-brand {
+    background: var(--qiec-primary) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    height: 90px !important;
+    line-height: 1.4 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.main-sidebar .sidebar-brand a {
+    color: #fff !important;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 1px;
+}
+
+.main-sidebar .sidebar-brand img.qiec-logo {
+    max-height: 56px;
+    width: auto;
+}
+
+.sidebar-menu li.menu-header {
+    color: var(--qiec-gold) !important;
+    font-size: 12px !important;
+    font-weight: 700;
+    padding-top: 18px !important;
+}
+
+.sidebar-menu li a.nav-link {
+    color: rgba(255, 255, 255, 0.88) !important;
+    font-weight: 600;
+}
+
+.sidebar-menu li a.nav-link:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #fff !important;
+}
+
+.sidebar-menu li.active > a.nav-link,
+.sidebar-menu li a.nav-link.active {
+    background: rgba(255, 255, 255, 0.14) !important;
+    color: #fff !important;
+    border-radius: 10px;
+}
+
+.sidebar-menu li ul.dropdown-menu {
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.sidebar-menu li ul.dropdown-menu li a {
+    color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.sidebar-menu li ul.dropdown-menu li.active a,
+.sidebar-menu li ul.dropdown-menu li a:hover {
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.sidebar-menu .icons {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* ---------- Top navbar ---------- */
+.navbar-bg {
+    background: #fff !important;
+    box-shadow: 0 1px 6px rgba(15, 76, 69, 0.06) !important;
+    height: 76px !important;
+}
+
+.navbar {
+    height: 76px !important;
+}
+
+.main-content {
+    padding-top: 100px !important;
+}
+
+/* ---------- Cards / sections ---------- */
+.main-content .section-body .card,
+.card {
+    border: 1px solid var(--qiec-card-border) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 2px 10px rgba(15, 76, 69, 0.04) !important;
+}
+
+.card .card-header {
+    border-bottom: 1px solid var(--qiec-card-border) !important;
+}
+
+.card .card-header h4 {
+    color: var(--qiec-primary) !important;
+    font-weight: 800 !important;
+}
+
+.section .section-header h1,
+.main-content h1.section-title {
+    color: var(--qiec-primary) !important;
+    font-weight: 800 !important;
+}
+
+/* ---------- Buttons ---------- */
+.btn-primary,
+.btn-primary.disabled {
+    background-color: var(--qiec-primary) !important;
+    border-color: var(--qiec-primary) !important;
+    border-radius: 10px;
+    font-weight: 700;
+    box-shadow: none !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+    background-color: var(--qiec-primary-dark) !important;
+    border-color: var(--qiec-primary-dark) !important;
+}
+
+.btn-gold-qiec {
+    background-color: var(--qiec-gold) !important;
+    border-color: var(--qiec-gold) !important;
+    color: #fff !important;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+.btn-gold-qiec:hover {
+    background-color: var(--qiec-gold-dark) !important;
+    border-color: var(--qiec-gold-dark) !important;
+    color: #fff !important;
+}
+
+/* Page-level CTA buttons (card headers) are gold per Figma;
+   form submits inside card bodies stay dark green. */
+.card-header .btn-primary,
+.section-header .btn-primary {
+    background-color: var(--qiec-gold) !important;
+    border-color: var(--qiec-gold) !important;
+}
+
+.card-header .btn-primary:hover,
+.section-header .btn-primary:hover {
+    background-color: var(--qiec-gold-dark) !important;
+    border-color: var(--qiec-gold-dark) !important;
+}
+
+/* ---------- Tables ---------- */
+.table thead th {
+    color: var(--qiec-gray) !important;
+    font-weight: 600 !important;
+    font-size: 13px;
+    border-bottom: 1px solid var(--qiec-card-border) !important;
+    background: transparent !important;
+}
+
+.table td {
+    border-top: 1px solid #f0ede6 !important;
+    vertical-align: middle !important;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: transparent !important;
+}
+
+/* status pill */
+.badge-success,
+.badge.badge-success {
+    background: var(--qiec-green-soft) !important;
+    color: var(--qiec-green) !important;
+    border-radius: 8px;
+    font-weight: 700;
+}
+
+/* ---------- Pagination ---------- */
+.page-item.active .page-link {
+    background-color: var(--qiec-primary) !important;
+    border-color: var(--qiec-primary) !important;
+    border-radius: 50% !important;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.page-link {
+    color: var(--qiec-primary) !important;
+    border: none !important;
+    border-radius: 50% !important;
+    margin: 0 2px;
+}
+
+/* ---------- Tabs ---------- */
+.nav-tabs .nav-link.active,
+.tabs .tab.active {
+    color: var(--qiec-primary) !important;
+    border-bottom: 2px solid var(--qiec-primary) !important;
+    font-weight: 700;
+}
+
+.nav-tabs .nav-link {
+    color: var(--qiec-gray) !important;
+    font-weight: 600;
+}
+
+/* ---------- Forms / filters ---------- */
+.form-control,
+.custom-select,
+select.form-control {
+    border-radius: 10px !important;
+    border-color: #e0dcd4 !important;
+}
+
+.form-control:focus {
+    border-color: var(--qiec-primary) !important;
+    box-shadow: 0 0 0 2px rgba(15, 76, 69, 0.08) !important;
+}
+
+.input-group-text {
+    background: #f4f2ec !important;
+    border-color: #e0dcd4 !important;
+    border-radius: 10px !important;
+}
+
+/* ---------- Modal ---------- */
+.modal-content {
+    border-radius: 20px !important;
+    border: none !important;
+}
+
+/* ---------- Top admin header (Figma: white bar) ---------- */
+.admin-header {
+    background: #fff !important;
+    border-bottom: 1px solid #eee9dd;
+    box-shadow: 0 1px 6px rgba(15, 76, 69, 0.06);
+    border-radius: 0 !important;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+}
+
+.admin-header .icons {
+    color: var(--qiec-primary) !important;
+}
+
+.admin-header .about-system-select > div,
+.admin-header .js-show-ai-content-drawer {
+    background-color: #f4f2ec !important;
+}
+
+.admin-header .navbar-auth-user__info,
+.admin-header .navbar-auth-user__dropdown ~ *,
+.admin-header .text-white {
+    color: var(--qiec-text) !important;
+}
+
+.admin-header .navbar-auth-user .text-white {
+    color: var(--qiec-text) !important;
+}
+
+.btn-qiec-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--qiec-primary);
+    color: #fff !important;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 22px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.btn-qiec-pill:hover {
+    background: var(--qiec-primary-dark);
+    color: #fff !important;
+}
+
+.btn-qiec-pill .icons {
+    color: #fff !important;
+}
+
+/* ---------- QIEC topbar (Figma) ---------- */
+.qiec-topbar {
+    background: var(--qiec-primary);
+    min-height: 88px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 14px 28px;
+    position: sticky;
+    top: 0;
+    z-index: 900;
+    overflow: visible;
+    border-bottom: none;
+    box-shadow: none;
+    /* stick to top: no gap with sidebar on scroll */
+    margin: 0;
+}
+
+.qiec-topbar__logo img {
+    width: 52px;
+    height: 52px;
+}
+
+.qiec-topbar__avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #e8d9c0;
+    border: 4px solid #fff;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.qiec-topbar__avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.qiec-topbar__user {
+    color: #fff;
+    line-height: 1.4;
+}
+
+.qiec-topbar__username {
+    font-weight: 800;
+    font-size: 15px;
+    color: #fff;
+    margin: 0;
+}
+
+.qiec-topbar__role {
+    font-size: 12px;
+    color: rgba(255,255,255,0.75);
+    margin: 0;
+}
+
+.qiec-topbar__icons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-inline-start: auto;
+}
+
+.qiec-topbar__iconbtn {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.14);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.qiec-topbar__iconbtn .icons {
+    color: #fff !important;
+}
+
+.qiec-topbar__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--qiec-primary-dark);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff !important;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 22px;
+    border-radius: 999px;
+    white-space: nowrap;
+    margin-inline-start: auto;
+}
+
+.qiec-topbar__pill:hover {
+    background: #072a26;
+    color: #fff !important;
+}
+
+.qiec-topbar__pill .icons {
+    color: #fff !important;
+}
+
+.qiec-topbar__close {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    background: transparent;
+    border: none;
+    padding: 8px;
+}
+
+.qiec-topbar__close span {
+    width: 22px;
+    height: 2px;
+    background: #fff;
+    border-radius: 2px;
+}
+
+@media (max-width: 1024px) {
+    .qiec-topbar__close {
+        display: inline-flex;
+    }
+}
+
+/* Mobile sidebar close button: hidden on desktop, visible in drawer mode. */
+.sidebar-close {
+    display: none !important;
+    background: transparent;
+    border: none;
+    padding: 8px;
+}
+
+@media (max-width: 1024px) {
+    .sidebar-close {
+        display: inline-flex !important;
+        position: fixed;
+        top: 14px;
+        inset-inline-start: 14px;
+        z-index: 1050;
+    }
+}
+
+/* Bulletproof submenu backgrounds: Stisla paints
+   li.active ul.dropdown-menu near-white (#fcfcfd). Force transparent
+   at every level so the green sidebar never shows white blocks. */
+body .main-sidebar .sidebar-menu li.active ul.dropdown-menu,
+body .main-sidebar .sidebar-menu li ul.dropdown-menu {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+body .main-sidebar .sidebar-menu li ul.dropdown-menu li,
+body .main-sidebar .sidebar-menu li ul.dropdown-menu li a {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+body .main-sidebar .sidebar-menu li ul.dropdown-menu li a {
+    color: rgba(255, 255, 255, 0.75) !important;
+}
+
+body .main-sidebar .sidebar-menu li ul.dropdown-menu li.active a,
+body .main-sidebar .sidebar-menu li ul.dropdown-menu li a:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: #fff !important;
+}
+
+/* Sidebar lives BELOW the full-width topbar on desktop (Figma).
+   On mobile it returns to a full-height overlay drawer. */
+.main-sidebar.qiec-sidebar {
+    top: 0 !important;
+    /* hide the 1px white seam between sidebar and topbar */
+    margin-top: -1px;
+    padding-top: 1px;
+    height: 100% !important;
+}
+
+.main-content {
+    padding-top: 24px !important;
+}
+
+/* kill any white seam from main-wrapper background on scroll */
+.main-wrapper {
+    background: var(--qiec-primary);
+}
+
+.main-wrapper .main-content {
+    background: #f8fcfb;
+}
+
+/* ---------- Dashboard hero (Figma) ---------- */
+.qiec-hero {
+    background: #0b1220;
+    border-radius: 16px;
+    color: #fff;
+    padding: 28px 32px;
+}
+
+.qiec-hero h2 {
+    font-weight: 800;
+    font-size: 22px;
+}
+
+.qiec-hero .btn-outline-white {
+    border: 1px solid rgba(255,255,255,0.7);
+    color: #fff;
+    border-radius: 10px;
+}
+
+.qiec-hero .btn-outline-white:hover {
+    background: #fff;
+    color: #0b1220;
+}
+
+/* ---------- Fix icon rendering (card icons clipped) ---------- */
+.card-icon {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    overflow: visible !important;
+    line-height: 0;
+}
+
+.card-icon .icons,
+.card-icon svg,
+.card-icon i {
+    width: 24px !important;
+    height: 24px !important;
+    display: block;
+    flex-shrink: 0;
+}
+
+/* ensure size utilities don't clip */
+.size-48 {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px;
+    min-height: 48px;
+}
+
+/* ---------- QIEC sidebar shell (Figma) ---------- */
+.main-sidebar.qiec-sidebar {
+    background: var(--qiec-primary) !important;
+    width: 268px !important;
+}
+
+.main-sidebar.qiec-sidebar .qiec-brand {
+    text-align: center;
+    padding: 26px 12px 10px;
+}
+
+.main-sidebar.qiec-sidebar .qiec-brand img {
+    width: 64px;
+    height: 64px;
+}
+
+.main-sidebar.qiec-sidebar .qiec-brand__title {
+    color: #fff;
+    font-weight: 800;
+    font-size: 17px;
+    margin: 10px 0 0;
+}
+
+.main-sidebar.qiec-sidebar .sidebar-menu {
+    padding: 6px 14px 30px !important;
+}
+
+.main-sidebar.qiec-sidebar .sidebar-menu > li > a.nav-link {
+    border-radius: 10px;
+    margin: 1px 0;
+    padding: 10px 14px !important;
+    height: auto !important;
+}
+
+.main-sidebar.qiec-sidebar .sidebar-menu li.active > a.nav-link {
+    background: var(--qiec-primary-light) !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.main-sidebar.qiec-sidebar .sidebar-menu ul.dropdown-menu {
+    padding-inline-start: 12px !important;
+}
+
+.main-sidebar.qiec-sidebar .sidebar-menu ul.dropdown-menu li a.nav-link {
+    font-size: 13.5px;
+    padding: 8px 12px !important;
+    height: auto !important;
+}
+
+/* content backdrop per Figma */
+body {
+    background-color: #f8fcfb !important;
+}
+
+.main-content {
+    padding-top: 24px !important;
+}
+
+/* stat cards */
+.qiec-stat-card {
+    background: #fff;
+    border: 1px solid var(--qiec-card-border);
+    border-radius: 16px;
+    padding: 18px 20px;
+}
+
+.qiec-stat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+}
+
+.qiec-stat-icon--green { background: #e8f5e9; color: #00b31b; }
+.qiec-stat-icon--red { background: #fdecec; color: #ef4444; }
+.qiec-stat-icon--yellow { background: #fef6e0; color: #d99a06; }
+.qiec-stat-icon--blue { background: #e8effd; color: #2f6fed; }
+
+/* filter bars */
+.qiec-filterbar {
+    background: #fff;
+    border: 1px solid var(--qiec-card-border);
+    border-radius: 16px;
+}
+
+.qiec-filterbar .form-control,
+.qiec-filterbar .custom-select {
+    background-color: #f4f6f8 !important;
+}
+
+/* ---------- Links ---------- */
+a {
+    color: var(--qiec-primary);
+}
+
+a:hover {
+    color: var(--qiec-primary-dark);
+}
+
+/* ---------- Misc Stisla leftovers ---------- */
+.main-sidebar .sidebar-menu li a .feather,
+.main-sidebar .sidebar-menu li a i {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.dropdown-menu .dropdown-item:active,
+.dropdown-menu .dropdown-item:focus {
+    background-color: rgba(15, 76, 69, 0.08) !important;
+    color: var(--qiec-primary) !important;
+}
+
+.text-primary {
+    color: var(--qiec-primary) !important;
+}
+
+.bg-primary {
+    background-color: var(--qiec-primary) !important;
+}
