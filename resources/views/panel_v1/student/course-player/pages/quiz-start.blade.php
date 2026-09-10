@@ -49,6 +49,16 @@
             </p>
         </div>
 
+        @if (!empty($lastResult))
+            <div
+                class="rounded-14px border {{ ($lastResult['status'] ?? '') === 'passed' ? 'border-[#A7F3D0] bg-[#ECFDF5]' : 'border-d9 bg-[#F8FAFC]' }} px-4 sm:px-5 py-4 mb-10 max-w-2xl mx-auto">
+                <p class="font-bold text-18px text-primary mb-1">آخر محاولة: {{ $lastResult['grade'] ?? 0 }} درجة</p>
+                <p class="font-medium text-14px text-gray">
+                    الحالة: {{ ($lastResult['status'] ?? '') === 'passed' ? 'ناجح' : ((($lastResult['status'] ?? '') === 'waiting') ? 'بانتظار التصحيح' : 'راسب') }}
+                </p>
+            </div>
+        @endif
+
         <a href="{{ route('panel.v1.student.course.quiz.take', ['slug' => $courseSlug]) }}"
             class="btn btn-primary rounded-12px h-12 sm:h-14 px-8 sm:px-10 font-bold text-16px gap-2 inline-flex shadow-[0_8px_24px_rgba(15,76,69,0.25)]">
             ابدأ الاختبار الآن

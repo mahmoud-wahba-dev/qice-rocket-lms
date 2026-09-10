@@ -9,6 +9,7 @@
         <h2 class="font-bold text-18px sm:text-20px text-primary mb-1">نموذج التسعير</h2>
         <p class="font-medium text-14px text-gray">حدد ما إذا كانت الدورة مجانية أم مدفوعة</p>
     </div>
+    <input type="hidden" name="price" id="wizard-price" value="{{ old('price', $draftPrice ?? '') }}">
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
         <button type="button" data-price-type="free"
             class="text-start rounded-14px border border-d9 bg-white p-5 hover:border-primary/40 transition">
@@ -24,7 +25,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-6" data-paid-fields>
         <div>
             <label class="block font-semibold text-14px sm:text-15px text-primary mb-2">السعر الأساسي</label>
-            <input type="number" value="{{ $suggestedPrice ?? '299' }}" class="{{ $input }}">
+            <input type="number" id="wizard-price-input" value="{{ old('price', $draftPrice ?? ($suggestedPrice ?? '299')) }}" min="0" class="{{ $input }}">
         </div>
         <div>
             <label class="block font-semibold text-14px sm:text-15px text-primary mb-2">العملة</label>
@@ -78,6 +79,6 @@
     </div>
     <div>
         <label class="block font-semibold text-14px sm:text-15px text-primary mb-2">حدد عدد الطلاب</label>
-        <input type="number" class="{{ $input }}" placeholder="اتركه فارغًا لسعة غير محدودة">
+        <input type="number" name="capacity" value="{{ old('capacity', $draftCapacity ?? '') }}" min="1" class="{{ $input }}" placeholder="اتركه فارغًا لسعة غير محدودة">
     </div>
 </section>

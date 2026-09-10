@@ -303,7 +303,7 @@ class LoginController extends Controller
             return $redirect;
         }
 
-        return redirect('/panel');
+        return redirect(panelV1HomeUrl($user));
     }
 
     private function checkLoginDeviceLimit($user)

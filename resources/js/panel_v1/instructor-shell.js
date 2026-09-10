@@ -31,6 +31,17 @@ function initCreateCourseWizard(root) {
 
     // Course type cards
     const typeGroup = wrap.querySelector('[data-course-type-group]');
+    const typeValue = wrap.querySelector('[data-course-type-value]');
+    const syncTypeValue = () => {
+        if (!typeGroup || !typeValue) {
+            return;
+        }
+        const active = typeGroup.querySelector('[data-course-type].border-primary')
+            || typeGroup.querySelector('[data-course-type]');
+        if (active) {
+            typeValue.value = active.getAttribute('data-course-type') || 'recorded';
+        }
+    };
     if (typeGroup) {
         typeGroup.querySelectorAll('[data-course-type]').forEach((btn) => {
             btn.addEventListener('click', () => {
@@ -42,8 +53,10 @@ function initCreateCourseWizard(root) {
                 btn.classList.add('border-primary', 'bg-[#F7F0E6]');
                 btn.classList.remove('border-d9', 'bg-white');
                 btn.querySelector('[data-type-check]')?.classList.remove('hidden');
+                syncTypeValue();
             });
         });
+        syncTypeValue();
     }
 
     // Promo video tabs
@@ -77,7 +90,7 @@ function initCreateCourseWizard(root) {
         sync();
     }
 
-    // Tags
+    // Tags — serialize chips into hidden input on submit
     const tagRoot = wrap.querySelector('[data-tag-input]');
     if (tagRoot) {
         const list = tagRoot.querySelector('[data-tag-list]');
@@ -106,12 +119,35 @@ function initCreateCourseWizard(root) {
                 field.value = '';
             }
         });
+        const tagsValue = tagRoot.querySelector('[data-tags-value]');
+        const form = tagRoot.closest('form');
+        if (tagsValue && form) {
+            form.addEventListener('submit', () => {
+                const texts = [];
+                list?.querySelectorAll('[data-tag]').forEach((chip) => {
+                    const text = chip.firstChild?.textContent?.trim?.() ?? '';
+                    if (text) {
+                        texts.push(text);
+                    }
+                });
+                tagsValue.value = texts.join(',');
+            });
+        }
     }
 
     // Pricing model cards
     const pricing = wrap.querySelector('[data-pricing-model]');
     if (pricing) {
         const paidFields = pricing.querySelector('[data-paid-fields]');
+        const priceInput = wrap.querySelector('#wizard-price-input');
+        const priceHidden = wrap.querySelector('#wizard-price');
+        const syncPrice = () => {
+            if (priceInput && priceHidden) {
+                priceHidden.value = priceInput.value;
+            }
+        };
+        priceInput?.addEventListener('input', syncPrice);
+        syncPrice();
         pricing.querySelectorAll('[data-price-type]').forEach((btn) => {
             btn.addEventListener('click', () => {
                 pricing.querySelectorAll('[data-price-type]').forEach((el) => {
@@ -120,8 +156,14 @@ function initCreateCourseWizard(root) {
                 });
                 btn.classList.add('border-primary', 'bg-[#F7F0E6]');
                 btn.classList.remove('border-d9', 'bg-white');
+                const isFree = btn.getAttribute('data-price-type') === 'free';
                 if (paidFields) {
-                    paidFields.classList.toggle('hidden', btn.getAttribute('data-price-type') === 'free');
+                    paidFields.classList.toggle('hidden', isFree);
+                }
+                if (isFree && priceHidden) {
+                    priceHidden.value = '';
+                } else {
+                    syncPrice();
                 }
             });
         });

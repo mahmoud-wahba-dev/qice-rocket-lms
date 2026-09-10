@@ -50,6 +50,20 @@ class RegisterController extends Controller
     protected $redirectTo = '/panel';
 
     /**
+     * Role-based post-registration destination (redesigned V1 panels).
+     */
+    protected function redirectPath()
+    {
+        $user = auth()->user();
+
+        if (!empty($user)) {
+            return panelV1HomeUrl($user);
+        }
+
+        return $this->redirectTo;
+    }
+
+    /**
      * Create a new controller instance.
      *
      * @return void

@@ -12,6 +12,7 @@ use App\Policies\WebinarPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -38,9 +39,16 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerPolicies();
 
         $minutes = 60 * 60; // 1 hour
-        $sections = Cache::remember('sections', $minutes, function () {
-            return Section::all();
-        });
+        $sections = collect();
+        try {
+            if (Schema::hasTable('sections')) {
+                $sections = Cache::remember('sections', $minutes, function () {
+                    return Section::all();
+                });
+            }
+        } catch (\Throwable $e) {
+            $sections = collect();
+        }
 
         $scopes = [];
         foreach ($sections as $section) {

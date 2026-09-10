@@ -15,10 +15,18 @@
         <h2 class="font-semibold text-22px sm:text-26px text-primary">{{ $meta['title'] ?? '' }}</h2>
     </div>
 
-    <div class="space-y-5 sm:space-y-6">
-        @include('panel_v1.instructor.pages.create-course.step-'.$step)
-    </div>
+    <form method="POST" action="{{ route('panel.v1.instructor.courses.store') }}" enctype="multipart/form-data">
+        @csrf
+        <input type="hidden" name="wizard_step" value="{{ $step }}">
+        @if (!empty($draftId))
+            <input type="hidden" name="draft_id" value="{{ $draftId }}">
+        @endif
 
-    @include('panel_v1.instructor.components.create-course.footer')
+        <div class="space-y-5 sm:space-y-6">
+            @include('panel_v1.instructor.pages.create-course.step-'.$step)
+        </div>
+
+        @include('panel_v1.instructor.components.create-course.footer')
+    </form>
 </div>
 @endsection

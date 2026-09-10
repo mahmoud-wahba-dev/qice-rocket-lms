@@ -13,16 +13,52 @@ return new class extends Migration {
      */
     public function up()
     {
-        Schema::table('certificates', function (Blueprint $table) {
+        // NOTE(local-fix): split raws from schema adds; templates has no `type` col → add it.
+        try {
             DB::statement("ALTER TABLE `certificates` MODIFY COLUMN `type` enum('quiz', 'course', 'bundle') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL AFTER `user_grade`");
+        } catch (\Throwable $e) {
+            try {
+                DB::statement("ALTER TABLE `certificates` MODIFY COLUMN `type` enum('quiz', 'course', 'bundle') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL");
+            } catch (\Throwable $e2) {
+            }
+        }
 
-            // Add Bundle To certificates_templates
-            DB::statement("ALTER TABLE `certificates_templates` MODIFY COLUMN `type` enum('quiz', 'course', 'bundle') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL AFTER `image`");
+        if (!Schema::hasColumn('certificates_templates', 'type')) {
+            Schema::table('certificates_templates', function (Blueprint $table) {
+                if (Schema::hasColumn('certificates_templates', 'image')) {
+                    $table->enum('type', ['quiz', 'course', 'bundle'])->default('course')->after('image');
+                } else {
+                    $table->enum('type', ['quiz', 'course', 'bundle'])->default('course');
+                }
+            });
+        } else {
+            try {
+                DB::statement("ALTER TABLE `certificates_templates` MODIFY COLUMN `type` enum('quiz', 'course', 'bundle') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL AFTER `image`");
+            } catch (\Throwable $e) {
+            }
+        }
 
-            $table->integer('bundle_id')->unsigned()->nullable()->after('webinar_id');
-
-            $table->foreign('bundle_id')->on('bundles')->references('id')->cascadeOnDelete();
+        Schema::table('certificates', function (Blueprint $table) {
+            if (!Schema::hasColumn('certificates', 'bundle_id')) {
+                if (Schema::hasColumn('certificates', 'webinar_id')) {
+                    $table->integer('bundle_id')->unsigned()->nullable()->after('webinar_id');
+                } else {
+                    $table->integer('bundle_id')->unsigned()->nullable();
+                }
+            }
         });
+
+        $fkExists = collect(DB::select(
+            "SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'certificates' AND CONSTRAINT_NAME = 'certificates_bundle_id_foreign'"
+        ))->isNotEmpty();
+        if (!$fkExists && Schema::hasColumn('certificates', 'bundle_id')) {
+            try {
+                Schema::table('certificates', function (Blueprint $table) {
+                    $table->foreign('bundle_id')->on('bundles')->references('id')->cascadeOnDelete();
+                });
+            } catch (\Throwable $e) {
+            }
+        }
     }
 
 };

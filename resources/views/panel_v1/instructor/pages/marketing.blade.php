@@ -13,8 +13,8 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
         <button type="button"
             class="rounded-14px bg-[#EAF6F2] border border-transparent px-5 py-7 sm:py-8 center flex-col text-center hover:border-primary/20 hover:shadow-sm transition"
-            aria-haspopup="dialog" aria-controls="instructor-coupon-modal"
-            data-overlay="#instructor-coupon-modal">
+            aria-haspopup="dialog" aria-controls="instructor-discount-modal"
+            data-overlay="#instructor-discount-modal">
             <span class="size-12 rounded-12px bg-primary center mb-4 shrink-0">
                 <span class="icon-[tabler--ticket] size-6 text-white"></span>
             </span>

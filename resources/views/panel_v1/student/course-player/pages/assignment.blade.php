@@ -55,12 +55,33 @@
                 {{ $page['form_title'] ?? 'إجابة التكليف والتسليم' }}
             </h2>
 
+            @if (!empty($existingHistory))
+                <div class="rounded-12px bg-[#ECFDF5] border border-[#A7F3D0]/60 px-5 py-4 mb-6">
+                    <p class="font-semibold text-15px text-primary">
+                        أرسلت إجابتك مسبقًا — الحالة:
+                        {{ ($existingHistory->status ?? '') === 'passed' ? 'ناجح' : ((($existingHistory->status ?? '') === 'not_passed') ? 'راسب' : 'بانتظار التقييم') }}
+                        @if (!is_null($existingHistory->grade))
+                            ({{ $existingHistory->grade }})
+                        @endif
+                    </p>
+                </div>
+            @endif
+
+            @if (empty($assignment))
+                <p class="font-medium text-15px text-gray">لا يوجد تكليف متاح حالياً لهذه الدورة.</p>
+            @else
+            <form method="POST"
+                action="{{ route('panel.v1.student.course.assignment.submit', ['slug' => $courseSlug ?? ($slug ?? 'demo')]) }}"
+                enctype="multipart/form-data">
+                @csrf
+                <input type="hidden" name="assignment_id" value="{{ $assignment->id }}">
+
             <label for="assignment-answer" class="font-medium text-14px text-[#64748B] mb-2.5 block">
                 كتابة وصف
             </label>
 
             <div class="border border-[#E2E8F0] rounded-14px overflow-hidden mb-2 bg-white shadow-[inset_0_1px_0_rgba(15,23,42,0.04)]">
-                <textarea id="assignment-answer"
+                <textarea id="assignment-answer" name="answer"
                     class="w-full border-0 rounded-none px-4 pt-4 pb-2 font-medium text-15px text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none min-h-44 resize-y bg-transparent"
                     placeholder="ابدأ كتابة نص المقال هنا..."
                     data-word-limit="{{ $wordLimit }}"></textarea>
@@ -79,15 +100,17 @@
                 <span class="font-semibold text-14px sm:text-15px text-primary text-center">
                     اضغط هنا لرفع الملف بصيغة (PDF أو DOCX)
                 </span>
-                <input type="file" class="hidden" accept=".pdf,.doc,.docx" disabled>
+                <input type="file" name="upload" class="hidden" accept=".pdf,.doc,.docx">
             </label>
 
             <div class="flex justify-end">
-                <button type="button"
+                <button type="submit"
                     class="btn btn-primary rounded-12px h-12 px-8 font-bold text-16px shadow-[0_6px_20px_rgba(15,76,69,0.2)]">
                     أرسل الآن
                 </button>
             </div>
+            </form>
+            @endif
         </div>
     </div>
 </div>

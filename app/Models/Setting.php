@@ -134,9 +134,16 @@ class Setting extends Model implements TranslatableContract
     static function getSetting(&$static, $name, $key = null)
     {
         if (!isset($static)) {
-            $static = cache()->remember('settings.' . $name, 24 * 60 * 60, function () use ($name) {
-                return self::where('name', $name)->first();
-            });
+            try {
+                if (!\Illuminate\Support\Facades\Schema::hasTable('settings')) {
+                    return !empty($key) ? '' : [];
+                }
+                $static = cache()->remember('settings.' . $name, 24 * 60 * 60, function () use ($name) {
+                    return self::where('name', $name)->first();
+                });
+            } catch (\Throwable $e) {
+                return !empty($key) ? '' : [];
+            }
         }
 
         $value = [];

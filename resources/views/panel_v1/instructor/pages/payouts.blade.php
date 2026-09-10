@@ -29,10 +29,14 @@
                 </p>
             </div>
             <div class="mt-auto grid grid-cols-2 gap-2.5">
-                <button type="button"
-                    class="inline-flex items-center justify-center rounded-12px bg-white h-11 px-3 font-bold text-14px text-primary hover:opacity-95 transition">
-                    طلب سحب
-                </button>
+                <form method="POST" action="{{ route('panel.v1.instructor.payouts.request') }}"
+                    onsubmit="return confirm('تأكيد طلب سحب الرصيد المتاح؟');">
+                    @csrf
+                    <button type="submit"
+                        class="w-full inline-flex items-center justify-center rounded-12px bg-white h-11 px-3 font-bold text-14px text-primary hover:opacity-95 transition">
+                        طلب سحب
+                    </button>
+                </form>
                 <button type="button"
                     class="inline-flex items-center justify-center rounded-12px bg-white/15 border border-white/30 h-11 px-3 font-semibold text-14px text-white hover:bg-white/25 transition">
                     معلومات السحب

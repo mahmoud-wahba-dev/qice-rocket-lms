@@ -39,18 +39,20 @@
                     <div class="lg:col-span-8 px-8 py-10 lg:px-12 lg:py-12 ">
                         <h2 class="font-bold text-32px text-black mb-10">رسالة دعم جديدة</h2>
 
-                        <form class="space-y-8" action="#" method="POST" onsubmit="return false;">
+                        <form class="space-y-8" action="{{ route('panel.v1.student.support.store') }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="type" value="platform_support">
                             <div class="relative">
                                 <label for="support-type"
                                     class="absolute -top-2.5 start-4 z-[1] bg-white px-2 font-semibold text-14px text-gray">
-                                    اختر نوع الدعم
+                                    اختر قسم الدعم
                                 </label>
-                                <select id="support-type"
+                                <select id="support-type" name="department_id"
                                     class="select select-bordered w-full h-14 rounded-10px border-d9 font-medium text-16px text-black focus:outline-none focus:border-primary">
-                                    <option selected disabled>النوع</option>
-                                    <option>دعم فني</option>
-                                    <option>دعم مالي</option>
-                                    <option>استفسار عام</option>
+                                    <option selected disabled value="">القسم</option>
+                                    @foreach ($departments ?? [] as $department)
+                                        <option value="{{ $department->id }}">{{ $department->title }}</option>
+                                    @endforeach
                                 </select>
                             </div>
 
@@ -59,7 +61,7 @@
                                     class="absolute -top-2.5 start-4 z-[1] bg-white px-2 font-semibold text-14px text-gray">
                                     عنوان الموضوع
                                 </label>
-                                <input id="support-subject" type="text"
+                                <input id="support-subject" name="title" type="text" value="{{ old('title') }}"
                                     class="input input-bordered w-full h-14 rounded-10px border-d9 font-medium text-16px text-black focus:outline-none focus:border-primary"
                                     placeholder="">
                             </div>
@@ -69,7 +71,7 @@
                                     class="absolute -top-2.5 start-4 z-[1] bg-white px-2 font-semibold text-14px text-gray">
                                     الرسالة
                                 </label>
-                                <textarea id="support-message" rows="8"
+                                <textarea id="support-message" name="message" rows="8"
                                     class="textarea textarea-bordered w-full rounded-10px border-d9 font-medium text-16px text-black focus:outline-none focus:border-primary min-h-48 resize-y"
                                     placeholder=""></textarea>
                             </div>
@@ -127,17 +129,50 @@
             </div>
 
             <div id="support-tabs-2" class="hidden" role="tabpanel" aria-labelledby="support-tabs-item-2">
-                <div class="border border-d9 rounded-20px bg-white px-8 py-20 center flex-col text-center">
-                    <p class="font-semibold text-24px text-gray">تذاكر الدعم</p>
-                    <p class="font-medium text-16px text-gray mt-3">ستظهر تذاكر الدعم هنا قريباً.</p>
-                </div>
+                @forelse ($tickets ?? [] as $ticket)
+                    <div class="border border-d9 rounded-16px bg-white px-8 py-5 mb-4 flex items-center justify-between gap-4">
+                        <div class="min-w-0">
+                            <p class="font-semibold text-20px text-primary mb-1">{{ $ticket->title }}</p>
+                            <p class="font-medium text-14px text-gray">
+                                {{ $ticket->status === 'open' ? 'مفتوحة' : ($ticket->status === 'close' ? 'مغلقة' : 'تم الرد') }}
+                                —
+                                {{ date('Y/m/d', (int) $ticket->created_at) }}</p>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <a href="{{ url('/panel/support/' . $ticket->id . '/conversations') }}"
+                                class="font-bold text-14px px-4 py-2 rounded-8px bg-[#E8F5E9] text-[#00B31B]">
+                                عرض والرد
+                            </a>
+                            <span
+                                class="font-bold text-14px px-4 py-2 rounded-8px {{ $ticket->status === 'open' ? 'bg-[#E8F5E9] text-[#00B31B]' : 'bg-fa text-gray' }}">
+                                {{ $ticket->status === 'open' ? 'مفتوحة' : 'مغلقة' }}
+                            </span>
+                        </div>
+                    </div>
+                @empty
+                    <div class="border border-d9 rounded-20px bg-white px-8 py-20 center flex-col text-center">
+                        <p class="font-semibold text-24px text-gray">تذاكر الدعم</p>
+                        <p class="font-medium text-16px text-gray mt-3">لا توجد تذاكر بعد — أرسل رسالتك من تبويب التواصل.</p>
+                    </div>
+                @endforelse
             </div>
 
             <div id="support-tabs-3" class="hidden" role="tabpanel" aria-labelledby="support-tabs-item-3">
-                <div class="border border-d9 rounded-20px bg-white px-8 py-20 center flex-col text-center">
-                    <p class="font-semibold text-24px text-gray">دعم الدورات</p>
-                    <p class="font-medium text-16px text-gray mt-3">ستظهر طلبات دعم الدورات هنا قريباً.</p>
-                </div>
+                @forelse ($courseTickets ?? [] as $ticket)
+                    <div class="border border-d9 rounded-16px bg-white px-8 py-5 mb-4 flex items-center justify-between gap-4">
+                        <div class="min-w-0">
+                            <p class="font-semibold text-20px text-primary mb-1">{{ $ticket->title }}</p>
+                            <p class="font-medium text-14px text-gray">
+                                {{ optional($ticket->webinar)->title ?? '' }} —
+                                {{ date('Y/m/d', (int) $ticket->created_at) }}</p>
+                        </div>
+                    </div>
+                @empty
+                    <div class="border border-d9 rounded-20px bg-white px-8 py-20 center flex-col text-center">
+                        <p class="font-semibold text-24px text-gray">دعم الدورات</p>
+                        <p class="font-medium text-16px text-gray mt-3">لا توجد طلبات دعم مرتبطة بدورات حالياً.</p>
+                    </div>
+                @endforelse
             </div>
         </div>
     </div>

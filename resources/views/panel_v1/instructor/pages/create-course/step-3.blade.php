@@ -17,7 +17,18 @@
             <p class="font-semibold text-15px sm:text-16px text-primary mb-1">تفعيل الاختبارات والامتحانات</p>
             <p class="font-medium text-13px sm:text-14px text-gray">إضافة اختبارات داخل وحدات الدورة</p>
         </div>
-        <input type="checkbox" class="switch switch-primary shrink-0" aria-label="تفعيل الاختبارات">
+        <input type="checkbox" class="switch switch-primary shrink-0" aria-label="تفعيل الاختبارات" checked disabled>
+    </div>
+    <div class="mt-5">
+        <label class="block font-semibold text-14px sm:text-15px text-primary mb-2">ربط اختبار موجود بالدورة</label>
+        <select name="quiz_id"
+            class="select select-bordered w-full h-12 sm:h-14 rounded-10px border-d9 font-medium text-15px sm:text-16px text-black focus:outline-none focus:border-primary">
+            <option value="">بدون ربط (يمكن الإضافة لاحقًا)</option>
+            @foreach ($teacherQuizzes ?? [] as $teacherQuiz)
+                <option value="{{ $teacherQuiz['id'] }}">{{ $teacherQuiz['title'] }}</option>
+            @endforeach
+        </select>
+        <p class="font-medium text-13px text-gray mt-2">أو <a href="{{ route('panel.v1.instructor.quizzes.create') }}" class="text-primary font-bold">أنشئ اختبارًا جديدًا</a> ثم اربطه هنا.</p>
     </div>
 </section>
 
@@ -36,6 +47,7 @@
             <p class="font-semibold text-15px sm:text-16px text-primary mb-1">إصدار شهادة إتمام</p>
             <p class="font-medium text-13px sm:text-14px text-gray">تُصدر تلقائيًا عند تحقق شرط الإنجاز</p>
         </div>
-        <input type="checkbox" class="switch switch-primary shrink-0" aria-label="إصدار شهادة إتمام">
+        <input type="checkbox" name="certificate" value="1" class="switch switch-primary shrink-0" aria-label="إصدار شهادة إتمام"
+            {{ !empty($draftCertificate) ? 'checked' : '' }}>
     </div>
 </section>

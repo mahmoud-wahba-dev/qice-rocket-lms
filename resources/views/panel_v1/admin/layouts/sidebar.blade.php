@@ -8,27 +8,25 @@
         <p class="panel-v1-sidebar__group">عام</p>
         <a class="is-active" href="{{ route('panel.v1.admin.home') }}">لوحة التحكم الرئيسية</a>
 
-        <p class="panel-v1-sidebar__group">إدارة أكاديمية</p>
-        <a href="#">الدورات المباشرة</a>
-        <a href="#">الدورات المسجلة</a>
-        <a href="#">الدورات المكتوبة</a>
-        <a href="#">الباقات</a>
-        <a href="#">الفعاليات وورش العمل</a>
+        <p class="panel-v1-sidebar__group">المستخدمون</p>
+        <a href="{{ getAdminPanelUrl('/students') }}">المتدربون</a>
+        <a href="{{ getAdminPanelUrl('/instructors') }}">المدربون</a>
+        <a href="{{ getAdminPanelUrl('/organizations') }}">المنظمات</a>
+        <a href="{{ getAdminPanelUrl('/roles') }}">الأدوار</a>
 
-        <p class="panel-v1-sidebar__group">التقييمات والشهادات</p>
-        <a href="#">المهام</a>
-        <a href="#">الاختبارات</a>
-        <a href="#">الشهادات والاعتمادات</a>
+        <p class="panel-v1-sidebar__group">إدارة أكاديمية</p>
+        <a href="{{ getAdminPanelUrl('/webinars') }}">الدورات</a>
+        <a href="{{ getAdminPanelUrl('/reviews') }}">التقييمات</a>
+        <a href="{{ getAdminPanelUrl('/quizzes') }}">الاختبارات</a>
+        <a href="{{ getAdminPanelUrl('/certificates') }}">الشهادات</a>
 
         <p class="panel-v1-sidebar__group">التواصل</p>
-        <a href="#">منتديات الدورات</a>
-        <a href="#">الإشعارات</a>
-        <a href="#">التقييمات</a>
+        <a href="{{ getAdminPanelUrl('/supports') }}">الدعم</a>
+        <a href="{{ getAdminPanelUrl('/notifications') }}">الإشعارات</a>
 
-        <p class="panel-v1-sidebar__group">التسجيل والحضور</p>
-        <a href="#">التسجيل</a>
-        <a href="#">قوائم الانتظار</a>
-        <a href="#">سجلات الحضور</a>
+        <p class="panel-v1-sidebar__group">المالية والإعدادات</p>
+        <a href="{{ getAdminPanelUrl('/financial/sales') }}">المبيعات</a>
+        <a href="{{ getAdminPanelUrl('/settings/general') }}">الإعدادات</a>
     </nav>
 
     <a class="panel-v1-sidebar__logout" href="/logout">تسجيل الخروج</a>

@@ -44,6 +44,15 @@
                 </a>
             </li>
 
+            @if(!$authUser->isAdmin())
+                <li class="navbar-auth-user__dropdown-item">
+                    <a href="{{ panelV1HomeUrl($authUser) }}" class="d-flex align-items-center w-100 px-16 py-8 bg-transparent">
+                        <x-iconsax-lin-chart-2 class="icons" width="24px" height="24px"/>
+                        <span class="ml-8">اللوحة الجديدة</span>
+                    </a>
+                </li>
+            @endif
+
             <li class="navbar-auth-user__dropdown-item">
                 <a href="/panel/notifications" class="d-flex align-items-center w-100 px-16 py-8 bg-transparent">
                     <x-iconsax-lin-notification class="icons" width="24px" height="24px"/>

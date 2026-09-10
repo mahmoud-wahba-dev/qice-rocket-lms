@@ -1,6 +1,7 @@
 # === SECURITY: Never commit these ===
 /_backups/
 /.env
+/.env.testing
 /.env.backup
 /.env.production.bak
 /firebase-auth.json
@@ -16,6 +17,8 @@ app/logs/*.log
 /node_modules
 /public/hot
 /public/storage
+/public/bin
+/public/images
 /public/store/*
 /public/debug_paytabs.log
 

@@ -165,6 +165,24 @@
                                 </a>
                             </li>
                             <li>
+                                <a href="/panel"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                    اللوحة القديمة
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('panel.v1.student.favorites') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                    المفضلة
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('panel.v1.student.notes') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                    ملاحظاتي
+                                </a>
+                            </li>
+                            <li>
                                 <a href="/logout"
                                     class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-[#E11D48] hover:bg-red-50 transition">
                                     تسجيل الخروج

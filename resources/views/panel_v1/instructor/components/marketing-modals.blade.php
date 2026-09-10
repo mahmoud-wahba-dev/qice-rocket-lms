@@ -99,41 +99,25 @@
                 إضافة خصم جديد
             </h3>
 
-            <form class="space-y-5 text-start" onsubmit="return false;">
+            <form method="POST" action="{{ route('panel.v1.instructor.discounts.store') }}" class="space-y-5 text-start">
+                @csrf
                 <div>
                     <label for="discount-title" class="block font-semibold text-15px sm:text-16px text-primary mb-2">العنوان</label>
-                    <input id="discount-title" type="text" placeholder="اضف عنوان"
+                    <input id="discount-title" name="title" type="text" required maxlength="255" placeholder="اضف عنوان"
                         class="input input-bordered w-full h-12 sm:h-14 rounded-10px border-d9 font-medium text-15px sm:text-16px text-primary placeholder:text-gray">
                 </div>
 
                 <div>
-                    <label for="discount-courses" class="block font-semibold text-15px sm:text-16px text-primary mb-2">الدورات</label>
-                    <select id="discount-courses"
-                        class="select select-bordered w-full h-12 sm:h-14 rounded-10px border-d9 bg-white font-medium text-15px sm:text-16px text-primary">
-                        <option value="" disabled selected>حدد الدورات</option>
-                        <option value="demo">دبلومة UI/UX الشاملة</option>
-                        <option value="cphq">الممارس المعتمد CPHQ</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label for="discount-percent" class="block font-semibold text-15px sm:text-16px text-primary mb-2">نسبة الخصم</label>
-                    <input id="discount-percent" type="number" min="0" max="100" placeholder=""
+                    <label for="discount-percent" class="block font-semibold text-15px sm:text-16px text-primary mb-2">نسبة الخصم (1-100)</label>
+                    <input id="discount-percent" name="percent" type="number" min="1" max="100" required placeholder=""
                         class="input input-bordered w-full h-12 sm:h-14 rounded-10px border-d9 font-medium text-15px sm:text-16px text-primary">
-                </div>
-
-                <div>
-                    <label for="discount-range" class="block font-semibold text-15px sm:text-16px text-primary mb-2">نطاق تاريخ الخصم</label>
-                    <input id="discount-range" type="text" placeholder="اختر نطاق التاريخ"
-                        class="input input-bordered w-full h-12 sm:h-14 rounded-10px border-d9 font-medium text-15px sm:text-16px text-primary placeholder:text-gray">
                     <p class="font-medium text-13px sm:text-14px text-primary mt-2.5 leading-relaxed">
-                        سوف يتم انشاء الخصم بداية التاريخ المحدد
+                        سيتم توليد كود خصم تلقائيًا صالحًا لمدة 30 يومًا
                     </p>
                 </div>
 
                 <button type="submit"
-                    class="w-full inline-flex items-center justify-center rounded-12px bg-primary h-12 sm:h-14 font-bold text-16px sm:text-18px text-white hover:opacity-95 transition mt-2"
-                    data-overlay="#instructor-discount-modal">
+                    class="w-full inline-flex items-center justify-center rounded-12px bg-primary h-12 sm:h-14 font-bold text-16px sm:text-18px text-white hover:opacity-95 transition mt-2">
                     انشاء الخصم
                 </button>
             </form>

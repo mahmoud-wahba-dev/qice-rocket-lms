@@ -153,6 +153,13 @@
                         </a>
                     </li>
                     <li>
+                        <a href="/panel"
+                            class="flex items-center gap-3 px-3 py-2.5 rounded-10px font-medium text-18px text-white hover:bg-white/10 transition">
+                            <span class="icon-[tabler--layout-dashboard] size-5 shrink-0 text-white"></span>
+                            اللوحة القديمة
+                        </a>
+                    </li>
+                    <li>
                         <a href="/logout"
                             class="flex items-center gap-3 px-3 py-2.5 rounded-10px font-medium text-18px text-[#F87171] hover:bg-white/10 transition">
                             <span class="icon-[tabler--logout] size-5 shrink-0 text-[#EF4444]"></span>
