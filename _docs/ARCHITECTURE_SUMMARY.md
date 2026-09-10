@@ -222,7 +222,7 @@ Both share identical RocketLMS dependency sets (90+ packages for payment gateway
 | `APP_URL` | `https://training.qiec.sa/` | Trailing slash, needs local domain for dev |
 | `DB_DATABASE` | `u873288737_markaz` | Production DB name |
 | `DB_USERNAME` | `u873288737_user_markaz` | Production DB user |
-| `DB_PASSWORD` | `CBKc;6@z` | ⚠️ EXPOSED production password |
+| `DB_PASSWORD` | `<SET_ON_SERVER_ONLY>` | Hostinger MySQL password (set on server only) |
 | `MAIL_HOST` | `smtp.hostinger.com` | Hostinger SMTP |
 | `MAIL_USERNAME` | `contact@training.qiec.sa` | Production mail account |
 

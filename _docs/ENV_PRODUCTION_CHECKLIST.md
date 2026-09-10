@@ -45,25 +45,25 @@ Compare local vs production `.env` before go-live and after any server edit.
 **Wrong** (dotenv expands `$EI5` as a variable → wrong password):
 
 ```env
-MAIL_PASSWORD="Y:&LPZ$EI5~k"
+MAIL_PASSWORD="<SET_ON_SERVER_ONLY>"
 ```
 
 **Correct:**
 
 ```env
-MAIL_PASSWORD='Y:&LPZ$EI5~k'
+MAIL_PASSWORD='<SET_ON_SERVER_ONLY>'
 ```
 
 Or escape the dollar:
 
 ```env
-MAIL_PASSWORD="Y:&LPZ\$EI5~k"
+MAIL_PASSWORD="<SET_ON_SERVER_ONLY>"
 ```
 
 ### 2. Passwords with `;`, `@`, `#`, spaces — quote them
 
 ```env
-DB_PASSWORD="CBKc;6@z"
+DB_PASSWORD="<SET_ON_SERVER_ONLY>"
 ```
 
 ### 3. Never enable debug on production
