@@ -213,6 +213,8 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
 
             Route::prefix('admin/education')->name('admin.education.')->group(function () {
                 Route::get('/', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'home'])->name('home');
+                Route::post('/departments', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'storeDepartment'])->name('departments.store');
+                Route::post('/departments/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'deleteDepartment'])->name('departments.delete');
                 Route::get('/{section}', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'section'])->name('section');
             });
 

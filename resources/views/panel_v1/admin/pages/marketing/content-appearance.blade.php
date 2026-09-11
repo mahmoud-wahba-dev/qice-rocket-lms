@@ -14,7 +14,7 @@
                     <span class="{{ $card['icon'] }} size-6 text-primary"></span>
                 </span>
                 <h3 class="font-bold text-16px text-primary mb-auto leading-snug">{{ $card['title'] }}</h3>
-                <a href="#"
+                <a href="{{ route('panel.v1.admin.marketing.section', ['section' => $card['route'] ?? 'content']) }}"
                     class="inline-flex items-center gap-1.5 mt-5 font-semibold text-14px text-primary hover:opacity-80 transition">
                     عرض التفاصيل
                     <span class="icon-[tabler--arrow-narrow-left] size-4"></span>

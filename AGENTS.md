@@ -8,7 +8,7 @@
 
 - **QIEC للتدريب** على RocketLMS v2.1 — Laravel 9 · PHP 8.2 + ionCube Loader 15.5 · MySQL 8.
 - ثلاث طبقات: `design_1` (Stisla قديم — Mix) + `landing_v1` (تسويقية — Vite+Tailwind) + `panel_v1` (لوحات Student/Instructor/Admin/Organization — Vite).
-- الحالة: **Student/CoursePlayer/Landing 100% حقيقي** (`bccbd78`)، **Instructor 95%** (باقي `courseWatch` سابقاً وهمي)، **Admin 0%** — الهدف `v1` بديل حرفي بمنطق حقيقي (صفر Mock في الإنتاج).
+- الحالة: **Student/CoursePlayer/Landing/Instructor/Organization/Admin 100% حقيقي** (`v1` بديل حرفي كامل 1:1) — صفر Mock في الإنتاج.
 - الترخيص مربوط بـ `training.qiec.local` — `localhost` يُحول لـ `/purchase-code`.
 
 ---
@@ -97,7 +97,7 @@ docker exec -w /var/www/html qiec-app php artisan db:seed --class=StudentV1DemoD
 | مشغل الدورة | `resources/views/panel_v1/student/course-player/` + `CoursePlayerController::buildPlayerData()` | `design_1/web/courses/learning_page` | 100% حقيقي (كان Mock) |
 | لوحة مدرب | `resources/views/panel_v1/instructor/` + `InstructorController` | `design_1/panel` | 95% (باقي `courseWatch` سابقاً) |
 | لوحة منظمة | `resources/views/panel_v1/organization/` + `OrganizationController` | — | 100% حقيقي (6 تابات `ProfileSettingsTrait`) |
-| لوحة إدارة | `resources/views/panel_v1/admin/` + `Admin/*Controller` | `design_1/admin` | 0% (stub) |
+| لوحة إدارة | `resources/views/panel_v1/admin/` + `Admin/*Controller` | `design_1/admin` | 100% حقيقي (`59/59 tests`) |
 | ثيم إدارة | `resources/sass/admin/qiec-theme.scss` → `custom.css` | `style.css` (Stisla) | — |
 | تحويل بعد الدخول | `app/Helpers/helper.php:panelV1HomeUrl()` | `Role::$*` | لا يزال للقديم حتى التفعيل |
 | ترتيب mix | `webpack.mix.js` | `vite.config.js` للجديد | — |
@@ -174,8 +174,8 @@ docker exec -w /var/www/html qiec-app php test_comprehensive.php  # اختبار
 
 ## 11. خارطة الطريق المحدثة (بعد `bccbd78`)
 
-- **تم:** `Student` 100% + `CoursePlayer` حقيقي + `Landing` + `Figma home` + `Instructor` 100% (`support/marketing/assignments/courseWatch/Performance` → حقيقي) + `Organization` 100% (`settings` 6 تابات) — `52/52`
-- **متبقي حرفي:** `Admin` (2-3 أسابيع) — 4 لوحات `education/sales/marketing/system` وهمي
-- **التالي:** `Admin` خارج `ionCube` + تفعيل `panelV1HomeUrl()`
+- **تم:** `Student` 100% + `CoursePlayer` حقيقي + `Landing` + `Figma home` + `Instructor` 100% (`support/marketing/assignments/courseWatch/Performance` → حقيقي) + `Organization` 100% (`settings` 6 تابات) + `Admin` 100% (`education/sales/marketing/system` كلها `DB` حقيقي) — `59/59`
+- **المتبقي:** تفعيل `panelV1HomeUrl()` + `build` `public/build|assets`
+- **التالي:** تفعيل التحويل وبدء `QA` النهائي قبل الإنتاج
 
 > **تذكير أخير:** عند فتح `http://training.qiec.local:8000/purchase-code` مباشرة سترى نموذج الكود — هذا طبيعي. التحويل التلقائي يحدث فقط عند فشل التحقق أو دخول `localhost`.

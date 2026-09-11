@@ -9,7 +9,7 @@
 <aside id="admin-layout-toggle"
     class="overlay overlay-open:translate-x-0 drawer drawer-start inset-y-0 start-0 end-auto hidden h-full w-[280px] max-w-[85vw]
            [--auto-close:lg] [--overlay-backdrop:true]
-           lg:z-50 lg:!block lg:!translate-x-0 lg:!shadow-none
+           lg:z-30 lg:!flex lg:!translate-x-0 lg:!shadow-none lg:!block
            !bg-primary !text-white"
     aria-label="قائمة الإدارة"
     tabindex="-1">

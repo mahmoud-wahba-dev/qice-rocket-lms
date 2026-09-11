@@ -1,6 +1,6 @@
 @props(['stats' => []])
 
-<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
     @foreach ($stats as $stat)
         <div class="rounded-14px bg-primary text-white px-5 py-5 flex items-center justify-between gap-3 shadow-sm">
             <div class="min-w-0 text-start">

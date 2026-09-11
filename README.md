@@ -365,8 +365,9 @@ docker exec -w /var/www/html -e APP_ENV=testing qiec-app vendor/bin/phpunit --te
 ## خارطة الطريق v1
 
 - **تم 100%:** `Student` + `CoursePlayer` حقيقي + `Landing` + تصميم Figma `home` — `bccbd78`
-- **تم 100% (هذه الجلسة):** `Instructor` (`support/marketing/assignments/courseWatch/Performance` → حقيقي) + `Organization settings` (6 تابات `ProfileSettingsTrait`) — `96b9f11`
-- **المتبقي:** `Admin` (`education/sales/marketing/system` وهمي `stub` — 2-3 أسابيع) + تفعيل `panelV1HomeUrl()`
+- **تم 100%:** `Instructor` (`support/marketing/assignments/courseWatch/Performance` → حقيقي) + `Organization settings` (6 تابات) — `96b9f11` + `680ce34`
+- **تم 100% (هذه الجلسة):** `Admin` (`education/sales/marketing/system` كلها `DB` حقيقي `production` — `59/59 tests`) — `v1` أصبح بديل حرفي كامل 1:1
+- **المتبقي:** تفعيل `panelV1HomeUrl()` + `build` `public/build|assets`
 
 ---
 

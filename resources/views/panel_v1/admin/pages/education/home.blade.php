@@ -7,7 +7,7 @@
             <h1 class="font-semibold text-26px sm:text-32px text-primary mb-2">{{ $welcomeTitle }}</h1>
             <p class="font-medium text-15px sm:text-16px text-gray max-w-2xl leading-relaxed">{{ $welcomeSubtitle }}</p>
         </div>
-        <a href="#"
+        <a href="{{ route('panel.v1.admin.education.section', ['section' => 'courses']) }}"
             class="inline-flex items-center justify-center h-12 px-5 rounded-12px bg-color2 text-white font-semibold text-15px hover:opacity-95 transition shrink-0">
             + إنشاء دورة جديدة
         </a>
@@ -15,8 +15,8 @@
 
     @include('panel_v1.admin.components.stats-cards', ['stats' => $stats ?? []])
 
-    <div class="grid grid-cols-1 xl:grid-cols-12 gap-5 sm:gap-6 items-start">
-        <div class="xl:col-span-7 space-y-5 sm:space-y-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
+        <div class="lg:col-span-7 xl:col-span-7 space-y-5 sm:space-y-6">
             <div class="border border-d9 rounded-14px bg-white p-5 sm:p-6">
                 <h2 class="font-bold text-18px sm:text-20px text-primary mb-5 text-start">الرسم البياني للنشاط الأكاديمي</h2>
                 <div class="h-52 sm:h-64 rounded-12px bg-[#FAFAF4] border border-d9 relative overflow-hidden px-4 py-6">
@@ -47,7 +47,7 @@
             </div>
         </div>
 
-        <div class="xl:col-span-5 space-y-5 sm:space-y-6">
+        <div class="lg:col-span-5 xl:col-span-5 space-y-5 sm:space-y-6">
             <div class="border border-d9 rounded-14px bg-white p-5 sm:p-6">
                 <h2 class="font-bold text-18px sm:text-20px text-primary mb-5 text-start">آخر الدورات</h2>
                 <div class="space-y-3">
