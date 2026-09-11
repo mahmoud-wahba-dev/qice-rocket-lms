@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\PanelV1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\PanelV1\Support\InstructorMockData;
 use App\Models\Quiz;
 use App\Models\Sale;
 use App\Models\Session;
@@ -70,7 +69,19 @@ class InstructorController extends Controller
             $request,
             'panel_v1.instructor.pages.create-course',
             'إنشاء دورة جديدة',
-            array_merge(InstructorMockData::createCourse(), [
+            [
+                'wizardSteps' => [
+                    1=>['label'=>'البيانات الأساسية','title'=>'البيانات الأساسية والتصنيف','next'=>'التالي: المنهج والمحتوى','progress'=>20],
+                    2=>['label'=>'المنهج والمحتوى','title'=>'المنهج والمحتوى التعليمي','next'=>'التالي: الاختبارات والشهادات','prev'=>'السابق','progress'=>40],
+                    3=>['label'=>'الاختبارات والشهادات','title'=>'الاختبارات والشهادات','next'=>'التالي: التسعير والسعة','prev'=>'السابق','progress'=>60],
+                    4=>['label'=>'التسعير والسعة','title'=>'التسعير والسعة','next'=>'التالي: النشر والمراجعة','prev'=>'السابق','progress'=>80],
+                    5=>['label'=>'النشر والمراجعة','title'=>'النشر والمراجعة','next'=>'إرسال للمراجعة','prev'=>'السابق','progress'=>100],
+                ],
+                'courseTypes' => [
+                    ['key'=>'recorded','label'=>'دورة فيديو مسجلة','hint'=>'محتوى مسجل يشاهده الطالب في أي وقت'],
+                    ['key'=>'live','label'=>'دورة تفاعلية مباشرة','hint'=>'جلسات مباشرة عبر Zoom أو Teams'],
+                    ['key'=>'text','label'=>'دورة نصية','hint'=>'محتوى مقروء ومواد مكتوبة'],
+                ],
                 'wizardStep' => $step,
                 'draftId' => $draft->id ?? null,
                 'draftTitle' => $draft->title ?? 'دورة تدريبية بدون عنوان',
@@ -83,7 +94,7 @@ class InstructorController extends Controller
                     'video_demo_link' => $draft->video_demo_source === 'external_link' ? $draft->video_demo : null,
                     'tags' => $draft->tags->pluck('title')->implode(','),
                 ] : [],
-                'categories' => !empty($categories) ? $categories : (InstructorMockData::createCourse()['categories'] ?? []),
+                'categories' => !empty($categories) ? $categories : [],
                 'languages' => [
                     ['key' => 'ar', 'label' => 'العربية'],
                     ['key' => 'en', 'label' => 'English'],
@@ -93,7 +104,7 @@ class InstructorController extends Controller
                 'draftPrice' => $draft->price ?? null,
                 'draftCapacity' => $draft->capacity ?? null,
                 'draftCertificate' => (bool) ($draft->certificate ?? false),
-            ])
+            ]
         );
     }
 
@@ -768,17 +779,20 @@ class InstructorController extends Controller
             $request,
             'panel_v1.instructor.pages.assignment-review',
             'تقييم التكليف',
-            array_merge(InstructorMockData::assignmentReview($id, $webinar->slug), [
+            [
                 'webinar' => $webinar,
                 'courseSlug' => $webinar->slug,
                 'historyId' => $history->id,
                 'historyStatus' => $history->status,
                 'historyGrade' => $history->grade,
                 'reviewStudentName' => $history->student->full_name ?? '',
-                'studentAnswerParagraphs' => !empty($messages) ? $messages : (InstructorMockData::assignmentReview($id, $webinar->slug)['studentAnswerParagraphs'] ?? []),
+                'studentAnswerParagraphs' => !empty($messages) ? $messages : [],
                 'maxGrade' => $history->assignment->grade ?? 50,
                 'passGrade' => $history->assignment->pass_grade ?? 25,
-            ])
+                'reviewTitle' => 'تقييم التكليف',
+                'detailsTitle' => 'تفاصيل التكليف',
+                'assignmentId' => $history->assignment->id ?? $id,
+            ]
         );
     }
 
@@ -862,7 +876,7 @@ class InstructorController extends Controller
             $request,
             'panel_v1.instructor.pages.consultations',
             'الجلسات الاستشارية',
-            array_merge(InstructorMockData::consultations(), [
+            [
                 'attendees' => $rows,
                 'session' => $upcoming ? [
                     'title' => $upcoming->title ?? 'جلسة استشارية',
@@ -874,7 +888,7 @@ class InstructorController extends Controller
                     'time' => date('H:i', (int) $upcoming->date),
                     'linkLabel' => 'لقاء أونلاين',
                 ] : [],
-            ])
+            ]
         );
     }
 
@@ -997,7 +1011,7 @@ class InstructorController extends Controller
             $request,
             'panel_v1.instructor.pages.quiz-view',
             'عرض الاختبار',
-            array_merge(InstructorMockData::quizView($id), [
+            [
                 'quizId' => $quiz->id,
                 'slug' => $webinar->slug ?? 'demo',
                 'webinar' => $webinar,
@@ -1010,7 +1024,7 @@ class InstructorController extends Controller
                 ],
                 'realQuestions' => $questions,
                 'waitingResults' => $waitingResults,
-            ])
+            ]
         );
     }
 
@@ -1309,7 +1323,7 @@ class InstructorController extends Controller
             $request,
             'panel_v1.instructor.pages.certificates',
             'إدارة الشهادات',
-            array_merge(InstructorMockData::certificates(), [
+            [
                 'certificateStats' => [
                     ['value' => (string) $issued->count(), 'label' => 'شهادات مصدرة'],
                     ['value' => (string) count($webinarIds), 'label' => 'دورات'],
@@ -1321,7 +1335,7 @@ class InstructorController extends Controller
                     ];
                 })->all(),
                 'completionRows' => $completionRows,
-            ])
+            ]
         );
     }
 
@@ -1360,7 +1374,7 @@ class InstructorController extends Controller
             $request,
             'panel_v1.instructor.pages.finance',
             'المالية والأرباح',
-            array_merge(InstructorMockData::finance(), ['salesRows' => $salesRows])
+            ['salesRows' => $salesRows]
         );
     }
 
@@ -1414,7 +1428,13 @@ class InstructorController extends Controller
     public function payouts(Request $request)    {
         $guardUser = $request->user();
 
-        $summary = InstructorMockData::payouts()['payoutSummary'] ?? [];
+        $summary = [
+            'available' => '0.00',
+            'total_income' => '0.00',
+            'next_payout' => '—',
+            'min_withdraw' => '—',
+            'held' => '0.00',
+        ];
         $payoutRows = [];
 
         if ($guardUser) {
@@ -1446,10 +1466,10 @@ class InstructorController extends Controller
             $request,
             'panel_v1.instructor.pages.payouts',
             'ادارة المستحقات والسحب',
-            array_merge(InstructorMockData::payouts(), [
+            [
                 'payoutSummary' => $summary,
                 'payoutRows' => $payoutRows,
-            ])
+            ]
         );
     }
 
@@ -1621,7 +1641,6 @@ class InstructorController extends Controller
             [
                 'supportTickets' => $myTickets,
                 'courseSupportRows' => $courseRows,
-                // keep compatibility with old view expecting InstructorMockData keys but override with real
                 'supportStats' => [
                     ['label'=>'إجمالي التذاكر','value'=>count($myTickets)+count($courseRows)],
                     ['label'=>'قيد الانتظار','value'=>collect($myTickets)->where('status','مفتوحة')->count()],
@@ -1642,7 +1661,7 @@ class InstructorController extends Controller
             $request,
             'panel_v1.instructor.pages.settings',
             'إعدادات الملف الشخصي',
-            array_merge(InstructorMockData::settings(), $this->profileExtraViewData($request, $user), $this->profileAboutData($user), $this->profileFinancialData($user), [
+            array_merge($this->profileExtraViewData($request, $user), $this->profileAboutData($user), $this->profileFinancialData($user), [
                 'loginHistories' => $this->profileLoginHistories($user),
             ])
         );
@@ -1998,7 +2017,9 @@ class InstructorController extends Controller
                 })->all()
             : [];
 
-        return array_merge(InstructorMockData::common(), [
+        return [
+            'instructorName' => $user->full_name,
+            'instructorEmail' => $user->email,
             'stats' => [
                 ['label' => 'إجمالي الأرباح', 'value' => handlePrice($earnings)],
                 ['label' => 'إجمالي الطلاب', 'value' => (string) $students],
@@ -2013,10 +2034,15 @@ class InstructorController extends Controller
                     'progress' => $this->webinarFinishedProgress($webinar),
                 ];
             })->all(),
-            'quickActions' => InstructorMockData::home()['quickActions'],
+            'quickActions' => [
+                ['label' => 'انشاء دورة جديدة', 'route' => 'panel.v1.instructor.courses.create'],
+                ['label' => 'انشاء اختبار جديد', 'route' => 'panel.v1.instructor.quizzes.create'],
+                ['label' => 'عرض جميع التكليفات', 'route' => 'panel.v1.instructor.assignments'],
+                ['label' => 'عرض الطلاب', 'route' => 'panel.v1.instructor.home'],
+            ],
             'upcomingLectures' => $upcomingLectures,
             'pendingGrading' => $pendingGrading,
-        ]);
+        ];
     }
 
     private function courseCards($user): array

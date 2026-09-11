@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\PanelV1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\PanelV1\Support\CoursePlayerMockData;
 use App\Models\Quiz;
 use App\Models\QuizzesQuestion;
 use App\Models\QuizzesQuestionsAnswer;

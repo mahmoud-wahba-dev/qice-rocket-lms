@@ -131,7 +131,7 @@ qice-rocket-lms/
 │   │   │   ├── CoursePlayerController.php (watch حقيقي buildPlayerData)
 │   │   │   ├── OrganizationController.php
 │   │   │   ├── Admin*.php
-│   │   │   └── Support/ProfileSettingsTrait + InstructorMockData
+│   │   │   └── Support/ProfileSettingsTrait
 │   │   ├── Web/LandingV1Controller.php    # ★ الواجهة (12 action + account/settings)
 │   │   └── Auth/                  # تسجيل/دخول + panelV1HomeUrl
 │   ├── Models/ + User.php         # 100+ موديل (Webinar, Sale, Quiz, Certificate, Support, Discount...)
