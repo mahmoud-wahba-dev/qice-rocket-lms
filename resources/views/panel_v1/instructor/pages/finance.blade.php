@@ -13,13 +13,13 @@
         <nav class="tabs tabs-bordered flex w-full overflow-x-auto mb-6 sm:mb-8 border-b border-d9" role="tablist">
             <button type="button"
                 class="tab active justify-center whitespace-nowrap font-semibold text-18px sm:text-20px text-gray pb-5 active-tab:text-primary active-tab:border-b-primary"
-                data-tab="#finance-panel-1" role="tab" aria-selected="true">تقرير المبيعات</button>
+                data-v1-tab="#finance-panel-1" role="tab" aria-selected="true">تقرير المبيعات</button>
             <button type="button"
                 class="tab justify-center whitespace-nowrap font-semibold text-18px sm:text-20px text-gray pb-5 active-tab:text-primary active-tab:border-b-primary"
-                data-tab="#finance-panel-2" role="tab" aria-selected="false">المحفظة والرصيد</button>
+                data-v1-tab="#finance-panel-2" role="tab" aria-selected="false">المحفظة والرصيد</button>
             <button type="button"
                 class="tab justify-center whitespace-nowrap font-semibold text-18px sm:text-20px text-gray pb-5 active-tab:text-primary active-tab:border-b-primary"
-                data-tab="#finance-panel-3" role="tab" aria-selected="false">الملخص المالي</button>
+                data-v1-tab="#finance-panel-3" role="tab" aria-selected="false">الملخص المالي</button>
         </nav>
 
         {{-- Sales report --}}

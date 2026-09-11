@@ -45,25 +45,25 @@ $fileRows = $files ?? [];
         role="tablist" aria-orientation="horizontal">
         <button type="button"
             class="tab flex-1 justify-center font-semibold text-16px sm:text-20px text-gray active-tab:text-primary pb-4 active whitespace-nowrap"
-            id="lesson-tabs-item-1" data-tab="#lesson-tabs-1" aria-controls="lesson-tabs-1" role="tab"
+            id="lesson-tabs-item-1" data-v1-tab="#lesson-tabs-1" aria-controls="lesson-tabs-1" role="tab"
             aria-selected="true">
             اختبار المحاضرة
         </button>
         <button type="button"
             class="tab flex-1 justify-center font-semibold text-16px sm:text-20px text-gray active-tab:text-primary pb-4 whitespace-nowrap"
-            id="lesson-tabs-item-2" data-tab="#lesson-tabs-2" aria-controls="lesson-tabs-2" role="tab"
+            id="lesson-tabs-item-2" data-v1-tab="#lesson-tabs-2" aria-controls="lesson-tabs-2" role="tab"
             aria-selected="false">
             تكليفات المحاضرة
         </button>
         <button type="button"
             class="tab flex-1 justify-center font-semibold text-16px sm:text-20px text-gray active-tab:text-primary pb-4 whitespace-nowrap"
-            id="lesson-tabs-item-3" data-tab="#lesson-tabs-3" aria-controls="lesson-tabs-3" role="tab"
+            id="lesson-tabs-item-3" data-v1-tab="#lesson-tabs-3" aria-controls="lesson-tabs-3" role="tab"
             aria-selected="false">
             التعليقات
         </button>
         <button type="button"
             class="tab flex-1 justify-center font-semibold text-16px sm:text-20px text-gray active-tab:text-primary pb-4 whitespace-nowrap"
-            id="lesson-tabs-item-4" data-tab="#lesson-tabs-4" aria-controls="lesson-tabs-4" role="tab"
+            id="lesson-tabs-item-4" data-v1-tab="#lesson-tabs-4" aria-controls="lesson-tabs-4" role="tab"
             aria-selected="false">
             الملفات
         </button>

@@ -32,7 +32,7 @@
         ] as $tabId => $tabLabel)
             <button type="button"
                 class="tab {{ $tabId === 1 ? 'active' : '' }} justify-center whitespace-nowrap font-semibold text-16px sm:text-18px text-gray pb-5 active-tab:text-primary active-tab:border-b-primary"
-                id="instructor-settings-tab-{{ $tabId }}" data-tab="#instructor-settings-{{ $tabId }}" role="tab"
+                id="instructor-settings-tab-{{ $tabId }}" data-v1-tab="#instructor-settings-{{ $tabId }}" role="tab"
                 aria-selected="{{ $tabId === 1 ? 'true' : 'false' }}">
                 {{ $tabLabel }}
             </button>

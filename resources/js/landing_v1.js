@@ -998,3 +998,58 @@ if (document.readyState !== "loading") {
 	initPasswordToggles();
 	initRegisterAccountTabs();
 }
+
+// ============================================================
+// V1 custom tabs: <button data-v1-tab="#panel-id"> + <div id="panel-id" class="hidden">
+// Used by ALL landing_v1 + panel_v1 tab sets.
+// NOTE: plain `data-tab` is owned by FlyonUI (it hijacks clicks),
+// so V1 uses the `data-v1-tab` namespace.
+// The last active tab per page is remembered in localStorage, so
+// returning after a form POST/validation error reopens the same tab.
+// ============================================================
+function v1TabStorageKey() {
+	return "v1-active-tab:" + location.pathname;
+}
+
+document.addEventListener("click", (e) => {
+	const btn = e.target.closest("button[data-v1-tab]");
+	if (!btn) {
+		return;
+	}
+	const sel = btn.getAttribute("data-v1-tab");
+	if (!sel || !sel.startsWith("#")) {
+		return;
+	}
+	const nav = btn.closest('nav, [role="tablist"]') || btn.parentElement;
+	if (!nav) {
+		return;
+	}
+	const btns = [...nav.querySelectorAll("button[data-v1-tab]")];
+	const targets = btns
+		.map((b) => document.querySelector(b.getAttribute("data-v1-tab")))
+		.filter(Boolean);
+	btns.forEach((b) => {
+		const on = b === btn;
+		b.classList.toggle("active", on);
+		b.setAttribute("aria-selected", String(on));
+	});
+	targets.forEach((p) => p.classList.add("hidden"));
+	const panel = document.querySelector(sel);
+	if (panel) {
+		panel.classList.remove("hidden");
+	}
+	try {
+		localStorage.setItem(v1TabStorageKey(), sel);
+	} catch {}
+});
+
+try {
+	const savedTab = localStorage.getItem(v1TabStorageKey());
+	if (savedTab) {
+		const savedBtn =
+			document.querySelector(`button[data-v1-tab="${savedTab}"]`) || null;
+		if (savedBtn && !savedBtn.classList.contains("active")) {
+			savedBtn.click();
+		}
+	}
+} catch {}

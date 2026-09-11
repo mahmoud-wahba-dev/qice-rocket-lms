@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Cache;
 class LandingV1Controller extends Controller
 {
     use LandingAuthRedirectTrait;
+    use \App\Http\Controllers\PanelV1\Support\ProfileSettingsTrait;
 
     private function webinarTeacherEagerLoad(): array
     {
@@ -1061,5 +1062,266 @@ class LandingV1Controller extends Controller
             'carts'           => $carts,
             'calculatePrices' => $calculatePrices,
         ]);
+    }
+
+    public function accountSettings()
+    {
+        $user = auth()->user();
+
+        if (empty($user)) {
+            return redirect()->route('landing.v1.login');
+        }
+
+        return view('landing_v1.pages.account.settings', array_merge([
+            'pageTitle' => 'اعدادات الحساب',
+            'authUser' => $user,
+        ], $this->profileExtraViewData(request(), $user), $this->profileAboutData($user), $this->profileFinancialData($user), [
+            'loginHistories' => $this->profileLoginHistories($user),
+        ]));
+    }
+
+    public function updateAccountSettings(Request $request)
+    {
+        $user = auth()->user();
+
+        if (empty($user)) {
+            return redirect()->route('landing.v1.login');
+        }
+
+        $request->validate([
+            'full_name' => 'required|string|max:128',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'mobile' => 'nullable|string|max:32|unique:users,mobile,' . $user->id,
+            'language' => 'nullable|string|max:128',
+            'timezone' => 'nullable|string|max:255',
+            'offline' => 'nullable|boolean',
+            'offline_message' => 'nullable|string|max:2000',
+            'password' => 'nullable|min:6|confirmed',
+            'current_password' => 'required_with:password',
+        ]);
+
+        if ($request->filled('password') && !\Illuminate\Support\Facades\Hash::check($request->input('current_password'), $user->password)) {
+            return back()->withErrors(['current_password' => trans('validation.password_or_username')])->withInput();
+        }
+
+        $user->full_name = $request->input('full_name');
+        $user->email = $request->input('email');
+        $user->mobile = $request->input('mobile');
+        $user->language = $request->input('language', $user->language);
+        $user->timezone = $request->input('timezone', $user->timezone);
+
+        if ($request->filled('password')) {
+            $user->password = \Illuminate\Support\Facades\Hash::make($request->input('password'));
+        }
+
+        $user->save();
+
+        $this->saveProfileAccountOptions($request, $user);
+
+        return redirect()
+            ->route('landing.v1.account.settings')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم حفظ الإعدادات بنجاح', 'type' => 'success']);
+    }
+
+    public function updateAccountExtra(Request $request)
+    {
+        $user = auth()->user();
+
+        if (empty($user)) {
+            return redirect()->route('landing.v1.login');
+        }
+
+        $request->validate([
+            'country_id' => 'nullable|integer|exists:regions,id',
+            'province_id' => 'nullable|integer|exists:regions,id',
+            'city_id' => 'nullable|integer|exists:regions,id',
+            'district_id' => 'nullable|integer|exists:regions,id',
+            'address' => 'nullable|string|max:255',
+            'gender' => 'nullable|in:man,woman',
+            'meeting_type' => 'nullable|in:in_person,online,all',
+        ]);
+
+        $this->saveProfileExtra($request, $user);
+
+        return redirect()->route('landing.v1.account.settings')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم حفظ المعلومات الإضافية', 'type' => 'success']);
+    }
+
+    public function updateAccountFinancial(Request $request)
+    {
+        $user = auth()->user();
+
+        if (empty($user)) {
+            return redirect()->route('landing.v1.login');
+        }
+
+        $this->saveProfileFinancial($request, $user);
+
+        return redirect()->route('landing.v1.account.settings')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم حفظ بيانات الهوية والمالية', 'type' => 'success']);
+    }
+
+    public function updateAccountImages(Request $request)
+    {
+        $user = auth()->user();
+
+        if (empty($user)) {
+            return redirect()->route('landing.v1.login');
+        }
+
+        $request->validate([
+            'avatar' => 'nullable|image|max:5120',
+            'cover_img' => 'nullable|image|max:5120',
+            'profile_secondary_image' => 'nullable|image|max:5120',
+            'profile_video' => 'nullable|file|mimetypes:video/mp4,video/webm,video/quicktime|max:51200',
+            'signature_img' => 'nullable|image|max:5120',
+        ]);
+
+        $this->saveProfileMedia($request, $user);
+
+        return redirect()->route('landing.v1.account.settings')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم حفظ الصور', 'type' => 'success']);
+    }
+
+    public function deleteAccountMedia(string $type)
+    {
+        $user = auth()->user();
+
+        if (empty($user)) {
+            return redirect()->route('landing.v1.login');
+        }
+
+        if (!$this->deleteProfileMedia($user, $type)) {
+            abort(404);
+        }
+
+        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم حذف الملف', 'type' => 'success']);
+    }
+
+    public function updateAccountAbout(Request $request)
+    {
+        $user = auth()->user();
+
+        if (empty($user)) {
+            return redirect()->route('landing.v1.login');
+        }
+
+        $request->validate([
+            'about' => 'nullable|string|max:5000',
+            'bio' => 'nullable|string|max:255',
+            'headline' => 'nullable|string|max:255',
+            'occupations' => 'nullable|array|max:10',
+            'occupations.*' => 'integer|exists:categories,id',
+        ]);
+
+        $this->saveProfileAbout($request, $user);
+
+        return redirect()->route('landing.v1.account.settings')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم حفظ بيانات "حول"', 'type' => 'success']);
+    }
+
+    public function storeAccountMeta(Request $request)
+    {
+        $user = auth()->user();
+
+        if (empty($user)) {
+            return redirect()->route('landing.v1.login');
+        }
+
+        if (!$this->storeProfileMeta($user, $request->input('name'), $request->input('value'))) {
+            return response()->json([], 422);
+        }
+
+        return response()->json(['code' => 200], 200);
+    }
+
+    public function updateAccountMeta(Request $request, $metaId)
+    {
+        $user = auth()->user();
+
+        if (empty($user)) {
+            return redirect()->route('landing.v1.login');
+        }
+
+        if (!$this->updateProfileMeta($user, $metaId, $request->input('name'), $request->input('value'))) {
+            return response()->json([], 422);
+        }
+
+        return response()->json(['code' => 200], 200);
+    }
+
+    public function deleteAccountMeta(Request $request, $metaId)
+    {
+        $user = auth()->user();
+
+        if (empty($user)) {
+            return redirect()->route('landing.v1.login');
+        }
+
+        if (!$this->deleteProfileMeta($user, $metaId)) {
+            abort(404);
+        }
+
+        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم الحذف', 'type' => 'success']);
+    }
+
+    public function storeAccountAttachment(Request $request)
+    {
+        $user = auth()->user();
+
+        if (empty($user)) {
+            return redirect()->route('landing.v1.login');
+        }
+
+        $this->storeProfileAttachment($request, $user);
+
+        return redirect()->route('landing.v1.account.settings')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تمت إضافة المرفق', 'type' => 'success']);
+    }
+
+    public function updateAccountAttachment(Request $request, $attachmentId)
+    {
+        $user = auth()->user();
+
+        if (empty($user)) {
+            return redirect()->route('landing.v1.login');
+        }
+
+        if (empty($this->updateProfileAttachment($request, $user, $attachmentId))) {
+            abort(404);
+        }
+
+        return redirect()->route('landing.v1.account.settings')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم تحديث المرفق', 'type' => 'success']);
+    }
+
+    public function deleteAccountAttachment($attachmentId)
+    {
+        $user = auth()->user();
+
+        if (empty($user)) {
+            return redirect()->route('landing.v1.login');
+        }
+
+        if (!$this->deleteProfileAttachment($user, $attachmentId)) {
+            abort(404);
+        }
+
+        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم حذف المرفق', 'type' => 'success']);
+    }
+
+    public function endAccountSession($sessionId)
+    {
+        $user = auth()->user();
+
+        if (empty($user)) {
+            return redirect()->route('landing.v1.login');
+        }
+
+        if (!$this->endProfileSession($user, $sessionId)) {
+            abort(404);
+        }
+
+        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم إنهاء الجلسة', 'type' => 'success']);
     }
 }

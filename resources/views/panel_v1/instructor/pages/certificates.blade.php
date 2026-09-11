@@ -59,10 +59,10 @@
         <nav class="tabs tabs-bordered flex w-full overflow-x-auto mb-5 border-b border-d9" role="tablist">
             <button type="button"
                 class="tab active justify-center whitespace-nowrap font-semibold text-16px sm:text-18px text-gray pb-4 active-tab:text-primary active-tab:border-b-primary"
-                data-tab="#cert-panel-1" role="tab" aria-selected="true">شهادات الإتمام</button>
+                data-v1-tab="#cert-panel-1" role="tab" aria-selected="true">شهادات الإتمام</button>
             <button type="button"
                 class="tab justify-center whitespace-nowrap font-semibold text-16px sm:text-18px text-gray pb-4 active-tab:text-primary active-tab:border-b-primary"
-                data-tab="#cert-panel-2" role="tab" aria-selected="false">شهادات الاختبارات</button>
+                data-v1-tab="#cert-panel-2" role="tab" aria-selected="false">شهادات الاختبارات</button>
         </nav>
 
         <div id="cert-panel-1" role="tabpanel" class="bg-white border border-d9 rounded-14px overflow-x-auto">

@@ -95,7 +95,7 @@
                 </button>
 
                 @auth
-                    <a href="/panel/courses/favorites" class="btn btn-text max-xl:px-1" aria-label="المفضلة">
+                    <a href="{{ route('panel.v1.student.favorites') }}" class="btn btn-text max-xl:px-1" aria-label="المفضلة">
                         <span class="icon-[tabler--heart] size-6 text-primary"></span>
                     </a>
                     <a href="{{ route('panel.v1.student.notifications') }}"
@@ -142,7 +142,7 @@
                                 </a>
                             </li>
                             <li>
-                                <a href="{{ route('panel.v1.student.settings') }}"
+                                <a href="{{ route('landing.v1.account.settings') }}"
                                     class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
                                     الاعدادات
                                 </a>

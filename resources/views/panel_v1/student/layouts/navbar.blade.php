@@ -96,7 +96,7 @@
                 </button>
 
                 @auth
-                    <a href="/panel/courses/favorites" class="btn btn-text max-xl:px-1" aria-label="المفضلة">
+                    <a href="{{ route('panel.v1.student.favorites') }}" class="btn btn-text max-xl:px-1" aria-label="المفضلة">
                         <span class="icon-[tabler--heart] size-6 text-primary"></span>
                     </a>
 
@@ -147,9 +147,93 @@
                                 </a>
                             </li>
                             <li>
+                                <a href="{{ route('panel.v1.student.certificates') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.certificates*') ? 'bg-fa' : '' }}">
+                                    شهاداتي
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('panel.v1.student.assignments') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.assignments') ? 'bg-fa' : '' }}">
+                                    تكليفاتي
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('panel.v1.student.quizzes') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.quizzes') ? 'bg-fa' : '' }}">
+                                    اختباراتي
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('panel.v1.student.meetings') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.meetings*') ? 'bg-fa' : '' }}">
+                                    جلساتي الاستشارية
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('panel.v1.student.comments') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.comments*') ? 'bg-fa' : '' }}">
+                                    تعليقاتي
+                                </a>
+                            </li>
+                            <li>
                                 <a href="{{ route('panel.v1.student.purchases') }}"
                                     class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.purchases') ? 'bg-fa' : '' }}">
                                     مشترياتي
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('panel.v1.student.support') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.support*') ? 'bg-fa' : '' }}">
+                                    الدعم
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('panel.v1.student.favorites') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.favorites*') ? 'bg-fa' : '' }}">
+                                    المفضلة
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('panel.v1.student.notes') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.notes*') ? 'bg-fa' : '' }}">
+                                    ملاحظاتي
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('panel.v1.student.noticeboards') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.noticeboards*') ? 'bg-fa' : '' }}">
+                                    إعلاناتي
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('panel.v1.student.rewards') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.rewards*') ? 'bg-fa' : '' }}">
+                                    نقاطي
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('panel.v1.student.attendances') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.attendances*') ? 'bg-fa' : '' }}">
+                                    سجل الحضور
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('panel.v1.student.upcoming') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.upcoming*') ? 'bg-fa' : '' }}">
+                                    الدورات القادمة
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('panel.v1.student.forums') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.forums*') ? 'bg-fa' : '' }}">
+                                    المنتديات
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('panel.v1.student.installments') }}"
+                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.installments*') ? 'bg-fa' : '' }}">
+                                    الأقساط والباقات
                                 </a>
                             </li>
                             <li>
@@ -159,27 +243,9 @@
                                 </a>
                             </li>
                             <li>
-                                <a href="{{ route('panel.v1.student.support') }}"
-                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition {{ request()->routeIs('panel.v1.student.support') ? 'bg-fa' : '' }}">
-                                    الدعم
-                                </a>
-                            </li>
-                            <li>
                                 <a href="/panel"
                                     class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
                                     اللوحة القديمة
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ route('panel.v1.student.favorites') }}"
-                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
-                                    المفضلة
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ route('panel.v1.student.notes') }}"
-                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
-                                    ملاحظاتي
                                 </a>
                             </li>
                             <li>
@@ -213,6 +279,7 @@
                 </a>
             @endauth
         </div>
+    </div>
     </div>
 </nav>
 

@@ -45,6 +45,7 @@
         {{-- ---------- MAIN ---------- --}}
         <div class="flex grow flex-col lg:ps-[280px]">
             <main class="mx-auto mt-0 w-full flex-1 space-y-6 p-4 sm:p-6 lg:p-8 bg-[#FAFAF4]">
+                @include('components.v1.flash')
                 @yield('content')
             </main>
         </div>

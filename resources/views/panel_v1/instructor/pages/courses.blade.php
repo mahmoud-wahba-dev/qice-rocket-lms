@@ -21,16 +21,16 @@
         aria-label="فلتر الدورات" role="tablist">
         <button type="button"
             class="tab active justify-center whitespace-nowrap font-semibold text-16px sm:text-18px text-gray pb-4 active-tab:text-primary active-tab:border-b-primary"
-            id="c-tabs-1" data-tab="#c-panel-1" role="tab" aria-selected="true">الكل</button>
+            id="c-tabs-1" data-v1-tab="#c-panel-1" role="tab" aria-selected="true">الكل</button>
         <button type="button"
             class="tab justify-center whitespace-nowrap font-semibold text-16px sm:text-18px text-gray pb-4 active-tab:text-primary active-tab:border-b-primary"
-            id="c-tabs-2" data-tab="#c-panel-2" role="tab" aria-selected="false">المحاضرات المباشرة</button>
+            id="c-tabs-2" data-v1-tab="#c-panel-2" role="tab" aria-selected="false">المحاضرات المباشرة</button>
         <button type="button"
             class="tab justify-center whitespace-nowrap font-semibold text-16px sm:text-18px text-gray pb-4 active-tab:text-primary active-tab:border-b-primary"
-            id="c-tabs-3" data-tab="#c-panel-3" role="tab" aria-selected="false">الدورات المسجلة</button>
+            id="c-tabs-3" data-v1-tab="#c-panel-3" role="tab" aria-selected="false">الدورات المسجلة</button>
         <button type="button"
             class="tab justify-center whitespace-nowrap font-semibold text-16px sm:text-18px text-gray pb-4 active-tab:text-primary active-tab:border-b-primary"
-            id="c-tabs-4" data-tab="#c-panel-4" role="tab" aria-selected="false">المسودات</button>
+            id="c-tabs-4" data-v1-tab="#c-panel-4" role="tab" aria-selected="false">المسودات</button>
     </nav>
     <div id="c-panel-1" role="tabpanel">
         <div class="space-y-3">

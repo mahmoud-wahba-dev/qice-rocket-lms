@@ -50,6 +50,7 @@
 
                 <main class="lg:col-span-9 bg-fa min-w-0 mt-0">
                     <div class="px-4 sm:px-6 lg:px-10 py-6 lg:py-8">
+                        @include('components.v1.flash')
                         @yield('content')
                     </div>
                 </main>

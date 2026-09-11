@@ -51,3 +51,4 @@ storage/debugbar/.gitignore
 /build_output.txt
 /.temp_backup_*
 /public/build
+acc.txt

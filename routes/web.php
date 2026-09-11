@@ -472,6 +472,22 @@ Route::group(['namespace' => 'Web', 'middleware' => ['check_mobile_app', 'impers
     Route::get('/cart',        [LandingV1Controller::class, 'cart'])->name('landing.v1.cart');
     Route::match(['get', 'post'], '/checkout', [LandingV1Controller::class, 'checkout'])->name('landing.v1.checkout');
     Route::get('/webinar/{slug}', [LandingV1Controller::class, 'courseDetails'])->name('landing.v1.course-details');
+    // Guest handling is inside the controller (redirects to landing login page);
+    // the stock `auth` middleware would send guests to the API login route instead.
+    Route::get('/account/settings', [LandingV1Controller::class, 'accountSettings'])->name('landing.v1.account.settings');
+    Route::post('/account/settings', [LandingV1Controller::class, 'updateAccountSettings'])->name('landing.v1.account.settings.update');
+    Route::post('/account/settings/extra', [LandingV1Controller::class, 'updateAccountExtra'])->name('landing.v1.account.extra.update');
+    Route::post('/account/settings/financial', [LandingV1Controller::class, 'updateAccountFinancial'])->name('landing.v1.account.financial.update');
+    Route::post('/account/settings/images', [LandingV1Controller::class, 'updateAccountImages'])->name('landing.v1.account.images.update');
+    Route::post('/account/settings/media/{type}/delete', [LandingV1Controller::class, 'deleteAccountMedia'])->name('landing.v1.account.media.delete');
+    Route::post('/account/settings/about', [LandingV1Controller::class, 'updateAccountAbout'])->name('landing.v1.account.about.update');
+    Route::post('/account/settings/metas', [LandingV1Controller::class, 'storeAccountMeta'])->name('landing.v1.account.metas.store');
+    Route::post('/account/settings/metas/{metaId}/update', [LandingV1Controller::class, 'updateAccountMeta'])->name('landing.v1.account.metas.update');
+    Route::post('/account/settings/metas/{metaId}/delete', [LandingV1Controller::class, 'deleteAccountMeta'])->name('landing.v1.account.metas.delete');
+    Route::post('/account/settings/attachments', [LandingV1Controller::class, 'storeAccountAttachment'])->name('landing.v1.account.attachments.store');
+    Route::post('/account/settings/attachments/{attachmentId}/update', [LandingV1Controller::class, 'updateAccountAttachment'])->name('landing.v1.account.attachments.update');
+    Route::post('/account/settings/attachments/{attachmentId}/delete', [LandingV1Controller::class, 'deleteAccountAttachment'])->name('landing.v1.account.attachments.delete');
+    Route::post('/account/settings/sessions/{sessionId}/end', [LandingV1Controller::class, 'endAccountSession'])->name('landing.v1.account.sessions.end');
 
 }); // end Web group
 

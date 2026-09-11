@@ -12,25 +12,25 @@
             aria-label="أقسام عمليات الشراء" role="tablist" aria-orientation="horizontal">
             <button type="button"
                 class="tab flex-1 justify-center font-semibold text-24px text-gray active-tab:text-primary pb-5 active"
-                id="purchase-tabs-item-1" data-tab="#purchase-tabs-1" aria-controls="purchase-tabs-1" role="tab"
+                id="purchase-tabs-item-1" data-v1-tab="#purchase-tabs-1" aria-controls="purchase-tabs-1" role="tab"
                 aria-selected="true">
                 تفاصيل الشراء
             </button>
             <button type="button"
                 class="tab flex-1 justify-center font-semibold text-24px text-gray active-tab:text-primary pb-5"
-                id="purchase-tabs-item-2" data-tab="#purchase-tabs-2" aria-controls="purchase-tabs-2" role="tab"
+                id="purchase-tabs-item-2" data-v1-tab="#purchase-tabs-2" aria-controls="purchase-tabs-2" role="tab"
                 aria-selected="false">
                 المحفظة
             </button>
             <button type="button"
                 class="tab flex-1 justify-center font-semibold text-24px text-gray active-tab:text-primary pb-5"
-                id="purchase-tabs-item-3" data-tab="#purchase-tabs-3" aria-controls="purchase-tabs-3" role="tab"
+                id="purchase-tabs-item-3" data-v1-tab="#purchase-tabs-3" aria-controls="purchase-tabs-3" role="tab"
                 aria-selected="false">
                 الأرباح والعمولات
             </button>
             <button type="button"
                 class="tab flex-1 justify-center font-semibold text-24px text-gray active-tab:text-primary pb-5"
-                id="purchase-tabs-item-4" data-tab="#purchase-tabs-4" aria-controls="purchase-tabs-4" role="tab"
+                id="purchase-tabs-item-4" data-v1-tab="#purchase-tabs-4" aria-controls="purchase-tabs-4" role="tab"
                 aria-selected="false">
                 اشتراك الباقات
             </button>

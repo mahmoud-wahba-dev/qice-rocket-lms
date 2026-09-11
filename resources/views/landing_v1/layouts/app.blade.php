@@ -28,6 +28,7 @@
     <div id="landing-v1-app" class="min-h-screen">
         @php($landingImg = asset('assets/landing_v1/img'))
         @include('landing_v1.layouts.navbar')
+        @include('components.v1.flash')
         @yield('content')
         @include('landing_v1.layouts.footer')
     </div>

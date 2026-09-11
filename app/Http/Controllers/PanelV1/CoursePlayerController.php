@@ -14,7 +14,140 @@ class CoursePlayerController extends Controller
 {
     public function watch(Request $request, string $slug)
     {
-        return $this->render($request, $slug, 'panel_v1.student.course-player.pages.watch', 'مشاهدة الدورة');
+        $resolved = $this->resolveCourse($request, $slug);
+        if ($resolved instanceof \Illuminate\Http\RedirectResponse) {
+            return $resolved;
+        }
+        [$user, $webinar] = $resolved;
+
+        $player = $this->buildPlayerData($webinar, $user, $request);
+        // real lesson: first session or requested item
+        $lesson = $player['currentLesson'] ?? ['title' => $webinar->title];
+        $hasQuiz = !empty($player['lectureQuiz']);
+        $hasAssignment = !empty($player['lectureAssignment']);
+        $files = $player['files'] ?? collect();
+        $hasFiles = $files->isNotEmpty();
+
+        return view('panel_v1.student.course-player.pages.watch', array_merge($player, [
+            'pageTitle' => 'مشاهدة الدورة',
+            'authUser' => $user,
+            'webinar' => $webinar,
+            'courseTitle' => $webinar->title,
+            'lesson' => $lesson,
+            'hasLectureQuiz' => $hasQuiz,
+            'hasLectureAssignment' => $hasAssignment,
+            'hasComments' => false,
+            'hasFiles' => $hasFiles,
+            'files' => $files->map(fn($f)=>['name'=>$f->title,'size'=>$f->volume ?? '','url'=>$f->file ?? ''])->all(),
+            'lectureQuiz' => $player['lectureQuiz'] ?? null,
+            'lectureAssignment' => $player['lectureAssignment'] ?? null,
+        ]));
+    }
+
+    private function buildPlayerData($webinar, $user, ?Request $request = null): array
+    {
+        // Progress real
+        $progress = 0;
+        try { $progress = (int) $webinar->getProgress(false, $user); } catch(\Throwable $e) { $progress = 0; }
+        $progress = max(0, min(100, $progress));
+
+        // Chapters real
+        $chapters = \App\Models\WebinarChapter::with(['sessions','files','textLessons'])
+            ->where('webinar_id',$webinar->id)
+            ->orderBy('order')->orderBy('id')
+            ->get();
+
+        $requestedItem = $request ? $request->get('item') : null;
+        $currentLesson = null;
+        $files = collect();
+        $lectureQuiz = null;
+        $lectureAssignment = null;
+
+        // Build sidebar chapters like mock but real
+        $chapterList = [];
+        $first = true;
+        foreach($chapters as $chapter){
+            $items = [];
+            foreach($chapter->sessions as $session){
+                $isActive = $first && empty($requestedItem) ? true : ($requestedItem == 'session_'.$session->id);
+                if($isActive && !$currentLesson){
+                    $currentLesson = ['title'=>$session->title,'type'=>'video','id'=>$session->id];
+                    // progress already
+                }
+                $items[] = ['title'=>$session->title,'type'=>'video','active'=>$isActive,'id'=>$session->id];
+                $first = false;
+            }
+            foreach($chapter->files as $file){
+                $isActive = $requestedItem == 'file_'.$file->id;
+                if($isActive && !$currentLesson){
+                    $currentLesson = ['title'=>$file->title,'type'=>'file','id'=>$file->id];
+                }
+                $items[] = ['title'=>$file->title,'type'=>'file','active'=>$isActive,'id'=>$file->id];
+            }
+            foreach($chapter->textLessons as $text){
+                $isActive = $requestedItem == 'text_'.$text->id;
+                if($isActive && !$currentLesson){
+                    $currentLesson = ['title'=>$text->title,'type'=>'text','id'=>$text->id];
+                }
+                $items[] = ['title'=>$text->title,'type'=>'text','active'=>$isActive,'id'=>$text->id];
+            }
+            $chapterList[] = [
+                'title'=>$chapter->title ?: 'الوحدة',
+                'subtitle'=> $chapter->title ?: 'محتوى الوحدة',
+                'expanded'=> $first ? true : false,
+                'completed'=> false,
+                'items'=>$items,
+            ];
+            if($first) $first = false;
+        }
+        // fallback current lesson to webinar title if no items
+        if(!$currentLesson){
+            $currentLesson = ['title'=>$webinar->title];
+        }
+
+        // Files for current webinar
+        $files = \App\Models\File::where('webinar_id',$webinar->id)->orderBy('id')->limit(10)->get();
+        // Quiz for webinar
+        $quiz = \App\Models\Quiz::where('webinar_id',$webinar->id)->where('status','active')->orderBy('id')->first();
+        if($quiz){
+            $lectureQuiz = [
+                'title'=>$quiz->title,
+                'subtitle'=>$webinar->title,
+                'duration'=> !empty($quiz->time) ? $quiz->time.' دقيقة' : '—',
+                'questions_count'=> \App\Models\QuizzesQuestion::where('quiz_id',$quiz->id)->count().' أسئلة',
+                'pass_score'=>$quiz->pass_mark.'%',
+                'attempts'=> $quiz->attempt ? $quiz->attempt.' محاولات' : '—',
+            ];
+        }
+        $assignment = \App\Models\WebinarAssignment::where('webinar_id',$webinar->id)->where('status','active')->orderBy('id')->first();
+        if($assignment){
+            $lectureAssignment = [
+                'title'=>$assignment->title ?? 'تكليف الدورة',
+                'subtitle'=>$webinar->title,
+                'deadline'=> $assignment->deadline ? date('Y/m/d', (int)$assignment->deadline) : 'غير محدود',
+                'attempts'=> $assignment->attempts ?? 'غير محدود',
+                'grade'=> $assignment->grade ?? '—',
+                'pass_grade'=> $assignment->pass_grade ?? '—',
+                'description'=> $assignment->description ?? '',
+                'file_name'=>'',
+                'file_size'=>'',
+            ];
+        }
+
+        return [
+            'slug'=>$webinar->slug,
+            'course'=>[
+                'title'=>$webinar->title,
+                'subtitle'=>$webinar->category->title ?? '',
+                'progress'=>$progress,
+                'progress_label'=>'نسبة الإنجاز',
+            ],
+            'chapters'=>$chapterList,
+            'currentLesson'=>$currentLesson,
+            'files'=>$files,
+            'lectureQuiz'=>$lectureQuiz,
+            'lectureAssignment'=>$lectureAssignment,
+        ];
     }
 
     public function forum(Request $request, string $slug)
@@ -34,9 +167,9 @@ class CoursePlayerController extends Controller
             ->limit(20)
             ->get();
 
-        $mock = CoursePlayerMockData::forSlug($slug);
+        $player = $this->buildPlayerData($webinar,$user,$request);
 
-        return view('panel_v1.student.course-player.pages.forum', array_merge($mock, [
+        return view('panel_v1.student.course-player.pages.forum', array_merge($player, [
             'pageTitle' => 'منتدى الدورة',
             'authUser' => $user,
             'webinar' => $webinar,
@@ -116,9 +249,9 @@ class CoursePlayerController extends Controller
                 ->first();
         }
 
-        $mock = CoursePlayerMockData::forSlug($slug);
+        $player = $this->buildPlayerData($webinar,$user,$request);
 
-        return view('panel_v1.student.course-player.pages.assignment', array_merge($mock, [
+        return view('panel_v1.student.course-player.pages.assignment', array_merge($player, [
             'pageTitle' => 'تقديم إجابة التكليف',
             'authUser' => $user,
             'webinar' => $webinar,
@@ -208,9 +341,9 @@ class CoursePlayerController extends Controller
             ->orderBy('id', 'desc')
             ->first();
 
-        $mock = CoursePlayerMockData::forSlug($slug);
+        $player = $this->buildPlayerData($webinar,$user,$request);
 
-        return view('panel_v1.student.course-player.pages.quiz-start', array_merge($mock, [
+        return view('panel_v1.student.course-player.pages.quiz-start', array_merge($player, [
             'pageTitle' => 'بدء الاختبار',
             'authUser' => $user,
             'webinar' => $webinar,
@@ -266,9 +399,9 @@ class CoursePlayerController extends Controller
         $question = $questions[$index - 1];
         $saved = session()->get($this->quizSessionKey($quiz->id), []);
 
-        $mock = CoursePlayerMockData::forSlug($slug);
+        $player = $this->buildPlayerData($webinar,$user,$request);
 
-        return view('panel_v1.student.course-player.pages.quiz-take', array_merge($mock, [
+        return view('panel_v1.student.course-player.pages.quiz-take', array_merge($player, [
             'pageTitle' => 'الاختبار',
             'authUser' => $user,
             'webinar' => $webinar,
@@ -470,30 +603,20 @@ class CoursePlayerController extends Controller
     private function render(Request $request, string $slug, string $view, string $pageTitle)
     {
         $user = $this->resolveStudent($request);
-
         if ($user instanceof \Illuminate\Http\RedirectResponse) {
             return $user;
         }
-
-        $webinar = \App\Models\Webinar::where('slug', $slug)
-            ->where('status', 'active')
-            ->first();
-
-        if (empty($webinar)) {
-            abort(404);
+        $webinar = \App\Models\Webinar::where('slug', $slug)->where('status','active')->first();
+        if (empty($webinar)) { abort(404); }
+        if (!$this->canAccess($user,$webinar)) {
+            return redirect()->route('landing.v1.course-details',['slug'=>$webinar->slug]);
         }
-
-        if (!$this->canAccess($user, $webinar)) {
-            return redirect()->route('landing.v1.course-details', ['slug' => $webinar->slug]);
-        }
-
-        $mock = CoursePlayerMockData::forSlug($slug);
-
-        return view($view, array_merge($mock, [
-            'pageTitle' => $pageTitle,
-            'authUser' => $user,
-            'webinar' => $webinar,
-            'courseTitle' => $webinar->title,
+        $player = $this->buildPlayerData($webinar,$user,$request);
+        return view($view, array_merge($player, [
+            'pageTitle'=>$pageTitle,
+            'authUser'=>$user,
+            'webinar'=>$webinar,
+            'courseTitle'=>$webinar->title,
         ]));
     }
 

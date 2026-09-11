@@ -19,7 +19,7 @@
         @foreach ($userTabs ?? [] as $i => $tab)
             <button type="button"
                 class="tab {{ $i === 0 ? 'active' : '' }} justify-center whitespace-nowrap font-semibold text-15px sm:text-16px text-gray pb-4 active-tab:text-primary active-tab:border-b-primary"
-                data-tab="#admin-users-{{ $i }}" role="tab" aria-selected="{{ $i === 0 ? 'true' : 'false' }}">
+                data-v1-tab="#admin-users-{{ $i }}" role="tab" aria-selected="{{ $i === 0 ? 'true' : 'false' }}">
                 {{ $tab }}
             </button>
         @endforeach

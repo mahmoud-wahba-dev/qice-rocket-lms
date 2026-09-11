@@ -4,6 +4,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* V1 tab sets: utilities are generated scoped to #landing-v1-app (ID specificity),
+   so class-only overrides lose to `#landing-v1-app .text-gray`. Match the scope
+   to brand the active tab text + border across landing_v1 / panel_v1. */
+#landing-v1-app .tabs .tab.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+
 /* Landing pages only. Keep global tokens here and page-specific layout in Blade. */
 :root {
     scroll-behavior: smooth;

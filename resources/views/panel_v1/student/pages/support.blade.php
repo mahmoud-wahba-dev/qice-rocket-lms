@@ -12,19 +12,19 @@
             aria-label="أقسام الدعم" role="tablist" aria-orientation="horizontal">
             <button type="button"
                 class="tab flex-1 justify-center font-semibold text-24px text-gray active-tab:text-primary pb-5 active"
-                id="support-tabs-item-1" data-tab="#support-tabs-1" aria-controls="support-tabs-1" role="tab"
+                id="support-tabs-item-1" data-v1-tab="#support-tabs-1" aria-controls="support-tabs-1" role="tab"
                 aria-selected="true">
                 تواصل مع الدعم
             </button>
             <button type="button"
                 class="tab flex-1 justify-center font-semibold text-24px text-gray active-tab:text-primary pb-5"
-                id="support-tabs-item-2" data-tab="#support-tabs-2" aria-controls="support-tabs-2" role="tab"
+                id="support-tabs-item-2" data-v1-tab="#support-tabs-2" aria-controls="support-tabs-2" role="tab"
                 aria-selected="false">
                 تذاكر الدعم
             </button>
             <button type="button"
                 class="tab flex-1 justify-center font-semibold text-24px text-gray active-tab:text-primary pb-5"
-                id="support-tabs-item-3" data-tab="#support-tabs-3" aria-controls="support-tabs-3" role="tab"
+                id="support-tabs-item-3" data-v1-tab="#support-tabs-3" aria-controls="support-tabs-3" role="tab"
                 aria-selected="false">
                 دعم الدورات
             </button>
@@ -139,7 +139,7 @@
                                 {{ date('Y/m/d', (int) $ticket->created_at) }}</p>
                         </div>
                         <div class="flex items-center gap-3 shrink-0">
-                            <a href="{{ url('/panel/support/' . $ticket->id . '/conversations') }}"
+                            <a href="{{ route('panel.v1.student.support.show', ['id' => $ticket->id]) }}"
                                 class="font-bold text-14px px-4 py-2 rounded-8px bg-[#E8F5E9] text-[#00B31B]">
                                 عرض والرد
                             </a>

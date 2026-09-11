@@ -45,22 +45,22 @@
     <nav class="tabs tabs-bordered flex w-full overflow-x-auto border-b border-d9" aria-label="محتوى المحاضرة" role="tablist">
         <button type="button"
             class="tab active justify-center whitespace-nowrap font-semibold text-15px sm:text-17px text-gray pb-4 active-tab:text-primary active-tab:border-b-primary"
-            id="inst-lesson-tab-1" data-tab="#inst-lesson-1" role="tab" aria-selected="true">
+            id="inst-lesson-tab-1" data-v1-tab="#inst-lesson-1" role="tab" aria-selected="true">
             اختبار المحاضرة
         </button>
         <button type="button"
             class="tab justify-center whitespace-nowrap font-semibold text-15px sm:text-17px text-gray pb-4 active-tab:text-primary active-tab:border-b-primary"
-            id="inst-lesson-tab-2" data-tab="#inst-lesson-2" role="tab" aria-selected="false">
+            id="inst-lesson-tab-2" data-v1-tab="#inst-lesson-2" role="tab" aria-selected="false">
             تكليفات المحاضرة
         </button>
         <button type="button"
             class="tab justify-center whitespace-nowrap font-semibold text-15px sm:text-17px text-gray pb-4 active-tab:text-primary active-tab:border-b-primary"
-            id="inst-lesson-tab-3" data-tab="#inst-lesson-3" role="tab" aria-selected="false">
+            id="inst-lesson-tab-3" data-v1-tab="#inst-lesson-3" role="tab" aria-selected="false">
             التعليقات
         </button>
         <button type="button"
             class="tab justify-center whitespace-nowrap font-semibold text-15px sm:text-17px text-gray pb-4 active-tab:text-primary active-tab:border-b-primary"
-            id="inst-lesson-tab-4" data-tab="#inst-lesson-4" role="tab" aria-selected="false">
+            id="inst-lesson-tab-4" data-v1-tab="#inst-lesson-4" role="tab" aria-selected="false">
             الملفات
         </button>
     </nav>

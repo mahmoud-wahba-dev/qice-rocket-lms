@@ -79,6 +79,6 @@ class AdminController extends Controller
                 ->orderBy('id', 'desc')
                 ->limit(8)
                 ->get(),
-        ]);
+        ]));
     }
 }

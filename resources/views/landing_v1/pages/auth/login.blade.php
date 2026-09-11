@@ -23,7 +23,7 @@
                                     aria-label="Tabs" role="tablist" aria-orientation="horizontal">
                                     <button type="button"
                                         class="btn btn-text  active-tab:bg-primary h-full font-medium text-20px text-primary active-tab:text-white hover:text-primary active hover:bg-primary/20"
-                                        id="tabs-pill-icon-item-1" data-tab="#tabs-pill-icon-1"
+                                        id="tabs-pill-icon-item-1" data-v1-tab="#tabs-pill-icon-1"
                                         aria-controls="tabs-pill-icon-1" role="tab" aria-selected="false">
                                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
                                             class="text-current" xmlns="http://www.w3.org/2000/svg">
@@ -44,7 +44,7 @@
                                     </button>
                                     <button type="button"
                                         class="btn btn-text active-tab:bg-primary h-full font-medium text-20px text-primary active-tab:text-white hover:text-primary  hover:bg-primary/20"
-                                        id="tabs-pill-icon-item-2" data-tab="#tabs-pill-icon-2"
+                                        id="tabs-pill-icon-item-2" data-v1-tab="#tabs-pill-icon-2"
                                         aria-controls="tabs-pill-icon-2" role="tab" aria-selected="false">
                                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
                                             class="text-current" xmlns="http://www.w3.org/2000/svg">

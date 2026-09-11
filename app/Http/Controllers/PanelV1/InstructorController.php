@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 
 class InstructorController extends Controller
 {
+    use \App\Http\Controllers\PanelV1\Support\ProfileSettingsTrait;
     public function home(Request $request)
     {
         $user = $this->resolveInstructor($request);
@@ -1471,12 +1472,222 @@ class InstructorController extends Controller
 
     public function settings(Request $request)
     {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
         return $this->render(
             $request,
             'panel_v1.instructor.pages.settings',
             'إعدادات الملف الشخصي',
-            InstructorMockData::settings()
+            array_merge(InstructorMockData::settings(), $this->profileExtraViewData($request, $user), $this->profileAboutData($user), $this->profileFinancialData($user), [
+                'loginHistories' => $this->profileLoginHistories($user),
+            ])
         );
+    }
+
+    public function updateExtra(Request $request)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $request->validate([
+            'country_id' => 'nullable|integer|exists:regions,id',
+            'province_id' => 'nullable|integer|exists:regions,id',
+            'city_id' => 'nullable|integer|exists:regions,id',
+            'district_id' => 'nullable|integer|exists:regions,id',
+            'address' => 'nullable|string|max:255',
+            'gender' => 'nullable|in:man,woman',
+            'meeting_type' => 'nullable|in:in_person,online,all',
+        ]);
+
+        $this->saveProfileExtra($request, $user);
+
+        return redirect()->route('panel.v1.instructor.settings')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم حفظ المعلومات الإضافية', 'type' => 'success']);
+    }
+
+    public function updateFinancial(Request $request)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $this->saveProfileFinancial($request, $user);
+
+        return redirect()->route('panel.v1.instructor.settings')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم حفظ بيانات الهوية والمالية', 'type' => 'success']);
+    }
+
+    public function updateImages(Request $request)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $request->validate([
+            'avatar' => 'nullable|image|max:5120',
+            'cover_img' => 'nullable|image|max:5120',
+            'profile_secondary_image' => 'nullable|image|max:5120',
+            'profile_video' => 'nullable|file|mimetypes:video/mp4,video/webm,video/quicktime|max:51200',
+            'signature_img' => 'nullable|image|max:5120',
+        ]);
+
+        $this->saveProfileMedia($request, $user);
+
+        return redirect()->route('panel.v1.instructor.settings')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم حفظ الصور', 'type' => 'success']);
+    }
+
+    public function deleteMedia(string $type)
+    {
+        $user = request()->user();
+
+        if (!$user || !$user->isTeacher()) {
+            return redirect('/login');
+        }
+
+        if (!$this->deleteProfileMedia($user, $type)) {
+            abort(404);
+        }
+
+        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم حذف الملف', 'type' => 'success']);
+    }
+
+    public function updateAbout(Request $request)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $request->validate([
+            'about' => 'nullable|string|max:5000',
+            'bio' => 'nullable|string|max:255',
+            'headline' => 'nullable|string|max:255',
+            'occupations' => 'nullable|array|max:10',
+            'occupations.*' => 'integer|exists:categories,id',
+        ]);
+
+        $this->saveProfileAbout($request, $user);
+
+        return redirect()->route('panel.v1.instructor.settings')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم حفظ بيانات "حول"', 'type' => 'success']);
+    }
+
+    public function storeMeta(Request $request)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        if (!$this->storeProfileMeta($user, $request->input('name'), $request->input('value'))) {
+            return response()->json([], 422);
+        }
+
+        return response()->json(['code' => 200], 200);
+    }
+
+    public function updateMeta(Request $request, $metaId)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        if (!$this->updateProfileMeta($user, $metaId, $request->input('name'), $request->input('value'))) {
+            return response()->json([], 422);
+        }
+
+        return response()->json(['code' => 200], 200);
+    }
+
+    public function deleteMeta(Request $request, $metaId)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        if (!$this->deleteProfileMeta($user, $metaId)) {
+            abort(404);
+        }
+
+        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم الحذف', 'type' => 'success']);
+    }
+
+    public function storeAttachment(Request $request)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $this->storeProfileAttachment($request, $user);
+
+        return redirect()->route('panel.v1.instructor.settings')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تمت إضافة المرفق', 'type' => 'success']);
+    }
+
+    public function updateAttachment(Request $request, $attachmentId)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        if (empty($this->updateProfileAttachment($request, $user, $attachmentId))) {
+            abort(404);
+        }
+
+        return redirect()->route('panel.v1.instructor.settings')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم تحديث المرفق', 'type' => 'success']);
+    }
+
+    public function deleteAttachment($attachmentId)
+    {
+        $user = request()->user();
+
+        if (!$user || !$user->isTeacher()) {
+            return redirect('/login');
+        }
+
+        if (!$this->deleteProfileAttachment($user, $attachmentId)) {
+            abort(404);
+        }
+
+        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم حذف المرفق', 'type' => 'success']);
+    }
+
+    public function endSession($sessionId)
+    {
+        $user = request()->user();
+
+        if (!$user || !$user->isTeacher()) {
+            return redirect('/login');
+        }
+
+        if (!$this->endProfileSession($user, $sessionId)) {
+            abort(404);
+        }
+
+        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم إنهاء الجلسة', 'type' => 'success']);
     }
 
     public function updateSettings(Request $request)
@@ -1501,14 +1712,41 @@ class InstructorController extends Controller
         $user->mobile = $request->input('mobile');
         $user->language = $request->input('language', $user->language);
         $user->timezone = $request->input('timezone', $user->timezone);
-        $user->offline = $request->boolean('offline');
-        $user->offline_message = $request->input('offline_message', $user->offline_message);
 
         if ($request->filled('password')) {
             $user->password = \Illuminate\Support\Facades\Hash::make($request->input('password'));
         }
 
         $user->save();
+
+        $this->saveProfileAccountOptions($request, $user);
+
+        // Also persist any extra/about/financial/images fields that were submitted together
+        // (the view has a single outer form wrapping all tabs).
+        try {
+            if ($request->hasAny(['birthday', 'gender', 'meeting_type', 'level_of_training', 'country_id', 'province_id', 'city_id', 'district_id', 'address', 'latitude', 'longitude', 'socials'])) {
+                $this->saveProfileExtra($request, $user);
+            }
+        } catch (\Throwable $e) {
+        }
+        try {
+            if ($request->hasAny(['headline', 'bio', 'about', 'occupations'])) {
+                $this->saveProfileAbout($request, $user);
+            }
+        } catch (\Throwable $e) {
+        }
+        try {
+            if ($request->hasAny(['bank_id', 'identity_scan', 'certificate'])) {
+                $this->saveProfileFinancial($request, $user);
+            }
+        } catch (\Throwable $e) {
+        }
+        try {
+            if ($request->hasFile('avatar') || $request->hasFile('cover_img') || $request->hasFile('profile_secondary_image') || $request->hasFile('profile_video') || $request->hasFile('signature_img')) {
+                $this->saveProfileMedia($request, $user);
+            }
+        } catch (\Throwable $e) {
+        }
 
         return redirect()
             ->route('panel.v1.instructor.settings')

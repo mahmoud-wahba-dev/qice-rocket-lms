@@ -32,6 +32,7 @@
     {{-- #landing-v1-app required: Tailwind/FlyonUI utilities are scoped to this id --}}
     <div id="landing-v1-app" class="min-h-screen panel-v1-student">
         @include('panel_v1.student.layouts.navbar')
+        @include('components.v1.flash')
         @yield('content')
         @include('landing_v1.components.prefooter-cta')
         @include('panel_v1.student.layouts.footer')

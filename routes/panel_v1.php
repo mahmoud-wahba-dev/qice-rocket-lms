@@ -29,11 +29,48 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
             Route::post('/student/support', [StudentController::class, 'storeSupport'])->name('student.support.store');
             Route::get('/student/settings', [StudentController::class, 'settings'])->name('student.settings');
             Route::post('/student/settings', [StudentController::class, 'updateSettings'])->name('student.settings.update');
+            Route::post('/student/settings/extra', [StudentController::class, 'updateExtra'])->name('student.extra.update');
+            Route::post('/student/settings/financial', [StudentController::class, 'updateFinancial'])->name('student.financial.update');
+            Route::post('/student/settings/images', [StudentController::class, 'updateImages'])->name('student.images.update');
+            Route::post('/student/settings/media/{type}/delete', [StudentController::class, 'deleteMedia'])->name('student.media.delete');
+            Route::post('/student/settings/about', [StudentController::class, 'updateAbout'])->name('student.about.update');
+            Route::post('/student/settings/metas', [StudentController::class, 'storeMeta'])->name('student.metas.store');
+            Route::post('/student/settings/metas/{metaId}/update', [StudentController::class, 'updateMeta'])->name('student.metas.update');
+            Route::post('/student/settings/metas/{metaId}/delete', [StudentController::class, 'deleteMeta'])->name('student.metas.delete');
+            Route::post('/student/settings/attachments', [StudentController::class, 'storeAttachment'])->name('student.attachments.store');
+            Route::post('/student/settings/attachments/{attachmentId}/update', [StudentController::class, 'updateAttachment'])->name('student.attachments.update');
+            Route::post('/student/settings/attachments/{attachmentId}/delete', [StudentController::class, 'deleteAttachment'])->name('student.attachments.delete');
+            Route::post('/student/settings/sessions/{sessionId}/end', [StudentController::class, 'endSession'])->name('student.sessions.end');
             Route::get('/student/favorites', [StudentController::class, 'favorites'])->name('student.favorites');
             Route::post('/student/favorites/toggle', [StudentController::class, 'toggleFavorite'])->name('student.favorites.toggle');
             Route::get('/student/notes', [StudentController::class, 'notes'])->name('student.notes');
             Route::post('/student/notes', [StudentController::class, 'storeNote'])->name('student.notes.store');
             Route::post('/student/notes/{id}/delete', [StudentController::class, 'deleteNote'])->name('student.notes.delete');
+            Route::get('/student/certificates', [StudentController::class, 'certificates'])->name('student.certificates');
+            Route::get('/student/certificates/{id}/download', [StudentController::class, 'downloadCertificate'])->name('student.certificates.download');
+            Route::get('/student/assignments', [StudentController::class, 'assignmentsPage'])->name('student.assignments');
+            Route::get('/student/quizzes', [StudentController::class, 'quizzesPage'])->name('student.quizzes');
+            Route::get('/student/comments', [StudentController::class, 'commentsPage'])->name('student.comments');
+            Route::post('/student/comments/{id}/delete', [StudentController::class, 'deleteComment'])->name('student.comments.delete');
+            Route::get('/student/meetings', [StudentController::class, 'meetings'])->name('student.meetings');
+            Route::get('/student/meetings/{id}/join', [StudentController::class, 'meetingsJoin'])->name('student.meetings.join');
+            Route::post('/student/meetings/{id}/finish', [StudentController::class, 'meetingsFinish'])->name('student.meetings.finish');
+            Route::get('/student/support/{id}', [StudentController::class, 'supportShow'])->name('student.support.show');
+            Route::post('/student/support/{id}/reply', [StudentController::class, 'storeSupportConversation'])->name('student.support.reply');
+            Route::post('/student/support/{id}/close', [StudentController::class, 'closeSupport'])->name('student.support.close');
+            Route::get('/student/noticeboards', [StudentController::class, 'noticeboards'])->name('student.noticeboards');
+            Route::post('/student/noticeboards/{id}/seen', [StudentController::class, 'noticeboardSeen'])->name('student.noticeboards.seen');
+            Route::get('/student/rewards', [StudentController::class, 'rewards'])->name('student.rewards');
+            Route::post('/student/rewards/exchange', [StudentController::class, 'rewardExchange'])->name('student.rewards.exchange');
+            Route::get('/student/attendances', [StudentController::class, 'attendances'])->name('student.attendances');
+            Route::get('/student/upcoming', [StudentController::class, 'upcomingCourses'])->name('student.upcoming');
+            Route::post('/student/upcoming/{id}/follow', [StudentController::class, 'upcomingFollow'])->name('student.upcoming.follow');
+            Route::post('/student/upcoming/{id}/unfollow', [StudentController::class, 'upcomingUnfollow'])->name('student.upcoming.unfollow');
+            Route::get('/student/forums', [StudentController::class, 'forums'])->name('student.forums');
+            Route::post('/student/forums/{topicId}/bookmark', [StudentController::class, 'forumBookmarkToggle'])->name('student.forums.bookmark');
+            Route::post('/student/comments/{id}/update', [StudentController::class, 'updateComment'])->name('student.comments.update');
+            Route::post('/student/comments/{id}/report', [StudentController::class, 'reportComment'])->name('student.comments.report');
+            Route::get('/student/installments', [StudentController::class, 'installments'])->name('student.installments');
 
             Route::prefix('student/courses/{slug}')->name('student.course.')->group(function () {
                 Route::get('/watch', [CoursePlayerController::class, 'watch'])->name('watch');
@@ -124,6 +161,18 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 ->name('instructor.settings');
             Route::post('/instructor/settings', [InstructorController::class, 'updateSettings'])
                 ->name('instructor.settings.update');
+            Route::post('/instructor/settings/extra', [InstructorController::class, 'updateExtra'])->name('instructor.extra.update');
+            Route::post('/instructor/settings/financial', [InstructorController::class, 'updateFinancial'])->name('instructor.financial.update');
+            Route::post('/instructor/settings/images', [InstructorController::class, 'updateImages'])->name('instructor.images.update');
+            Route::post('/instructor/settings/media/{type}/delete', [InstructorController::class, 'deleteMedia'])->name('instructor.media.delete');
+            Route::post('/instructor/settings/about', [InstructorController::class, 'updateAbout'])->name('instructor.about.update');
+            Route::post('/instructor/settings/metas', [InstructorController::class, 'storeMeta'])->name('instructor.metas.store');
+            Route::post('/instructor/settings/metas/{metaId}/update', [InstructorController::class, 'updateMeta'])->name('instructor.metas.update');
+            Route::post('/instructor/settings/metas/{metaId}/delete', [InstructorController::class, 'deleteMeta'])->name('instructor.metas.delete');
+            Route::post('/instructor/settings/attachments', [InstructorController::class, 'storeAttachment'])->name('instructor.attachments.store');
+            Route::post('/instructor/settings/attachments/{attachmentId}/update', [InstructorController::class, 'updateAttachment'])->name('instructor.attachments.update');
+            Route::post('/instructor/settings/attachments/{attachmentId}/delete', [InstructorController::class, 'deleteAttachment'])->name('instructor.attachments.delete');
+            Route::post('/instructor/settings/sessions/{sessionId}/end', [InstructorController::class, 'endSession'])->name('instructor.sessions.end');
 
             Route::get('/organization', [OrganizationController::class, 'home'])->name('organization.home');
             Route::get('/organization/users/{type}', [OrganizationController::class, 'users'])
