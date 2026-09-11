@@ -191,6 +191,20 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 ->where('type', 'instructors|students')
                 ->name('organization.members.update');
             Route::get('/organization/courses', [OrganizationController::class, 'courses'])->name('organization.courses');
+            Route::get('/organization/settings', [OrganizationController::class, 'settings'])->name('organization.settings');
+            Route::post('/organization/settings', [OrganizationController::class, 'updateSettings'])->name('organization.settings.update');
+            Route::post('/organization/settings/extra', [OrganizationController::class, 'updateExtra'])->name('organization.extra.update');
+            Route::post('/organization/settings/financial', [OrganizationController::class, 'updateFinancial'])->name('organization.financial.update');
+            Route::post('/organization/settings/images', [OrganizationController::class, 'updateImages'])->name('organization.images.update');
+            Route::post('/organization/settings/media/{type}/delete', [OrganizationController::class, 'deleteMedia'])->name('organization.media.delete');
+            Route::post('/organization/settings/about', [OrganizationController::class, 'updateAbout'])->name('organization.about.update');
+            Route::post('/organization/settings/metas', [OrganizationController::class, 'storeMeta'])->name('organization.metas.store');
+            Route::post('/organization/settings/metas/{metaId}/update', [OrganizationController::class, 'updateMeta'])->name('organization.metas.update');
+            Route::post('/organization/settings/metas/{metaId}/delete', [OrganizationController::class, 'deleteMeta'])->name('organization.metas.delete');
+            Route::post('/organization/settings/attachments', [OrganizationController::class, 'storeAttachment'])->name('organization.attachments.store');
+            Route::post('/organization/settings/attachments/{attachmentId}/update', [OrganizationController::class, 'updateAttachment'])->name('organization.attachments.update');
+            Route::post('/organization/settings/attachments/{attachmentId}/delete', [OrganizationController::class, 'deleteAttachment'])->name('organization.attachments.delete');
+            Route::post('/organization/settings/sessions/{sessionId}/end', [OrganizationController::class, 'endSession'])->name('organization.sessions.end');
         });
 
     Route::middleware(['web', 'admin'])

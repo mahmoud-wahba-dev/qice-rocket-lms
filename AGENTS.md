@@ -96,7 +96,7 @@ docker exec -w /var/www/html qiec-app php artisan db:seed --class=StudentV1DemoD
 | لوحة طالب | `resources/views/panel_v1/student/` + `StudentController` | `design_1/panel` | 100% حقيقي (23 route) |
 | مشغل الدورة | `resources/views/panel_v1/student/course-player/` + `CoursePlayerController::buildPlayerData()` | `design_1/web/courses/learning_page` | 100% حقيقي (كان Mock) |
 | لوحة مدرب | `resources/views/panel_v1/instructor/` + `InstructorController` | `design_1/panel` | 95% (باقي `courseWatch` سابقاً) |
-| لوحة منظمة | `resources/views/panel_v1/organization/` + `OrganizationController` | — | 70% (ينقص `settings`) |
+| لوحة منظمة | `resources/views/panel_v1/organization/` + `OrganizationController` | — | 100% حقيقي (6 تابات `ProfileSettingsTrait`) |
 | لوحة إدارة | `resources/views/panel_v1/admin/` + `Admin/*Controller` | `design_1/admin` | 0% (stub) |
 | ثيم إدارة | `resources/sass/admin/qiec-theme.scss` → `custom.css` | `style.css` (Stisla) | — |
 | تحويل بعد الدخول | `app/Helpers/helper.php:panelV1HomeUrl()` | `Role::$*` | لا يزال للقديم حتى التفعيل |
@@ -174,8 +174,8 @@ docker exec -w /var/www/html qiec-app php test_comprehensive.php  # اختبار
 
 ## 11. خارطة الطريق المحدثة (بعد `bccbd78`)
 
-- **تم:** `Student` 100% + `CoursePlayer` حقيقي + `Landing` + `Figma home` + `Instructor support/marketing/assignments` حقيقي — `52/52`
-- **متبقي حرفي:** `Instructor courseWatch/Performance` (ساعات) + `Organization settings` (0.5 يوم) + `Admin` (2-3 أسابيع)
-- **التالي:** إنهاء `Instructor` ثم `Organization` ثم `Admin` خارج `ionCube`
+- **تم:** `Student` 100% + `CoursePlayer` حقيقي + `Landing` + `Figma home` + `Instructor` 100% (`support/marketing/assignments/courseWatch/Performance` → حقيقي) + `Organization` 100% (`settings` 6 تابات) — `52/52`
+- **متبقي حرفي:** `Admin` (2-3 أسابيع) — 4 لوحات `education/sales/marketing/system` وهمي
+- **التالي:** `Admin` خارج `ionCube` + تفعيل `panelV1HomeUrl()`
 
 > **تذكير أخير:** عند فتح `http://training.qiec.local:8000/purchase-code` مباشرة سترى نموذج الكود — هذا طبيعي. التحويل التلقائي يحدث فقط عند فشل التحقق أو دخول `localhost`.

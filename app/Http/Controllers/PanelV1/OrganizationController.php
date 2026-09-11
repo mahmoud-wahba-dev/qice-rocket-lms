@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 
 class OrganizationController extends Controller
 {
+    use \App\Http\Controllers\PanelV1\Support\ProfileSettingsTrait;
     public function home(Request $request)
     {
         $org = $this->resolveOrganization($request);
@@ -254,6 +255,161 @@ class OrganizationController extends Controller
             ->where('organ_id', $org->id)
             ->where('role_name', $roleName)
             ->firstOrFail();
+    }
+
+    public function settings(Request $request)
+    {
+        $user = $this->resolveOrganization($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) { return $user; }
+        return view('panel_v1.organization.pages.settings', array_merge([
+            'pageTitle' => 'إعدادات المنظمة',
+            'authUser' => $user,
+        ], $this->profileExtraViewData($request, $user), $this->profileAboutData($user), $this->profileFinancialData($user), [
+            'loginHistories' => $this->profileLoginHistories($user),
+        ]));
+    }
+
+    public function updateExtra(Request $request)
+    {
+        $user = $this->resolveOrganization($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) { return $user; }
+        $request->validate([
+            'country_id'=>'nullable|integer|exists:regions,id',
+            'province_id'=>'nullable|integer|exists:regions,id',
+            'city_id'=>'nullable|integer|exists:regions,id',
+            'district_id'=>'nullable|integer|exists:regions,id',
+            'address'=>'nullable|string|max:255',
+            'gender'=>'nullable|in:man,woman',
+        ]);
+        $this->saveProfileExtra($request,$user);
+        return redirect()->route('panel.v1.organization.settings')->with('toast',['title'=>'تم','msg'=>'تم حفظ المعلومات الإضافية','type'=>'success']);
+    }
+
+    public function updateFinancial(Request $request)
+    {
+        $user = $this->resolveOrganization($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) { return $user; }
+        $this->saveProfileFinancial($request,$user);
+        return redirect()->route('panel.v1.organization.settings')->with('toast',['title'=>'تم','msg'=>'تم حفظ بيانات الهوية والمالية','type'=>'success']);
+    }
+
+    public function updateImages(Request $request)
+    {
+        $user = $this->resolveOrganization($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) { return $user; }
+        $request->validate([
+            'avatar'=>'nullable|image|max:5120',
+            'cover_img'=>'nullable|image|max:5120',
+            'profile_secondary_image'=>'nullable|image|max:5120',
+            'profile_video'=>'nullable|file|mimetypes:video/mp4,video/webm,video/quicktime|max:51200',
+            'signature_img'=>'nullable|image|max:5120',
+        ]);
+        $this->saveProfileMedia($request,$user);
+        return redirect()->route('panel.v1.organization.settings')->with('toast',['title'=>'تم','msg'=>'تم حفظ الصور','type'=>'success']);
+    }
+
+    public function deleteMedia(string $type)
+    {
+        $user = request()->user();
+        if (!$user || !$user->isOrganization()) { return redirect('/login'); }
+        if (!$this->deleteProfileMedia($user,$type)) { abort(404); }
+        return back()->with('toast',['title'=>'تم','msg'=>'تم حذف الملف','type'=>'success']);
+    }
+
+    public function updateAbout(Request $request)
+    {
+        $user = $this->resolveOrganization($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) { return $user; }
+        $request->validate([
+            'about'=>'nullable|string|max:5000',
+            'bio'=>'nullable|string|max:255',
+            'headline'=>'nullable|string|max:255',
+        ]);
+        $this->saveProfileAbout($request,$user);
+        return redirect()->route('panel.v1.organization.settings')->with('toast',['title'=>'تم','msg'=>'تم حفظ بيانات حول','type'=>'success']);
+    }
+
+    public function storeMeta(Request $request)
+    {
+        $user = $this->resolveOrganization($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) { return $user; }
+        if (!$this->storeProfileMeta($user,$request->input('name'),$request->input('value'))) { return response()->json([],422); }
+        return response()->json(['code'=>200],200);
+    }
+
+    public function updateMeta(Request $request, $metaId)
+    {
+        $user = $this->resolveOrganization($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) { return $user; }
+        if (!$this->updateProfileMeta($user,$metaId,$request->input('name'),$request->input('value'))) { return response()->json([],422); }
+        return response()->json(['code'=>200],200);
+    }
+
+    public function deleteMeta(Request $request, $metaId)
+    {
+        $user = $this->resolveOrganization($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) { return $user; }
+        if (!$this->deleteProfileMeta($user,$metaId)) { abort(404); }
+        return back()->with('toast',['title'=>'تم','msg'=>'تم الحذف','type'=>'success']);
+    }
+
+    public function storeAttachment(Request $request)
+    {
+        $user = $this->resolveOrganization($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) { return $user; }
+        $this->storeProfileAttachment($request,$user);
+        return redirect()->route('panel.v1.organization.settings')->with('toast',['title'=>'تم','msg'=>'تمت إضافة المرفق','type'=>'success']);
+    }
+
+    public function updateAttachment(Request $request, $attachmentId)
+    {
+        $user = $this->resolveOrganization($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) { return $user; }
+        if (empty($this->updateProfileAttachment($request,$user,$attachmentId))) { abort(404); }
+        return redirect()->route('panel.v1.organization.settings')->with('toast',['title'=>'تم','msg'=>'تم تحديث المرفق','type'=>'success']);
+    }
+
+    public function deleteAttachment($attachmentId)
+    {
+        $user = request()->user();
+        if (!$user || !$user->isOrganization()) { return redirect('/login'); }
+        if (!$this->deleteProfileAttachment($user,$attachmentId)) { abort(404); }
+        return back()->with('toast',['title'=>'تم','msg'=>'تم حذف المرفق','type'=>'success']);
+    }
+
+    public function endSession($sessionId)
+    {
+        $user = request()->user();
+        if (!$user || !$user->isOrganization()) { return redirect('/login'); }
+        if (!$this->endProfileSession($user,$sessionId)) { abort(404); }
+        return back()->with('toast',['title'=>'تم','msg'=>'تم إنهاء الجلسة','type'=>'success']);
+    }
+
+    public function updateSettings(Request $request)
+    {
+        $user = $this->resolveOrganization($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) { return $user; }
+        $request->validate([
+            'full_name'=>'required|string|max:128',
+            'email'=>'required|email|unique:users,email,'.$user->id,
+            'mobile'=>'nullable|string|max:32|unique:users,mobile,'.$user->id,
+            'language'=>'nullable|string|max:128',
+            'timezone'=>'nullable|string|max:255',
+            'password'=>'nullable|min:6|confirmed',
+            'current_password'=>'required_with:password',
+        ]);
+        if ($request->filled('password') && !\Illuminate\Support\Facades\Hash::check($request->input('current_password'),$user->password)) {
+            return back()->withErrors(['current_password'=>trans('validation.password_or_username')])->withInput();
+        }
+        $user->full_name=$request->input('full_name');
+        $user->email=$request->input('email');
+        $user->mobile=$request->input('mobile');
+        $user->language=$request->input('language',$user->language);
+        $user->timezone=$request->input('timezone',$user->timezone);
+        if ($request->filled('password')) { $user->password=\Illuminate\Support\Facades\Hash::make($request->input('password')); }
+        $user->save();
+        $this->saveProfileAccountOptions($request,$user);
+        return redirect()->route('panel.v1.organization.settings')->with('toast',['title'=>'تم','msg'=>'تم حفظ الإعدادات بنجاح','type'=>'success']);
     }
 
     /**

@@ -365,8 +365,8 @@ docker exec -w /var/www/html -e APP_ENV=testing qiec-app vendor/bin/phpunit --te
 ## خارطة الطريق v1
 
 - **تم 100%:** `Student` + `CoursePlayer` حقيقي + `Landing` + تصميم Figma `home` — `bccbd78`
-- **قيد النقل:** `Instructor support/marketing` → حقيقي (هذه الجلسة)، `Organization settings`، `Admin` (الأكبر)
-- **التالي:** `Admin education/sales/marketing/system` خارج `ionCube` + تفعيل `panelV1HomeUrl()`
+- **تم 100% (هذه الجلسة):** `Instructor` (`support/marketing/assignments/courseWatch/Performance` → حقيقي) + `Organization settings` (6 تابات `ProfileSettingsTrait`) — `96b9f11`
+- **المتبقي:** `Admin` (`education/sales/marketing/system` وهمي `stub` — 2-3 أسابيع) + تفعيل `panelV1HomeUrl()`
 
 ---
 

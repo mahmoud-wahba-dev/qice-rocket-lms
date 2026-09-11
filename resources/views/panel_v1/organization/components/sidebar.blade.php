@@ -4,6 +4,7 @@
         ['route' => 'panel.v1.organization.users', 'params' => ['type' => 'instructors'], 'label' => 'المدربون', 'icon' => 'tabler--users'],
         ['route' => 'panel.v1.organization.users', 'params' => ['type' => 'students'], 'label' => 'المتدربون', 'icon' => 'tabler--user'],
         ['route' => 'panel.v1.organization.courses', 'label' => 'الدورات', 'icon' => 'tabler--book'],
+        ['route' => 'panel.v1.organization.settings', 'label' => 'الإعدادات', 'icon' => 'tabler--settings'],
     ];
     $currentRoute = \Illuminate\Support\Facades\Route::currentRouteName();
 @endphp
