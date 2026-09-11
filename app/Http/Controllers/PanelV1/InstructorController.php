@@ -531,105 +531,220 @@ class InstructorController extends Controller
         }
         $webinar = $this->teacherWebinarOrFail($guardUser, $slug);
 
-        $firstSession = \App\Models\Session::where('webinar_id', $webinar->id)
-            ->orderBy('date')->orderBy('id')->first();
-        $firstQuiz = \App\Models\Quiz::where('webinar_id', $webinar->id)
-            ->orderBy('id')->first();
-        $firstAssignment = \App\Models\WebinarAssignment::where('webinar_id', $webinar->id)
-            ->orderBy('id')->first();
-        $files = \App\Models\File::where('webinar_id', $webinar->id)
-            ->orderBy('id')->limit(10)->get();
+        // Real instructor shell (chapters with sessions/files/textLessons)
+        $shell = $this->instructorCourseShell($webinar, $request);
+        $firstSession = \App\Models\Session::where('webinar_id', $webinar->id)->orderBy('date')->orderBy('id')->first();
+        $firstQuiz = \App\Models\Quiz::where('webinar_id', $webinar->id)->orderBy('id')->first();
+        $firstAssignment = \App\Models\WebinarAssignment::where('webinar_id', $webinar->id)->orderBy('id')->first();
+        $files = \App\Models\File::where('webinar_id', $webinar->id)->orderBy('id')->limit(10)->get();
 
         return $this->render(
             $request,
             'panel_v1.instructor.pages.course-watch',
             'مشاهدة المحاضرة',
-            array_merge(
-                InstructorMockData::courseWatch($webinar->slug),
-                [
-                    'webinar' => $webinar,
-                    'courseSlug' => $webinar->slug,
-                    'lesson' => ['title' => $firstSession->title ?? $webinar->title],
-                    'files' => $files->map(function ($file) {
-                        return ['name' => $file->title, 'size' => $file->volume ?? ''];
-                    })->all(),
-                    'hasFiles' => $files->isNotEmpty(),
-                ],
-                $firstQuiz ? ['lectureQuiz' => [
-                    'title' => $firstQuiz->title,
-                    'subtitle' => $webinar->title,
-                    'duration' => !empty($firstQuiz->time) ? $firstQuiz->time . ' دقيقة' : '—',
-                    'questions_count' => \App\Models\QuizzesQuestion::where('quiz_id', $firstQuiz->id)->count() . ' أسئلة',
-                    'pass_score' => $firstQuiz->pass_mark . '%',
-                    'attempts' => $firstQuiz->attempt ? $firstQuiz->attempt . ' محاولات' : '—',
-                ], 'hasLectureQuiz' => true] : ['hasLectureQuiz' => false],
-                $firstAssignment ? ['lectureAssignment' => [
-                    'title' => 'تكليف الدورة',
-                    'subtitle' => $webinar->title,
-                    'deadline' => $firstAssignment->deadline ? date('Y/m/d', (int) $firstAssignment->deadline) : 'غير محدود',
-                    'attempts' => $firstAssignment->attempts ?? 'غير محدود',
-                    'grade' => $firstAssignment->grade ?? '—',
-                    'pass_grade' => $firstAssignment->pass_grade ?? '—',
-                    'description' => '',
-                    'file_name' => '',
-                    'file_size' => '',
-                ], 'hasLectureAssignment' => true] : ['hasLectureAssignment' => false]
-            )
+            array_merge($shell, [
+                'webinar' => $webinar,
+                'courseSlug' => $webinar->slug,
+                'lesson' => ['title' => $firstSession->title ?? $webinar->title],
+                'files' => $files->map(fn($f)=>['name'=>$f->title,'size'=>$f->volume ?? ''])->all(),
+                'hasFiles' => $files->isNotEmpty(),
+                'hasLectureQuiz' => !empty($firstQuiz),
+                'hasLectureAssignment' => !empty($firstAssignment),
+                'lectureQuiz' => $firstQuiz ? [
+                    'title'=>$firstQuiz->title,
+                    'subtitle'=>$webinar->title,
+                    'duration'=>!empty($firstQuiz->time)?$firstQuiz->time.' دقيقة':'—',
+                    'questions_count'=>\App\Models\QuizzesQuestion::where('quiz_id',$firstQuiz->id)->count().' أسئلة',
+                    'pass_score'=>$firstQuiz->pass_mark.'%',
+                    'attempts'=>$firstQuiz->attempt?$firstQuiz->attempt.' محاولات':'—',
+                ] : null,
+                'lectureAssignment' => $firstAssignment ? [
+                    'title'=>$firstAssignment->title ?? 'تكليف الدورة',
+                    'subtitle'=>$webinar->title,
+                    'deadline'=>$firstAssignment->deadline?date('Y/m/d',(int)$firstAssignment->deadline):'غير محدود',
+                    'attempts'=>$firstAssignment->attempts ?? 'غير محدود',
+                    'grade'=>$firstAssignment->grade ?? '—',
+                    'pass_grade'=>$firstAssignment->pass_grade ?? '—',
+                    'description'=>$firstAssignment->description ?? '',
+                    'file_name'=>'',
+                    'file_size'=>'',
+                ] : null,
+            ])
         );
+    }
+
+    private function instructorCourseShell($webinar, ?Request $request = null): array
+    {
+        $chapters = \App\Models\WebinarChapter::with(['sessions','files','textLessons'])->where('webinar_id',$webinar->id)->orderBy('order')->orderBy('id')->get();
+        $requested = $request ? $request->get('item') : null;
+        $list=[]; $first=true;
+        foreach($chapters as $ch){
+            $items=[];
+            foreach($ch->sessions as $s){ $active=$first && empty($requested) ? true : ($requested=='session_'.$s->id); $items[]=['title'=>$s->title,'type'=>'video','active'=>$active,'route'=>'panel.v1.instructor.courses.watch']; $first=false; }
+            foreach($ch->files as $f){ $active=$requested=='file_'.$f->id; $items[]=['title'=>$f->title,'type'=>'file','active'=>$active,'route'=>'panel.v1.instructor.courses.watch']; }
+            foreach($ch->textLessons as $t){ $active=$requested=='text_'.$t->id; $items[]=['title'=>$t->title,'type'=>'text','active'=>$active,'route'=>'panel.v1.instructor.courses.watch']; }
+            $list[]=['title'=>$ch->title ?: 'الوحدة','completed'=>false,'expanded'=>false,'subtitle'=>'محتوى الوحدة','items'=>$items];
+        }
+        if(empty($list)){
+            $list[]=['title'=>'المحاضرة الأولى','completed'=>false,'expanded'=>true,'subtitle'=>'لا يوجد محتوى بعد','items'=>[]];
+        } else {
+            $list[0]['expanded']=true;
+        }
+        return [
+            'slug'=>$webinar->slug,
+            'course'=>['title'=>$webinar->title,'subtitle'=>$webinar->category->title ?? '','progress'=>0,'progress_label'=>'نسبة الإنجاز'],
+            'chapters'=>$list,
+        ];
     }
 
     public function courseAssignment(Request $request, string $slug)
     {
         $guardUser = $request->user();
-        if (!$guardUser) {
-            return redirect('/login');
-        }
+        if (!$guardUser) { return redirect('/login'); }
         $webinar = $this->teacherWebinarOrFail($guardUser, $slug);
+        $assignment = \App\Models\WebinarAssignment::where('webinar_id',$webinar->id)->orderBy('id')->first();
+        $shell = $this->instructorCourseShell($webinar,$request);
         return $this->render(
             $request,
             'panel_v1.instructor.pages.assignment-review',
             'تقييم التكليف',
-            array_merge(InstructorMockData::assignmentReview(1, $webinar->slug), ['webinar' => $webinar, 'courseSlug' => $webinar->slug])
+            array_merge($shell, [
+                'webinar'=>$webinar,
+                'courseSlug'=>$webinar->slug,
+                'assignmentId'=>$assignment->id ?? 0,
+                'reviewTitle'=> $assignment->title ?? 'تكليف الدورة',
+                'detailsTitle'=>'تفاصيل التكليف',
+                'detailsBody'=> $assignment->description ?? 'لا يوجد وصف',
+                'points'=>['التزام بالموعد','جودة المحتوى','الالتزام بالمعايير'],
+                'pointsTitle'=>'نقاط التقييم',
+                'maxGrade'=>$assignment->grade ?? 50,
+                'passGrade'=>$assignment->pass_grade ?? 25,
+                'studentAnswerParagraphs'=>[],
+                'studentAnswerPoints'=>[],
+            ])
         );
     }
 
     public function coursePerformance(Request $request, string $slug)
     {
         $guardUser = $request->user();
-        if (!$guardUser) {
-            return redirect('/login');
-        }
+        if (!$guardUser) { return redirect('/login'); }
         $webinar = $this->teacherWebinarOrFail($guardUser, $slug);
+        $perf = $this->performanceData($webinar);
+        $salesCount = \App\Models\Sale::where('webinar_id',$webinar->id)->whereNull('refund_at')->count();
+        $pending = \App\Models\WebinarAssignmentHistory::whereIn('assignment_id', \App\Models\WebinarAssignment::where('webinar_id',$webinar->id)->pluck('id'))->where('status','pending')->count();
         return $this->render(
             $request,
             'panel_v1.instructor.pages.course-performance',
             'لوحة أداء الدورة',
-            array_merge(
-                InstructorMockData::coursePerformance($webinar->slug),
-                ['webinar' => $webinar, 'courseSlug' => $webinar->slug],
-                $this->performanceData($webinar)
-            )
+            array_merge($perf, [
+                'webinar'=>$webinar,
+                'courseSlug'=>$webinar->slug,
+                'slug'=>$webinar->slug,
+                'courseTitle'=>$webinar->title,
+                'courseSubtitle'=>$webinar->category->title ?? '',
+                'alertText'=> $pending>0 ? "لديك $pending واجبات بانتظار التصحيح" : "لا توجد مهام عاجلة",
+                'perfStats'=>[
+                    ['value'=>$salesCount.' طالب','label'=>'مسجلون','tone'=>'green'],
+                    ['value'=>$pending.' واجبات','label'=>'بانتظار التصحيح','tone'=>'red'],
+                    ['value'=>count($perf['students'] ?? []).' طالب','label'=>'إجمالي','tone'=>'yellow'],
+                ],
+            ])
         );
     }
 
     public function courseAssignments(Request $request, string $slug)
     {
         $guardUser = $request->user();
-        if (!$guardUser) {
-            return redirect('/login');
-        }
+        if (!$guardUser) { return redirect('/login'); }
         $webinar = $this->teacherWebinarOrFail($guardUser, $slug);
+        $assignments = \App\Models\WebinarAssignment::where('webinar_id',$webinar->id)->orderBy('id','desc')->get();
+        $histories = \App\Models\WebinarAssignmentHistory::with(['student'])->whereIn('assignment_id',$assignments->pluck('id'))->orderBy('id','desc')->limit(30)->get();
+        $total = $histories->count();
+        $passed = $histories->where('status','passed')->count();
+        $pending = $histories->where('status','pending')->count();
+        $rate = $total>0 ? (int) round($passed/$total*100) : 0;
         return $this->render(
             $request,
             'panel_v1.instructor.pages.course-assignments',
             'متطلبات الدورات',
-            array_merge(InstructorMockData::courseAssignments($webinar->slug), ['webinar' => $webinar, 'courseSlug' => $webinar->slug])
+            [
+                'webinar'=>$webinar,
+                'courseSlug'=>$webinar->slug,
+                'slug'=>$webinar->slug,
+                'pageTitleMain'=>'متطلبات دورة '. $webinar->title,
+                'pageSubtitle'=>$webinar->category->title ?? '',
+                'summaryCards'=>[
+                    ['label'=>'إجمالي التسليمات','value'=>(string)$total,'edge'=>'#0f4c45','valueClass'=>'text-primary'],
+                    ['label'=>'التسليمات المجتازة','value'=>(string)$passed,'edge'=>'#0FC787','valueClass'=>'text-[#0FC787]'],
+                    ['label'=>'قيد المراجعة','value'=>(string)$pending,'edge'=>'#F59E0B','valueClass'=>'text-[#F59E0B]'],
+                    ['label'=>'معدل النجاح','value'=>$rate.'%','edge'=>'#6366F1','valueClass'=>'text-[#6366F1]'],
+                ],
+                'submissions'=> $histories->map(fn($h)=>[
+                    'name'=>$h->student->full_name ?? '',
+                    'joined_at'=> $h->created_at ? date('Y/m/d',(int)$h->created_at) : '—',
+                    'latest_at'=> $h->updated_at ? date('Y/m/d',(int)$h->updated_at) : '—',
+                    'last_at'=>'—',
+                    'attempts'=>'1 / '.($h->assignment->attempts ?? '—'),
+                    'grade'=> ($h->grade ?? '—').' / '.($h->assignment->grade ?? '—'),
+                    'status'=> $h->status==='passed' ? 'مجتاز' : ($h->status==='pending' ? 'قيد المراجعة' : $h->status),
+                ])->all(),
+            ]
         );
     }
 
     public function assignments(Request $request)
     {
-        return $this->render($request, 'panel_v1.instructor.pages.assignments', 'إدارة الواجبات والتكليفات', InstructorMockData::assignments());
+        $user = $request->user();
+        if (!$user || !$user->isTeacher()) { return redirect('/login'); }
+        $webinarIds = $this->teacherWebinars($user)->pluck('id')->all();
+        $assignments = !empty($webinarIds) ? \App\Models\WebinarAssignment::with(['webinar'])->whereIn('webinar_id',$webinarIds)->orderBy('id','desc')->limit(20)->get() : collect();
+        $histories = !empty($webinarIds) ? \App\Models\WebinarAssignmentHistory::with(['assignment.webinar','student'])->whereIn('assignment_id',$assignments->pluck('id'))->orderBy('id','desc')->limit(30)->get() : collect();
+        $pending = $histories->where('status','pending')->count();
+        $graded = $histories->where('status','!=','pending')->count();
+        return $this->render($request, 'panel_v1.instructor.pages.assignments', 'إدارة الواجبات والتكليفات', [
+            'assignmentStats'=>[
+                ['value'=>$pending.' تكليف','label'=>'بانتظار التصحيح'],
+                ['value'=>$graded.' تكليف','label'=>'تم تصحيحها'],
+                ['value'=>$histories->count().' تكليف','label'=>'تسليم'],
+            ],
+            'currentAssignments'=> $assignments->take(4)->map(fn($a)=>[
+                'title'=>$a->title ?? 'تكليف',
+                'course'=>$a->webinar->title ?? '',
+                'deadline'=> $a->deadline ? date('Y/m/d',(int)$a->deadline) : 'غير محدود',
+                'submissions'=> \App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->count().' / '.$a->webinar->sales->count() ?? 0,
+                'pending'=> \App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->where('status','pending')->count().' طالب',
+                'graded'=> \App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->where('status','!=','pending')->count().' طالب',
+                'progress'=> 0,
+                'points'=>$a->grade ?? 0,
+                'badge'=>0,
+                'cta'=>'عرض التسليمات',
+            ])->all(),
+            'resultsRows'=> $assignments->take(6)->map(fn($a)=>[
+                'title'=>$a->title ?? '',
+                'course'=>$a->webinar->title ?? '',
+                'grade'=>$a->grade ?? 0,
+                'passGrade'=>$a->pass_grade ?? 0,
+                'submissions'=>\App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->count(),
+                'pending'=>\App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->where('status','pending')->count(),
+                'passed'=>\App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->where('status','passed')->count(),
+                'failed'=>\App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->where('status','not_passed')->count(),
+                'deadline'=>$a->deadline ? date('Y/m/d',(int)$a->deadline) : '—',
+                'status'=>'نشط',
+            ])->all(),
+            'studentResultsRows'=> $histories->take(8)->map(fn($h)=>[
+                'name'=>$h->student->full_name ?? '',
+                'title'=>$h->assignment->title ?? '',
+                'course'=>$h->assignment->webinar->title ?? '',
+                'first_at'=> $h->created_at ? date('Y/m/d',(int)$h->created_at) : '—',
+                'last_at'=>'—',
+                'attempts'=>'—',
+                'grade'=>$h->grade ?? '—',
+                'created_day'=> $h->created_at ? date('d',(int)$h->created_at) : '—',
+                'created_month'=> $h->created_at ? date('F Y',(int)$h->created_at) : '—',
+                'status'=> $h->status==='passed' ? 'تم التسليم' : ($h->status==='pending' ? 'بانتظار التصحيح' : $h->status),
+            ])->all(),
+        ]);
     }
 
     public function assignmentReview(Request $request, int $id)
@@ -1393,15 +1508,39 @@ class InstructorController extends Controller
             );
         }
 
+        // Real promotions / coupons - if tables exist
+        $couponRows = $discountRows; // coupons are discounts with codes
+        $promoRows = [];
+        try {
+            $promoRows = \App\Models\Promotion::where('creator_id',$user->id)->orderBy('id','desc')->limit(20)->get()->map(fn($p)=>[
+                'name'=>$p->title ?? 'ترويج #'.$p->id,
+                'email'=>'',
+                'course'=> $p->webinar->title ?? '',
+                'course_id'=>$p->webinar_id ?? $p->id,
+                'original_price'=>'—',
+                'discount'=> $p->discount ?? '—',
+                'total'=>'—',
+                'net'=>'—',
+                'type'=>'ترويج',
+                'date'=>date('Y/m/d',(int)$p->created_at),
+                'time'=>'',
+            ])->all();
+        } catch(\Throwable $e) {}
+
         return $this->render(
             $request,
             'panel_v1.instructor.pages.marketing',
             'إدارة التسويق والعروض',
-            array_merge(InstructorMockData::marketing(), [
+            [
+                'marketingActions' => [
+                    ['title' => 'إنشاء قسيمة خصم جديدة', 'subtitle' => 'إنشاء كوبون لطلابك', 'href' => '#'],
+                    ['title' => 'إنشاء تخفيض لدورتك', 'subtitle' => 'تخفيض مباشر على الدورة', 'href' => '#'],
+                    ['title' => 'إنشاء خطط ترويجية', 'subtitle' => 'حملة تسويقية', 'href' => '#'],
+                ],
                 'discountRows' => $discountRows,
-                'promoRows' => [],
-                'couponRows' => [],
-            ])
+                'promoRows' => $promoRows,
+                'couponRows' => $couponRows,
+            ]
         );
     }
 
@@ -1442,31 +1581,52 @@ class InstructorController extends Controller
     public function support(Request $request)
     {
         $user = $request->user();
+        if (!$user || !$user->isTeacher()) {
+            return redirect('/login');
+        }
+        // Platform tickets created by this instructor
+        $myTickets = \App\Models\Support::where('user_id', $user->id)
+            ->whereNotNull('department_id')
+            ->orderBy('id','desc')->limit(20)->get()
+            ->map(fn($t)=>[
+                'id'=>'#'.$t->id,
+                'raw_id'=>$t->id,
+                'subject'=>$t->title,
+                'status'=>$t->status==='open'?'مفتوحة':($t->status==='close'?'مغلقة':'تم الرد'),
+                'date'=>date('Y/m/d',(int)$t->created_at),
+            ])->all();
 
-        $tickets = $user
-            ? \App\Models\Support::where('user_id', $user->id)
-                ->orderBy('id', 'desc')
-                ->limit(20)
-                ->get()
-                ->map(function ($ticket) {
-                    return [
-                        'id' => '#' . $ticket->id,
-                        'raw_id' => $ticket->id,
-                        'subject' => $ticket->title,
-                        'status' => $ticket->status === 'open' ? 'مفتوحة' : 'مغلقة',
-                        'date' => date('Y/m/d', (int) $ticket->created_at),
-                    ];
-                })->all()
-            : [];
+        // Course support: tickets from students on instructor's webinars
+        $teacherWebinarIds = \App\Models\Webinar::where('teacher_id',$user->id)->orWhere('creator_id',$user->id)->pluck('id')->all();
+        $courseRows = [];
+        if(!empty($teacherWebinarIds)){
+            $courseSupports = \App\Models\Support::with(['user','webinar'])
+                ->whereIn('webinar_id',$teacherWebinarIds)
+                ->whereNull('department_id')
+                ->orderBy('id','desc')->limit(20)->get();
+            $courseRows = $courseSupports->map(fn($s)=>[
+                'student'=>$s->user->full_name ?? '',
+                'course'=>$s->webinar->title ?? '',
+                'id'=>$s->id,
+                'title'=>$s->title,
+                'status'=>$s->status,
+                'date'=>date('Y/m/d',(int)$s->created_at),
+            ])->all();
+        }
 
         return $this->render(
             $request,
             'panel_v1.instructor.pages.support',
             'مركز الدعم الفني وإدارة التذاكر',
-            array_merge(InstructorMockData::support(), [
-                'supportTickets' => $tickets,
-                'courseSupportRows' => [],
-            ])
+            [
+                'supportTickets' => $myTickets,
+                'courseSupportRows' => $courseRows,
+                // keep compatibility with old view expecting InstructorMockData keys but override with real
+                'supportStats' => [
+                    ['label'=>'إجمالي التذاكر','value'=>count($myTickets)+count($courseRows)],
+                    ['label'=>'قيد الانتظار','value'=>collect($myTickets)->where('status','مفتوحة')->count()],
+                ],
+            ]
         );
     }
 
