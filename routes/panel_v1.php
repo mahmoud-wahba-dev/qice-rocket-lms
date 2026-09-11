@@ -147,5 +147,25 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
     Route::middleware(['web', 'admin'])
         ->group(function () {
             Route::get('/admin', [AdminController::class, 'home'])->name('admin.home');
+
+            Route::prefix('admin/education')->name('admin.education.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'home'])->name('home');
+                Route::get('/{section}', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'section'])->name('section');
+            });
+
+            Route::prefix('admin/sales')->name('admin.sales.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\PanelV1\Admin\SalesController::class, 'home'])->name('home');
+                Route::get('/{section}', [\App\Http\Controllers\PanelV1\Admin\SalesController::class, 'section'])->name('section');
+            });
+
+            Route::prefix('admin/marketing')->name('admin.marketing.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\PanelV1\Admin\MarketingController::class, 'home'])->name('home');
+                Route::get('/{section}', [\App\Http\Controllers\PanelV1\Admin\MarketingController::class, 'section'])->name('section');
+            });
+
+            Route::prefix('admin/system')->name('admin.system.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'home'])->name('home');
+                Route::get('/{section}', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'section'])->name('section');
+            });
         });
 });
