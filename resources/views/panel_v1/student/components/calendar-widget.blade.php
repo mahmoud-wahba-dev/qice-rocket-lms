@@ -1,7 +1,8 @@
 <div class="student-dash-calendar px-6 pb-8" id="student-dash-calendar"
     data-year="{{ $calendarYear ?? now()->year }}"
     data-month="{{ $calendarMonth ?? now()->month }}"
-    data-selected="{{ $calendarSelected ?? now()->day }}">
+    data-selected="{{ $calendarSelected ?? now()->day }}"
+    data-event-dates='@json($calendarEventDates ?? [])'>
 
     <div class="flex items-center justify-between mb-6">
         <button type="button"
@@ -32,4 +33,12 @@
     <div class="grid grid-cols-7 gap-y-1 text-center" data-calendar-grid dir="ltr"></div>
 
     <input type="hidden" name="calendar_selected_date" data-calendar-input value="">
+
+    <div class="mt-6">
+        <button type="button"
+            class="btn btn-primary rounded-10px h-11 font-bold text-14px w-full"
+            data-calendar-add-event>
+            إضافة حدث للتاريخ المحدد
+        </button>
+    </div>
 </div>

@@ -21,6 +21,8 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
     Route::middleware(['impersonate', 'panel', 'share', 'check_maintenance', 'check_restriction'])
         ->group(function () {
             Route::get('/student', [StudentController::class, 'home'])->name('student.home');
+            Route::post('/student/calendar-events', [StudentController::class, 'storeCalendarEvent'])->name('student.calendar-events.store');
+            Route::post('/student/calendar-events/{id}/delete', [StudentController::class, 'deleteCalendarEvent'])->name('student.calendar-events.delete');
             Route::get('/student/notifications', [StudentController::class, 'notifications'])->name('student.notifications');
             Route::post('/student/notifications/mark-all-read', [StudentController::class, 'markAllNotificationsRead'])
                 ->name('student.notifications.mark-all-read');

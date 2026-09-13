@@ -48,8 +48,8 @@
 </section>
 @endif
 
-<header class="overflow-hidden text-white pt-6 mt-8">
-    <div class="container">
+<header class="overflow-hidden text-white pt-6 mt-8 ">
+    <div class="container ">
         @php
             $hour = (int) now()->format('H');
             if ($hour < 12) {
@@ -74,34 +74,36 @@
             ];
         @endphp
 
-        <div class="bg-[#0F4C45] relative rounded-[16px] overflow-hidden px-5 sm:px-8 lg:px-10 pt-8 pb-6 lg:pt-9 lg:pb-7">
+        <div class="bg-[#0F4C45] h-[70vh] relative rounded-[16px] overflow-hidden px-5 sm:px-8 lg:px-10 flex items-center">
             {{-- Fingerprint / ripple pattern (visual left) --}}
             <img src="{{ $heroLogo }}" alt="" aria-hidden="true"
                 class="pointer-events-none absolute -top-8 left-0 w-[240px] sm:w-[300px] lg:w-[360px] h-auto opacity-[0.28] mix-blend-screen select-none">
 
-            <div class="relative z-[1]">
-                <h1 class="font-extrabold text-[26px] sm:text-[32px] lg:text-[36px] leading-tight mb-2">
-                    {{ $heroGreeting }} ، {{ $authUser->full_name ?? 'علا محمد' }}
-                </h1>
-                <p class="font-medium text-[14px] sm:text-[16px] text-white/90 leading-relaxed max-w-3xl">
-                    @if ($continueCourseTitle)
-                        جاهزة لاستكمال دورة '{{ $continueCourseTitle }}' اليوم؟
-                    @else
-                        جاهزة لاستكمال رحلتك التعليمية اليوم؟
-                    @endif
-                </p>
-            </div>
+            <div class="relative z-[1] w-full">
+                <div class="mb-7">
+                    <h1 class="font-extrabold text-[26px] sm:text-[32px] lg:text-[36px] leading-tight mb-2">
+                        {{ $heroGreeting }} ، {{ $authUser->full_name ?? 'علا محمد' }}
+                    </h1>
+                    <p class="font-medium text-[14px] sm:text-[16px] text-white/90 leading-relaxed max-w-3xl">
+                        @if ($continueCourseTitle)
+                            جاهزة لاستكمال دورة '{{ $continueCourseTitle }}' اليوم؟
+                        @else
+                            جاهزة لاستكمال رحلتك التعليمية اليوم؟
+                        @endif
+                    </p>
+                </div>
 
-            <div class="relative z-[1] mt-7 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-3.5">
-                @foreach ($heroStats as $stat)
-                    <div class="bg-white/[0.10] rounded-[12px] px-3 py-4 sm:px-4 sm:py-5 text-center min-h-[92px] flex flex-col items-center justify-center gap-1.5">
-                        <div class="flex items-center justify-center gap-2">
-                            <span class="icon-[{{ $stat['icon'] }}] size-5 text-[#C9A46C] shrink-0"></span>
-                            <span class="font-extrabold text-[24px] sm:text-[28px] leading-none text-white">{{ $stat['value'] }}</span>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-3.5">
+                    @foreach ($heroStats as $stat)
+                        <div class="bg-white/[0.10] rounded-[12px] px-3 py-4 sm:px-4 sm:py-5 text-center min-h-[92px] flex flex-col items-center justify-center gap-1.5">
+                            <div class="flex items-center justify-center gap-2">
+                                <span class="icon-[{{ $stat['icon'] }}] size-5 text-[#C9A46C] shrink-0"></span>
+                                <span class="font-extrabold text-[24px] sm:text-[28px] leading-none text-white">{{ $stat['value'] }}</span>
+                            </div>
+                            <p class="font-medium text-[11px] sm:text-[12px] leading-snug text-white/90">{{ $stat['label'] }}</p>
                         </div>
-                        <p class="font-medium text-[11px] sm:text-[12px] leading-snug text-white/90">{{ $stat['label'] }}</p>
-                    </div>
-                @endforeach
+                    @endforeach
+                </div>
             </div>
         </div>
     </div>
@@ -230,22 +232,37 @@
                                 حدث جديد</h5>
                             <div>
                                 @include('panel_v1.student.components.calendar-widget', [
-                                'calendarYear' => $calendarYear ?? now()->year,
-                                'calendarMonth' => $calendarMonth ?? now()->month,
-                                'calendarSelected' => $calendarSelected ?? now()->day,
+                                    'calendarYear' => $calendarYear ?? now()->year,
+                                    'calendarMonth' => $calendarMonth ?? now()->month,
+                                    'calendarSelected' => $calendarSelected ?? now()->day,
+                                    'calendarEventDates' => $calendarEventDates ?? [],
                                 ])
                             </div>
 
 
                         </div>
 
-                        <div class="px-10 py-8 border border-d9 rounded-12px ">
-                            @if (($liveSessions ?? collect())->isNotEmpty())
-                                <h6 class="font-semibold text-24px text-black mb-3">أحداث قادمة</h6>
+                        <div class="px-10 py-8 border border-d9 rounded-12px" data-student-calendar-events>
+                            @if (($calendarEvents ?? collect())->isNotEmpty())
+                                <h6 class="font-semibold text-24px text-black mb-4">أحداثك القادمة</h6>
                                 <ul class="space-y-3">
-                                    @foreach (($liveSessions ?? collect())->take(3) as $liveSession)
-                                        <li class="font-medium text-14px text-gray">
-                                            {{ $liveSession->title }} — {{ date('Y/m/d H:i', (int) $liveSession->date) }}
+                                    @foreach ($calendarEvents as $calendarEvent)
+                                        <li class="flex items-start justify-between gap-3 rounded-10px border border-d9 bg-fa/40 px-4 py-3">
+                                            <div class="min-w-0">
+                                                <p class="font-bold text-14px text-primary leading-snug">{{ $calendarEvent->title }}</p>
+                                                <p class="font-medium text-12px text-gray mt-1">
+                                                    {{ $calendarEvent->event_date->format('Y/m/d') }}
+                                                </p>
+                                                @if (!empty($calendarEvent->notes))
+                                                    <p class="font-medium text-12px text-gray/80 mt-1 line-clamp-2">{{ $calendarEvent->notes }}</p>
+                                                @endif
+                                            </div>
+                                            <form method="POST" action="{{ route('panel.v1.student.calendar-events.delete', $calendarEvent->id) }}" class="shrink-0">
+                                                @csrf
+                                                <button type="submit" class="size-8 rounded-full center text-gray hover:text-red-600 hover:bg-red-50 transition" aria-label="حذف الحدث" title="حذف">
+                                                    <span class="icon-[tabler--trash] size-4"></span>
+                                                </button>
+                                            </form>
                                         </li>
                                     @endforeach
                                 </ul>
@@ -458,6 +475,7 @@
         </div>
 
         @include('panel_v1.student.components.assignment-submit-modal')
+        @include('panel_v1.student.components.calendar-event-modal')
     </div>
 </section>
 

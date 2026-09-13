@@ -18,16 +18,58 @@ function formatDateValue(year, month, day) {
     return `${year}-${m}-${d}`;
 }
 
+function parseEventDates(root) {
+    try {
+        const raw = root.dataset.eventDates || '[]';
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function openCalendarEventModal(dateValue) {
+    const dateInput = document.querySelector('[data-calendar-event-date]');
+    const titleInput = document.querySelector('[data-calendar-event-title]');
+    const notesInput = document.querySelector('[data-calendar-event-notes]');
+    const trigger = document.getElementById('student-calendar-event-modal-trigger');
+
+    if (dateInput) {
+        dateInput.value = dateValue;
+    }
+    if (titleInput) {
+        titleInput.value = '';
+        titleInput.focus?.();
+    }
+    if (notesInput) {
+        notesInput.value = '';
+    }
+
+    if (trigger) {
+        trigger.click();
+        return;
+    }
+
+    const modal = document.getElementById('student-calendar-event-modal');
+    if (modal && window.HSOverlay?.open) {
+        window.HSOverlay.open(modal);
+    }
+}
+
 function renderStudentCalendar(root) {
     let year = parseInt(root.dataset.year, 10);
     let month = parseInt(root.dataset.month, 10);
     let selectedDay = parseInt(root.dataset.selected, 10);
+    let eventDates = parseEventDates(root);
 
     const titleEl = root.querySelector('[data-calendar-title]');
     const gridEl = root.querySelector('[data-calendar-grid]');
     const inputEl = root.querySelector('[data-calendar-input]');
     const prevBtn = root.querySelector('[data-calendar-prev]');
     const nextBtn = root.querySelector('[data-calendar-next]');
+    const addBtn = root.querySelector('[data-calendar-add-event]');
+
+    const selectedDate = () => formatDateValue(year, month, selectedDay);
 
     const paint = () => {
         titleEl.textContent = `${MONTH_NAMES[month - 1]} ${year}`;
@@ -64,6 +106,11 @@ function renderStudentCalendar(root) {
             btn.textContent = String(cell.day);
             btn.className = 'student-dash-calendar__day';
 
+            const cellDate = formatDateValue(cell.year, cell.month, cell.day);
+            if (eventDates.includes(cellDate)) {
+                btn.classList.add('has-event');
+            }
+
             if (cell.muted) {
                 btn.classList.add('is-muted');
             }
@@ -77,13 +124,8 @@ function renderStudentCalendar(root) {
 
             btn.addEventListener('click', () => {
                 if (cell.muted) {
-                    if (cell.month < month || cell.year < year) {
-                        month = cell.month;
-                        year = cell.year;
-                    } else {
-                        month = cell.month;
-                        year = cell.year;
-                    }
+                    month = cell.month;
+                    year = cell.year;
                     selectedDay = cell.day;
                 } else {
                     selectedDay = cell.day;
@@ -94,6 +136,7 @@ function renderStudentCalendar(root) {
                 root.dataset.selected = String(selectedDay);
                 inputEl.value = formatDateValue(year, month, selectedDay);
                 paint();
+                openCalendarEventModal(selectedDate());
             });
 
             gridEl.appendChild(btn);
@@ -128,6 +171,10 @@ function renderStudentCalendar(root) {
         root.dataset.month = String(month);
         root.dataset.selected = String(selectedDay);
         paint();
+    });
+
+    addBtn?.addEventListener('click', () => {
+        openCalendarEventModal(selectedDate());
     });
 
     paint();

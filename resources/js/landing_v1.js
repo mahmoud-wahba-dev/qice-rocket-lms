@@ -309,6 +309,15 @@ window.showCartToast = function (title, msg, type = "success") {
 
 	if (!toast) return;
 
+	// Keep toast above overlays/modals/drawers (FlyonUI stacking)
+	const host = document.getElementById("landing-v1-app") || document.body;
+	if (toast.parentElement !== host) {
+		host.appendChild(toast);
+	} else {
+		host.appendChild(toast);
+	}
+	toast.style.zIndex = "2147483646";
+
 	toastTitle.textContent = title;
 	toastMsg.textContent = msg;
 

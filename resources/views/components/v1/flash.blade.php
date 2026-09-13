@@ -4,23 +4,40 @@
 @endphp
 
 @if (!empty($v1FlashToast))
-    <div id="v1-flash-toast"
-        class="fixed top-6 start-6 z-[999] max-w-sm rounded-12px px-5 py-4 shadow-lg border {{ ($v1FlashToast['type'] ?? '') === 'error' ? 'bg-[#FEF2F2] border-[#FECACA] text-[#B91C1C]' : 'bg-[#ECFDF5] border-[#A7F3D0] text-[#065F46]' }}">
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (typeof window.showCartToast === 'function') {
+                    window.showCartToast(
+                        @json($v1FlashToast['title'] ?? 'تنبيه'),
+                        @json($v1FlashToast['msg'] ?? ''),
+                        @json($v1FlashToast['type'] ?? 'success')
+                    );
+                    return;
+                }
+
+                var el = document.getElementById('v1-flash-toast-fallback');
+                if (el) {
+                    el.classList.remove('hidden');
+                    setTimeout(function () { el.remove(); }, 5000);
+                }
+            });
+        </script>
+    @endpush
+
+    <div id="v1-flash-toast-fallback"
+        class="hidden fixed bottom-6 start-6 z-[2147483646] max-w-sm rounded-12px px-5 py-4 shadow-lg border {{ ($v1FlashToast['type'] ?? '') === 'error' ? 'bg-[#FEF2F2] border-[#FECACA] text-[#B91C1C]' : 'bg-[#ECFDF5] border-[#A7F3D0] text-[#065F46]' }}"
+        style="z-index: 2147483646 !important;"
+        role="status" aria-live="polite">
         <div class="flex items-start gap-3">
             <p class="font-bold text-15px">{{ $v1FlashToast['title'] ?? '' }}</p>
-            <button type="button" onclick="this.closest('#v1-flash-toast').remove()"
+            <button type="button" onclick="this.closest('#v1-flash-toast-fallback').remove()"
                 class="ms-auto font-bold text-16px leading-none opacity-60 hover:opacity-100">×</button>
         </div>
         @if (!empty($v1FlashToast['msg']))
             <p class="font-medium text-14px mt-1">{{ $v1FlashToast['msg'] }}</p>
         @endif
     </div>
-    <script>
-        setTimeout(function () {
-            var el = document.getElementById('v1-flash-toast');
-            if (el) el.remove();
-        }, 5000);
-    </script>
 @endif
 
 @if (!empty($v1FlashErrors))

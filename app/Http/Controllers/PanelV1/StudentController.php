@@ -149,6 +149,20 @@ class StudentController extends Controller
 
         $now = now();
 
+        $calendarEvents = \App\Models\StudentCalendarEvent::where('user_id', $user->id)
+            ->whereDate('event_date', '>=', $now->toDateString())
+            ->orderBy('event_date')
+            ->orderBy('id')
+            ->limit(20)
+            ->get();
+
+        $calendarEventDates = \App\Models\StudentCalendarEvent::where('user_id', $user->id)
+            ->pluck('event_date')
+            ->map(fn ($date) => $date->format('Y-m-d'))
+            ->unique()
+            ->values()
+            ->all();
+
         return view('panel_v1.student.pages.home', [
             'pageTitle' => 'لوحة المتدرب',
             'authUser' => $user,
@@ -160,10 +174,55 @@ class StudentController extends Controller
             'quizResults' => $quizResults,
             'certificates' => $certificates,
             'comments' => $comments,
+            'calendarEvents' => $calendarEvents,
+            'calendarEventDates' => $calendarEventDates,
             'calendarYear' => (int) $now->format('Y'),
             'calendarMonth' => (int) $now->format('n'),
             'calendarSelected' => (int) $now->format('j'),
         ]);
+    }
+
+    public function storeCalendarEvent(Request $request)
+    {
+        $user = $this->resolveStudent($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $data = $request->validate([
+            'title' => 'required|string|max:255',
+            'event_date' => 'required|date',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        \App\Models\StudentCalendarEvent::create([
+            'user_id' => $user->id,
+            'title' => $data['title'],
+            'event_date' => $data['event_date'],
+            'notes' => $data['notes'] ?? null,
+        ]);
+
+        return redirect()
+            ->route('panel.v1.student.home')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تمت إضافة الحدث بنجاح', 'type' => 'success']);
+    }
+
+    public function deleteCalendarEvent(Request $request, int $id)
+    {
+        $user = $this->resolveStudent($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        \App\Models\StudentCalendarEvent::where('id', $id)
+            ->where('user_id', $user->id)
+            ->delete();
+
+        return redirect()
+            ->route('panel.v1.student.home')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم حذف الحدث', 'type' => 'success']);
     }
 
     public function notifications(Request $request)
