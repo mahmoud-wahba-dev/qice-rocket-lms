@@ -1032,6 +1032,13 @@ document.addEventListener("click", (e) => {
 		const on = b === btn;
 		b.classList.toggle("active", on);
 		b.setAttribute("aria-selected", String(on));
+		// Keep Figma underline colors in sync (student home / similar tabs)
+		if (b.classList.contains("border-b-2")) {
+			b.classList.toggle("border-[#0F3D36]", on);
+			b.classList.toggle("text-[#0F3D36]", on);
+			b.classList.toggle("border-transparent", !on);
+			b.classList.toggle("text-[#9CA3AF]", !on);
+		}
 	});
 	targets.forEach((p) => p.classList.add("hidden"));
 	const panel = document.querySelector(sel);
@@ -1045,11 +1052,15 @@ document.addEventListener("click", (e) => {
 
 try {
 	const savedTab = localStorage.getItem(v1TabStorageKey());
-	if (savedTab) {
-		const savedBtn =
-			document.querySelector(`button[data-v1-tab="${savedTab}"]`) || null;
-		if (savedBtn && !savedBtn.classList.contains("active")) {
-			savedBtn.click();
-		}
+	const savedBtn = savedTab
+		? document.querySelector(`button[data-v1-tab="${savedTab}"]`)
+		: null;
+	const activeBtn =
+		savedBtn ||
+		document.querySelector('nav[role="tablist"] button[data-v1-tab].active') ||
+		document.querySelector("button[data-v1-tab].active");
+	if (activeBtn) {
+		// Always sync panels to the intended tab (fixes active button + hidden panel mismatch).
+		activeBtn.click();
 	}
 } catch {}

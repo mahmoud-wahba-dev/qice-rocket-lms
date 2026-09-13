@@ -50,35 +50,56 @@
 
 <header class="overflow-hidden text-white pt-6 mt-8">
     <div class="container">
-        {{-- Figma: dark teal header #0F4C45 with gold accent, rounded 16px, subtle pattern --}}
-        <div class="bg-[#0F3D36] relative rounded-[16px] overflow-hidden px-6 sm:px-8 lg:px-10 py-8 lg:py-9">
-            {{-- subtle dotted pattern top-left like Figma --}}
-            <div class="pointer-events-none absolute top-0 start-0 w-40 h-40 opacity-[0.08]" aria-hidden="true">
-                <svg viewBox="0 0 100 100" class="w-full h-full" fill="none"><circle cx="20" cy="20" r="1.5" fill="white"/><circle cx="40" cy="20" r="1.5" fill="white"/><circle cx="60" cy="20" r="1.5" fill="white"/><circle cx="20" cy="40" r="1.5" fill="white"/><circle cx="40" cy="40" r="1.5" fill="white"/><circle cx="60" cy="40" r="1.5" fill="white"/></svg>
+        @php
+            $hour = (int) now()->format('H');
+            if ($hour < 12) {
+                $heroGreeting = 'صباح الخير';
+            } elseif ($hour < 17) {
+                $heroGreeting = 'طاب يومك';
+            } else {
+                $heroGreeting = 'طاب مساؤك';
+            }
+
+            $continueCourse = collect($enrolledCourses ?? [])
+                ->first(fn ($course) => !empty($course['hasWebinar']) && ($course['progress'] ?? 0) < 100)
+                ?? collect($enrolledCourses ?? [])->first(fn ($course) => !empty($course['hasWebinar']));
+            $continueCourseTitle = $continueCourse['title'] ?? null;
+
+            $heroStats = [
+                ['value' => $stats['activeCourses'] ?? 0, 'label' => 'الدورات النشطة', 'icon' => 'tabler--school'],
+                ['value' => $stats['learningHours'] ?? 0, 'label' => 'ساعات التعلم', 'icon' => 'tabler--hourglass'],
+                ['value' => $stats['upcomingSessions'] ?? 0, 'label' => 'محاضرات قادمة (المباشرة)', 'icon' => 'tabler--calendar'],
+                ['value' => $stats['assignments'] ?? 0, 'label' => 'تكليفات وواجبات', 'icon' => 'tabler--file-text'],
+                ['value' => $stats['certificates'] ?? 0, 'label' => 'الشهادات المكتسبة', 'icon' => 'tabler--certificate'],
+            ];
+        @endphp
+
+        <div class="bg-[#0F4C45] relative rounded-[16px] overflow-hidden px-5 sm:px-8 lg:px-10 pt-8 pb-6 lg:pt-9 lg:pb-7">
+            {{-- Fingerprint / ripple pattern (visual left) --}}
+            <img src="{{ $heroLogo }}" alt="" aria-hidden="true"
+                class="pointer-events-none absolute -top-8 left-0 w-[240px] sm:w-[300px] lg:w-[360px] h-auto opacity-[0.28] mix-blend-screen select-none">
+
+            <div class="relative z-[1]">
+                <h1 class="font-extrabold text-[26px] sm:text-[32px] lg:text-[36px] leading-tight mb-2">
+                    {{ $heroGreeting }} ، {{ $authUser->full_name ?? 'علا محمد' }}
+                </h1>
+                <p class="font-medium text-[14px] sm:text-[16px] text-white/90 leading-relaxed max-w-3xl">
+                    @if ($continueCourseTitle)
+                        جاهزة لاستكمال دورة '{{ $continueCourseTitle }}' اليوم؟
+                    @else
+                        جاهزة لاستكمال رحلتك التعليمية اليوم؟
+                    @endif
+                </p>
             </div>
-            <div class="relative">
-                <p class="font-bold text-[13px] tracking-wide text-white/70 mb-1">مرحباً بك</p>
-                <h1 class="font-bold text-[28px] sm:text-[30px] leading-tight mb-1">طالب مساقك ، {{ $authUser->full_name ?? "علا محمد" }}</h1>
-                <p class="font-medium text-[13px] text-white/75">جاهزة لاستكمال رحلتك التعليمية اليوم؟</p>
-            </div>
-            {{-- 5 stat cards — Figma exact: 5 equal cards, gold icons, white 12% bg --}}
-            <div class="relative mt-7 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-                @php
-                    $figmaStats = [
-                        ['value' => $stats["activeCourses"] ?? 4, 'label' => 'الدورات المسجلة', 'icon' => 'tabler--book'],
-                        ['value' => $stats["learningHours"] ?? 0, 'label' => 'ساعات التعلم', 'icon' => 'tabler--clock'],
-                        ['value' => $stats["upcomingSessions"] ?? 0, 'label' => 'محاضرات قادمة', 'icon' => 'tabler--calendar'],
-                        ['value' => $stats["assignments"] ?? 0, 'label' => 'تكليفات', 'icon' => 'tabler--clipboard-list'],
-                        ['value' => $stats["certificates"] ?? 2, 'label' => 'الشهادات', 'icon' => 'tabler--certificate'],
-                    ];
-                @endphp
-                @foreach ($figmaStats as $stat)
-                    <div class="bg-white/[0.09] backdrop-blur rounded-[12px] border border-white/[0.10] px-4 py-4 text-center">
-                        <div class="flex items-center justify-center gap-2 mb-1">
-                            <span class="icon-[{{ $stat['icon'] }}] size-[18px] text-[#C99C69]"></span>
-                            <span class="font-bold text-[26px] leading-none text-white">{{ $stat['value'] }}</span>
+
+            <div class="relative z-[1] mt-7 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-3.5">
+                @foreach ($heroStats as $stat)
+                    <div class="bg-white/[0.10] rounded-[12px] px-3 py-4 sm:px-4 sm:py-5 text-center min-h-[92px] flex flex-col items-center justify-center gap-1.5">
+                        <div class="flex items-center justify-center gap-2">
+                            <span class="icon-[{{ $stat['icon'] }}] size-5 text-[#C9A46C] shrink-0"></span>
+                            <span class="font-extrabold text-[24px] sm:text-[28px] leading-none text-white">{{ $stat['value'] }}</span>
                         </div>
-                        <p class="font-medium text-[11px] leading-tight text-white/80">{{ $stat['label'] }}</p>
+                        <p class="font-medium text-[11px] sm:text-[12px] leading-snug text-white/90">{{ $stat['label'] }}</p>
                     </div>
                 @endforeach
             </div>
@@ -92,20 +113,21 @@
         <nav class="flex items-center gap-1 sm:gap-2 overflow-x-auto border-b border-[#E5E7EB] mb-8 -mx-2 px-2"
             aria-label="أقسام لوحة المتدرب" role="tablist">
             @php $tabBase = 'tab whitespace-nowrap font-semibold text-[14px] sm:text-[15px] pb-3.5 pt-2 px-3 sm:px-4 border-b-2 transition-colors flex-1 sm:flex-none justify-center text-center'; @endphp
-            <button type="button" class="{{ $tabBase }} border-transparent text-[#9CA3AF] hover:text-[#0F3D36]" id="tabs-large-item-1" data-v1-tab="#tabs-large-1" aria-controls="tabs-large-1" role="tab" aria-selected="false">دوراتي</button>
-            <button type="button" class="{{ $tabBase }} border-[#0F3D36] text-[#0F3D36] active" id="tabs-large-item-2" data-v1-tab="#tabs-large-2" aria-controls="tabs-large-2" role="tab" aria-selected="true">المحاضرات المباشرة</button>
+            <button type="button" class="{{ $tabBase }} border-[#0F3D36] text-[#0F3D36] active" id="tabs-large-item-1" data-v1-tab="#tabs-large-1" aria-controls="tabs-large-1" role="tab" aria-selected="true">دوراتي</button>
+            <button type="button" class="{{ $tabBase }} border-transparent text-[#9CA3AF] hover:text-[#0F3D36]" id="tabs-large-item-2" data-v1-tab="#tabs-large-2" aria-controls="tabs-large-2" role="tab" aria-selected="false">المحاضرات المباشرة</button>
             <button type="button" class="{{ $tabBase }} border-transparent text-[#9CA3AF] hover:text-[#0F3D36]" id="tabs-large-item-3" data-v1-tab="#tabs-large-3" aria-controls="tabs-large-3" role="tab" aria-selected="false">تكليفات المحاضرات</button>
             <button type="button" class="{{ $tabBase }} border-transparent text-[#9CA3AF] hover:text-[#0F3D36]" id="tabs-large-item-4" data-v1-tab="#tabs-large-4" aria-controls="tabs-large-4" role="tab" aria-selected="false">الاختبارات</button>
             <button type="button" class="{{ $tabBase }} border-transparent text-[#9CA3AF] hover:text-[#0F3D36]" id="tabs-large-item-5" data-v1-tab="#tabs-large-5" aria-controls="tabs-large-5" role="tab" aria-selected="false">الشهادات</button>
             <button type="button" class="{{ $tabBase }} border-transparent text-[#9CA3AF] hover:text-[#0F3D36]" id="tabs-large-item-6" data-v1-tab="#tabs-large-6" aria-controls="tabs-large-6" role="tab" aria-selected="false">التعليقات</button>
         </nav>
 
-        <div class="">
-            <div id="tabs-large-1" class="hidden" role="tabpanel" aria-labelledby="tabs-large-item-1">
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-13">
+        <div class="student-home-tab-panels">
+            <div id="tabs-large-1" role="tabpanel" aria-labelledby="tabs-large-item-1">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-13 items-start">
+                    <div class="lg:col-span-8 min-w-0">
                         @foreach (($enrolledCourses ?? []) as $course)
                             @if (!empty($course['hasWebinar']))
-                            <div class="relative border border-d9 px-6 py-8 rounded-12px mb-12">
+                            <div class="relative border border-d9 px-6 py-8 rounded-12px mb-12 w-full">
                                 <div class="flex items-center gap-5 mb-9">
                                     <div class="w-[67px] h-[62px] rounded-12px overflow-hidden center bg-primary/10">
                                         @if (!empty($course['thumbnail']))
@@ -178,10 +200,9 @@
                             </div>
                             @endif
                         @endforeach
-                        {{-- Empty state when student has no courses — set $hasCourses = true when courses exist --}}
-                        @php($hasCourses = ($enrolledCourses ?? collect())->isNotEmpty())
+                        @php($hasCourses = collect($enrolledCourses ?? [])->contains(fn ($c) => !empty($c['hasWebinar'])))
                         @unless ($hasCourses)
-                        <div class="col-span-12 lg:col-span-8 center flex-col text-center py-16 rounded-12px border border-dashed border-d9 bg-fa/50 px-6">
+                        <div class="center flex-col text-center py-16 rounded-12px border border-dashed border-d9 bg-fa/50 px-6">
                             <div class="mb-8">
                                 <img src="{{ $noDataImg }}" alt="لم تشترك في أي دورة حتى الآن"
                                     class="max-w-[260px] w-full h-auto mx-auto" loading="lazy" decoding="async" width="320" height="240"
@@ -201,10 +222,8 @@
                             </a>
                         </div>
                         @endunless
-
-
                     </div>
-                    <div class="col-span-12 lg:col-span-4">
+                    <div class="lg:col-span-4">
                         <div class="border border-d9 rounded-12px mb-8 ">
 
                             <h5 class="px-10 py-8 font-medium text-28px text-black mb-8 text-center">اختر تاريخا لاضافة
@@ -221,15 +240,24 @@
                         </div>
 
                         <div class="px-10 py-8 border border-d9 rounded-12px ">
-                            <h6 class="font-semibold text-24px text-black mb-3">
-                                لا توجد احداث حالية
-                            </h6>
-                            <p class="font-medium text-base text-gray">اضف احداث لتظهر</p>
+                            @if (($liveSessions ?? collect())->isNotEmpty())
+                                <h6 class="font-semibold text-24px text-black mb-3">أحداث قادمة</h6>
+                                <ul class="space-y-3">
+                                    @foreach (($liveSessions ?? collect())->take(3) as $liveSession)
+                                        <li class="font-medium text-14px text-gray">
+                                            {{ $liveSession->title }} — {{ date('Y/m/d H:i', (int) $liveSession->date) }}
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @else
+                                <h6 class="font-semibold text-24px text-black mb-3">
+                                    لا توجد احداث حالية
+                                </h6>
+                                <p class="font-medium text-base text-gray">اضف احداث لتظهر</p>
+                            @endif
                         </div>
                     </div>
                 </div>
-
-
             </div>
             <div id="tabs-large-2" class="hidden" role="tabpanel" aria-labelledby="tabs-large-item-2">
                 @forelse ($liveSessions ?? [] as $liveSession)
@@ -379,58 +407,58 @@
                 @endforelse
             </div>
             <div id="tabs-large-5" class="hidden" role="tabpanel" aria-labelledby="tabs-large-item-5">
-                    <div class="flex justify-end mb-4">
-                        <a href="{{ route('panel.v1.student.certificates') }}" class="font-bold text-14px text-primary hover:underline">عرض كل الشهادات ←</a>
-                    </div>
-                    @if (($certificates ?? collect())->isEmpty())
-                        <div class="py-14 center flex-col text-center border border-dashed border-[#E5E7EB] rounded-[16px] bg-[#F9FAFB]">
-                            <div class="w-[200px] h-[140px] rounded-[12px] bg-white border border-[#E5E7EB] center mb-4">
-                                <span class="icon-[tabler--certificate] size-10 text-[#9CA3AF]"></span>
-                            </div>
-                            <p class="font-bold text-[16px] text-[#0F3D36]">لا توجد شهادات بعد</p>
-                            <p class="font-medium text-[13px] text-[#9CA3AF] mt-1">أكمل دوراتك للحصول على الشهادة</p>
+                <div class="flex justify-end mb-4">
+                    <a href="{{ route('panel.v1.student.certificates') }}" class="font-bold text-14px text-primary hover:underline">عرض كل الشهادات ←</a>
+                </div>
+                @if (($certificates ?? collect())->isEmpty())
+                    <div class="py-14 center flex-col text-center border border-dashed border-[#E5E7EB] rounded-[16px] bg-[#F9FAFB]">
+                        <div class="w-[200px] h-[140px] rounded-[12px] bg-white border border-[#E5E7EB] center mb-4">
+                            <span class="icon-[tabler--certificate] size-10 text-[#9CA3AF]"></span>
                         </div>
-                    @else
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            @foreach ($certificates as $certificate)
-                                <div class="rounded-[16px] border border-[#E5E7EB] bg-white overflow-hidden">
-                                    <div class="bg-[#0F3D36] h-[160px] center relative">
-                                        <span class="icon-[tabler--certificate] size-12 text-white/90"></span>
-                                        <span class="absolute top-3 end-3 bg-white/15 text-white text-[11px] font-bold px-2.5 py-1 rounded-full">معتمدة</span>
-                                    </div>
-                                    <div class="p-5">
-                                        <h5 class="font-bold text-[16px] text-[#0F3D36] leading-snug mb-1">{{ $certificate->webinar->title ?? 'شهادة إتمام' }}</h5>
-                                        <p class="font-medium text-[12px] text-[#9CA3AF] mb-4">اكتمل في {{ date('Y/m/d', (int) $certificate->created_at) }}</p>
-                                        <div class="flex items-center gap-2">
-                                            <a href="{{ route('panel.v1.student.certificates.download', ['id' => $certificate->id]) }}" class="flex-1 btn btn-primary rounded-[10px] h-9 font-bold text-[13px] center">تحميل الشهادة</a>
-                                            @if (!empty($certificate->webinar))
-                                                <a href="{{ route('panel.v1.student.course.watch', ['slug' => $certificate->webinar->slug]) }}" class="btn btn-ghost rounded-[10px] h-9 px-4 font-bold text-[13px] text-[#0F3D36] border border-[#E5E7EB]">عرض</a>
-                                            @endif
-                                        </div>
+                        <p class="font-bold text-[16px] text-[#0F3D36]">لا توجد شهادات بعد</p>
+                        <p class="font-medium text-[13px] text-[#9CA3AF] mt-1">أكمل دوراتك للحصول على الشهادة</p>
+                    </div>
+                @else
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        @foreach ($certificates as $certificate)
+                            <div class="rounded-[16px] border border-[#E5E7EB] bg-white overflow-hidden">
+                                <div class="bg-[#0F3D36] h-[160px] center relative">
+                                    <span class="icon-[tabler--certificate] size-12 text-white/90"></span>
+                                    <span class="absolute top-3 end-3 bg-white/15 text-white text-[11px] font-bold px-2.5 py-1 rounded-full">معتمدة</span>
+                                </div>
+                                <div class="p-5">
+                                    <h5 class="font-bold text-[16px] text-[#0F3D36] leading-snug mb-1">{{ $certificate->webinar->title ?? 'شهادة إتمام' }}</h5>
+                                    <p class="font-medium text-[12px] text-[#9CA3AF] mb-4">اكتمل في {{ date('Y/m/d', (int) $certificate->created_at) }}</p>
+                                    <div class="flex items-center gap-2">
+                                        <a href="{{ route('panel.v1.student.certificates.download', ['id' => $certificate->id]) }}" class="flex-1 btn btn-primary rounded-[10px] h-9 font-bold text-[13px] center">تحميل الشهادة</a>
+                                        @if (!empty($certificate->webinar))
+                                            <a href="{{ route('panel.v1.student.course.watch', ['slug' => $certificate->webinar->slug]) }}" class="btn btn-ghost rounded-[10px] h-9 px-4 font-bold text-[13px] text-[#0F3D36] border border-[#E5E7EB]">عرض</a>
+                                        @endif
                                     </div>
                                 </div>
-                            @endforeach
-                        </div>
-                    @endif
-                </div>
-                <div id="tabs-large-6" class="hidden" role="tabpanel" aria-labelledby="tabs-large-item-6">
-                    <div class="flex justify-end mb-4">
-                        <a href="{{ route('panel.v1.student.comments') }}" class="font-bold text-14px text-primary hover:underline">عرض كل التعليقات ←</a>
+                            </div>
+                        @endforeach
                     </div>
-                    @forelse ($comments ?? [] as $comment)
-                        <div class="border border-d9 rounded-10px px-7 py-5 mb-4">
-                            <p class="font-bold text-16px text-primary mb-1">{{ $comment->webinar->title ?? '' }}</p>
-                            <p class="font-medium text-14px text-gray">{{ \Illuminate\Support\Str::limit(strip_tags($comment->comment ?? ''), 200) }}</p>
-                            <p class="font-medium text-12px text-gray mt-2">{{ date('Y/m/d', (int) $comment->created_at) }}</p>
-                        </div>
-                    @empty
-                        <p class="text-base-content/80 text-lg">لا توجد تعليقات بعد.</p>
-                    @endforelse
-                </div>
+                @endif
             </div>
-
+            <div id="tabs-large-6" class="hidden" role="tabpanel" aria-labelledby="tabs-large-item-6">
+                <div class="flex justify-end mb-4">
+                    <a href="{{ route('panel.v1.student.comments') }}" class="font-bold text-14px text-primary hover:underline">عرض كل التعليقات ←</a>
+                </div>
+                @forelse ($comments ?? [] as $comment)
+                    <div class="border border-d9 rounded-10px px-7 py-5 mb-4">
+                        <p class="font-bold text-16px text-primary mb-1">{{ $comment->webinar->title ?? '' }}</p>
+                        <p class="font-medium text-14px text-gray">{{ \Illuminate\Support\Str::limit(strip_tags($comment->comment ?? ''), 200) }}</p>
+                        <p class="font-medium text-12px text-gray mt-2">{{ date('Y/m/d', (int) $comment->created_at) }}</p>
+                    </div>
+                @empty
+                    <p class="text-base-content/80 text-lg">لا توجد تعليقات بعد.</p>
+                @endforelse
+            </div>
+        </div>
 
         @include('panel_v1.student.components.assignment-submit-modal')
+    </div>
 </section>
 
 
