@@ -375,8 +375,8 @@ class PanelV1StudentDemoSeeder extends Seeder
                 'creator_id' => $teacher->id,
             ],
             [
-                'date' => $now + 86400,
-                'duration' => 60,
+                'date' => $now - (15 * 60),
+                'duration' => 90,
                 'link' => null,
                 'session_api' => 'local',
                 'check_previous_parts' => false,
@@ -385,15 +385,89 @@ class PanelV1StudentDemoSeeder extends Seeder
             ]
         );
 
+        // Keep one demo lecture currently live (started ~15 minutes ago).
+        $session->date = $now - (15 * 60);
+        $session->duration = 90;
+        $session->status = Session::$Active;
+        $session->save();
+
         SessionTranslation::updateOrCreate(
             ['session_id' => $session->id, 'locale' => $locale],
             [
-                'title' => 'محاضرة مباشرة تجريبية',
+                'title' => 'مناقشة أساليب ربط واجهات',
                 'description' => 'جلسة مباشرة لاختبار تبويب المحاضرات',
+            ]
+        );
+        SessionTranslation::updateOrCreate(
+            ['session_id' => $session->id, 'locale' => 'en'],
+            [
+                'title' => 'مناقشة أساليب ربط واجهات',
+                'description' => 'Live session for student panel testing',
             ]
         );
 
         WebinarChapterItem::makeItem($teacher->id, $chapter->id, $session->id, WebinarChapterItem::$chapterSession);
+
+        // Completed + upcoming lectures for the tab list
+        foreach ([
+            [
+                'offset' => -(86400 * 10),
+                'duration' => 80,
+                'title' => 'مقدمة في بناء الأنظمة المدمجة واستخدام الأيقونات',
+            ],
+            [
+                'offset' => 86400 * 5,
+                'duration' => 45,
+                'title' => 'ورشة تطبيقية مباشرة',
+            ],
+        ] as $extra) {
+            $extraSession = Session::query()
+                ->where('webinar_id', $webinar->id)
+                ->where('chapter_id', $chapter->id)
+                ->whereHas('translations', function ($query) use ($locale, $extra) {
+                    $query->where('locale', $locale)->where('title', $extra['title']);
+                })
+                ->first();
+
+            if (!$extraSession) {
+                $extraSession = Session::create([
+                    'webinar_id' => $webinar->id,
+                    'chapter_id' => $chapter->id,
+                    'creator_id' => $teacher->id,
+                    'date' => $now + $extra['offset'],
+                    'duration' => $extra['duration'],
+                    'link' => null,
+                    'session_api' => 'local',
+                    'check_previous_parts' => false,
+                    'status' => Session::$Active,
+                    'created_at' => $now,
+                ]);
+            } else {
+                $extraSession->update([
+                    'date' => $now + $extra['offset'],
+                    'duration' => $extra['duration'],
+                    'status' => Session::$Active,
+                    'creator_id' => $teacher->id,
+                ]);
+            }
+
+            SessionTranslation::updateOrCreate(
+                ['session_id' => $extraSession->id, 'locale' => $locale],
+                [
+                    'title' => $extra['title'],
+                    'description' => 'محاضرة مباشرة من قاعدة البيانات',
+                ]
+            );
+            SessionTranslation::updateOrCreate(
+                ['session_id' => $extraSession->id, 'locale' => 'en'],
+                [
+                    'title' => $extra['title'],
+                    'description' => 'Live lecture from database',
+                ]
+            );
+
+            WebinarChapterItem::makeItem($teacher->id, $chapter->id, $extraSession->id, WebinarChapterItem::$chapterSession);
+        }
 
         return $session;
     }
@@ -408,12 +482,12 @@ class PanelV1StudentDemoSeeder extends Seeder
             $chapter,
             $teacher,
             $locale,
-            'تكليف معلق للتسليم',
+            'تكليف التطبيق العملي (السلام)',
             'لخّص معايير الجودة المذكورة في المحاضرة وأرفق ملف PDF.',
-            100,
-            50,
+            25,
+            15,
             14,
-            3,
+            0,
             $now
         );
 
@@ -456,6 +530,13 @@ class PanelV1StudentDemoSeeder extends Seeder
 
         if ($existingId) {
             $assignment = WebinarAssignment::find($existingId);
+            $assignment->update([
+                'grade' => $grade,
+                'pass_grade' => $passGrade,
+                'deadline' => $deadline,
+                'attempts' => $attempts,
+                'status' => 'active',
+            ]);
         } else {
             $assignment = WebinarAssignment::create([
                 'webinar_id' => $webinar->id,
@@ -473,6 +554,13 @@ class PanelV1StudentDemoSeeder extends Seeder
 
         WebinarAssignmentTranslation::updateOrCreate(
             ['webinar_assignment_id' => $assignment->id, 'locale' => $locale],
+            [
+                'title' => $title,
+                'description' => $description,
+            ]
+        );
+        WebinarAssignmentTranslation::updateOrCreate(
+            ['webinar_assignment_id' => $assignment->id, 'locale' => 'en'],
             [
                 'title' => $title,
                 'description' => $description,

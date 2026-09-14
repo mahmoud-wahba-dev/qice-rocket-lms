@@ -146,25 +146,50 @@
                                     </div>
                                 </div>
 
-                                <div class="flex items-center gap-13 justify-between flex-wrap mb-12">
-                                    <div>
-                                        <div class="center gap-3 mb-2">
-                                            <span class="font-medium text-base text-gray">النوع</span>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-6 mb-12">
+                                    @php
+                                        $courseMeta = [
+                                            [
+                                                'label' => 'النوع',
+                                                'value' => $course['typeLabel'] ?? 'دورة مسجلة',
+                                                'iconClass' => 'icon-[tabler--bookmark]',
+                                            ],
+                                            [
+                                                'label' => 'ساعات النشاط',
+                                                'value' => $course['activityLabel'] ?? '0:00',
+                                                'iconClass' => 'icon-[tabler--stopwatch]',
+                                            ],
+                                            [
+                                                'label' => 'مدة',
+                                                'value' => $course['durationLabel'] ?? '0:00',
+                                                'iconClass' => 'icon-[tabler--clock]',
+                                            ],
+                                            [
+                                                'label' => 'محاضرات',
+                                                'value' => (string) ($course['sessionsCount'] ?? 0),
+                                                'iconClass' => 'icon-[tabler--chalkboard]',
+                                            ],
+                                            [
+                                                'label' => 'تكليفات',
+                                                'value' => (string) ($course['assignmentsCount'] ?? 0),
+                                                'iconClass' => 'icon-[tabler--clipboard-list]',
+                                            ],
+                                            [
+                                                'label' => 'تاريخ التسجيل',
+                                                'value' => $course['saleDateLabel'] ?? ($course['saleDate'] ?? ''),
+                                                'iconClass' => 'icon-[tabler--calendar]',
+                                            ],
+                                        ];
+                                    @endphp
+                                    @foreach ($courseMeta as $meta)
+                                        <div class="min-w-0">
+                                            <div class="flex items-center gap-1.5 mb-1.5">
+                                                <span class="{{ $meta['iconClass'] }} size-4 text-[#5B6B6A] shrink-0" aria-hidden="true"></span>
+                                                <span class="font-medium text-[12px] sm:text-[13px] text-[#5B6B6A] leading-none">{{ $meta['label'] }}</span>
+                                            </div>
+                                            <p class="font-bold text-[13px] sm:text-[14px] text-[#0F4C45] leading-snug">{{ $meta['value'] }}</p>
                                         </div>
-                                        <p class="font-medium text-base text-primary text-center">دورة مسجلة</p>
-                                    </div>
-                                    <div>
-                                        <div class="center gap-3 mb-2">
-                                            <span class="font-medium text-base text-gray">محاضرات</span>
-                                        </div>
-                                        <p class="font-medium text-base text-primary text-center">{{ $course['sessionsCount'] }}</p>
-                                    </div>
-                                    <div>
-                                        <div class="center gap-3 mb-2">
-                                            <span class="font-medium text-base text-gray">تاريخ التسجيل</span>
-                                        </div>
-                                        <p class="font-medium text-base text-primary text-center">{{ $course['saleDate'] }}</p>
-                                    </div>
+                                    @endforeach
                                 </div>
                                 <div class="bg-fa px-4 py-6 flex items-center justify-between rounded-10px">
                                     <div class="grow">
@@ -182,27 +207,57 @@
                                 <div class="absolute top-6 end-6">
                                     <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end]">
                                         <button type="button"
-                                            class="dropdown-toggle btn btn-square " aria-haspopup="menu"
-                                            aria-expanded="false" aria-label="Dropdown">
-                                            <span class="icon-[tabler--dots] size-6"></span>
+                                            class="dropdown-toggle size-10 rounded-[10px] bg-[#F3F4F6] hover:bg-[#E5E7EB] center border-0 cursor-pointer transition"
+                                            aria-haspopup="menu" aria-expanded="false" aria-label="خيارات الدورة">
+                                            <span class="icon-[tabler--dots] size-5 text-primary"></span>
                                         </button>
-                                        <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-60" role="menu"
-                                            aria-orientation="vertical" aria-label="Dropdown">
-                                            <li><a class="dropdown-item font-medium text-14px text-primary"
+                                        <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-[15.5rem] p-2 rounded-[12px] border border-d9 shadow-[0_12px_40px_rgba(15,76,69,0.10)] bg-white"
+                                            role="menu" aria-orientation="vertical" aria-label="خيارات الدورة">
+                                            <li>
+                                                <a class="dropdown-item flex items-center gap-3 rounded-[8px] px-3 py-2.5 font-semibold text-[14px] text-primary hover:bg-[#F3F4F6] transition"
                                                     href="{{ route('panel.v1.student.course.watch', ['slug' => $course['slug']]) }}">
-                                                    صفحة التعلم
-                                                </a></li>
-                                            <li><a class="dropdown-item font-medium text-14px text-primary"
-                                                    href="{{ url('/panel/courses/' . $course['webinarId'] . '/sale/' . $course['saleId'] . '/invoice') }}">
-                                                    تفاصيل الدفع (فاتورة)
-                                                </a></li>
+                                                    <span class="icon-[tabler--player-play] size-4 text-[#C9A46C] shrink-0" aria-hidden="true"></span>
+                                                    <span>صفحة التعلم</span>
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item flex items-center gap-3 rounded-[8px] px-3 py-2.5 font-semibold text-[14px] text-primary hover:bg-[#F3F4F6] transition"
+                                                    href="{{ route('landing.v1.course-details', ['slug' => $course['slug']]) }}"
+                                                    target="_blank" rel="noopener noreferrer">
+                                                    <span class="icon-[tabler--info-circle] size-4 text-[#C9A46C] shrink-0" aria-hidden="true"></span>
+                                                    <span>صفحة تفاصيل الدورة</span>
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item flex items-center gap-3 rounded-[8px] px-3 py-2.5 font-semibold text-[14px] text-primary hover:bg-[#F3F4F6] transition"
+                                                    href="{{ url('/panel/courses/' . $course['webinarId'] . '/sale/' . $course['saleId'] . '/invoice') }}"
+                                                    target="_blank" rel="noopener noreferrer">
+                                                    <span class="icon-[tabler--receipt] size-4 text-[#C9A46C] shrink-0" aria-hidden="true"></span>
+                                                    <span>
+                                                        تفاصيل الدفع
+                                                        <span class="font-medium text-gray">(فاتورة)</span>
+                                                    </span>
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item flex items-center gap-3 rounded-[8px] px-3 py-2.5 font-semibold text-[14px] text-primary hover:bg-[#F3F4F6] transition"
+                                                    href="{{ route('landing.v1.course-details', ['slug' => $course['slug']]) }}?tab=reviews"
+                                                    target="_blank" rel="noopener noreferrer">
+                                                    <span class="icon-[tabler--star] size-4 text-[#C9A46C] shrink-0" aria-hidden="true"></span>
+                                                    <span>تقييم الدورة</span>
+                                                </a>
+                                            </li>
                                         </ul>
                                     </div>
                                 </div>
                             </div>
                             @endif
                         @endforeach
-                        @php($hasCourses = collect($enrolledCourses ?? [])->contains(fn ($c) => !empty($c['hasWebinar'])))
+                        @php
+                            $hasCourses = collect($enrolledCourses ?? [])->contains(function ($c) {
+                                return !empty($c['hasWebinar']);
+                            });
+                        @endphp
                         @unless ($hasCourses)
                         <div class="center flex-col text-center py-16 rounded-12px border border-dashed border-d9 bg-fa/50 px-6">
                             <div class="mb-8">
@@ -278,29 +333,86 @@
             </div>
             <div id="tabs-large-2" class="hidden" role="tabpanel" aria-labelledby="tabs-large-item-2">
                 @forelse ($liveSessions ?? [] as $liveSession)
-                    <div class="rounded-[16px] border border-[#FFE4E6] bg-[#FFF1F2] overflow-hidden mb-5">
-                        <div class="px-6 sm:px-7 py-6">
-                            <div class="flex flex-wrap items-start justify-between gap-4">
-                                <div>
-                                    <p class="inline-flex items-center gap-2 font-bold text-[13px] text-[#DC2626] mb-2"><span class="size-2 rounded-full bg-[#DC2626] animate-pulse"></span> محاضرة مباشرة</p>
-                                    <h3 class="font-bold text-[18px] text-[#0F3D36] leading-snug mb-1">{{ $liveSession->title }}</h3>
-                                    <p class="font-medium text-[13px] text-[#6B7280]">الدورة: {{ $liveSession->webinar->title ?? '' }}</p>
-                                </div>
-                                <a href="{{ route('panel.v1.student.course.watch', ['slug' => $liveSession->webinar->slug ?? 'demo']) }}" class="btn btn-primary rounded-[10px] h-10 px-6 font-bold text-[13px] shrink-0">الانضمام الآن</a>
+                    @php
+                        $status = $liveSession['status'] ?? 'upcoming';
+                        $isLive = $status === 'live';
+                        $isCompleted = $status === 'completed';
+                    @endphp
+
+                    <article @class([
+                        'rounded-[16px] border overflow-hidden mb-5',
+                        'border-[#FECACA] bg-[#FFF1F2]' => $isLive,
+                        'border-d9 bg-white' => !$isLive,
+                    ])>
+                        <div class="px-6 sm:px-8 pt-6 pb-5 flex flex-wrap items-start justify-between gap-4">
+                            <div class="min-w-0 flex-1">
+                                <p class="inline-flex items-center gap-2 font-bold text-[14px] text-primary mb-3">
+                                    @if ($isLive)
+                                        <span class="size-2.5 rounded-full bg-[#EF4444] shrink-0" aria-hidden="true"></span>
+                                        محاضرة مباشرة
+                                    @elseif ($isCompleted)
+                                        <span class="size-5 rounded-[6px] bg-[#16A34A] center shrink-0" aria-hidden="true">
+                                            <span class="icon-[tabler--check] size-3.5 text-white"></span>
+                                        </span>
+                                        محاضرة مكتملة
+                                    @else
+                                        <span class="size-2.5 rounded-full bg-primary shrink-0" aria-hidden="true"></span>
+                                        محاضرة قادمة
+                                    @endif
+                                </p>
+
+                                <h3 class="font-bold text-[18px] sm:text-[20px] text-primary leading-snug mb-2">
+                                    عنوان المحاضرة : {{ $liveSession['title'] }}
+                                </h3>
+                                @if (!empty($liveSession['instructorName']))
+                                    <p class="font-medium text-[14px] text-gray">
+                                        المحاضر: {{ $liveSession['instructorName'] }}
+                                    </p>
+                                @endif
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-3 shrink-0">
+                                @if ($isCompleted)
+                                    @if (!empty($liveSession['pdfUrl']))
+                                        <a href="{{ $liveSession['pdfUrl'] }}" target="_blank" rel="noopener noreferrer"
+                                            class="btn btn-ghost rounded-[10px] h-11 px-5 font-bold text-[13px] text-primary border border-primary/30 hover:bg-fa">
+                                            تحميل ملفات المحاضرة (PDF)
+                                        </a>
+                                    @else
+                                        <a href="{{ $liveSession['watchUrl'] }}"
+                                            class="btn btn-ghost rounded-[10px] h-11 px-5 font-bold text-[13px] text-primary border border-primary/30 hover:bg-fa">
+                                            تحميل ملفات المحاضرة (PDF)
+                                        </a>
+                                    @endif
+                                    <a href="{{ $liveSession['watchUrl'] }}"
+                                        class="btn btn-primary rounded-[10px] h-11 px-6 font-bold text-[13px]">
+                                        اعادة المحاضرة
+                                    </a>
+                                @else
+                                    <a href="{{ $liveSession['watchUrl'] }}"
+                                        class="btn btn-primary rounded-[10px] h-11 px-6 font-bold text-[13px]">
+                                        الانضمام إلى المحاضرة
+                                    </a>
+                                @endif
                             </div>
                         </div>
-                        <div class="mx-4 mb-4 rounded-[10px] bg-[#FECDD3]/60 border border-[#FECDD3] px-4 py-3 flex flex-wrap items-center justify-between gap-3 font-medium text-[12px] text-[#881337]">
-                            <span>📅 الموعد: {{ date('Y/m/d H:i', (int) $liveSession->date) }}</span>
-                            <span>⏱ المدة: {{ $liveSession->duration ?? 0 }} دقيقة</span>
+
+                        <div @class([
+                            'mx-6 sm:mx-8 mb-6 rounded-[10px] px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 font-medium text-[13px]',
+                            'bg-[#FECDD3]/70 text-[#7F1D1D]' => $isLive,
+                            'bg-[#F3F4F6] text-primary' => !$isLive,
+                        ])>
+                            <span>{{ $liveSession['scheduleText'] }}</span>
+                            <span>{{ $liveSession['durationText'] }}</span>
                         </div>
-                    </div>
+                    </article>
                 @empty
                     <div class="py-10 center flex-col text-center border border-dashed border-[#E5E7EB] rounded-[16px] bg-[#F9FAFB]">
                         <div class="size-16 rounded-full bg-white border border-[#E5E7EB] center mb-3">
                             <span class="icon-[tabler--video] size-7 text-[#9CA3AF]"></span>
                         </div>
-                        <p class="font-bold text-[15px] text-[#0F3D36]">لا توجد محاضرات مباشرة قادمة</p>
-                        <p class="font-medium text-[12px] text-[#9CA3AF] mt-1">سيظهر هنا جدول محاضراتك المباشرة</p>
+                        <p class="font-bold text-[15px] text-[#0F3D36]">لا توجد محاضرات مباشرة</p>
+                        <p class="font-medium text-[12px] text-[#9CA3AF] mt-1">سيظهر هنا جدول محاضراتك المباشرة والمكتملة</p>
                     </div>
                 @endforelse
             </div>
@@ -308,62 +420,158 @@
                 <div class="flex justify-end mb-4">
                     <a href="{{ route('panel.v1.student.assignments') }}" class="font-bold text-14px text-primary hover:underline">عرض كل التكليفات ←</a>
                 </div>
-                @php($hasAssignments = ($pendingAssignments ?? collect())->isNotEmpty() || ($submittedHistories ?? collect())->isNotEmpty())
+
+                @php
+                    $hasAssignments = ($pendingAssignments ?? collect())->isNotEmpty()
+                        || ($submittedHistories ?? collect())->isNotEmpty();
+                @endphp
+
                 @if ($hasAssignments)
-                    <div>
-                        <div class="bg-[#F9F5F5] rounded-4px px-7 py-3 mb-10 ">
-                            <p class="font-semibold text-24px text-primary">التكليفات المعلقة</p>
-                        </div>
-                        <div class="grid grid-cols-[repeat(auto-fill,minmax(25%,1fr))] gap-8 mb-15">
-                            @forelse ($pendingAssignments ?? [] as $pendingAssignment)
-                                <div class="border border-d9 p-8 rounded-8px">
-                                    <div class="flex items-center gap-3 mb-7">
-                                        <div>
-                                            <h4 class="font-bold text-20px text-primary">
-                                                تكليف دورة {{ $pendingAssignment->webinar->title ?? '' }}
-                                            </h4>
-                                            <p class="font-semibold text-12px text-primary">
-                                                الدرجة: {{ $pendingAssignment->grade ?? '—' }}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <a href="{{ route('panel.v1.student.course.assignment', ['slug' => $pendingAssignment->webinar->slug ?? 'demo']) }}"
-                                            class="btn btn-primary btn-block">عرض التكليف</a>
-                                    </div>
-                                </div>
-                            @empty
-                                <p class="font-medium text-16px text-gray">لا توجد تكليفات معلقة.</p>
-                            @endforelse
-                        </div>
-                        <div class="bg-[#F9F5F5] rounded-4px px-7 py-3 mb-10 ">
-                            <p class="font-semibold text-24px text-primary">جميع التكليفات المسلمة</p>
-                        </div>
-
-                        @forelse ($submittedHistories ?? [] as $history)
-                        <div class="border border-d9 rounded-10px px-7 py-6 flex items-center justify-between mb-8 gap-16">
-                            <div>
-                                <span class="font-medium text-14px text-gray mb-1.5">العنوان والدورة</span>
-                                <p class="font-bold text-18px text-primary">تكليف: {{ $history->assignment->webinar->title ?? '' }}</p>
-                            </div>
-                            <div class="flex items-center gap-8">
-                                <div>
-                                    <p class="font-medium text-16px text-gray mb-12">الدرجة</p>
-                                    <p class="text-center text-black">{{ $history->grade ?? '—' }}</p>
-                                </div>
-                                <div>
-                                    <p class="font-medium text-16px text-gray mb-12">حالة</p>
-                                    <p class="text-center text-black">{{ ($history->status ?? '') === 'passed' ? 'ناجح' : ((($history->status ?? '') === 'not_passed') ? 'راسب' : 'بانتظار التقييم') }}</p>
-                                </div>
-                            </div>
-                        </div>
-                        @empty
-                            <p class="font-medium text-16px text-gray">لا توجد تكليفات مسلمة بعد.</p>
-                        @endforelse
-
+                    {{-- Pending cards --}}
+                    <div class="bg-[#F3F4F6] rounded-[12px] px-6 py-4 mb-6">
+                        <p class="font-bold text-[20px] sm:text-[22px] text-primary">التكليفات المعلقة</p>
                     </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-5 mb-12">
+                        @forelse ($pendingAssignments ?? [] as $pendingAssignment)
+                            @php
+                                $attemptsLabel = empty($pendingAssignment->attempts) || (int) $pendingAssignment->attempts < 1
+                                    ? 'غير محدود'
+                                    : ((int) $pendingAssignment->attempts . ' محاولة');
+                                $gradeLabel = ($pendingAssignment->grade ?? null) !== null
+                                    ? ((int) $pendingAssignment->grade . ' درجة')
+                                    : '—';
+                                $assignmentTitle = $pendingAssignment->translate('ar')?->title
+                                    ?: ($pendingAssignment->title ?: 'تكليف');
+                            @endphp
+                            <div class="border border-d9 rounded-[16px] bg-white p-6 flex flex-col">
+                                <div class="size-11 rounded-[10px] bg-primary/10 center mb-5">
+                                    <span class="icon-[tabler--clipboard-list] size-6 text-primary" aria-hidden="true"></span>
+                                </div>
+
+                                <h4 class="font-bold text-[18px] sm:text-[20px] text-primary leading-snug mb-2">
+                                    {{ $assignmentTitle }}
+                                </h4>
+                                <p class="font-medium text-[13px] sm:text-[14px] text-gray mb-5 leading-relaxed">
+                                    {{ $pendingAssignment->webinar->title ?? '' }}
+                                </p>
+
+                                <div class="flex flex-wrap items-center gap-2 mb-6">
+                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-[#FEF6E7] px-3 py-1.5 font-semibold text-[12px] text-primary">
+                                        <span class="icon-[tabler--trophy] size-3.5 text-[#C9A46C]" aria-hidden="true"></span>
+                                        {{ $gradeLabel }}
+                                    </span>
+                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-[#F3F4F6] px-3 py-1.5 font-semibold text-[12px] text-primary">
+                                        <span class="icon-[tabler--hourglass] size-3.5 text-[#C9A46C]" aria-hidden="true"></span>
+                                        {{ $attemptsLabel }}
+                                    </span>
+                                </div>
+
+                                <a href="{{ route('panel.v1.student.course.assignment', ['slug' => $pendingAssignment->webinar->slug ?? 'demo']) }}"
+                                    class="btn btn-primary rounded-[10px] h-12 font-bold text-[14px] w-full mt-auto">
+                                    عرض التكليف
+                                </a>
+                            </div>
+                        @empty
+                            <div class="md:col-span-2 xl:col-span-3 border border-dashed border-d9 rounded-[16px] bg-fa/40 px-6 py-10 text-center">
+                                <p class="font-semibold text-[15px] text-gray">لا توجد تكليفات معلقة حالياً</p>
+                            </div>
+                        @endforelse
+                    </div>
+
+                    {{-- Submitted list --}}
+                    <div class="bg-[#F3F4F6] rounded-[12px] px-6 py-4 mb-6">
+                        <p class="font-bold text-[20px] sm:text-[22px] text-primary">جميع التكليفات المسلمة</p>
+                    </div>
+
+                    @forelse ($submittedHistories ?? [] as $history)
+                        @php
+                            $assignment = $history->assignment;
+                            $historyTitle = $assignment?->translate('ar')?->title
+                                ?: ($assignment->title ?? 'تكليف');
+                            $deadlineTs = null;
+                            try {
+                                $deadlineTs = $assignment?->getDeadlineTimestamp($authUser ?? auth()->user());
+                            } catch (\Throwable $e) {
+                                $deadlineTs = null;
+                            }
+                            $messages = $history->messages ?? collect();
+                            $firstMsg = $messages->sortBy('created_at')->first();
+                            $lastMsg = $messages->sortByDesc('created_at')->first();
+                            $attemptsUsed = $messages->count();
+                            $statusLabel = match ($history->status ?? '') {
+                                'passed' => 'ناجح',
+                                'not_passed' => 'راسب',
+                                'pending' => 'بانتظار التقييم',
+                                default => '—',
+                            };
+                        @endphp
+
+                        <div class="border border-d9 rounded-[14px] bg-white mb-4 overflow-x-auto">
+                            <div class="min-w-max w-full flex items-start gap-6 px-5 sm:px-7 py-5">
+                                <div class="shrink-0 min-w-[220px] max-w-[260px]">
+                                    <p class="font-medium text-[12px] text-gray mb-2 whitespace-nowrap">العنوان والدورة</p>
+                                    <p class="font-bold text-[15px] text-primary leading-snug mb-1">{{ $historyTitle }}</p>
+                                    <p class="font-medium text-[12px] text-gray">{{ $assignment->webinar->title ?? '' }}</p>
+                                </div>
+
+                                <div class="flex-1 flex items-start justify-between gap-4 min-w-[640px]">
+                                    <div class="shrink-0">
+                                        <p class="font-medium text-[12px] text-gray mb-2 whitespace-nowrap">الموعد النهائي</p>
+                                        <p class="font-semibold text-[13px] text-primary whitespace-nowrap">
+                                            {{ !empty($deadlineTs) ? date('Y/m/d', (int) $deadlineTs) : '—' }}
+                                        </p>
+                                    </div>
+                                    <div class="shrink-0">
+                                        <p class="font-medium text-[12px] text-gray mb-2 whitespace-nowrap">التسليم الأول</p>
+                                        <p class="font-semibold text-[13px] text-primary whitespace-nowrap">
+                                            {{ !empty($firstMsg?->created_at) ? date('Y/m/d', (int) $firstMsg->created_at) : (!empty($history->created_at) ? date('Y/m/d', (int) $history->created_at) : '—') }}
+                                        </p>
+                                    </div>
+                                    <div class="shrink-0">
+                                        <p class="font-medium text-[12px] text-gray mb-2 whitespace-nowrap">التسليم الأخير</p>
+                                        <p class="font-semibold text-[13px] text-primary whitespace-nowrap">
+                                            {{ !empty($lastMsg?->created_at) ? date('Y/m/d', (int) $lastMsg->created_at) : (!empty($history->created_at) ? date('Y/m/d', (int) $history->created_at) : '—') }}
+                                        </p>
+                                    </div>
+                                    <div class="shrink-0">
+                                        <p class="font-medium text-[12px] text-gray mb-2 whitespace-nowrap">المحاولات</p>
+                                        <p class="font-semibold text-[13px] text-primary whitespace-nowrap">
+                                            {{ $attemptsUsed > 0 ? $attemptsUsed : '—' }}
+                                            @if (!empty($assignment?->attempts))
+                                                <span class="text-gray">/ {{ $assignment->attempts }}</span>
+                                            @endif
+                                        </p>
+                                    </div>
+                                    <div class="shrink-0">
+                                        <p class="font-medium text-[12px] text-gray mb-2 whitespace-nowrap">الدرجة</p>
+                                        <p class="font-semibold text-[13px] text-primary whitespace-nowrap">{{ $history->grade ?? '—' }}</p>
+                                    </div>
+                                    <div class="shrink-0">
+                                        <p class="font-medium text-[12px] text-gray mb-2 whitespace-nowrap">درجة النجاح</p>
+                                        <p class="font-semibold text-[13px] text-primary whitespace-nowrap">{{ $assignment->pass_grade ?? '—' }}</p>
+                                    </div>
+                                    <div class="shrink-0">
+                                        <p class="font-medium text-[12px] text-gray mb-2 whitespace-nowrap">حالة</p>
+                                        <p class="font-semibold text-[13px] text-primary whitespace-nowrap">{{ $statusLabel }}</p>
+                                    </div>
+                                    <div class="shrink-0">
+                                        <p class="font-medium text-[12px] text-gray mb-2 whitespace-nowrap">اجراءات</p>
+                                        <a href="{{ route('panel.v1.student.course.assignment', ['slug' => $assignment->webinar->slug ?? 'demo']) }}"
+                                            class="inline-flex items-center justify-center size-9 rounded-full border border-d9 text-primary hover:bg-fa transition whitespace-nowrap"
+                                            aria-label="عرض التكليف" title="عرض">
+                                            <span class="icon-[tabler--eye] size-4" aria-hidden="true"></span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="border border-dashed border-d9 rounded-[16px] bg-fa/40 px-6 py-10 text-center">
+                            <p class="font-semibold text-[15px] text-gray">لا توجد تكليفات مسلمة بعد</p>
+                        </div>
+                    @endforelse
                 @else
-                    {{-- Figma empty: illustration + centered text --}}
                     <div class="py-14 center flex-col text-center">
                         <div class="w-[260px] h-[180px] rounded-[16px] bg-[#F3F4F6] border border-[#E5E7EB] center mb-6 overflow-hidden">
                             <div class="text-center">

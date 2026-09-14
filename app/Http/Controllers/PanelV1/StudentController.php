@@ -44,6 +44,10 @@ class StudentController extends Controller
             $webinar = $sale->webinar;
             $progress = 0;
             $sessionsCount = 0;
+            $assignmentsCount = 0;
+            $durationMinutes = 0;
+            $activityMinutes = 0;
+            $typeLabel = 'دورة مسجلة';
             $thumbnail = null;
             $title = '';
             $category = '';
@@ -58,9 +62,38 @@ class StudentController extends Controller
                 }
 
                 try {
-                    $sessionsCount = $webinar->sessions->count() + $webinar->files->count();
+                    $sessionsCount = (int) $webinar->sessions->count();
                 } catch (\Throwable $e) {
                     $sessionsCount = 0;
+                }
+
+                try {
+                    $assignmentsCount = (int) $webinar->getAllAssignmentsCount();
+                } catch (\Throwable $e) {
+                    $assignmentsCount = 0;
+                }
+
+                try {
+                    $durationMinutes = (int) ($webinar->duration ?? 0);
+                    if ($durationMinutes < 1) {
+                        $durationMinutes = (int) $webinar->getAllChaptersDurations();
+                    }
+                } catch (\Throwable $e) {
+                    $durationMinutes = 0;
+                }
+
+                try {
+                    $activityMinutes = (float) $webinar->getTimeSpentOnCourse('min');
+                } catch (\Throwable $e) {
+                    $activityMinutes = 0;
+                }
+
+                if ($webinar->type === 'webinar') {
+                    $typeLabel = 'دورة مباشرة';
+                } elseif ($webinar->type === 'text_lesson') {
+                    $typeLabel = 'درس نصي';
+                } else {
+                    $typeLabel = 'دورة مسجلة';
                 }
 
                 $thumbnail = $webinar->thumbnail;
@@ -70,9 +103,23 @@ class StudentController extends Controller
                 $webinarId = $webinar->id;
             }
 
+            $saleTs = (int) $sale->created_at;
+            $arabicMonths = [
+                1 => 'يناير', 2 => 'فبراير', 3 => 'مارس', 4 => 'أبريل',
+                5 => 'مايو', 6 => 'يونيو', 7 => 'يوليو', 8 => 'أغسطس',
+                9 => 'سبتمبر', 10 => 'أكتوبر', 11 => 'نوفمبر', 12 => 'ديسمبر',
+            ];
+            $saleDateLabel = date('j', $saleTs) . ' ' . ($arabicMonths[(int) date('n', $saleTs)] ?? '') . ' ' . date('Y', $saleTs);
+
+            $formatHm = static function ($minutes) {
+                $minutes = (int) round(max(0, (float) $minutes));
+                return intdiv($minutes, 60) . ':' . str_pad((string) ($minutes % 60), 2, '0', STR_PAD_LEFT);
+            };
+
             return [
                 'saleId' => $sale->id,
-                'saleDate' => date('Y/m/d', (int) $sale->created_at),
+                'saleDate' => date('Y/m/d', $saleTs),
+                'saleDateLabel' => $saleDateLabel,
                 'hasWebinar' => !empty($webinar),
                 'title' => $title,
                 'category' => $category,
@@ -81,6 +128,10 @@ class StudentController extends Controller
                 'thumbnail' => $thumbnail,
                 'progress' => max(0, min(100, $progress)),
                 'sessionsCount' => $sessionsCount,
+                'assignmentsCount' => $assignmentsCount,
+                'typeLabel' => $typeLabel,
+                'durationLabel' => $formatHm($durationMinutes),
+                'activityLabel' => $formatHm($activityMinutes),
             ];
         });
 
@@ -90,26 +141,127 @@ class StudentController extends Controller
             'assignments' => WebinarAssignmentHistory::where('student_id', $user->id)->count(),
             'upcomingSessions' => !empty($webinarIds)
                 ? Session::whereIn('webinar_id', $webinarIds)
-                    ->where('status', 'active')
-                    ->where('date', '>=', time())
+                    ->where('status', Session::$Active)
+                    ->where('date', '>=', time() - 3600)
                     ->count()
                 : 0,
             // Learning hours are not tracked per-user by the core; kept as 0 until a tracker exists.
             'learningHours' => 0,
         ];
 
-        $liveSessions = !empty($webinarIds)
-            ? Session::with(['webinar'])
+        $arabicMonths = [
+            1 => 'يناير', 2 => 'فبراير', 3 => 'مارس', 4 => 'أبريل',
+            5 => 'مايو', 6 => 'يونيو', 7 => 'يوليو', 8 => 'أغسطس',
+            9 => 'سبتمبر', 10 => 'أكتوبر', 11 => 'نوفمبر', 12 => 'ديسمبر',
+        ];
+
+        $formatArabicDuration = static function (int $minutes): string {
+            $minutes = max(0, $minutes);
+            if ($minutes < 1) {
+                return '0 دقيقة';
+            }
+            $hours = intdiv($minutes, 60);
+            $mins = $minutes % 60;
+            if ($hours > 0 && $mins > 0) {
+                $hourLabel = $hours === 1 ? 'ساعة' : ($hours === 2 ? 'ساعتان' : $hours . ' ساعات');
+                return $hourLabel . ' و' . $mins . ' دقيقة';
+            }
+            if ($hours > 0) {
+                return $hours === 1 ? 'ساعة' : ($hours === 2 ? 'ساعتان' : $hours . ' ساعات');
+            }
+            return $mins . ' دقيقة';
+        };
+
+        $formatArabicClock = static function (int $timestamp): string {
+            $hour24 = (int) date('G', $timestamp);
+            $minute = date('i', $timestamp);
+            $period = $hour24 >= 12 ? 'مساءً' : 'صباحاً';
+            $hour12 = $hour24 % 12;
+            if ($hour12 === 0) {
+                $hour12 = 12;
+            }
+            return $hour12 . ':' . $minute . ' ' . $period;
+        };
+
+        $liveSessions = collect();
+        if (!empty($webinarIds)) {
+            $nowTs = time();
+            $liveSessions = Session::with(['webinar.files', 'creator', 'webinar.teacher'])
                 ->whereIn('webinar_id', $webinarIds)
-                ->where('status', 'active')
-                ->where('date', '>=', time() - 86400)
-                ->orderBy('date')
-                ->limit(6)
+                ->where('status', Session::$Active)
+                ->where('date', '>=', $nowTs - (60 * 60 * 24 * 90))
+                ->orderByRaw('CASE WHEN date <= ? AND (date + COALESCE(duration,0) * 60) >= ? THEN 0 WHEN date > ? THEN 1 ELSE 2 END', [$nowTs, $nowTs, $nowTs])
+                ->orderBy('date', 'desc')
+                ->limit(20)
                 ->get()
-            : collect();
+                ->map(function (Session $session) use ($nowTs, $arabicMonths, $formatArabicDuration, $formatArabicClock) {
+                    $startsAt = (int) $session->date;
+                    $durationMin = max(0, (int) ($session->duration ?? 0));
+                    $endsAt = $startsAt + ($durationMin * 60);
+
+                    if ($startsAt <= $nowTs && $endsAt >= $nowTs) {
+                        $status = 'live';
+                    } elseif ($endsAt < $nowTs) {
+                        $status = 'completed';
+                    } else {
+                        $status = 'upcoming';
+                    }
+
+                    $titleAr = $session->translate('ar')?->title;
+                    $title = $titleAr ?: ($session->title ?: 'محاضرة مباشرة');
+                    $instructorName = $session->creator->full_name
+                        ?? ($session->webinar->teacher->full_name ?? '');
+
+                    $dateLabel = date('j', $startsAt) . ' ' . ($arabicMonths[(int) date('n', $startsAt)] ?? '') . ' ' . date('Y', $startsAt);
+                    $clockLabel = $formatArabicClock($startsAt);
+                    $isToday = date('Y-m-d', $startsAt) === date('Y-m-d', $nowTs);
+
+                    if ($status === 'live') {
+                        $startedAgoMin = max(1, (int) floor(($nowTs - $startsAt) / 60));
+                        $scheduleText = 'الموعد: اليوم | بدأت منذ ' . $startedAgoMin . ' دقيقة (الساعة ' . $clockLabel . ')';
+                        $durationText = 'المدة المتوقعة: ' . $durationMin . ' دقيقة';
+                    } elseif ($status === 'completed') {
+                        $scheduleText = 'تاريخ الانعقاد: ' . $dateLabel . ' (تمت في الساعة ' . $clockLabel . ')';
+                        $durationText = 'مدة المحاضرة: ' . $formatArabicDuration($durationMin);
+                    } else {
+                        $when = $isToday ? 'اليوم' : $dateLabel;
+                        $scheduleText = 'الموعد: ' . $when . ' (الساعة ' . $clockLabel . ')';
+                        $durationText = 'المدة المتوقعة: ' . $durationMin . ' دقيقة';
+                    }
+
+                    $pdfFile = null;
+                    try {
+                        $pdfFile = $session->webinar?->files
+                            ?->first(function ($file) {
+                                $type = strtolower((string) ($file->file_type ?? ''));
+                                return str_contains($type, 'pdf') || str_ends_with(strtolower((string) ($file->file ?? '')), '.pdf');
+                            });
+                    } catch (\Throwable $e) {
+                        $pdfFile = null;
+                    }
+
+                    $slug = $session->webinar->slug ?? '';
+                    $watchUrl = $slug !== ''
+                        ? route('panel.v1.student.course.watch', ['slug' => $slug]) . '?type=session&item=' . $session->id
+                        : '#';
+
+                    return [
+                        'id' => $session->id,
+                        'status' => $status,
+                        'title' => $title,
+                        'instructorName' => $instructorName,
+                        'scheduleText' => $scheduleText,
+                        'durationText' => $durationText,
+                        'duration' => $durationMin,
+                        'watchUrl' => $watchUrl,
+                        'pdfUrl' => !empty($pdfFile?->file) ? $pdfFile->file : null,
+                    ];
+                })
+                ->values();
+        }
 
         $pendingAssignments = collect();
-        $submittedHistories = WebinarAssignmentHistory::with(['assignment.webinar'])
+        $submittedHistories = WebinarAssignmentHistory::with(['assignment.webinar', 'messages'])
             ->where('student_id', $user->id)
             ->orderBy('id', 'desc')
             ->limit(20)
