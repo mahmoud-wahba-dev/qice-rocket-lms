@@ -161,6 +161,12 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 ->name('instructor.discounts.store');
             Route::get('/instructor/support', [InstructorController::class, 'support'])
                 ->name('instructor.support');
+            Route::post('/instructor/support', [InstructorController::class, 'storeSupport'])
+                ->name('instructor.support.store');
+            Route::get('/instructor/notifications', [InstructorController::class, 'notifications'])
+                ->name('instructor.notifications');
+            Route::post('/instructor/notifications/mark-all-read', [InstructorController::class, 'markAllNotificationsRead'])
+                ->name('instructor.notifications.mark-all-read');
             Route::get('/instructor/settings', [InstructorController::class, 'settings'])
                 ->name('instructor.settings');
             Route::post('/instructor/settings', [InstructorController::class, 'updateSettings'])

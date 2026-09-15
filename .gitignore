@@ -52,3 +52,8 @@ storage/debugbar/.gitignore
 /.temp_backup_*
 /public/build
 acc.txt
+
+# === Archives / local dumps (never commit) ===
+*.rar
+*.zip
+public.rar

@@ -2,16 +2,14 @@
 
 @section('content')
 @php
-    $name = $authUser->full_name ?? ($profileName ?? $instructorName ?? '');
-    $email = $authUser->email ?? ($profileEmail ?? $instructorEmail ?? '');
-    $phone = $authUser->mobile ?? ($profilePhone ?? '');
+    $toggleClass = 'peer sr-only';
+    $toggleTrack = 'relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full bg-d9 transition peer-checked:bg-[#0FC787] after:absolute after:top-0.5 after:start-0.5 after:size-6 after:rounded-full after:bg-white after:shadow after:transition-all peer-checked:after:translate-x-[-1.25rem] rtl:peer-checked:after:translate-x-[-1.25rem]';
     $input = 'input input-bordered w-full h-14 rounded-10px border-d9 font-medium text-16px text-black focus:outline-none focus:border-primary';
-    $select = 'select select-bordered w-full h-14 min-h-14 rounded-10px border-d9 font-medium text-16px text-black focus:outline-none focus:border-primary';
-    $textarea = 'textarea textarea-bordered w-full rounded-10px border-d9 font-medium text-16px text-black focus:outline-none focus:border-primary min-h-32 resize-y';
     $label = 'absolute -top-2.5 start-4 z-[1] bg-white px-2 font-medium text-13px text-gray';
     $card = 'border border-d9 rounded-14px bg-white px-5 sm:px-7 py-6 sm:py-8';
-    $uploadBtn = 'flex items-center justify-center gap-2 w-full py-4 rounded-10px border border-dashed border-d9 font-semibold text-15px text-primary hover:bg-primary/5 transition cursor-pointer';
-    $mediaBox = 'flex items-center justify-center w-full min-h-40 rounded-12px bg-[#F5F5F5] border border-d9';
+    $birthday = !empty($authUser->birthday)
+        ? \Carbon\Carbon::createFromTimestamp((int) $authUser->birthday, $authUser->timezone ?? config('app.timezone'))->format('Y-m-d')
+        : '';
 @endphp
 
 <div class="space-y-8 sm:space-y-10 pb-10">
@@ -32,526 +30,645 @@
         ] as $tabId => $tabLabel)
             <button type="button"
                 class="tab {{ $tabId === 1 ? 'active' : '' }} justify-center whitespace-nowrap font-semibold text-16px sm:text-18px text-gray pb-5 active-tab:text-primary active-tab:border-b-primary"
-                id="instructor-settings-tab-{{ $tabId }}" data-v1-tab="#instructor-settings-{{ $tabId }}" role="tab"
+                id="settings-tabs-item-{{ $tabId }}" data-v1-tab="#settings-tabs-{{ $tabId }}" role="tab"
                 aria-selected="{{ $tabId === 1 ? 'true' : 'false' }}">
                 {{ $tabLabel }}
             </button>
         @endforeach
     </nav>
 
-    <form method="POST" action="{{ route('panel.v1.instructor.settings.update') }}" enctype="multipart/form-data">
-        @csrf
-    {{-- ===================== Tab 1: Basic ===================== --}}
-    <div id="instructor-settings-1" role="tabpanel" aria-labelledby="instructor-settings-tab-1">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 items-start">
-            {{-- Account & security + delete --}}
-            <div class="flex flex-col gap-5 sm:gap-6">
-                <div class="{{ $card }}">
-                    <h2 class="font-bold text-20px sm:text-22px text-primary mb-6 sm:mb-8 text-start">الحساب والأمان</h2>
-                    <div class="space-y-6">
-                        <div class="relative">
-                            <label class="{{ $label }}">الاسم</label>
-                            <input type="text" name="full_name" value="{{ old('full_name', $name) }}" class="{{ $input }}">
-                        </div>
-                        <div class="relative">
-                            <label class="{{ $label }}">البريد الإلكتروني</label>
-                            <input type="email" name="email" value="{{ old('email', $email) }}" class="{{ $input }}">
-                        </div>
-                        <div class="relative">
-                            <label class="{{ $label }}">هاتف</label>
-                            <div class="flex gap-2">
-                                <select class="{{ $select }} !w-[42%] shrink-0" aria-label="رمز الدولة">
-                                    <option value="+966" selected>السعودية (+966)</option>
-                                    <option value="+971">الإمارات (+971)</option>
-                                    <option value="+20">مصر (+20)</option>
-                                    <option value="+962">الأردن (+962)</option>
-                                </select>
-                                <input type="tel" name="mobile" value="{{ old('mobile', $phone) }}" class="{{ $input }} flex-1" placeholder="5xxxxxxxx">
-                            </div>
-                        </div>
-                        <div class="relative">
-                            <label class="{{ $label }}">كلمة المرور الجديدة (اتركها فارغة للإبقاء)</label>
-                            <input type="password" name="password" class="{{ $input }}">
-                        </div>
-                        <div class="relative">
-                            <label class="{{ $label }}">أعد كتابة كلمة المرور</label>
-                            <input type="password" name="password_confirmation" class="{{ $input }}">
-                        </div>
-                    </div>
-                </div>
+    <div>
+        <div id="settings-tabs-1" role="tabpanel" aria-labelledby="settings-tabs-item-1">
+            <form action="{{ route('panel.v1.instructor.settings.update') }}" method="POST">
+                    @csrf
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    {{-- Main column --}}
+                    <div class="lg:col-span-7 flex flex-col gap-8">
+                        <div class="{{ $card }}">
+                            <h2 class="font-bold text-24px text-primary mb-8">الحساب والأمان</h2>
 
-                <div class="{{ $card }}">
-                    <h2 class="font-bold text-20px sm:text-22px text-primary mb-4 text-start">حذف الحساب</h2>
-                    <p class="font-medium text-14px sm:text-15px text-gray leading-relaxed mb-5 text-start">
-                        يمكنك طلب حذف معلومات حسابك. سنراجع طلبك، وسيتم إزالة جميع بياناتك نهائيًا.
-                    </p>
-                    <button type="button"
-                        class="w-full h-12 rounded-10px border border-red-500 text-red-500 font-semibold text-16px hover:bg-red-50 transition">
-                        حذف الحساب
-                    </button>
-                </div>
-            </div>
-
-            {{-- Localization + vacation --}}
-            <div class="flex flex-col gap-5 sm:gap-6">
-                <div class="{{ $card }}">
-                    <h2 class="font-bold text-20px sm:text-22px text-primary mb-6 sm:mb-8 text-start">التعريب</h2>
-                    <div class="space-y-6">
-                        <div class="relative">
-                            <label class="{{ $label }}">لغة</label>
-                            <select name="language" class="{{ $select }}">
-                                <option value="ar" selected>العربية</option>
-                                <option value="en">English</option>
-                            </select>
-                        </div>
-                        <div class="relative">
-                            <label class="{{ $label }}">المنطقة الزمنية</label>
-                            <select name="timezone" class="{{ $select }}">
-                                <option value="">اختر</option>
-                                <option selected>Asia/Riyadh</option>
-                                <option>Asia/Dubai</option>
-                                <option>Africa/Cairo</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="{{ $card }}">
-                    <h2 class="font-bold text-20px sm:text-22px text-primary mb-6 sm:mb-8 text-start">وضع الإجازة</h2>
-                    <div class="flex items-center justify-between gap-4 mb-6">
-                        <p class="font-medium text-15px sm:text-16px text-primary text-start">تفعيل وضع الإجازة</p>
-                        <input type="checkbox" name="offline" value="1" class="switch switch-primary shrink-0" aria-label="تفعيل وضع الإجازة">
-                    </div>
-                    <div class="relative mb-4">
-                        <label class="{{ $label }}">رسالة أوفلاين</label>
-                        <textarea rows="5" name="offline_message" class="{{ $textarea }}"></textarea>
-                    </div>
-                    <p class="font-medium text-13px sm:text-14px text-gray leading-relaxed text-start">
-                        عند عدم نشاط حسابك، ستظهر رسالة في ملفك الشخصي. يمكنك إضافة رسالة شخصية أدناه.
-                    </p>
-                </div>
-            </div>
-
-            {{-- Account options --}}
-            <div class="{{ $card }}">
-                <h2 class="font-bold text-20px sm:text-22px text-primary mb-6 text-start">خيارات الحساب</h2>
-                <div class="center mb-6 sm:mb-8">
-                    <img src="/assets/design_1/img/panel/settings/account_options.svg" alt=""
-                        class="w-full max-w-[220px] h-auto" width="220" height="190">
-                </div>
-                <div class="divide-y divide-d9">
-                    @foreach ($accountOptions ?? [] as $opt)
-                        <div class="flex items-center justify-between gap-4 py-5 first:pt-0 last:pb-0">
-                            <p class="font-medium text-14px sm:text-15px text-primary text-start leading-snug">{{ $opt }}</p>
-                            <input type="checkbox" class="switch switch-primary shrink-0" aria-label="{{ $opt }}">
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- ===================== Tab 2: Extra ===================== --}}
-    <div id="instructor-settings-2" class="hidden" role="tabpanel" aria-labelledby="instructor-settings-tab-2">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
-            <div class="lg:col-span-4 flex flex-col gap-5 sm:gap-6">
-                <div class="{{ $card }}">
-                    <h2 class="font-bold text-20px sm:text-22px text-primary mb-6 sm:mb-8 text-start">المعلومات الشخصية</h2>
-                    <div class="space-y-6">
-                        <div class="relative">
-                            <label class="{{ $label }}">تاريخ الميلاد</label>
-                            <input type="date" class="{{ $input }}">
-                        </div>
-                        <div>
-                            <p class="font-semibold text-15px text-primary mb-4 text-start">الجنس</p>
-                            <div class="flex flex-wrap gap-5">
-                                <label class="inline-flex items-center gap-2.5 cursor-pointer">
-                                    <input type="radio" name="gender" value="man" class="radio radio-primary" checked>
-                                    <span class="font-medium text-15px text-primary">ذكر</span>
-                                </label>
-                                <label class="inline-flex items-center gap-2.5 cursor-pointer">
-                                    <input type="radio" name="gender" value="woman" class="radio radio-primary">
-                                    <span class="font-medium text-15px text-primary">أنثى</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="{{ $card }}">
-                    <h2 class="font-bold text-20px sm:text-22px text-primary mb-6 sm:mb-8 text-start">إعدادات الاجتماع</h2>
-                    <div class="mb-7">
-                        <p class="font-semibold text-15px text-primary mb-4 text-start">نوع الاجتماع</p>
-                        <div class="space-y-3.5">
-                            @foreach ([['in_person', 'وجهاً لوجه'], ['online', 'عبر الإنترنت'], ['all', 'الجميع']] as [$val, $txt])
-                                <label class="flex items-center gap-2.5 cursor-pointer">
-                                    <input type="radio" name="meeting_type" value="{{ $val }}"
-                                        class="radio radio-primary" {{ $val === 'all' ? 'checked' : '' }}>
-                                    <span class="font-medium text-15px text-primary">{{ $txt }}</span>
-                                </label>
-                            @endforeach
-                        </div>
-                    </div>
-                    <div>
-                        <p class="font-semibold text-15px text-primary mb-4 text-start">مستوى التدريب</p>
-                        <div class="space-y-3.5">
-                            @foreach ([['beginner', 'مبتدئ'], ['middle', 'متوسط'], ['expert', 'متقدم']] as [$val, $txt])
-                                <label class="flex items-center gap-2.5 cursor-pointer">
-                                    <input type="checkbox" name="level_of_training[]" value="{{ $val }}"
-                                        class="checkbox checkbox-primary">
-                                    <span class="font-medium text-15px text-primary">{{ $txt }}</span>
-                                </label>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="lg:col-span-8 flex flex-col gap-5 sm:gap-6">
-                <div class="{{ $card }}">
-                    <div class="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6">
-                        <div class="md:col-span-5 space-y-5">
-                            <h2 class="font-bold text-20px sm:text-22px text-primary mb-2 text-start">المنطقة</h2>
-                            @foreach ([
-                                ['الدولة', 'اختر دولة'],
-                                ['الولاية', 'اختر ولاية'],
-                                ['المدينة', 'اختر مدينة'],
-                                ['الحي', 'جميع المناطق'],
-                            ] as [$lbl, $ph])
+                            <div class="space-y-7">
                                 <div class="relative">
-                                    <label class="{{ $label }}">{{ $lbl }}</label>
-                                    <select class="{{ $select }}">
-                                        <option value="">{{ $ph }}</option>
+                                    <label class="{{ $label }}">الاسم</label>
+                                    <input type="text" name="full_name" value="{{ old('full_name', $authUser->full_name ?? '') }}"
+                                        class="{{ $input }}">
+                                </div>
+                                <div class="relative">
+                                    <label class="{{ $label }}">البريد الإلكتروني</label>
+                                    <input type="email" name="email" value="{{ old('email', $authUser->email ?? '') }}" dir="ltr" class="text-start {{ $input }}">
+                                </div>
+                                <div class="relative">
+                                    <label class="{{ $label }}">هاتف</label>
+                                    <input type="text" name="mobile" value="{{ old('mobile', $authUser->mobile ?? '') }}" dir="ltr" class="text-start {{ $input }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="{{ $card }}">
+                            <h2 class="font-bold text-24px text-primary mb-8">خيارات الحساب</h2>
+                            <div class="divide-y divide-d9">
+                                @foreach ([
+                                    'newsletter' => 'الاشتراك في النشرة البريدية',
+                                    'public_message' => 'استقبال الرسائل العامة',
+                                    'enable_profile_statistics' => 'إظهار إحصائيات الملف الشخصي',
+                                    'auto_renew_subscription' => 'التجديد التلقائي للاشتراك',
+                                ] as $optionKey => $optionLabel)
+                                    <div class="flex items-center gap-4 py-5 first:pt-0 last:pb-0">
+                                        <label class="inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" name="{{ $optionKey }}" value="1" class="{{ $toggleClass }}" {{ !empty($authUser->$optionKey) ? 'checked' : '' }}>
+                                            <span class="{{ $toggleTrack }}"></span>
+                                        </label>
+                                        <p class="font-medium text-16px text-black">{{ $optionLabel }}</p>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Side column --}}
+                    <div class="lg:col-span-5 flex flex-col gap-8">
+                        <div class="{{ $card }}">
+                            <h2 class="font-bold text-24px text-primary mb-8">تغيير كلمة المرور</h2>
+                            <div class="space-y-7">
+                                <div class="relative">
+                                    <label class="{{ $label }}">كلمة المرور الحالية</label>
+                                    <input type="password" name="current_password" value="" autocomplete="current-password" class="{{ $input }}">
+                                </div>
+                                <div class="relative">
+                                    <label class="{{ $label }}">كلمة المرور الجديدة (اتركها فارغة للإبقاء)</label>
+                                    <input type="password" name="password" value="" autocomplete="new-password" class="{{ $input }}">
+                                </div>
+                                <div class="relative">
+                                    <label class="{{ $label }}">اعد كتابة كلمة المرور الجديدة</label>
+                                    <input type="password" name="password_confirmation" value="" autocomplete="new-password" class="{{ $input }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="{{ $card }}">
+                            <h2 class="font-bold text-24px text-primary mb-8">التعريب</h2>
+                            <div class="space-y-7">
+                                <div class="relative">
+                                    <label class="{{ $label }}">اللغة</label>
+                                    <select name="language" class="{{ $input }}">
+                                        <option value="ar" {{ old('language', $authUser->language ?? 'ar') === 'ar' ? 'selected' : '' }}>العربية</option>
+                                        <option value="en" {{ old('language', $authUser->language ?? '') === 'en' ? 'selected' : '' }}>English</option>
                                     </select>
                                 </div>
-                            @endforeach
+                                <div class="relative">
+                                    <label class="{{ $label }}">المنطقة الزمنية</label>
+                                    <select name="timezone" class="{{ $input }}">
+                                        @foreach (['Asia/Riyadh', 'Asia/Dubai', 'Africa/Cairo', 'Europe/London'] as $timezoneOption)
+                                            <option value="{{ $timezoneOption }}" {{ old('timezone', $authUser->timezone ?? 'Asia/Riyadh') === $timezoneOption ? 'selected' : '' }}>{{ $timezoneOption }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="{{ $card }}">
+                            <h2 class="font-bold text-24px text-primary mb-8">وضع الاجازة</h2>
+                            <div class="flex items-center gap-4 mb-7">
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" name="offline" value="1" class="{{ $toggleClass }}" {{ !empty($authUser->offline) ? 'checked' : '' }}>
+                                    <span class="{{ $toggleTrack }}"></span>
+                                </label>
+                                <p class="font-medium text-16px text-black">تفعيل وضع الاجازة</p>
+                            </div>
                             <div class="relative">
-                                <label class="{{ $label }}">العنوان</label>
-                                <input type="text" class="{{ $input }}">
-                            </div>
-                        </div>
-                        <div class="md:col-span-7">
-                            <h2 class="font-bold text-20px sm:text-22px text-primary mb-4 text-start">الموقع على الخريطة</h2>
-                            <div class="relative w-full h-72 sm:h-80 rounded-12px overflow-hidden border border-d9 bg-[#E8EEF2]">
-                                <div class="absolute inset-0 opacity-40"
-                                    style="background-image: radial-gradient(circle at 20% 30%, #c5d4dc 1px, transparent 1px), radial-gradient(circle at 80% 70%, #c5d4dc 1px, transparent 1px); background-size: 24px 24px;"></div>
-                                <div class="absolute inset-0 center">
-                                    <span class="size-10 rounded-full bg-primary/15 center">
-                                        <svg class="size-5 text-primary" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/>
-                                        </svg>
-                                    </span>
-                                </div>
+                                <label class="{{ $label }}">رسالة وضع الإجازة</label>
+                                <textarea rows="5" name="offline_message"
+                                    class="textarea textarea-bordered w-full rounded-10px border-d9 font-medium text-16px text-black focus:outline-none focus:border-primary min-h-32 resize-y">{{ old('offline_message', $authUser->offline_message ?? '') }}</textarea>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="{{ $card }}">
-                    <h2 class="font-bold text-20px sm:text-22px text-primary mb-6 sm:mb-8 text-start">الشبكات الاجتماعية</h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        @foreach ($socialNetworks ?? [] as $social)
-                            <div class="flex items-center gap-3">
-                                <span class="size-12 shrink-0 rounded-12px bg-[#F5F5F5] border border-d9 center font-bold text-13px text-primary uppercase">
-                                    {{ mb_substr($social['label'], 0, 1) }}
-                                </span>
-                                <div class="relative flex-1 min-w-0">
-                                    <label class="{{ $label }}">{{ $social['label'] }}</label>
-                                    <input type="url" class="{{ $input }}" placeholder="https://">
-                                </div>
-                            </div>
-                        @endforeach
                     </div>
-                    <div class="flex items-start gap-3 mt-6 pt-5 border-t border-d9">
-                        <span class="size-10 shrink-0 rounded-10px bg-[#F5F5F5] center text-gray font-bold text-16px">i</span>
-                        <div class="min-w-0 text-start">
-                            <p class="font-semibold text-15px text-primary mb-1">ملاحظة</p>
-                            <p class="font-medium text-13px sm:text-14px text-gray leading-relaxed">
-                                اترك روابط الشبكات الاجتماعية فارغة لإخفائها من ملفك العام.
-                            </p>
-                        </div>
+
+                    <div class="mt-8">
+                        <button type="submit" class="btn btn-primary rounded-10px h-14 px-10 font-bold text-18px">
+                            حفظ الإعدادات
+                        </button>
                     </div>
-                </div>
+                </form>
             </div>
-        </div>
-    </div>
 
-    {{-- ===================== Tab 3: Identity & financial ===================== --}}
-    <div id="instructor-settings-3" class="hidden" role="tabpanel" aria-labelledby="instructor-settings-tab-3">
-        <div class="space-y-5 sm:space-y-6">
-            @if (empty($identityVerified))
-                <div class="flex items-start gap-4 rounded-14px border border-[#C99C69]/40 bg-[#C99C69]/15 px-5 py-4 sm:px-6 sm:py-5">
-                    <span class="size-12 shrink-0 rounded-12px bg-[#C99C69] center text-white font-bold text-20px">⋯</span>
-                    <div class="min-w-0 text-start">
-                        <p class="font-bold text-16px sm:text-18px text-primary mb-1">الموافقة على الهوية</p>
-                        <p class="font-medium text-14px sm:text-15px text-primary/80 leading-relaxed">
-                            لم يتم التحقق من هويتك يمكن أن يسبب لك ذلك تأخراً في دفع مستحقاتك. لتفادي ذلك يرجى تأكيدها عن طريق ملء الحقول التالية.
-                        </p>
-                    </div>
-                </div>
-            @else
-                <div class="flex items-start gap-4 rounded-14px border border-primary/20 bg-primary/10 px-5 py-4 sm:px-6 sm:py-5">
-                    <span class="size-12 shrink-0 rounded-12px bg-primary center text-white font-bold text-18px">✓</span>
-                    <div class="min-w-0 text-start">
-                        <p class="font-bold text-16px sm:text-18px text-primary mb-1">تم التحقق من هويتك</p>
-                        <p class="font-medium text-14px sm:text-15px text-primary/80 leading-relaxed">
-                            تم التحقق من الهوية والمعلومات المالية بنجاح.
-                        </p>
-                    </div>
-                </div>
-            @endif
-
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
-                <div class="lg:col-span-4 {{ $card }}">
-                    <h2 class="font-bold text-20px sm:text-22px text-primary mb-6 sm:mb-8 text-start">حساب الدفع</h2>
-                    <div class="relative">
-                        <label class="{{ $label }}">حدد نوع الحساب</label>
-                        <select class="{{ $select }}">
-                            <option value="">حدد نوع الحساب</option>
-                            <option selected>{{ $paymentAccount ?? 'ماي فاتورة' }}</option>
-                            <option>تحويل بنكي</option>
-                            <option>PayPal</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="lg:col-span-8 {{ $card }}">
-                    <h2 class="font-bold text-20px sm:text-22px text-primary mb-6 sm:mb-8 text-start">وثائق الهوية</h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                        @foreach ([
-                            ['name' => 'identity_scan', 'label' => 'مسح الهوية', 'accept' => 'image/*,.pdf'],
-                            ['name' => 'certificate', 'label' => 'الشهادات والوثائق', 'accept' => 'image/*,.pdf'],
-                        ] as $uploadField)
+            <div id="settings-tabs-2" class="hidden" role="tabpanel" aria-labelledby="settings-tabs-item-2">
+                <form method="POST" action="{{ route('panel.v1.instructor.extra.update') }}">
+                    @csrf
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                        <div class="lg:col-span-5 flex flex-col gap-6">
+                        <div class="{{ $card }}">
+                            <h2 class="font-bold text-22px text-primary mb-8">معلومات شخصية</h2>
+                            <div class="space-y-6">
+                                <div class="relative">
+                                    <label class="{{ $label }}">تاريخ الميلاد</label>
+                                    <input type="date" name="birthday" value="{{ old('birthday', $birthday) }}"
+                                        class="{{ $input }}">
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-15px text-primary mb-3">النوع</p>
+                                    <div class="flex gap-6">
+                                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="gender" value="man" class="radio radio-primary" {{ old('gender', $authUser->gender ?? '') === 'man' ? 'checked' : '' }}><span class="font-medium text-15px">ذكر</span></label>
+                                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="gender" value="woman" class="radio radio-primary" {{ old('gender', $authUser->gender ?? '') === 'woman' ? 'checked' : '' }}><span class="font-medium text-15px">أنثى</span></label>
+                                    </div>
+                                </div>
+                                <div class="relative">
+                                    <label class="{{ $label }}">العنوان</label>
+                                    <input type="text" name="address" value="{{ old('address', $authUser->address ?? '') }}"
+                                        class="{{ $input }}">
+                                </div>
+                            </div>
+                        </div>
+                        @php
+                            $levelBits = new \App\Bitwise\UserLevelOfTraining();
+                            $levelSource = (int) ($authUser->level_of_training ?? 0);
+                            $selectedLevels = old('level_of_training', array_values(array_filter(
+                                ['beginner', 'middle', 'expert'],
+                                fn ($lvl) => $levelBits->hasName($lvl, $levelSource)
+                            )));
+                            $selectedLevels = is_array($selectedLevels) ? $selectedLevels : [];
+                            $meetingType = old('meeting_type', $authUser->meeting_type ?? 'all');
+                        @endphp
+                        <div class="{{ $card }}">
+                            <h2 class="font-bold text-22px text-primary mb-8">إعدادات الاجتماع</h2>
+                            <div class="mb-7">
+                                <p class="font-semibold text-15px text-primary mb-4">نوع الاجتماع</p>
+                                <div class="space-y-3">
+                                    @foreach ([['in_person', 'وجهاً لوجه'], ['online', 'عبر الإنترنت'], ['all', 'الجميع']] as [$val, $txt])
+                                        <label class="flex items-center gap-2.5 cursor-pointer">
+                                            <input type="radio" name="meeting_type" value="{{ $val }}" class="radio radio-primary" {{ $meetingType === $val ? 'checked' : '' }}>
+                                            <span class="font-medium text-15px text-primary">{{ $txt }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
                             <div>
-                                <p class="font-semibold text-14px text-primary mb-2 text-start">{{ $uploadField['label'] }}</p>
+                                <p class="font-semibold text-15px text-primary mb-4">مستوى التدريب</p>
+                                <div class="space-y-3">
+                                    @foreach ([['beginner', 'مبتدئ'], ['middle', 'متوسط'], ['expert', 'متقدم']] as [$val, $txt])
+                                        <label class="flex items-center gap-2.5 cursor-pointer">
+                                            <input type="checkbox" name="level_of_training[]" value="{{ $val }}" class="checkbox checkbox-primary" {{ in_array($val, $selectedLevels, true) ? 'checked' : '' }}>
+                                            <span class="font-medium text-15px text-primary">{{ $txt }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                        <div class="lg:col-span-7 {{ $card }}">
+                            <h2 class="font-bold text-22px text-primary mb-8">المنطقة</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="relative">
+                                    <label class="{{ $label }}">الدولة</label>
+                                    <select id="js-region-country" name="country_id" class="{{ $input }}">
+                                        <option value="">اختر الدولة</option>
+                                        @foreach ($countries ?? [] as $country)
+                                            <option value="{{ $country->id }}" {{ (string) old('country_id', $authUser->country_id ?? '') === (string) $country->id ? 'selected' : '' }}>{{ $country->title }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="relative">
+                                    <label class="{{ $label }}">المنطقة</label>
+                                    <select id="js-region-province" name="province_id" data-selected="{{ old('province_id', $authUser->province_id ?? '') }}" class="{{ $input }}">
+                                        <option value="">اختر المنطقة</option>
+                                    </select>
+                                </div>
+                                <div class="relative">
+                                    <label class="{{ $label }}">المدينة</label>
+                                    <select id="js-region-city" name="city_id" data-selected="{{ old('city_id', $authUser->city_id ?? '') }}" class="{{ $input }}">
+                                        <option value="">اختر المدينة</option>
+                                    </select>
+                                </div>
+                                <div class="relative">
+                                    <label class="{{ $label }}">الحي</label>
+                                    <select id="js-region-district" name="district_id" data-selected="{{ old('district_id', $authUser->district_id ?? '') }}" class="{{ $input }}">
+                                        <option value="">اختر الحي</option>
+                                    </select>
+                                </div>
+                            </div>
+                            @if (!empty($formFieldsHtml))
+                                <div class="mt-8 border-t border-d9 pt-8">
+                                    <h3 class="font-bold text-18px text-primary mb-4">حقول إضافية</h3>
+                                    {!! $formFieldsHtml !!}
+                                </div>
+                            @endif
+                            <div class="mt-8">
+                                <h3 class="font-bold text-18px text-primary mb-4">التواصل الاجتماعي</h3>
+                                <div class="space-y-4">
+                                    @foreach ($socials ?? [] as $socialKey => $socialValue)
+                                        @if (!empty($socialValue['title']))
+                                            <div class="relative">
+                                                <label class="{{ $label }}">{{ $socialValue['title'] }}</label>
+                                                <input type="text" name="socials[{{ $socialKey }}]" value="{{ old('socials.' . $socialKey, $userSocials[$socialKey] ?? '') }}" dir="ltr" class="text-start {{ $input }}">
+                                            </div>
+                                        @endif
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-8">
+                        <button type="submit" class="btn btn-primary rounded-10px h-14 px-10 font-bold text-18px">حفظ المعلومات الإضافية</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="settings-tabs-3" class="hidden" role="tabpanel" aria-labelledby="settings-tabs-item-3">
+                <form method="POST" action="{{ route('panel.v1.instructor.financial.update') }}" enctype="multipart/form-data">
+                    @csrf
+                    @if (!empty($authUser->financial_approval))
+                        <div class="rounded-12px bg-[#ECFDF5] border border-[#A7F3D0]/60 px-6 py-5 mb-6">
+                            <p class="font-bold text-16px text-primary">تم توثيق الهوية والبيانات المالية</p>
+                        </div>
+                    @else
+                        <div class="rounded-12px bg-[#FEF6E7] border border-[#F5D9A8]/60 px-6 py-5 mb-6">
+                            <p class="font-bold text-16px text-primary">بانتظار توثيق الهوية والبيانات المالية من الإدارة</p>
+                        </div>
+                    @endif
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                        <div class="lg:col-span-5 {{ $card }}">
+                            <h2 class="font-bold text-22px text-primary mb-8">حساب السحب</h2>
+                            <div class="relative">
+                                <label class="{{ $label }}">نوع الحساب البنكي</label>
+                                <select name="bank_id" id="js-user-bank-input" class="{{ $input }}" {{ !empty($authUser->financial_approval) ? 'disabled' : '' }}>
+                                    <option value="">اختر الحساب</option>
+                                    @foreach ($userBanks ?? [] as $bank)
+                                        <option value="{{ $bank->id }}" data-specifications='@json($bank->specifications->pluck('name', 'id'))' {{ (int) old('bank_id', optional($authUser->selectedBank)->user_bank_id ?? 0) === (int) $bank->id ? 'selected' : '' }}>{{ $bank->title }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="js-bank-specifications-card mt-6 space-y-6">
+                                @if (!empty($authUser->selectedBank) && !empty($authUser->selectedBank->bank))
+                                    @foreach ($authUser->selectedBank->bank->specifications as $bankSpecification)
+                                        @php
+                                            $selectedSpecification = $authUser->selectedBank->specifications->firstWhere('user_bank_specification_id', $bankSpecification->id);
+                                        @endphp
+                                        <div class="relative">
+                                            <label class="{{ $label }}">{{ $bankSpecification->name }}</label>
+                                            <input type="text" name="bank_specifications[{{ $bankSpecification->id }}]" value="{{ $selectedSpecification->value ?? '' }}"
+                                                class="{{ $input }}" {{ !empty($authUser->financial_approval) ? 'disabled' : '' }}>
+                                        </div>
+                                    @endforeach
+                                @endif
+                            </div>
+                        </div>
+                        <div class="lg:col-span-7 {{ $card }}">
+                            <h2 class="font-bold text-22px text-primary mb-8">وثائق الهوية</h2>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                @foreach ([['identity_scan', 'صورة الهوية'], ['certificate', 'الشهادة والمستندات']] as [$field, $docLabel])
+                                    <div>
+                                        <label class="font-semibold text-15px text-primary mb-3 block">{{ $docLabel }}</label>
+                                        @include('panel_v1.components.file-upload', [
+                                            'name' => $field,
+                                            'accept' => 'image/*,.pdf',
+                                            'label' => !empty($authUser->financial_approval) ? 'الرفع مقفل بعد الاعتماد' : 'اختر ملفًا من جهازك',
+                                            'hint' => 'صورة أو PDF',
+                                            'media' => true,
+                                            'required' => false,
+                                            'disabled' => !empty($authUser->financial_approval),
+                                            'existing' => array_values(array_filter([panelV1UserMediaPreview($authUser, $field)])),
+                                        ])
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                    @if (empty($authUser->financial_approval))
+                        <div class="mt-8">
+                            <button type="submit" class="btn btn-primary rounded-10px h-14 px-10 font-bold text-18px">حفظ البيانات المالية</button>
+                        </div>
+                    @endif
+                </form>
+            </div>
+
+            <div id="settings-tabs-4" class="hidden" role="tabpanel" aria-labelledby="settings-tabs-item-4">
+                <form method="POST" action="{{ route('panel.v1.instructor.images.update') }}" enctype="multipart/form-data">
+                    @csrf
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        @foreach ([
+                            ['avatar', 'الصورة الشخصية', 'image/*', 'اختر صورة شخصية من جهازك', 'PNG أو JPG'],
+                            ['cover_img', 'صورة الغلاف', 'image/*', 'اختر صورة الغلاف من جهازك', 'يُفضّل عرض عريض'],
+                            ['profile_secondary_image', 'الصورة الثانوية', 'image/*', 'اختر الصورة الثانوية', 'PNG شفاف مفضّل'],
+                            ['profile_video', 'فيديو الملف', 'video/*', 'اختر فيديو من جهازك', 'MP4 أو WebM'],
+                        ] as [$field, $mediaLabel, $accept, $uploadLabel, $hint])
+                            @php $current = panelV1UserMediaPreview($authUser, $field); @endphp
+                            <div class="{{ $card }}">
+                                <h2 class="font-bold text-20px text-primary mb-6">{{ $mediaLabel }}</h2>
                                 @include('panel_v1.components.file-upload', [
-                                    'name' => $uploadField['name'],
-                                    'accept' => $uploadField['accept'],
-                                    'label' => 'رفع من الجهاز',
-                                    'hint' => 'صورة أو PDF',
+                                    'name' => $field,
+                                    'accept' => $accept,
+                                    'label' => $uploadLabel,
+                                    'hint' => $hint,
                                     'media' => true,
                                     'required' => false,
-                                    'existing' => array_values(array_filter([panelV1UserMediaPreview($authUser, $uploadField['name'])])),
+                                    'existing' => $current ? [$current] : [],
                                 ])
+                                @if (!empty($authUser->$field))
+                                    <button type="submit" form="instructor-delete-media-{{ $field }}" class="mt-4 font-bold text-14px text-[#EF4444]" onclick="return confirm('حذف الملف؟');">حذف الملف الحالي</button>
+                                @endif
                             </div>
                         @endforeach
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- ===================== Tab 4: Images ===================== --}}
-    <div id="instructor-settings-4" class="hidden" role="tabpanel" aria-labelledby="instructor-settings-tab-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 items-start">
-            @foreach ([
-                ['avatar', 'صورة الملف الشخصي', 'image/*', 'اختر صورة من جهازك', 'PNG أو JPG'],
-                ['cover_img', 'غلاف الملف الشخصي', 'image/*', 'اختر صورة الغلاف', 'الطول الموصى به ~320px'],
-                ['profile_secondary_image', 'صورة الملف الثانوي', 'image/*', 'اختر الصورة الثانوية', 'PNG شفاف مفضّل'],
-                ['profile_video', 'فيديو الملف الشخصي', 'video/*', 'اختر فيديو من جهازك', 'MP4 أو WebM — 2 إلى 4 دقائق'],
-                ['signature_img', 'التوقيع', 'image/*', 'رفع التوقيع من جهازك', 'PNG أو JPG بخلفية بيضاء'],
-            ] as [$field, $mediaLabel, $accept, $uploadLabel, $hint])
-                @php $current = panelV1UserMediaPreview($authUser, $field); @endphp
-                <div class="{{ $card }}">
-                    <h2 class="font-bold text-20px sm:text-22px text-primary mb-5 text-start">{{ $mediaLabel }}</h2>
-                    @include('panel_v1.components.file-upload', [
-                        'name' => $field,
-                        'accept' => $accept,
-                        'label' => $uploadLabel,
-                        'hint' => $hint,
-                        'media' => true,
-                        'required' => false,
-                        'existing' => $current ? [$current] : [],
-                        'existingLabel' => 'الملف الحالي',
-                    ])
-                </div>
-            @endforeach
-        </div>
-        <div class="mt-8">
-            <button type="submit" class="btn btn-primary rounded-10px h-14 px-10 font-bold text-18px">حفظ الصور</button>
-        </div>
-    </div>
-
-    {{-- ===================== Tab 5: About ===================== --}}
-    <div id="instructor-settings-5" class="hidden" role="tabpanel" aria-labelledby="instructor-settings-tab-5">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6 items-start">
-            <div class="flex flex-col gap-5 sm:gap-6">
-                <div class="{{ $card }}">
-                    <div class="flex flex-wrap items-start justify-between gap-3 mb-6 p-4 rounded-12px border border-dashed border-d9">
-                        <div class="flex items-start gap-3 min-w-0">
-                            <span class="size-12 shrink-0 rounded-12px bg-primary/10 center">
-                                <svg class="size-6 text-primary" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422A12.083 12.083 0 0121 16.5c0 1.657-4.03 3-9 3s-9-1.343-9-3c0-1.41 1.47-2.643 3.84-3.422L12 14z"/>
-                                </svg>
-                            </span>
-                            <div class="min-w-0 text-start">
-                                <h2 class="font-bold text-18px sm:text-20px text-primary mb-1">السجل التعليمي</h2>
-                                <p class="font-medium text-13px text-gray">أضف درجاتك العلمية لتظهر في ملفك الشخصي.</p>
-                            </div>
-                        </div>
-                        <button type="button" class="font-semibold text-15px text-primary hover:opacity-80 shrink-0">+ إضافة تعليم</button>
-                    </div>
-                    <div class="center flex-col py-14 text-center">
-                        <span class="size-16 rounded-12px bg-primary/10 center mb-4">
-                            <svg class="size-8 text-primary" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422A12.083 12.083 0 0121 16.5c0 1.657-4.03 3-9 3s-9-1.343-9-3c0-1.41 1.47-2.643 3.84-3.422L12 14z"/>
-                            </svg>
-                        </span>
-                        <p class="font-semibold text-17px text-primary mb-2">لم تتم إضافة أي درجة.</p>
-                        <p class="font-medium text-14px text-gray">سيتم عرض مؤهلاتك الأكاديمية في ملفك الشخصي.</p>
-                    </div>
-                </div>
-
-                <div class="{{ $card }}">
-                    <h2 class="font-bold text-20px sm:text-22px text-primary mb-6 text-start">حول</h2>
-                    <div class="space-y-6">
-                        <div class="relative">
-                            <label class="{{ $label }}">الوظيفة</label>
-                            <input type="text" value="{{ $profileJobTitle ?? '' }}" class="{{ $input }}">
-                        </div>
-                        <div class="rounded-12px bg-[#F5F5F5] border border-d9 px-4 py-3 text-start">
-                            <p class="font-medium text-13px text-gray mb-1">- المسار الوظيفي سيتم عرضه أسفل اسمك وعلى الملف الشخصي الخاص بك.</p>
-                            <p class="font-medium text-13px text-gray">- اجعله قصيراً من 2 إلى 3 أسطر.</p>
-                        </div>
-                        <div class="relative">
-                            <label class="{{ $label }}">السيرة الذاتية</label>
-                            <textarea rows="8" class="{{ $textarea }}">{{ $profileBio ?? '' }}</textarea>
+                        <div class="{{ $card }}">
+                            <h2 class="font-bold text-20px text-primary mb-6">التوقيع</h2>
+                            @php
+                                $signature = $authUser->getSignature(true);
+                                $signaturePreview = panelV1UserMediaPreview($authUser, 'signature_img');
+                            @endphp
+                            @include('panel_v1.components.file-upload', [
+                                'name' => 'signature_img',
+                                'accept' => 'image/*',
+                                'label' => !empty($signature) ? 'استبدال التوقيع من جهازك' : 'رفع التوقيع من جهازك',
+                                'hint' => 'PNG أو JPG بخلفية بيضاء',
+                                'media' => true,
+                                'required' => false,
+                                'existing' => $signaturePreview ? [$signaturePreview] : [],
+                            ])
+                            @if (!empty($signature))
+                                <button type="submit" form="instructor-delete-media-signature_img" class="mt-4 font-bold text-14px text-[#EF4444]" onclick="return confirm('حذف التوقيع؟');">حذف التوقيع</button>
+                            @endif
                         </div>
                     </div>
-                </div>
+                    <div class="mt-8">
+                        <button type="submit" class="btn btn-primary rounded-10px h-14 px-10 font-bold text-18px">حفظ الصور</button>
+                    </div>
+                </form>
+                @foreach (['avatar', 'cover_img', 'profile_secondary_image', 'profile_video', 'signature_img'] as $mediaType)
+                    @if (($mediaType === 'signature_img' && !empty($signature)) || ($mediaType !== 'signature_img' && !empty($authUser->$mediaType)))
+                        <form id="instructor-delete-media-{{ $mediaType }}" method="POST" action="{{ route('panel.v1.instructor.media.delete', ['type' => $mediaType]) }}" class="hidden">@csrf</form>
+                    @endif
+                @endforeach
             </div>
 
-            <div class="flex flex-col gap-5 sm:gap-6">
-                <div class="{{ $card }}">
-                    <div class="flex flex-wrap items-start justify-between gap-3 mb-6 p-4 rounded-12px border border-dashed border-d9">
-                        <div class="flex items-start gap-3 min-w-0">
-                            <span class="size-12 shrink-0 rounded-12px bg-primary/10 center">
-                                <svg class="size-6 text-primary" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                                </svg>
-                            </span>
-                            <div class="min-w-0 text-start">
-                                <h2 class="font-bold text-18px sm:text-20px text-primary mb-1">السجل المهني</h2>
-                                <p class="font-medium text-13px text-gray">أضف خبراتك العملية لتظهر في ملفك الشخصي.</p>
+            <div id="settings-tabs-5" class="hidden" role="tabpanel" aria-labelledby="settings-tabs-item-5">
+                <form method="POST" action="{{ route('panel.v1.instructor.about.update') }}">
+                    @csrf
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                        <div class="lg:col-span-7 {{ $card }}">
+                            <h2 class="font-bold text-22px text-primary mb-8">نبذة وتعريف</h2>
+                            <div class="space-y-6">
+                                <div class="relative">
+                                    <label class="{{ $label }}">المسمى الوظيفي</label>
+                                    <input type="text" name="headline" value="{{ old('headline', $authUser->headline ?? '') }}"
+                                        class="{{ $input }}">
+                                </div>
+                                <div class="relative">
+                                    <label class="{{ $label }}">نبذة قصيرة</label>
+                                    <textarea rows="3" name="bio" class="textarea textarea-bordered w-full rounded-10px font-medium text-16px focus:outline-none focus:border-primary">{{ old('bio', $authUser->bio ?? '') }}</textarea>
+                                </div>
+                                <div class="relative">
+                                    <label class="{{ $label }}">من أنا (تفصيلي)</label>
+                                    <textarea rows="6" name="about" class="textarea textarea-bordered w-full rounded-10px font-medium text-16px focus:outline-none focus:border-primary">{{ old('about', $authUser->about ?? '') }}</textarea>
+                                </div>
                             </div>
                         </div>
-                        <button type="button" class="font-semibold text-15px text-primary hover:opacity-80 shrink-0">+ إضافة خبرات</button>
+                        <div class="lg:col-span-5 flex flex-col gap-6">
+                            <div class="{{ $card }}">
+                                <h2 class="font-bold text-22px text-primary mb-6">المؤهلات العلمية</h2>
+                                <div class="space-y-3 mb-6">
+                                    @forelse ($educations ?? [] as $education)
+                                        <div class="flex items-center justify-between gap-3 border border-d9 rounded-10px px-4 py-3">
+                                            <span class="font-medium text-15px">{{ $education->value }}</span>
+                                            <form method="POST" action="{{ route('panel.v1.instructor.metas.delete', ['metaId' => $education->id]) }}" onsubmit="return confirm('حذف؟');">
+                                                @csrf
+                                                <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف</button>
+                                            </form>
+                                        </div>
+                                    @empty
+                                        <p class="font-medium text-14px text-gray">لا توجد مؤهلات مسجلة.</p>
+                                    @endforelse
+                                </div>
+                                <div class="flex gap-3">
+                                    <input type="text" id="student-education-val" placeholder="مؤهل جديد" class="input input-bordered flex-1 h-12 rounded-10px font-medium text-15px focus:outline-none focus:border-primary">
+                                    <button type="button" id="student-education-add" class="btn btn-primary rounded-10px h-12 px-6 font-bold text-15px shrink-0">إضافة</button>
+                                </div>
+                            </div>
+                            <div class="{{ $card }}">
+                                <h2 class="font-bold text-22px text-primary mb-6">الخبرات العملية</h2>
+                                <div class="space-y-3 mb-6">
+                                    @forelse ($experiences ?? [] as $experience)
+                                        <div class="flex items-center justify-between gap-3 border border-d9 rounded-10px px-4 py-3">
+                                            <span class="font-medium text-15px">{{ $experience->value }}</span>
+                                            <form method="POST" action="{{ route('panel.v1.instructor.metas.delete', ['metaId' => $experience->id]) }}" onsubmit="return confirm('حذف؟');">
+                                                @csrf
+                                                <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف</button>
+                                            </form>
+                                        </div>
+                                    @empty
+                                        <p class="font-medium text-14px text-gray">لا توجد خبرات مسجلة.</p>
+                                    @endforelse
+                                </div>
+                                <div class="flex gap-3">
+                                    <input type="text" id="student-experience-val" placeholder="خبرة جديدة" class="input input-bordered flex-1 h-12 rounded-10px font-medium text-15px focus:outline-none focus:border-primary">
+                                    <button type="button" id="student-experience-add" class="btn btn-primary rounded-10px h-12 px-6 font-bold text-15px shrink-0">إضافة</button>
+                                </div>
+                            </div>
+                            <div class="{{ $card }}">
+                                <h2 class="font-bold text-22px text-primary mb-6">الملفات والمرفقات</h2>
+                                <div class="space-y-3 mb-6">
+                                    @forelse ($attachments ?? [] as $attachment)
+                                        <div class="flex items-center justify-between gap-3 border border-d9 rounded-10px px-4 py-3">
+                                            <div class="min-w-0">
+                                                <span class="block font-medium text-15px truncate">{{ $attachment->title }}</span>
+                                                @if (!empty($attachment->description))
+                                                    <span class="block font-medium text-12px text-gray truncate">{{ $attachment->description }}</span>
+                                                @endif
+                                            </div>
+                                            <div class="flex items-center gap-3 shrink-0">
+                                                @if (!empty($attachment->attachment))
+                                                    <a href="{{ $attachment->attachment }}" target="_blank" rel="noopener" class="font-bold text-14px text-primary">تنزيل</a>
+                                                @endif
+                                                <form method="POST" action="{{ route('panel.v1.instructor.attachments.delete', ['attachmentId' => $attachment->id]) }}" onsubmit="return confirm('حذف؟');">
+                                                    @csrf
+                                                    <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    @empty
+                                        <p class="font-medium text-14px text-gray">لا توجد مرفقات.</p>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="center flex-col py-14 text-center">
-                        <span class="size-16 rounded-12px bg-primary/10 center mb-4">
-                            <svg class="size-8 text-primary" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                            </svg>
-                        </span>
-                        <p class="font-semibold text-17px text-primary mb-2">لم تتم إضافة أي خبرة.</p>
-                        <p class="font-medium text-14px text-gray">أضف خبرتك المهنية لمساعدة المستخدمين على معرفة المزيد عنك.</p>
+                    <div class="mt-8">
+                        <button type="submit" class="btn btn-primary rounded-10px h-14 px-10 font-bold text-18px">حفظ بيانات حول</button>
                     </div>
-                </div>
-
-                <div class="{{ $card }}">
-                    <h2 class="font-bold text-20px sm:text-22px text-primary mb-6 text-start">المهارات</h2>
-                    <div class="relative mb-4">
-                        <label class="{{ $label }}">اختر مهاراتك</label>
-                        <select class="{{ $select }}" multiple size="4">
-                            @foreach ($skillOptions ?? [] as $skill)
-                                <option>{{ $skill }}</option>
+                </form>
+                <div class="{{ $card }} mt-6">
+                    <h2 class="font-bold text-22px text-primary mb-6">رفع مرفق جديد</h2>
+                    <form method="POST" action="{{ route('panel.v1.instructor.attachments.store') }}" enctype="multipart/form-data" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        @csrf
+                        <input type="text" name="title" required placeholder="عنوان المرفق" class="input input-bordered h-12 rounded-10px font-medium text-15px focus:outline-none focus:border-primary">
+                        <select name="file_type" class="select select-bordered h-12 rounded-10px font-medium text-15px focus:outline-none focus:border-primary">
+                            @foreach (['document' => 'مستند', 'image' => 'صورة', 'video' => 'فيديو', 'pdf' => 'PDF', 'archive' => 'مضغوط'] as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
                             @endforeach
                         </select>
-                    </div>
-                    <div class="rounded-12px bg-[#F5F5F5] border border-d9 px-4 py-3 text-start">
-                        <p class="font-medium text-13px text-gray mb-1">- اختر اهتماماتك.</p>
-                        <p class="font-medium text-13px text-gray">- إذا كنت تقوم بفصول مباشرة، فاختر موضوعات أكثر دقة مقترحة.</p>
-                    </div>
-                </div>
-
-                <div class="{{ $card }}">
-                    <div class="flex flex-wrap items-start justify-between gap-3 mb-6 p-4 rounded-12px border border-dashed border-d9">
-                        <div class="flex items-start gap-3 min-w-0">
-                            <span class="size-12 shrink-0 rounded-12px bg-primary/10 center">
-                                <svg class="size-6 text-primary" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                            </span>
-                            <div class="min-w-0 text-start">
-                                <h2 class="font-bold text-18px sm:text-20px text-primary mb-1">الملفات والمرفقات</h2>
-                                <p class="font-medium text-13px text-gray">أرفق ملفات لتظهر في ملفك الشخصي.</p>
-                            </div>
+                        <input type="text" name="description" placeholder="وصف مختصر (اختياري)" class="input input-bordered h-12 rounded-10px font-medium text-15px focus:outline-none focus:border-primary sm:col-span-2">
+                        <div class="sm:col-span-2">
+                            @include('panel_v1.components.file-upload', [
+                                'name' => 'attachment',
+                                'accept' => 'image/*,.pdf,.doc,.docx,.zip,.rar,video/*',
+                                'label' => 'اختر الملف من جهازك',
+                                'hint' => 'صورة، PDF، مستند، فيديو أو مضغوط',
+                                'required' => true,
+                            ])
                         </div>
-                        <button type="button" class="font-semibold text-15px text-primary hover:opacity-80 shrink-0">+ إضافة ملف</button>
-                    </div>
-                    <div class="center flex-col py-10 text-center">
-                        <span class="size-16 rounded-12px bg-primary/10 center mb-4">
-                            <svg class="size-8 text-primary" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                            </svg>
-                        </span>
-                        <p class="font-semibold text-17px text-primary mb-2">لا توجد مرفقات في الملف الشخصي</p>
-                        <p class="font-medium text-14px text-gray">قم برفع ملفات لتظهر في ملفك الشخصي.</p>
+                        <div class="sm:col-span-2">
+                            <button type="submit" class="btn btn-primary rounded-10px h-12 px-8 font-bold text-16px">رفع المرفق</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="settings-tabs-6" class="hidden" role="tabpanel" aria-labelledby="settings-tabs-item-6">
+                <div class="{{ $card }}">
+                    <h2 class="font-bold text-22px text-primary mb-6">سجل الدخول</h2>
+                    <div class="overflow-x-auto">
+                        <table class="table w-full text-15px">
+                            <thead>
+                                <tr class="border-b border-d9 text-gray">
+                                    <th class="px-4 py-3 text-start font-semibold">المتصفح</th>
+                                    <th class="px-4 py-3 text-start font-semibold">الجهاز</th>
+                                    <th class="px-4 py-3 text-start font-semibold">نظام التشغيل</th>
+                                    <th class="px-4 py-3 text-start font-semibold">IP</th>
+                                    <th class="px-4 py-3 text-start font-semibold">البداية</th>
+                                    <th class="px-4 py-3 text-start font-semibold">النهاية</th>
+                                    <th class="px-4 py-3 text-start font-semibold">المدة</th>
+                                    <th class="px-4 py-3 text-start font-semibold">إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($loginHistories ?? [] as $session)
+                                    <tr class="border-b border-d9 last:border-0">
+                                        <td class="px-4 py-4">{{ $session->browser ?? '-' }}</td>
+                                        <td class="px-4 py-4">{{ $session->device ?? '-' }}</td>
+                                        <td class="px-4 py-4">{{ $session->os ?? '-' }}</td>
+                                        <td class="px-4 py-4" dir="ltr">{{ $session->ip ?? '-' }}</td>
+                                        <td class="px-4 py-4">{{ !empty($session->session_start_at) ? date('Y/m/d H:i', (int) $session->session_start_at) : '-' }}</td>
+                                        <td class="px-4 py-4">{{ !empty($session->session_end_at) ? date('Y/m/d H:i', (int) $session->session_end_at) : 'نشطة' }}</td>
+                                        <td class="px-4 py-4">{{ $session->getDuration() }}</td>
+                                        <td class="px-4 py-4">
+                                            @if (empty($session->session_end_at))
+                                                <form method="POST" action="{{ route('panel.v1.instructor.sessions.end', ['sessionId' => $session->id]) }}" onsubmit="return confirm('إنهاء هذه الجلسة؟');">
+                                                    @csrf
+                                                    <button type="submit" class="font-bold text-14px text-[#EF4444]">إنهاء الجلسة</button>
+                                                </form>
+                                            @else
+                                                <span class="text-gray">—</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="8" class="px-4 py-10 text-center font-medium text-16px text-gray">لا يوجد سجل دخول بعد.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    {{-- ===================== Tab 6: Login history ===================== --}}
-    <div id="instructor-settings-6" class="hidden" role="tabpanel" aria-labelledby="instructor-settings-tab-6">
-        <div class="border border-d9 rounded-14px bg-white overflow-hidden shadow-sm">
-            <div class="px-5 sm:px-6 py-5 border-b border-d9">
-                <h2 class="font-bold text-20px sm:text-22px text-primary text-start">سجل الدخول</h2>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="table w-full text-15px sm:text-16px">
-                    <thead>
-                        <tr class="border-b border-d9 text-gray bg-f9">
-                            <th class="px-4 sm:px-5 py-4 text-start font-semibold whitespace-nowrap">نظام التشغيل</th>
-                            <th class="px-4 sm:px-5 py-4 text-start font-semibold whitespace-nowrap">المتصفح</th>
-                            <th class="px-4 sm:px-5 py-4 text-start font-semibold whitespace-nowrap">الجهاز</th>
-                            <th class="px-4 sm:px-5 py-4 text-start font-semibold whitespace-nowrap">عنوان IP</th>
-                            <th class="px-4 sm:px-5 py-4 text-start font-semibold whitespace-nowrap">الدولة</th>
-                            <th class="px-4 sm:px-5 py-4 text-start font-semibold whitespace-nowrap">المدينة</th>
-                            <th class="px-4 sm:px-5 py-4 text-start font-semibold whitespace-nowrap">بداية الجلسة</th>
-                            <th class="px-4 sm:px-5 py-4 text-start font-semibold whitespace-nowrap">نهاية الجلسة</th>
-                            <th class="px-4 sm:px-5 py-4 text-start font-semibold whitespace-nowrap">مدة</th>
-                            <th class="px-4 sm:px-5 py-4 text-start font-semibold whitespace-nowrap">اجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($loginHistory ?? [] as $row)
-                            <tr class="border-b border-d9 last:border-0">
-                                <td class="px-4 sm:px-5 py-4 font-medium text-primary whitespace-nowrap">{{ $row['os'] }}</td>
-                                <td class="px-4 sm:px-5 py-4 font-medium text-primary whitespace-nowrap">{{ $row['browser'] }}</td>
-                                <td class="px-4 sm:px-5 py-4 font-medium text-gray whitespace-nowrap">{{ $row['device'] }}</td>
-                                <td class="px-4 sm:px-5 py-4 font-medium text-gray whitespace-nowrap max-w-40 truncate" title="{{ $row['ip'] }}">{{ $row['ip'] }}</td>
-                                <td class="px-4 sm:px-5 py-4 font-medium text-primary whitespace-nowrap">{{ $row['country'] }}</td>
-                                <td class="px-4 sm:px-5 py-4 font-medium text-primary whitespace-nowrap">{{ $row['city'] }}</td>
-                                <td class="px-4 sm:px-5 py-4 font-medium text-primary whitespace-nowrap">{{ $row['session_start'] }}</td>
-                                <td class="px-4 sm:px-5 py-4 font-medium text-gray whitespace-nowrap">{{ $row['session_end'] ?? '-' }}</td>
-                                <td class="px-4 sm:px-5 py-4 font-medium text-gray whitespace-nowrap">{{ $row['duration'] }}</td>
-                                <td class="px-4 sm:px-5 py-4 whitespace-nowrap">
-                                    @if (!empty($row['active']))
-                                        <button type="button" class="font-semibold text-14px text-red-500 hover:opacity-80">إنهاء الجلسة</button>
-                                    @else
-                                        <span class="text-gray">-</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="10" class="px-5 py-16 text-center font-medium text-16px text-gray">لا توجد جلسات مسجلة.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div class="flex justify-end pt-2">
-        <button type="submit"
-            class="inline-flex items-center justify-center min-w-44 h-12 sm:h-14 px-8 rounded-10px bg-primary text-white font-semibold text-16px sm:text-18px hover:opacity-90 transition">
-            حفظ التغييرات
-        </button>
-    </div>
-    </form>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+    // Quick add for education/experience metas
+    function postMeta(name, inputId) {
+        var input = document.getElementById(inputId);
+        if (!input || !input.value.trim()) return;
+        fetch("{{ route('panel.v1.instructor.metas.store') }}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
+            body: JSON.stringify({name: name, value: input.value.trim()}),
+        }).then(function (r) { if (r.ok) window.location.reload(); });
+    }
+    document.getElementById('student-education-add')?.addEventListener('click', function () { postMeta('education', 'student-education-val'); });
+    document.getElementById('student-experience-add')?.addEventListener('click', function () { postMeta('experience', 'student-experience-val'); });
+
+    // Chained region selects (GET /regions/* endpoints)
+    var regionCountry = document.getElementById('js-region-country');
+    if (regionCountry) {
+        var regionProvince = document.getElementById('js-region-province');
+        var regionCity = document.getElementById('js-region-city');
+        var regionDistrict = document.getElementById('js-region-district');
+
+        function fetchRegion(url, key, select, placeholder, done) {
+            if (!select) { if (done) done(); return; }
+            select.innerHTML = '<option value="">' + placeholder + '</option>';
+            if (!url) { if (done) done(); return; }
+            fetch(url, { headers: { 'Accept': 'application/json' } })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    (data[key] || []).forEach(function (item) {
+                        var option = document.createElement('option');
+                        option.value = item.id;
+                        option.textContent = item.title;
+                        if (select.dataset.selected && String(item.id) === String(select.dataset.selected)) {
+                            option.selected = true;
+                        }
+                        select.appendChild(option);
+                    });
+                    if (done) done();
+                })
+                .catch(function () { if (done) done(); });
+        }
+        function loadProvinces() {
+            fetchRegion(regionCountry.value ? '/regions/provincesByCountry/' + regionCountry.value : null,
+                'provinces', regionProvince, 'اختر المنطقة', loadCities);
+        }
+        function loadCities() {
+            fetchRegion(regionProvince && regionProvince.value ? '/regions/citiesByProvince/' + regionProvince.value : null,
+                'cities', regionCity, 'اختر المدينة', loadDistricts);
+        }
+        function loadDistricts() {
+            fetchRegion(regionCity && regionCity.value ? '/regions/districtsByCity/' + regionCity.value : null,
+                'districts', regionDistrict, 'اختر الحي');
+        }
+
+        regionCountry.addEventListener('change', function () {
+            [regionProvince, regionCity, regionDistrict].forEach(function (sel) { if (sel) sel.dataset.selected = ''; });
+            loadProvinces();
+        });
+        if (regionProvince) regionProvince.addEventListener('change', function () {
+            [regionCity, regionDistrict].forEach(function (sel) { if (sel) sel.dataset.selected = ''; });
+            loadCities();
+        });
+        if (regionCity) regionCity.addEventListener('change', function () {
+            if (regionDistrict) regionDistrict.dataset.selected = '';
+            loadDistricts();
+        });
+
+        if (regionCountry.value) loadProvinces();
+    }
+
+    // Bank specifications rendered from data-specifications of the selected option
+    var bankInput = document.getElementById('js-user-bank-input');
+    if (bankInput) {
+        var specsCard = document.querySelector('.js-bank-specifications-card');
+        bankInput.addEventListener('change', function () {
+            if (!specsCard) return;
+            var option = bankInput.options[bankInput.selectedIndex];
+            var specs = option ? option.getAttribute('data-specifications') : null;
+            var html = '';
+            if (specs) {
+                Object.entries(JSON.parse(specs)).forEach(function (entry) {
+                    html += '<div class="relative">' +
+                        '<label class="absolute -top-2.5 start-4 z-[1] bg-white px-2 font-medium text-13px text-gray">' + entry[1] + '</label>' +
+                        '<input type="text" name="bank_specifications[' + entry[0] + ']" class="input input-bordered w-full h-14 rounded-10px border-d9 font-medium text-16px focus:outline-none focus:border-primary">' +
+                        '</div>';
+                });
+            }
+            specsCard.innerHTML = html;
+        });
+    }
+});
+</script>
+@endpush
 @endsection

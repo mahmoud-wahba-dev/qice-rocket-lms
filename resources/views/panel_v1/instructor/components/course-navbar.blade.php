@@ -47,10 +47,10 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('panel.v1.instructor.support') }}"
+                        <a href="{{ route('panel.v1.instructor.courses.performance', ['slug' => $courseSlug]) }}"
                             class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary inline-flex items-center gap-2">
-                            <span class="icon-[tabler--messages] size-4"></span>
-                            منتدى الدورة
+                            <span class="icon-[tabler--chart-bar] size-4"></span>
+                            أداء الدورة
                         </a>
                     </li>
                     <li>
@@ -61,10 +61,10 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('panel.v1.instructor.home') }}#calendar"
+                        <a href="{{ route('panel.v1.instructor.courses.assignments', ['slug' => $courseSlug]) }}"
                             class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary inline-flex items-center gap-2">
-                            <span class="icon-[tabler--bell-plus] size-4"></span>
-                            اضافة تاريخ تذكير
+                            <span class="icon-[tabler--clipboard-list] size-4"></span>
+                            تكليفات الدورة
                         </a>
                     </li>
                     <li>

@@ -95,12 +95,25 @@
                 </button>
 
                 @auth
-                    <a href="{{ route('panel.v1.student.favorites') }}" class="btn btn-text max-xl:px-1" aria-label="المفضلة">
-                        <span class="icon-[tabler--heart] size-6 text-primary"></span>
-                    </a>
+                    {{-- Favorites are student-only; hide for instructors / org / admin --}}
+                    @if (auth()->user()->isUser())
+                        <a href="{{ route('panel.v1.student.favorites') }}" class="btn btn-text max-xl:px-1" aria-label="المفضلة">
+                            <span class="icon-[tabler--heart] size-6 text-primary"></span>
+                        </a>
+                    @endif
                     @php
                         $navbarNotifications = collect($unReadNotifications ?? []);
                         $unreadCount = $navbarNotifications->count();
+                        $notificationsIndexUrl = auth()->user()->isTeacher()
+                            ? route('panel.v1.instructor.notifications')
+                            : (auth()->user()->isUser()
+                                ? route('panel.v1.student.notifications')
+                                : url('/panel/notifications'));
+                        $notificationsMarkReadUrl = auth()->user()->isTeacher()
+                            ? route('panel.v1.instructor.notifications.mark-all-read')
+                            : (auth()->user()->isUser()
+                                ? route('panel.v1.student.notifications.mark-all-read')
+                                : url('/panel/notifications/mark-all-as-read'));
                     @endphp
                     <div class="dropdown relative inline-flex [--auto-close:inside] rtl:[--placement:bottom-end]">
                         <button id="landing-notifications-toggle" type="button"
@@ -125,7 +138,7 @@
                                     @endif
                                 </div>
                                 @if ($unreadCount > 0)
-                                    <form method="POST" action="{{ route('panel.v1.student.notifications.mark-all-read') }}">
+                                    <form method="POST" action="{{ $notificationsMarkReadUrl }}">
                                         @csrf
                                         <button type="submit"
                                             class="font-semibold text-12px text-color2 hover:underline bg-transparent border-0 cursor-pointer p-0">
@@ -137,7 +150,7 @@
 
                             <div class="max-h-80 overflow-y-auto py-1">
                                 @forelse ($navbarNotifications->take(5) as $notification)
-                                    <a href="{{ route('panel.v1.student.notifications') }}"
+                                    <a href="{{ $notificationsIndexUrl }}"
                                         class="flex items-start gap-3 px-4 py-3 hover:bg-fa transition border-b border-d9/70 last:border-b-0">
                                         <span class="size-10 rounded-12px bg-primary/10 center shrink-0 mt-0.5">
                                             <span class="icon-[tabler--bell] size-5 text-primary"></span>
@@ -167,7 +180,7 @@
                             </div>
 
                             <div class="border-t border-d9 p-3">
-                                <a href="{{ route('panel.v1.student.notifications') }}"
+                                <a href="{{ $notificationsIndexUrl }}"
                                     class="btn btn-primary btn-block rounded-10px h-11 font-bold text-14px">
                                     عرض كل الإشعارات
                                 </a>
@@ -178,73 +191,179 @@
             </div>
 
             @auth
+                @php
+                    $authNavUser = auth()->user();
+                    $isTeacherNav = $authNavUser->isTeacher();
+                    $isOrgNav = $authNavUser->isOrganization();
+                    $isAdminNav = $authNavUser->isAdmin();
+                    $publicInstructorUrl = !empty($authNavUser->username)
+                        ? route('landing.v1.instructor-details', ['username' => $authNavUser->username])
+                        : route('panel.v1.instructor.settings');
+                @endphp
                 <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end]">
                     <button id="user-dropdown-toggle" type="button"
                         class="dropdown-toggle flex items-center gap-2 btn btn-text h-12 px-2 hover:bg-primary/5 rounded-10px transition"
                         aria-haspopup="menu" aria-expanded="false" aria-label="User menu">
 
                         <div class="size-9 rounded-full overflow-hidden bg-primary flex items-center justify-center shrink-0">
-                            <img src="{{ auth()->user()->getAvatar() }}"
-                                 alt="{{ auth()->user()->full_name }}"
+                            <img src="{{ $authNavUser->getAvatar() }}"
+                                 alt="{{ $authNavUser->full_name }}"
                                  class="w-full h-full object-cover"
                                  onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                             <span class="hidden w-full h-full items-center justify-center font-bold text-16px text-white bg-primary">
-                                {{ mb_substr(auth()->user()->full_name ?? 'م', 0, 1) }}
+                                {{ mb_substr($authNavUser->full_name ?? 'م', 0, 1) }}
                             </span>
                         </div>
 
-                        <span class="max-md:hidden font-semibold text-14px text-primary">{{ auth()->user()->full_name }}</span>
+                        <span class="max-md:hidden font-semibold text-14px text-primary">{{ $authNavUser->full_name }}</span>
                         <span class="icon-[tabler--chevron-down] size-4 text-primary/60 max-md:hidden dropdown-open:rotate-180 transition-transform duration-200"></span>
                     </button>
 
                     <div class="dropdown-menu dropdown-open:opacity-100 hidden w-72 p-3 rounded-16px border border-d9 shadow-[0_12px_40px_rgba(15,76,69,0.12)] bg-white"
                         role="menu" aria-orientation="vertical" aria-labelledby="user-dropdown-toggle">
 
-                        <ul class="py-1">
-                            <li>
-                                <a href="{{ auth()->user()->isAdmin() ? getAdminPanelUrl('/') : route('panel.v1.student.home') }}"
-                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
-                                    لوحة التعلم
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ route('panel.v1.student.purchases') }}"
-                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
-                                    مشترياتي
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ route('landing.v1.account.settings') }}"
-                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
-                                    الاعدادات
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ route('panel.v1.student.support') }}"
-                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
-                                    الدعم
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/logout"
-                                    class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-[#E11D48] hover:bg-red-50 transition">
-                                    تسجيل الخروج
-                                </a>
-                            </li>
-                        </ul>
+                        @if ($isTeacherNav)
+                            <div class="flex items-center gap-3 px-2 py-3 mb-2 border-b border-d9">
+                                <div class="size-12 rounded-full overflow-hidden bg-primary center shrink-0">
+                                    <img src="{{ $authNavUser->getAvatar() }}" alt=""
+                                         class="w-full h-full object-cover"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                                    <span class="hidden w-full h-full items-center justify-center font-bold text-18px text-white bg-primary">
+                                        {{ mb_substr($authNavUser->full_name ?? 'م', 0, 1) }}
+                                    </span>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="font-bold text-15px text-primary truncate">{{ $authNavUser->full_name }}</p>
+                                    <p class="font-medium text-12px text-gray truncate">{{ $authNavUser->email }}</p>
+                                </div>
+                            </div>
+                            <ul class="py-1">
+                                <li>
+                                    <a href="{{ route('panel.v1.instructor.home') }}"
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        لوحة التحكم
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{{ $publicInstructorUrl }}"
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        الملف الشخصي
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{{ route('panel.v1.instructor.finance') }}"
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        الأرباح
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{{ route('panel.v1.instructor.courses') }}"
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        الدورات
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{{ route('panel.v1.instructor.settings') }}"
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        الإعدادات
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{{ route('panel.v1.instructor.support') }}"
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        الدعم
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="/logout"
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-[#E11D48] hover:bg-red-50 transition">
+                                        تسجيل الخروج
+                                    </a>
+                                </li>
+                            </ul>
+                        @elseif ($isOrgNav)
+                            <ul class="py-1">
+                                <li>
+                                    <a href="{{ route('panel.v1.organization.home') }}"
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        لوحة المنظمة
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{{ route('panel.v1.organization.settings') }}"
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        الإعدادات
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="/logout"
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-[#E11D48] hover:bg-red-50 transition">
+                                        تسجيل الخروج
+                                    </a>
+                                </li>
+                            </ul>
+                        @elseif ($isAdminNav)
+                            <ul class="py-1">
+                                <li>
+                                    <a href="{{ route('panel.v1.admin.home') }}"
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        لوحة الإدارة
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="/logout"
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-[#E11D48] hover:bg-red-50 transition">
+                                        تسجيل الخروج
+                                    </a>
+                                </li>
+                            </ul>
+                        @else
+                            <ul class="py-1">
+                                <li>
+                                    <a href="{{ route('panel.v1.student.home') }}"
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        لوحة التعلم
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{{ route('panel.v1.student.purchases') }}"
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        مشترياتي
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{{ route('panel.v1.student.settings') }}"
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        الاعدادات
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{{ route('panel.v1.student.support') }}"
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        الدعم
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="/logout"
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-[#E11D48] hover:bg-red-50 transition">
+                                        تسجيل الخروج
+                                    </a>
+                                </li>
+                            </ul>
 
-                        <div class="border-t border-d9 mt-2 pt-3">
-                            <a href="{{ route('panel.v1.student.purchases') }}"
-                                class="flex items-center gap-3 rounded-14px bg-primary px-4 py-3.5 text-white hover:bg-primary/95 transition">
-                                <span class="size-11 rounded-full bg-white/10 center shrink-0">
-                                    <span class="icon-[tabler--rocket] size-6 text-[#0FC787]"></span>
-                                </span>
-                                <span class="flex flex-col gap-0.5 text-start">
-                                    <span class="font-bold text-14px leading-snug">الترقية إلى باقة PRO</span>
-                                    <span class="font-medium text-13px text-[#0FC787]">ترقية الآن</span>
-                                </span>
-                            </a>
-                        </div>
+                            <div class="border-t border-d9 mt-2 pt-3">
+                                <a href="{{ route('panel.v1.student.purchases') }}"
+                                    class="flex items-center gap-3 rounded-14px bg-primary px-4 py-3.5 text-white hover:bg-primary/95 transition">
+                                    <span class="size-11 rounded-full bg-white/10 center shrink-0">
+                                        <span class="icon-[tabler--rocket] size-6 text-[#0FC787]"></span>
+                                    </span>
+                                    <span class="flex flex-col gap-0.5 text-start">
+                                        <span class="font-bold text-14px leading-snug">الترقية إلى باقة PRO</span>
+                                        <span class="font-medium text-13px text-[#0FC787]">ترقية الآن</span>
+                                    </span>
+                                </a>
+                            </div>
+                        @endif
                     </div>
                 </div>
             @else

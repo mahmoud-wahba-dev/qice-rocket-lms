@@ -3,6 +3,9 @@
     $email = $authUser->email ?? ($instructorEmail ?? '');
     $initial = mb_substr($name, 0, 1);
     $onDark = !empty($profileOnDark);
+    $publicProfileUrl = !empty($authUser?->username)
+        ? route('landing.v1.instructor-details', ['username' => $authUser->username])
+        : route('panel.v1.instructor.settings');
 @endphp
 
 <div class="dropdown relative inline-flex [--auto-close:inside] rtl:[--placement:bottom-end]">
@@ -51,22 +54,34 @@
                 </a>
             </li>
             <li>
-                <a href="#" class="dropdown-item rounded-10px px-4 py-2.5 font-semibold text-14px text-primary hover:bg-fa transition">الملف الشخصي</a>
+                <a href="{{ $publicProfileUrl }}" target="_blank" rel="noopener"
+                    class="dropdown-item rounded-10px px-4 py-2.5 font-semibold text-14px text-primary hover:bg-fa transition">
+                    الملف الشخصي
+                </a>
             </li>
             <li>
-                <a href="#" class="dropdown-item rounded-10px px-4 py-2.5 font-semibold text-14px text-primary hover:bg-fa transition">الأرباح</a>
+                <a href="{{ route('panel.v1.instructor.finance') }}"
+                    class="dropdown-item rounded-10px px-4 py-2.5 font-semibold text-14px text-primary hover:bg-fa transition">
+                    الأرباح
+                </a>
             </li>
             <li>
-                <a href="#" class="dropdown-item rounded-10px px-4 py-2.5 font-semibold text-14px text-primary hover:bg-fa transition">الإشعارات</a>
+                <a href="{{ route('panel.v1.instructor.courses') }}"
+                    class="dropdown-item rounded-10px px-4 py-2.5 font-semibold text-14px text-primary hover:bg-fa transition">
+                    الدورات
+                </a>
             </li>
             <li>
-                <a href="#" class="dropdown-item rounded-10px px-4 py-2.5 font-semibold text-14px text-primary hover:bg-fa transition">المفضلة</a>
+                <a href="{{ route('panel.v1.instructor.settings') }}"
+                    class="dropdown-item rounded-10px px-4 py-2.5 font-semibold text-14px text-primary hover:bg-fa transition">
+                    الإعدادات
+                </a>
             </li>
             <li>
-                <a href="#" class="dropdown-item rounded-10px px-4 py-2.5 font-semibold text-14px text-primary hover:bg-fa transition">الإعدادات</a>
-            </li>
-            <li>
-                <a href="#" class="dropdown-item rounded-10px px-4 py-2.5 font-semibold text-14px text-primary hover:bg-fa transition">الدعم</a>
+                <a href="{{ route('panel.v1.instructor.support') }}"
+                    class="dropdown-item rounded-10px px-4 py-2.5 font-semibold text-14px text-primary hover:bg-fa transition">
+                    الدعم
+                </a>
             </li>
             <li>
                 <a href="/logout"

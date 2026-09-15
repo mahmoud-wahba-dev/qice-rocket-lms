@@ -8,6 +8,8 @@ export function initInstructorShell() {
         return;
     }
 
+    initDashboardSidebarCollapse(root);
+
     initDrawer({
         root,
         sidebar: '#instructor-course-sidebar',
@@ -21,6 +23,177 @@ export function initInstructorShell() {
     initQuizReviewModal(root);
     initInstructorSupport(root);
     initCreateCourseWizard(root);
+}
+
+const SIDEBAR_STORAGE_KEY = 'panel_v1_instructor_sidebar';
+
+function initDashboardSidebarCollapse(root) {
+    const sidebar = root.querySelector('#instructor-layout-toggle');
+    const backdrop = root.querySelector('#instructor-sidebar-backdrop');
+    const toggles = root.querySelectorAll('[data-instructor-sidebar-toggle]');
+    const closers = root.querySelectorAll('[data-instructor-sidebar-close]');
+
+    if (!toggles.length) {
+        return;
+    }
+
+    // Shared header is also used by organization layout — hide toggle there
+    if (!sidebar) {
+        toggles.forEach((btn) => {
+            btn.classList.add('!hidden');
+        });
+        return;
+    }
+
+    const isDesktop = () => window.matchMedia('(min-width: 1024px)').matches;
+
+    const syncToggleIcons = (collapsed) => {
+        toggles.forEach((btn) => {
+            btn.querySelector('[data-sidebar-icon="collapse"]')?.classList.toggle('hidden', collapsed);
+            btn.querySelector('[data-sidebar-icon="expand"]')?.classList.toggle('hidden', !collapsed);
+        });
+    };
+
+    const setDesktopCollapsed = (collapsed) => {
+        root.setAttribute('data-instructor-sidebar', collapsed ? 'collapsed' : 'expanded');
+        try {
+            localStorage.setItem(SIDEBAR_STORAGE_KEY, collapsed ? 'collapsed' : 'expanded');
+        } catch (e) {
+            // ignore
+        }
+
+        toggles.forEach((btn) => {
+            btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+            btn.setAttribute('aria-label', collapsed ? 'توسيع القائمة الجانبية' : 'طي القائمة الجانبية');
+        });
+        syncToggleIcons(collapsed);
+    };
+
+    const setMobileOpen = (open) => {
+        sidebar.dataset.mobileOpen = open ? 'true' : 'false';
+
+        if (backdrop) {
+            backdrop.classList.toggle('opacity-0', !open);
+            backdrop.classList.toggle('pointer-events-none', !open);
+            backdrop.setAttribute('aria-hidden', open ? 'false' : 'true');
+        }
+
+        document.body.classList.toggle('overflow-hidden', open && !isDesktop());
+
+        toggles.forEach((btn) => {
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            btn.setAttribute('aria-label', open ? 'إغلاق القائمة الجانبية' : 'فتح القائمة الجانبية');
+        });
+        // On mobile keep the "expand/menu" affordance when closed
+        syncToggleIcons(!open);
+    };
+
+    let preferred = 'expanded';
+    try {
+        preferred = localStorage.getItem(SIDEBAR_STORAGE_KEY) || 'expanded';
+    } catch (e) {
+        preferred = 'expanded';
+    }
+
+    const applyForViewport = () => {
+        if (isDesktop()) {
+            setMobileOpen(false);
+            setDesktopCollapsed(preferred === 'collapsed');
+            return;
+        }
+        // Mobile: always full labels when drawer is open; start closed
+        root.setAttribute('data-instructor-sidebar', 'expanded');
+        setMobileOpen(false);
+    };
+
+    applyForViewport();
+
+    toggles.forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (isDesktop()) {
+                preferred = root.getAttribute('data-instructor-sidebar') === 'collapsed' ? 'expanded' : 'collapsed';
+                setDesktopCollapsed(preferred === 'collapsed');
+                return;
+            }
+            setMobileOpen(sidebar.dataset.mobileOpen !== 'true');
+        });
+    });
+
+    closers.forEach((el) => {
+        el.addEventListener('click', () => {
+            if (!isDesktop()) {
+                setMobileOpen(false);
+            }
+        });
+    });
+
+    initCollapsedTooltips(root, sidebar, isDesktop);
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !isDesktop() && sidebar.dataset.mobileOpen === 'true') {
+            setMobileOpen(false);
+        }
+    });
+
+    window.addEventListener('resize', () => {
+        applyForViewport();
+    });
+}
+
+function initCollapsedTooltips(root, sidebar, isDesktop) {
+    let tip = document.getElementById('instructor-sidebar-tooltip');
+    if (!tip) {
+        tip = document.createElement('div');
+        tip.id = 'instructor-sidebar-tooltip';
+        tip.className = 'instructor-sidebar-tooltip';
+        tip.setAttribute('role', 'tooltip');
+        document.body.appendChild(tip);
+    }
+
+    const hide = () => {
+        tip.classList.remove('is-visible');
+    };
+
+    const show = (link) => {
+        if (!isDesktop() || root.getAttribute('data-instructor-sidebar') !== 'collapsed') {
+            hide();
+            return;
+        }
+        const label = link.getAttribute('data-tooltip') || link.getAttribute('aria-label') || '';
+        if (!label) {
+            hide();
+            return;
+        }
+
+        tip.textContent = label;
+        tip.classList.add('is-visible');
+
+        const rect = link.getBoundingClientRect();
+        const tipRect = tip.getBoundingClientRect();
+        const gap = 10;
+        const top = rect.top + rect.height / 2 - tipRect.height / 2;
+        // Sidebar is on inline-start (right in RTL) → tooltip toward content (inline-end / left in RTL)
+        const isRtl = document.documentElement.getAttribute('dir') === 'rtl';
+        let left;
+        if (isRtl) {
+            left = rect.left - tipRect.width - gap;
+        } else {
+            left = rect.right + gap;
+        }
+
+        tip.style.top = `${Math.max(8, top)}px`;
+        tip.style.left = `${Math.max(8, left)}px`;
+    };
+
+    sidebar.querySelectorAll('.instructor-nav-link[data-tooltip]').forEach((link) => {
+        link.addEventListener('mouseenter', () => show(link));
+        link.addEventListener('mouseleave', hide);
+        link.addEventListener('focus', () => show(link));
+        link.addEventListener('blur', hide);
+    });
+
+    window.addEventListener('scroll', hide, true);
 }
 
 function initCreateCourseWizard(root) {

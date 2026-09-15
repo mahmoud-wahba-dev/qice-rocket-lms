@@ -91,3 +91,109 @@ body:has(.panel-v1-instructor)::-webkit-scrollbar-thumb:hover {
 .panel-v1-instructor .table :where(thead, tfoot, th) {
     color: var(--color-gray, #8e8f8f) !important;
 }
+
+/* ---------- Desktop sidebar collapse (icons-only) ---------- */
+.panel-v1-instructor .instructor-shell-header,
+.panel-v1-instructor .instructor-shell-main {
+    transition: padding-inline-start 0.3s ease;
+}
+
+.panel-v1-instructor .instructor-dashboard-sidebar {
+    transition: transform 0.3s ease-out, width 0.3s ease;
+}
+
+@media (min-width: 1024px) {
+    .panel-v1-instructor .instructor-dashboard-sidebar {
+        transform: none !important;
+    }
+}
+
+@media (min-width: 1024px) {
+    .panel-v1-instructor .instructor-shell-header,
+    .panel-v1-instructor .instructor-shell-main {
+        padding-inline-start: 280px;
+    }
+
+    .panel-v1-instructor[data-instructor-sidebar="collapsed"] .instructor-shell-header,
+    .panel-v1-instructor[data-instructor-sidebar="collapsed"] .instructor-shell-main {
+        padding-inline-start: 80px;
+    }
+
+    .panel-v1-instructor .instructor-dashboard-sidebar {
+        width: 280px !important;
+        max-width: 280px !important;
+    }
+
+    .panel-v1-instructor[data-instructor-sidebar="collapsed"] .instructor-dashboard-sidebar {
+        width: 80px !important;
+        max-width: 80px !important;
+    }
+
+    .panel-v1-instructor[data-instructor-sidebar="collapsed"] .instructor-nav-label,
+    .panel-v1-instructor[data-instructor-sidebar="collapsed"] [data-sidebar-section] {
+        max-width: 0;
+        opacity: 0;
+        margin: 0;
+        padding-inline: 0;
+        pointer-events: none;
+    }
+
+    .panel-v1-instructor[data-instructor-sidebar="collapsed"] [data-sidebar-section] {
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        margin: 0;
+        overflow: hidden;
+    }
+
+    .panel-v1-instructor[data-instructor-sidebar="collapsed"] .instructor-nav-link {
+        justify-content: center;
+        gap: 0;
+        padding-inline: 0.5rem;
+    }
+
+    /* CSS ::after tooltips kept as fallback; JS fixed tooltip preferred (avoids overflow clip) */
+    .panel-v1-instructor[data-instructor-sidebar="collapsed"] .instructor-nav-link[data-tooltip]::after,
+    .panel-v1-instructor[data-instructor-sidebar="collapsed"] .instructor-nav-link[data-tooltip]::before {
+        content: none;
+        display: none;
+    }
+
+    .panel-v1-instructor[data-instructor-sidebar="collapsed"] .instructor-sidebar-logo {
+        width: 40px;
+        height: auto;
+    }
+
+    .panel-v1-instructor[data-instructor-sidebar="collapsed"] .instructor-sidebar-scroll {
+        padding-inline: 0.5rem;
+    }
+
+    .panel-v1-instructor[data-instructor-sidebar="collapsed"] .instructor-sidebar-brand {
+        padding-inline: 0.5rem;
+    }
+}
+
+/* Floating tooltip for collapsed sidebar icons */
+.instructor-sidebar-tooltip {
+    position: fixed;
+    z-index: 2147483000;
+    padding: 0.4rem 0.7rem;
+    border-radius: 0.5rem;
+    background: #0a3833;
+    color: #fff;
+    font-family: Cairo, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    box-shadow: 0 8px 20px rgba(15, 76, 69, 0.25);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(2px) scale(0.98);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.instructor-sidebar-tooltip.is-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}

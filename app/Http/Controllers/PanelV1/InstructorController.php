@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\PanelV1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Notification;
+use App\Models\NotificationStatus;
 use App\Models\Quiz;
 use App\Models\Sale;
 use App\Models\Session;
@@ -33,8 +35,24 @@ class InstructorController extends Controller
             return $user;
         }
 
+        $courseCards = $this->courseCards($user);
+
         return $this->render($request, 'panel_v1.instructor.pages.courses', 'إدارة الدورات', [
-            'courseCards' => $this->courseCards($user),
+            'courseCards' => $courseCards,
+            'liveCards' => array_values(array_filter(
+                $courseCards,
+                fn ($card) => ($card['type_key'] ?? '') === Webinar::$webinar
+                    && ($card['status'] ?? '') !== Webinar::$isDraft
+            )),
+            'recordedCards' => array_values(array_filter(
+                $courseCards,
+                fn ($card) => in_array($card['type_key'] ?? '', [Webinar::$course, Webinar::$textLesson], true)
+                    && ($card['status'] ?? '') !== Webinar::$isDraft
+            )),
+            'draftCards' => array_values(array_filter(
+                $courseCards,
+                fn ($card) => ($card['status'] ?? '') === Webinar::$isDraft
+            )),
         ]);
     }
 
@@ -1356,40 +1374,86 @@ class InstructorController extends Controller
 
     public function finance(Request $request)
     {
-        $guardUser = $request->user();
+        $guardUser = $this->resolveInstructor($request);
 
-        $salesRows = [];
-        if ($guardUser) {
-            $salesRows = \App\Models\Sale::with(['buyer', 'webinar'])
-                ->where('seller_id', $guardUser->id)
-                ->whereNull('refund_at')
-                ->orderBy('id', 'desc')
-                ->limit(20)
-                ->get()
-                ->map(function ($sale) {
-                    $isCourse = $sale->type === 'webinar';
-                    return [
-                        'name' => $sale->buyer->full_name ?? '',
-                        'email' => $sale->buyer->email ?? '',
-                        'service' => $sale->webinar->title ?? $sale->type,
-                        'service_id' => $sale->id,
-                        'original_price' => handlePrice($sale->amount),
-                        'discount' => handlePrice($sale->discount),
-                        'total' => handlePrice($sale->total_amount),
-                        'net' => handlePrice($sale->total_amount - ($sale->commission ?? 0)),
-                        'type' => $isCourse ? 'course' : 'meeting',
-                        'type_label' => $isCourse ? 'دورة' : 'استشارة',
-                        'date' => date('Y/m/d', (int) $sale->created_at),
-                        'time' => date('H:i', (int) $sale->created_at),
-                    ];
-                })->all();
+        if ($guardUser instanceof \Illuminate\Http\RedirectResponse) {
+            return $guardUser;
         }
+
+        $sales = \App\Models\Sale::with(['buyer', 'webinar'])
+            ->where('seller_id', $guardUser->id)
+            ->whereNull('refund_at')
+            ->orderBy('id', 'desc')
+            ->limit(40)
+            ->get();
+
+        $salesRows = $sales->map(function ($sale) {
+            $isCourse = $sale->type === 'webinar';
+            return [
+                'name' => $sale->buyer->full_name ?? '—',
+                'email' => $sale->buyer->email ?? '',
+                'service' => $sale->webinar->title ?? $sale->type,
+                'service_id' => $sale->webinar_id ?: $sale->id,
+                'original_price' => handlePrice($sale->amount),
+                'discount' => handlePrice($sale->discount ?? 0),
+                'total' => handlePrice($sale->total_amount),
+                'net' => handlePrice(($sale->total_amount ?? 0) - ($sale->commission ?? 0)),
+                'type' => $isCourse ? 'course' : 'meeting',
+                'type_label' => $isCourse ? 'دورة' : 'استشارة',
+                'date' => date('Y/m/d', (int) $sale->created_at),
+                'time' => date('H:i', (int) $sale->created_at),
+            ];
+        })->all();
+
+        $totalSales = (float) $sales->sum('total_amount');
+        $totalDiscount = (float) $sales->sum('discount');
+        $totalCommission = (float) $sales->sum('commission');
+        $totalNet = $totalSales - $totalCommission;
+
+        try {
+            $available = (float) $guardUser->getPayout();
+            $income = (float) $guardUser->getIncome();
+        } catch (\Throwable $e) {
+            $available = $totalNet;
+            $income = $totalNet;
+        }
+
+        $walletRows = \App\Models\Accounting::where('user_id', $guardUser->id)
+            ->where('type_account', \App\Models\Accounting::$income)
+            ->where('system', false)
+            ->orderBy('id', 'desc')
+            ->limit(30)
+            ->get()
+            ->map(function ($row) {
+                $isCredit = $row->type === \App\Models\Accounting::$addiction;
+                return [
+                    'title' => $row->description ?: ($isCredit ? 'إضافة رصيد' : 'خصم'),
+                    'amount' => handlePrice($row->amount),
+                    'type' => $isCredit ? 'credit' : 'debit',
+                    'type_label' => $isCredit ? 'دخل' : 'خصم',
+                    'date' => date('Y/m/d', (int) $row->created_at),
+                    'time' => date('H:i', (int) $row->created_at),
+                ];
+            })->all();
+
+        $summaryCards = [
+            ['label' => 'إجمالي المبيعات', 'value' => handlePrice($totalSales), 'icon' => 'tabler--shopping-cart'],
+            ['label' => 'صافي الدخل', 'value' => handlePrice($totalNet), 'icon' => 'tabler--coin'],
+            ['label' => 'الرصيد المتاح', 'value' => handlePrice($available), 'icon' => 'tabler--wallet'],
+            ['label' => 'إجمالي الدخل المحاسبي', 'value' => handlePrice($income), 'icon' => 'tabler--chart-bar'],
+            ['label' => 'إجمالي الخصومات', 'value' => handlePrice($totalDiscount), 'icon' => 'tabler--discount'],
+            ['label' => 'عمولة المنصة', 'value' => handlePrice($totalCommission), 'icon' => 'tabler--percentage'],
+        ];
 
         return $this->render(
             $request,
             'panel_v1.instructor.pages.finance',
             'المالية والأرباح',
-            ['salesRows' => $salesRows]
+            [
+                'salesRows' => $salesRows,
+                'walletRows' => $walletRows,
+                'summaryCards' => $summaryCards,
+            ]
         );
     }
 
@@ -1615,38 +1679,49 @@ class InstructorController extends Controller
 
     public function support(Request $request)
     {
-        $user = $request->user();
-        if (!$user || !$user->isTeacher()) {
-            return redirect('/login');
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
         }
-        // Platform tickets created by this instructor
-        $myTickets = \App\Models\Support::where('user_id', $user->id)
+
+        $myTickets = \App\Models\Support::with(['department'])
+            ->where('user_id', $user->id)
             ->whereNotNull('department_id')
-            ->orderBy('id','desc')->limit(20)->get()
-            ->map(fn($t)=>[
-                'id'=>'#'.$t->id,
-                'raw_id'=>$t->id,
-                'subject'=>$t->title,
-                'status'=>$t->status==='open'?'مفتوحة':($t->status==='close'?'مغلقة':'تم الرد'),
-                'date'=>date('Y/m/d',(int)$t->created_at),
+            ->orderBy('id', 'desc')
+            ->limit(30)
+            ->get()
+            ->map(fn ($t) => [
+                'id' => '#' . $t->id,
+                'raw_id' => $t->id,
+                'subject' => $t->title,
+                'department' => $t->department->title ?? '—',
+                'status' => $t->status === 'open' ? 'مفتوحة' : ($t->status === 'close' ? 'مغلقة' : 'تم الرد'),
+                'status_key' => $t->status,
+                'date' => date('Y/m/d', (int) $t->created_at),
             ])->all();
 
-        // Course support: tickets from students on instructor's webinars
-        $teacherWebinarIds = \App\Models\Webinar::where('teacher_id',$user->id)->orWhere('creator_id',$user->id)->pluck('id')->all();
+        $teacherWebinarIds = \App\Models\Webinar::where('teacher_id', $user->id)
+            ->orWhere('creator_id', $user->id)
+            ->pluck('id')
+            ->all();
+
         $courseRows = [];
-        if(!empty($teacherWebinarIds)){
-            $courseSupports = \App\Models\Support::with(['user','webinar'])
-                ->whereIn('webinar_id',$teacherWebinarIds)
+        if (!empty($teacherWebinarIds)) {
+            $courseRows = \App\Models\Support::with(['user', 'webinar'])
+                ->whereIn('webinar_id', $teacherWebinarIds)
                 ->whereNull('department_id')
-                ->orderBy('id','desc')->limit(20)->get();
-            $courseRows = $courseSupports->map(fn($s)=>[
-                'student'=>$s->user->full_name ?? '',
-                'course'=>$s->webinar->title ?? '',
-                'id'=>$s->id,
-                'title'=>$s->title,
-                'status'=>$s->status,
-                'date'=>date('Y/m/d',(int)$s->created_at),
-            ])->all();
+                ->orderBy('id', 'desc')
+                ->limit(30)
+                ->get()
+                ->map(fn ($s) => [
+                    'student' => $s->user->full_name ?? '',
+                    'course' => $s->webinar->title ?? '',
+                    'id' => $s->id,
+                    'title' => $s->title,
+                    'status' => $s->status === 'open' ? 'مفتوحة' : ($s->status === 'close' ? 'مغلقة' : 'تم الرد'),
+                    'date' => date('Y/m/d', (int) $s->created_at),
+                ])->all();
         }
 
         return $this->render(
@@ -1656,12 +1731,114 @@ class InstructorController extends Controller
             [
                 'supportTickets' => $myTickets,
                 'courseSupportRows' => $courseRows,
+                'departments' => \App\Models\SupportDepartment::orderBy('id')->get(),
                 'supportStats' => [
-                    ['label'=>'إجمالي التذاكر','value'=>count($myTickets)+count($courseRows)],
-                    ['label'=>'قيد الانتظار','value'=>collect($myTickets)->where('status','مفتوحة')->count()],
+                    ['label' => 'إجمالي التذاكر', 'value' => count($myTickets) + count($courseRows)],
+                    ['label' => 'قيد الانتظار', 'value' => collect($myTickets)->where('status_key', 'open')->count()],
                 ],
             ]
         );
+    }
+
+    public function storeSupport(Request $request)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $request->validate([
+            'title' => 'required|string|min:2|max:255',
+            'department_id' => 'required|exists:support_departments,id',
+            'message' => 'required|string|min:2|max:5000',
+        ]);
+
+        $support = \App\Models\Support::create([
+            'user_id' => $user->id,
+            'department_id' => $request->input('department_id'),
+            'webinar_id' => null,
+            'title' => $request->input('title'),
+            'status' => 'open',
+            'created_at' => time(),
+            'updated_at' => time(),
+        ]);
+
+        \App\Models\SupportConversation::create([
+            'support_id' => $support->id,
+            'sender_id' => $user->id,
+            'message' => $request->input('message'),
+            'attach' => null,
+            'created_at' => time(),
+        ]);
+
+        return redirect()
+            ->route('panel.v1.instructor.support')
+            ->with('toast', [
+                'title' => 'تم',
+                'msg' => 'تم إرسال تذكرة الدعم بنجاح',
+                'type' => 'success',
+            ]);
+    }
+
+    public function notifications(Request $request)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $notifications = $this->instructorNotificationsQuery($user)
+            ->orderBy('notifications.id', 'desc')
+            ->limit(40)
+            ->get();
+
+        $seenIds = NotificationStatus::where('user_id', $user->id)
+            ->pluck('notification_id')
+            ->flip();
+
+        $notifications->each(function ($notification) use ($seenIds) {
+            $notification->is_seen = isset($seenIds[$notification->id]);
+        });
+
+        return $this->render($request, 'panel_v1.instructor.pages.notifications', 'الإشعارات', [
+            'notifications' => $notifications,
+            'hasNotifications' => $notifications->isNotEmpty(),
+        ]);
+    }
+
+    public function markAllNotificationsRead(Request $request)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $ids = $this->instructorNotificationsQuery($user)->pluck('notifications.id');
+
+        $existing = NotificationStatus::where('user_id', $user->id)
+            ->whereIn('notification_id', $ids)
+            ->pluck('notification_id')
+            ->all();
+
+        $now = time();
+        foreach ($ids->diff($existing) as $notificationId) {
+            NotificationStatus::create([
+                'user_id' => $user->id,
+                'notification_id' => $notificationId,
+                'seen_at' => $now,
+            ]);
+        }
+
+        return redirect()
+            ->back()
+            ->with('toast', [
+                'title' => 'تم',
+                'msg' => 'تم وضع علامة مقروء على جميع الإشعارات',
+                'type' => 'success',
+            ]);
     }
 
     public function settings(Request $request)
@@ -1671,6 +1848,14 @@ class InstructorController extends Controller
         if ($user instanceof \Illuminate\Http\RedirectResponse) {
             return $user;
         }
+
+        $user->load([
+            'selectedBank.bank.specifications',
+            'selectedBank.specifications',
+            'userMetas',
+            'occupations',
+            'profileAttachments',
+        ]);
 
         return $this->render(
             $request,
@@ -1698,6 +1883,10 @@ class InstructorController extends Controller
             'address' => 'nullable|string|max:255',
             'gender' => 'nullable|in:man,woman',
             'meeting_type' => 'nullable|in:in_person,online,all',
+            'level_of_training' => 'nullable|array',
+            'level_of_training.*' => 'in:beginner,middle,expert',
+            'birthday' => 'nullable|date',
+            'socials' => 'nullable|array',
         ]);
 
         $this->saveProfileExtra($request, $user);
@@ -1970,7 +2159,7 @@ class InstructorController extends Controller
 
     private function teacherWebinars($user)
     {
-        return Webinar::with(['category'])
+        return Webinar::with(['category', 'sessions', 'files', 'textLessons'])
             ->where('teacher_id', $user->id)
             ->orderBy('id', 'desc')
             ->get();
@@ -2063,14 +2252,39 @@ class InstructorController extends Controller
     private function courseCards($user): array
     {
         return $this->teacherWebinars($user)->map(function ($webinar) {
+            $typeKey = $webinar->type ?: Webinar::$course;
+            $typeLabels = [
+                Webinar::$webinar => 'محاضرة مباشرة',
+                Webinar::$course => 'دورة مسجلة',
+                Webinar::$textLesson => 'دورة نصية',
+            ];
+
+            $statusLabel = match ($webinar->status) {
+                Webinar::$isDraft => 'مسودة',
+                Webinar::$pending => 'قيد المراجعة',
+                Webinar::$inactive => 'غير نشطة',
+                default => null,
+            };
+
+            $subtitle = $webinar->category?->title ?? '';
+            if (!empty($statusLabel)) {
+                $subtitle = trim($subtitle . ($subtitle !== '' ? ' · ' : '') . $statusLabel);
+            }
+
             return [
-                'title' => $webinar->title,
-                'subtitle' => $webinar->category->title ?? '',
+                'id' => $webinar->id,
+                'title' => $webinar->title ?: 'دورة بدون عنوان',
+                'subtitle' => $subtitle,
                 'slug' => $webinar->slug,
-                'type' => 'دورة مسجلة',
+                'thumbnail' => $webinar->thumbnail,
+                'type_key' => $typeKey,
+                'status' => $webinar->status,
+                'type' => $typeLabels[$typeKey] ?? 'دورة',
                 'activity' => '—',
                 'duration' => !empty($webinar->duration) ? $webinar->duration . ' دقيقة' : '—',
-                'lectures' => $webinar->sessions->count() + $webinar->files->count(),
+                'lectures' => $webinar->sessions->count()
+                    + $webinar->files->count()
+                    + $webinar->textLessons->count(),
                 'assignments' => WebinarAssignment::where('webinar_id', $webinar->id)->count(),
                 'progress' => $this->webinarFinishedProgress($webinar),
             ];
@@ -2135,6 +2349,32 @@ class InstructorController extends Controller
         } catch (\Throwable $e) {
             return 0;
         }
+    }
+
+    private function instructorNotificationsQuery($user)
+    {
+        $query = Notification::query()->where(function ($query) use ($user) {
+            $query->where('notifications.user_id', $user->id)
+                ->where('notifications.type', 'single');
+        })->orWhere(function ($query) {
+            $query->whereNull('notifications.user_id')
+                ->whereNull('notifications.group_id')
+                ->where('notifications.type', 'all_users');
+        })->orWhere(function ($query) {
+            $query->whereNull('notifications.user_id')
+                ->whereNull('notifications.group_id')
+                ->where('notifications.type', 'instructors');
+        });
+
+        $userGroup = $user->userGroup()->first();
+        if (!empty($userGroup)) {
+            $query->orWhere(function ($query) use ($userGroup) {
+                $query->where('notifications.group_id', $userGroup->group_id)
+                    ->where('notifications.type', 'group');
+            });
+        }
+
+        return $query;
     }
 
     /**
