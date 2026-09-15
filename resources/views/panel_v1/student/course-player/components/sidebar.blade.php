@@ -82,20 +82,27 @@
                             aria-hidden="true"></span>
 
                         @forelse ($chapter['items'] ?? [] as $item)
-                            @php $isActive = !empty($item['active']); @endphp
-                            <a href="{{ route('panel.v1.student.course.watch', ['slug' => $courseSlug]) }}"
-                                class="relative flex items-center gap-3 py-2.5 font-medium text-14px text-black hover:text-primary transition">
+                            @php
+                                $isActive = !empty($item['active']);
+                                $itemDone = !empty($item['completed']);
+                            @endphp
+                            <a href="{{ $item['url'] ?? route('panel.v1.student.course.watch', ['slug' => $courseSlug]) }}"
+                                class="relative flex items-center gap-3 py-2.5 font-medium text-14px transition
+                                    {{ $isActive ? 'text-primary font-bold' : ($itemDone ? 'text-primary/80' : 'text-black hover:text-primary') }}">
                                 <span
                                     class="absolute -start-[1.4rem] top-1/2 -translate-y-1/2 size-3 rounded-full border-2 border-[#FAF8F4] shrink-0
-                                        {{ $isActive ? 'bg-primary' : 'bg-d9' }}"
+                                        {{ $itemDone ? 'bg-[#0FC787]' : ($isActive ? 'bg-primary' : 'bg-d9') }}"
                                     aria-hidden="true"></span>
 
                                 @if (($item['type'] ?? '') === 'video')
-                                    <span class="icon-[tabler--player-play] size-5 shrink-0 text-black"></span>
+                                    <span class="icon-[tabler--player-play] size-5 shrink-0 {{ ($isActive || $itemDone) ? 'text-primary' : 'text-black' }}"></span>
                                 @else
-                                    <span class="icon-[tabler--file-text] size-5 shrink-0 text-black"></span>
+                                    <span class="icon-[tabler--file-text] size-5 shrink-0 {{ ($isActive || $itemDone) ? 'text-primary' : 'text-black' }}"></span>
                                 @endif
-                                <span class="leading-snug">{{ $item['title'] }}</span>
+                                <span class="leading-snug flex-1">{{ $item['title'] }}</span>
+                                @if ($itemDone)
+                                    <span class="icon-[tabler--circle-check-filled] size-4 text-[#0FC787] shrink-0" aria-label="مكتمل"></span>
+                                @endif
                             </a>
                         @empty
                             <p class="font-medium text-13px text-gray py-2">لا يوجد محتوى بعد</p>

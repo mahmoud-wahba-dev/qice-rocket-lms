@@ -65,6 +65,9 @@ class PanelV1StudentDemoSeeder extends Seeder
         $session = $this->ensureLiveSession($webinar, $chapter, $teacher, $now, $locale);
         [$pendingAssignment, $submittedAssignment] = $this->ensureAssignments($webinar, $chapter, $teacher, $now, $locale);
         $quiz = $this->ensureQuiz($webinar, $chapter, $teacher, $now, $locale);
+        // Curriculum rebuilds all files (YouTube / upload / external / PDF) — run after ensureFile
+        $this->ensureWatchCurriculum($webinar, $teacher, $now, $locale);
+        $this->ensureThirdAssignment($webinar, $chapter, $teacher, $now, $locale);
 
         $webinar2 = $this->ensureSecondWebinar($teacher, $now, $locale);
 
@@ -80,6 +83,7 @@ class PanelV1StudentDemoSeeder extends Seeder
                 $quiz,
                 $now
             );
+            $this->seedCourseProgress($student, $webinar, $now);
         }
 
         if ($this->command) {
@@ -268,10 +272,20 @@ class PanelV1StudentDemoSeeder extends Seeder
         WebinarTranslation::updateOrCreate(
             ['webinar_id' => $webinar->id, 'locale' => $locale],
             [
-                'title' => 'دورة تجريبية للوحة المتدرب',
-                'summary' => 'بيانات تجريبية لاختبار صفحات panel_v1 للطالب',
+                'title' => 'قياس النجاح والجودة',
+                'summary' => 'الادارة والتنفيذ — دورة تجريبية كاملة للمتدرب',
                 'description' => '<p>محتوى تجريبي يغطي المشاهدة والتكليفات والاختبارات والمنتدى.</p>',
                 'seo_description' => 'دورة تجريبية panel_v1',
+            ]
+        );
+
+        WebinarTranslation::updateOrCreate(
+            ['webinar_id' => $webinar->id, 'locale' => 'en'],
+            [
+                'title' => 'قياس النجاح والجودة',
+                'summary' => 'Management & Implementation — student demo course',
+                'description' => '<p>Demo course for panel_v1 student watch page.</p>',
+                'seo_description' => 'panel_v1 demo course',
             ]
         );
 
@@ -337,11 +351,11 @@ class PanelV1StudentDemoSeeder extends Seeder
             [
                 'webinar_id' => $webinar->id,
                 'chapter_id' => $chapter->id,
-                'file' => '/store/1/default.pdf',
+                'file' => '/store/panel_v1/demo-handout.pdf',
             ],
             [
                 'creator_id' => $teacher->id,
-                'volume' => '1.2MB',
+                'volume' => '1.4MB',
                 'file_type' => 'pdf',
                 'accessibility' => 'paid',
                 'storage' => 'upload',
@@ -888,6 +902,283 @@ class PanelV1StudentDemoSeeder extends Seeder
                 'resolved' => false,
                 'created_at' => $now,
             ]
+        );
+    }
+
+    /**
+     * Rich curriculum: YouTube / local upload / external mp4 / PDF attachments across 8 lectures.
+     */
+    private function ensureWatchCurriculum(Webinar $webinar, User $teacher, int $now, string $locale): void
+    {
+        // Clean previous demo files so storage types / paths stay accurate for testing
+        $oldFileIds = File::where('webinar_id', $webinar->id)->pluck('id');
+        if ($oldFileIds->isNotEmpty()) {
+            \App\Models\CourseLearning::whereIn('file_id', $oldFileIds)->delete();
+            \App\Models\WebinarChapterItem::where('type', \App\Models\WebinarChapterItem::$chapterFile)
+                ->whereIn('item_id', $oldFileIds)
+                ->delete();
+            FileTranslation::whereIn('file_id', $oldFileIds)->delete();
+            File::whereIn('id', $oldFileIds)->delete();
+        }
+
+        $pdfTheory = '/store/panel_v1/demo-theory.pdf';
+        $pdfHandout = '/store/panel_v1/demo-handout.pdf';
+        $mp4Local = '/store/panel_v1/demo-lecture.mp4';
+        $mp4External = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
+
+        $lectures = [
+            1 => [
+                'title' => 'المحاضرة الأولى',
+                'subtitle' => 'هنا عنوان المحاضرة',
+                'items' => [
+                    ['kind' => 'youtube', 'title' => 'فيديو تعريفي', 'src' => 'https://www.youtube.com/watch?v=aqz-KE-bpKQ'],
+                    ['kind' => 'pdf', 'title' => 'شرح نظري + أمثلة تطبيقية', 'src' => $pdfTheory],
+                ],
+            ],
+            2 => [
+                'title' => 'المحاضرة الثانية',
+                'subtitle' => 'مؤشرات الأداء والجودة',
+                'items' => [
+                    ['kind' => 'upload', 'title' => 'فيديو مرفوع على السيرفر', 'src' => $mp4Local],
+                    ['kind' => 'pdf', 'title' => 'ملف مرفق — مؤشرات الجودة', 'src' => $pdfHandout],
+                ],
+            ],
+            3 => [
+                'title' => 'المحاضرة الثالثة',
+                'subtitle' => 'أدوات القياس',
+                'items' => [
+                    ['kind' => 'youtube', 'title' => 'فيديو أدوات القياس (يوتيوب)', 'src' => 'https://www.youtube.com/watch?v=ScMzIvxBSi4'],
+                    ['kind' => 'pdf', 'title' => 'دليل أدوات القياس PDF', 'src' => $pdfHandout],
+                ],
+            ],
+            4 => [
+                'title' => 'المحاضرة الرابعة',
+                'subtitle' => 'دراسات حالة',
+                'items' => [
+                    ['kind' => 'external', 'title' => 'فيديو خارجي (رابط مباشر)', 'src' => $mp4External],
+                    ['kind' => 'pdf', 'title' => 'ورقة عمل دراسة حالة', 'src' => $pdfTheory],
+                ],
+            ],
+            5 => [
+                'title' => 'المحاضرة الخامسة',
+                'subtitle' => 'خطط التحسين',
+                'items' => [
+                    ['kind' => 'upload', 'title' => 'فيديو خطط التحسين (رفع محلي)', 'src' => $mp4Local],
+                ],
+            ],
+            6 => [
+                'title' => 'المحاضرة السادسة',
+                'subtitle' => 'الخلاصة والتقييم',
+                'items' => [
+                    ['kind' => 'youtube', 'title' => 'فيديو ختامي', 'src' => 'https://www.youtube.com/watch?v=LXb3EKWsInQ'],
+                    ['kind' => 'pdf', 'title' => 'ملخص الدورة PDF', 'src' => $pdfTheory],
+                ],
+            ],
+            7 => [
+                'title' => 'المحاضرة السابعة',
+                'subtitle' => 'ورشة تطبيقية',
+                'items' => [
+                    ['kind' => 'upload', 'title' => 'تسجيل الورشة التطبيقية', 'src' => $mp4Local],
+                    ['kind' => 'pdf', 'title' => 'تمارين الورشة', 'src' => $pdfHandout],
+                ],
+            ],
+            8 => [
+                'title' => 'المحاضرة الثامنة',
+                'subtitle' => 'مراجعة نهائية',
+                'items' => [
+                    ['kind' => 'external', 'title' => 'مراجعة بالفيديو (خارجي)', 'src' => $mp4External],
+                    ['kind' => 'pdf', 'title' => 'أسئلة المراجعة PDF', 'src' => $pdfHandout],
+                ],
+            ],
+        ];
+
+        foreach ($lectures as $order => $lecture) {
+            $chapter = WebinarChapter::updateOrCreate(
+                [
+                    'webinar_id' => $webinar->id,
+                    'order' => $order,
+                ],
+                [
+                    'user_id' => $teacher->id,
+                    'status' => WebinarChapter::$chapterActive,
+                    'check_all_contents_pass' => false,
+                    'created_at' => $now,
+                ]
+            );
+
+            foreach ([$locale, 'en'] as $loc) {
+                WebinarChapterTranslation::updateOrCreate(
+                    ['webinar_chapter_id' => $chapter->id, 'locale' => $loc],
+                    ['title' => $lecture['title']]
+                );
+            }
+
+            foreach ($lecture['items'] as $itemIndex => $item) {
+                $itemOrder = $itemIndex + 1;
+                $meta = $this->fileMetaFromKind($item['kind'], $item['src']);
+
+                $file = File::updateOrCreate(
+                    [
+                        'webinar_id' => $webinar->id,
+                        'chapter_id' => $chapter->id,
+                        'order' => $itemOrder,
+                        'file_type' => $meta['file_type'],
+                    ],
+                    [
+                        'creator_id' => $teacher->id,
+                        'file' => $meta['file'],
+                        'volume' => $meta['volume'],
+                        'accessibility' => 'paid',
+                        'storage' => $meta['storage'],
+                        'downloadable' => $meta['downloadable'],
+                        'check_previous_parts' => false,
+                        'online_viewer' => $meta['online_viewer'],
+                        'status' => File::$Active,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]
+                );
+
+                foreach ([$locale, 'en'] as $loc) {
+                    FileTranslation::updateOrCreate(
+                        ['file_id' => $file->id, 'locale' => $loc],
+                        [
+                            'title' => $item['title'],
+                            'description' => $lecture['subtitle'],
+                        ]
+                    );
+                }
+
+                WebinarChapterItem::makeItem($teacher->id, $chapter->id, $file->id, WebinarChapterItem::$chapterFile);
+            }
+        }
+
+        $webinar->type = Webinar::$course;
+        $webinar->duration = 180;
+        $webinar->updated_at = $now;
+        $webinar->save();
+    }
+
+    /**
+     * @return array{storage:string,file_type:string,file:string,volume:string,downloadable:bool,online_viewer:bool}
+     */
+    private function fileMetaFromKind(string $kind, string $src): array
+    {
+        return match ($kind) {
+            'youtube' => [
+                'storage' => 'youtube',
+                'file_type' => 'video',
+                'file' => $src,
+                'volume' => '0',
+                'downloadable' => false,
+                'online_viewer' => false,
+            ],
+            'upload' => [
+                'storage' => 'upload',
+                'file_type' => 'video',
+                'file' => $src,
+                'volume' => '9.1MB',
+                'downloadable' => false,
+                'online_viewer' => false,
+            ],
+            'external' => [
+                'storage' => 'external_link',
+                'file_type' => 'video',
+                'file' => $src,
+                'volume' => '0',
+                'downloadable' => false,
+                'online_viewer' => false,
+            ],
+            default => [
+                'storage' => 'upload',
+                'file_type' => 'pdf',
+                'file' => $src,
+                'volume' => '1.4MB',
+                'downloadable' => true,
+                'online_viewer' => true,
+            ],
+        };
+    }
+
+    private function seedCourseProgress(User $student, Webinar $webinar, int $now): void
+    {
+        $files = File::where('webinar_id', $webinar->id)
+            ->where('status', File::$Active)
+            ->orderBy('chapter_id')
+            ->orderBy('order')
+            ->get();
+
+        \App\Models\CourseLearning::where('user_id', $student->id)
+            ->where(function ($q) use ($files, $webinar) {
+                $q->whereIn('file_id', $files->pluck('id'))
+                    ->orWhereIn('session_id', Session::where('webinar_id', $webinar->id)->pluck('id'));
+            })
+            ->delete();
+
+        // Target ~46% overall progress (files + sessions + assignments + quizzes)
+        $markCount = max(1, (int) ceil($files->count() * 0.55));
+        foreach ($files->take($markCount) as $file) {
+            \App\Models\CourseLearning::updateOrCreate(
+                [
+                    'user_id' => $student->id,
+                    'file_id' => $file->id,
+                ],
+                [
+                    'text_lesson_id' => null,
+                    'session_id' => null,
+                    'created_at' => $now - 100,
+                ]
+            );
+        }
+
+        $sessions = Session::where('webinar_id', $webinar->id)->orderBy('id')->get();
+        foreach ($sessions->take(2) as $session) {
+            \App\Models\CourseLearning::updateOrCreate(
+                [
+                    'user_id' => $student->id,
+                    'session_id' => $session->id,
+                ],
+                [
+                    'file_id' => null,
+                    'text_lesson_id' => null,
+                    'created_at' => $now - 90,
+                ]
+            );
+        }
+
+        \App\Models\TimeSpentOnCourse::updateOrCreate(
+            [
+                'user_id' => $student->id,
+                'course_id' => $webinar->id,
+                'page' => 'learning_page',
+            ],
+            [
+                'entry_time' => $now - 7200,
+                'exit_time' => $now - 100,
+                'seconds_spent' => 5400,
+            ]
+        );
+    }
+
+    private function ensureThirdAssignment(
+        Webinar $webinar,
+        WebinarChapter $chapter,
+        User $teacher,
+        int $now,
+        string $locale
+    ): void {
+        $this->findOrCreateAssignmentByTitle(
+            $webinar,
+            $chapter,
+            $teacher,
+            $locale,
+            'تكليف تحليل مؤشرات الجودة',
+            'حلّل مؤشرات الجودة الثلاثة المذكورة في المحاضرة الثانية.',
+            40,
+            20,
+            21,
+            0,
+            $now - 50
         );
     }
 }

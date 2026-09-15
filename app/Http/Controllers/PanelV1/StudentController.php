@@ -62,7 +62,14 @@ class StudentController extends Controller
                 }
 
                 try {
-                    $sessionsCount = (int) $webinar->sessions->count();
+                    // Lectures = video files + live sessions (recorded + live content)
+                    $videoFiles = (int) \App\Models\File::where('webinar_id', $webinar->id)
+                        ->where(function ($q) {
+                            $q->where('file_type', 'video')
+                                ->orWhereIn('storage', ['youtube', 'vimeo']);
+                        })
+                        ->count();
+                    $sessionsCount = $videoFiles + (int) $webinar->sessions()->count();
                 } catch (\Throwable $e) {
                     $sessionsCount = 0;
                 }
@@ -83,7 +90,10 @@ class StudentController extends Controller
                 }
 
                 try {
-                    $activityMinutes = (float) $webinar->getTimeSpentOnCourse('min');
+                    $activitySeconds = (int) \App\Models\TimeSpentOnCourse::where('course_id', $webinar->id)
+                        ->where('user_id', $user->id)
+                        ->sum('seconds_spent');
+                    $activityMinutes = $activitySeconds > 0 ? ($activitySeconds / 60) : 0;
                 } catch (\Throwable $e) {
                     $activityMinutes = 0;
                 }
@@ -97,8 +107,10 @@ class StudentController extends Controller
                 }
 
                 $thumbnail = $webinar->thumbnail;
-                $title = $webinar->title;
-                $category = $webinar->category->title ?? '';
+                $title = $webinar->translate('ar')?->title
+                    ?: ($webinar->translate('en')?->title ?: $webinar->title);
+                $category = $webinar->translate('ar')?->summary
+                    ?: ($webinar->category->title ?? '');
                 $slug = $webinar->slug;
                 $webinarId = $webinar->id;
             }
@@ -135,9 +147,22 @@ class StudentController extends Controller
             ];
         });
 
+        $learningSeconds = 0;
+        try {
+            $learningSeconds = (int) \App\Models\TimeSpentOnCourse::where('user_id', $user->id)
+                ->when(!empty($webinarIds), function ($q) use ($webinarIds) {
+                    $q->whereIn('course_id', $webinarIds);
+                })
+                ->sum('seconds_spent');
+        } catch (\Throwable $e) {
+            $learningSeconds = 0;
+        }
+
         $stats = [
-            'activeCourses' => $enrolledSales->count(),
+            // Unique enrolled courses for this student (not duplicate sales)
+            'activeCourses' => count($webinarIds),
             'certificates' => Certificate::where('student_id', $user->id)->count(),
+            // All assignment submissions / histories owned by this student
             'assignments' => WebinarAssignmentHistory::where('student_id', $user->id)->count(),
             'upcomingSessions' => !empty($webinarIds)
                 ? Session::whereIn('webinar_id', $webinarIds)
@@ -145,8 +170,8 @@ class StudentController extends Controller
                     ->where('date', '>=', time() - 3600)
                     ->count()
                 : 0,
-            // Learning hours are not tracked per-user by the core; kept as 0 until a tracker exists.
-            'learningHours' => 0,
+            // Real hours from time_spent_on_courses for this student
+            'learningHours' => (int) floor($learningSeconds / 3600),
         ];
 
         $arabicMonths = [

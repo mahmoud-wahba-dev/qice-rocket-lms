@@ -20,8 +20,15 @@ class CoursePlayerController extends Controller
         [$user, $webinar] = $resolved;
 
         $player = $this->buildPlayerData($webinar, $user, $request);
-        // real lesson: first session or requested item
-        $lesson = $player['currentLesson'] ?? ['title' => $webinar->title];
+
+        // Visiting an item marks it complete (same CourseLearning store as old learning page)
+        if (!empty($player['currentLesson']['key'])) {
+            $this->markLessonVisited($user, $player['currentLesson']);
+            // Rebuild so progress + chapter checks reflect the new visit
+            $player = $this->buildPlayerData($webinar, $user, $request);
+        }
+
+        $lesson = $player['currentLesson'] ?? ['title' => $this->localizedTitle($webinar) ?: $webinar->title];
         $hasQuiz = !empty($player['lectureQuiz']);
         $hasAssignment = !empty($player['lectureAssignment']);
         $files = $player['files'] ?? collect();
@@ -31,13 +38,27 @@ class CoursePlayerController extends Controller
             'pageTitle' => 'مشاهدة الدورة',
             'authUser' => $user,
             'webinar' => $webinar,
-            'courseTitle' => $webinar->title,
+            'courseTitle' => $player['course']['title'] ?? $webinar->title,
             'lesson' => $lesson,
+            'currentMedia' => $player['currentMedia'] ?? null,
             'hasLectureQuiz' => $hasQuiz,
             'hasLectureAssignment' => $hasAssignment,
             'hasComments' => false,
             'hasFiles' => $hasFiles,
-            'files' => $files->map(fn($f)=>['name'=>$f->title,'size'=>$f->volume ?? '','url'=>$f->file ?? ''])->all(),
+            'files' => $files->map(function ($f) use ($webinar) {
+                $isDownloadable = (bool) ($f->downloadable ?? false);
+                $url = $isDownloadable
+                    ? url('/course/' . $webinar->slug . '/file/' . $f->id . '/download')
+                    : ($f->file ?? '');
+
+                return [
+                    'id' => $f->id,
+                    'name' => $this->localizedTitle($f) ?: ($f->title ?: 'ملف'),
+                    'size' => $f->volume ?? '',
+                    'url' => $url,
+                    'downloadable' => $isDownloadable,
+                ];
+            })->all(),
             'lectureQuiz' => $player['lectureQuiz'] ?? null,
             'lectureAssignment' => $player['lectureAssignment'] ?? null,
         ]));
@@ -45,108 +66,382 @@ class CoursePlayerController extends Controller
 
     private function buildPlayerData($webinar, $user, ?Request $request = null): array
     {
-        // Progress real
         $progress = 0;
-        try { $progress = (int) $webinar->getProgress(false, $user); } catch(\Throwable $e) { $progress = 0; }
+        try {
+            $progress = (int) round($webinar->getProgress(true, $user));
+        } catch (\Throwable $e) {
+            $progress = 0;
+        }
         $progress = max(0, min(100, $progress));
 
-        // Chapters real
-        $chapters = \App\Models\WebinarChapter::with(['sessions','files','textLessons'])
-            ->where('webinar_id',$webinar->id)
-            ->orderBy('order')->orderBy('id')
+        $learned = \App\Models\CourseLearning::where('user_id', $user->id)->get();
+        $learnedFileIds = $learned->pluck('file_id')->filter()->map(fn ($id) => (int) $id)->all();
+        $learnedSessionIds = $learned->pluck('session_id')->filter()->map(fn ($id) => (int) $id)->all();
+        $learnedTextIds = $learned->pluck('text_lesson_id')->filter()->map(fn ($id) => (int) $id)->all();
+
+        $chapters = \App\Models\WebinarChapter::with([
+            'sessions.translations',
+            'files.translations',
+            'textLessons.translations',
+            'translations',
+        ])
+            ->where('webinar_id', $webinar->id)
+            ->orderBy('order')
+            ->orderBy('id')
             ->get();
 
-        $requestedItem = $request ? $request->get('item') : null;
+        $requestedItem = $request ? (string) $request->get('item', '') : '';
         $currentLesson = null;
-        $files = collect();
-        $lectureQuiz = null;
-        $lectureAssignment = null;
-
-        // Build sidebar chapters like mock but real
+        $currentMedia = null;
+        $activeChapterId = null;
         $chapterList = [];
-        $first = true;
-        foreach($chapters as $chapter){
+        $fallbackLesson = null;
+        $fallbackMedia = null;
+        $fallbackChapterId = null;
+
+        foreach ($chapters as $chapterIndex => $chapter) {
             $items = [];
-            foreach($chapter->sessions as $session){
-                $isActive = $first && empty($requestedItem) ? true : ($requestedItem == 'session_'.$session->id);
-                if($isActive && !$currentLesson){
-                    $currentLesson = ['title'=>$session->title,'type'=>'video','id'=>$session->id];
-                    // progress already
-                }
-                $items[] = ['title'=>$session->title,'type'=>'video','active'=>$isActive,'id'=>$session->id];
-                $first = false;
+            $chapterTitle = $this->localizedTitle($chapter) ?: ('المحاضرة ' . ($chapterIndex + 1));
+
+            $contentRows = [];
+            foreach ($chapter->files->sortBy('order') as $file) {
+                $contentRows[] = ['kind' => 'file', 'model' => $file];
             }
-            foreach($chapter->files as $file){
-                $isActive = $requestedItem == 'file_'.$file->id;
-                if($isActive && !$currentLesson){
-                    $currentLesson = ['title'=>$file->title,'type'=>'file','id'=>$file->id];
-                }
-                $items[] = ['title'=>$file->title,'type'=>'file','active'=>$isActive,'id'=>$file->id];
+            foreach ($chapter->sessions->sortBy('id') as $session) {
+                $contentRows[] = ['kind' => 'session', 'model' => $session];
             }
-            foreach($chapter->textLessons as $text){
-                $isActive = $requestedItem == 'text_'.$text->id;
-                if($isActive && !$currentLesson){
-                    $currentLesson = ['title'=>$text->title,'type'=>'text','id'=>$text->id];
-                }
-                $items[] = ['title'=>$text->title,'type'=>'text','active'=>$isActive,'id'=>$text->id];
+            foreach ($chapter->textLessons->sortBy('id') as $text) {
+                $contentRows[] = ['kind' => 'text', 'model' => $text];
             }
+
+            $completedInChapter = 0;
+
+            foreach ($contentRows as $row) {
+                $model = $row['model'];
+                $kind = $row['kind'];
+                $itemKey = $kind . '_' . $model->id;
+                $title = $this->localizedTitle($model) ?: ($kind === 'file' ? 'محتوى' : 'عنصر');
+                $type = $kind === 'file'
+                    ? (($model->file_type === 'video' || $model->storage === 'youtube' || $model->storage === 'vimeo') ? 'video' : 'file')
+                    : ($kind === 'session' ? 'video' : 'text');
+
+                $isCompleted = match ($kind) {
+                    'file' => in_array((int) $model->id, $learnedFileIds, true),
+                    'session' => in_array((int) $model->id, $learnedSessionIds, true),
+                    'text' => in_array((int) $model->id, $learnedTextIds, true),
+                    default => false,
+                };
+                if ($isCompleted) {
+                    $completedInChapter++;
+                }
+
+                $isActive = $requestedItem !== '' && $requestedItem === $itemKey;
+                $media = $this->buildMediaPayload($kind, $model, $webinar);
+
+                if ($isActive) {
+                    $currentLesson = [
+                        'title' => $title,
+                        'type' => $type,
+                        'kind' => $kind,
+                        'id' => $model->id,
+                        'key' => $itemKey,
+                        'chapter_title' => $chapterTitle,
+                        'completed' => $isCompleted,
+                    ];
+                    $currentMedia = $media;
+                    $activeChapterId = $chapter->id;
+                }
+
+                if ($fallbackLesson === null && ($type === 'video' || $kind === 'file')) {
+                    $fallbackLesson = [
+                        'title' => $title,
+                        'type' => $type,
+                        'kind' => $kind,
+                        'id' => $model->id,
+                        'key' => $itemKey,
+                        'chapter_title' => $chapterTitle,
+                        'completed' => $isCompleted,
+                    ];
+                    $fallbackMedia = $media;
+                    $fallbackChapterId = $chapter->id;
+                }
+
+                $items[] = [
+                    'title' => $title,
+                    'type' => $type,
+                    'kind' => $kind,
+                    'active' => $isActive,
+                    'completed' => $isCompleted,
+                    'id' => $model->id,
+                    'key' => $itemKey,
+                    'url' => route('panel.v1.student.course.watch', [
+                        'slug' => $webinar->slug,
+                        'item' => $itemKey,
+                    ]),
+                ];
+            }
+
+            $isExpanded = $activeChapterId
+                ? ((int) $activeChapterId === (int) $chapter->id)
+                : ($chapterIndex === 0);
+
+            $itemCount = count($items);
+            $chapterCompleted = $itemCount > 0 && $completedInChapter >= $itemCount;
+
             $chapterList[] = [
-                'title'=>$chapter->title ?: 'الوحدة',
-                'subtitle'=> $chapter->title ?: 'محتوى الوحدة',
-                'expanded'=> $first ? true : false,
-                'completed'=> false,
-                'items'=>$items,
+                'title' => $chapterTitle,
+                'subtitle' => $items[0]['title'] ?? 'هنا عنوان المحاضرة',
+                'expanded' => $isExpanded,
+                'completed' => $chapterCompleted,
+                'completed_count' => $completedInChapter,
+                'items_count' => $itemCount,
+                'items' => $items,
             ];
-            if($first) $first = false;
-        }
-        // fallback current lesson to webinar title if no items
-        if(!$currentLesson){
-            $currentLesson = ['title'=>$webinar->title];
         }
 
-        // Files for current webinar
-        $files = \App\Models\File::where('webinar_id',$webinar->id)->orderBy('id')->limit(10)->get();
-        // Quiz for webinar
-        $quiz = \App\Models\Quiz::where('webinar_id',$webinar->id)->where('status','active')->orderBy('id')->first();
-        if($quiz){
+        if (!$currentLesson && $fallbackLesson) {
+            $currentLesson = $fallbackLesson;
+            $currentMedia = $fallbackMedia;
+            $activeChapterId = $fallbackChapterId;
+            foreach ($chapterList as &$chapterRow) {
+                $chapterRow['expanded'] = false;
+                foreach ($chapterRow['items'] as &$itemRow) {
+                    if (($itemRow['key'] ?? '') === ($fallbackLesson['key'] ?? '')) {
+                        $itemRow['active'] = true;
+                        $chapterRow['expanded'] = true;
+                    }
+                }
+            }
+            unset($chapterRow, $itemRow);
+        }
+
+        if (!$currentLesson) {
+            $currentLesson = [
+                'title' => $this->localizedTitle($webinar) ?: $webinar->title,
+                'type' => 'empty',
+                'kind' => null,
+                'id' => null,
+                'key' => null,
+                'chapter_title' => '',
+                'completed' => false,
+            ];
+        }
+
+        // Attachments for files tab: non-video files of the current chapter (or all downloadable)
+        $filesQuery = \App\Models\File::with('translations')
+            ->where('webinar_id', $webinar->id)
+            ->where(function ($q) {
+                $q->where('file_type', '!=', 'video')
+                    ->orWhere('downloadable', true);
+            })
+            ->orderBy('chapter_id')
+            ->orderBy('order')
+            ->orderBy('id');
+
+        if ($activeChapterId) {
+            $chapterFiles = (clone $filesQuery)->where('chapter_id', $activeChapterId)->get();
+            $files = $chapterFiles->isNotEmpty() ? $chapterFiles : $filesQuery->limit(10)->get();
+        } else {
+            $files = $filesQuery->limit(10)->get();
+        }
+
+        $lectureQuiz = null;
+        $quiz = \App\Models\Quiz::where('webinar_id', $webinar->id)->where('status', 'active')->orderBy('id')->first();
+        if ($quiz) {
             $lectureQuiz = [
-                'title'=>$quiz->title,
-                'subtitle'=>$webinar->title,
-                'duration'=> !empty($quiz->time) ? $quiz->time.' دقيقة' : '—',
-                'questions_count'=> \App\Models\QuizzesQuestion::where('quiz_id',$quiz->id)->count().' أسئلة',
-                'pass_score'=>$quiz->pass_mark.'%',
-                'attempts'=> $quiz->attempt ? $quiz->attempt.' محاولات' : '—',
+                'title' => $this->localizedTitle($quiz) ?: $quiz->title,
+                'subtitle' => $this->localizedTitle($webinar) ?: $webinar->title,
+                'duration' => !empty($quiz->time) ? $quiz->time . ' دقيقة' : '—',
+                'questions_count' => \App\Models\QuizzesQuestion::where('quiz_id', $quiz->id)->count() . ' أسئلة',
+                'pass_score' => $quiz->pass_mark . '%',
+                'attempts' => $quiz->attempt ? $quiz->attempt . ' محاولات' : '—',
             ];
         }
-        $assignment = \App\Models\WebinarAssignment::where('webinar_id',$webinar->id)->where('status','active')->orderBy('id')->first();
-        if($assignment){
+
+        $lectureAssignment = null;
+        $assignment = \App\Models\WebinarAssignment::where('webinar_id', $webinar->id)->where('status', 'active')->orderBy('id')->first();
+        if ($assignment) {
             $lectureAssignment = [
-                'title'=>$assignment->title ?? 'تكليف الدورة',
-                'subtitle'=>$webinar->title,
-                'deadline'=> $assignment->deadline ? date('Y/m/d', (int)$assignment->deadline) : 'غير محدود',
-                'attempts'=> $assignment->attempts ?? 'غير محدود',
-                'grade'=> $assignment->grade ?? '—',
-                'pass_grade'=> $assignment->pass_grade ?? '—',
-                'description'=> $assignment->description ?? '',
-                'file_name'=>'',
-                'file_size'=>'',
+                'title' => $this->localizedTitle($assignment) ?: ($assignment->title ?? 'تكليف الدورة'),
+                'subtitle' => $this->localizedTitle($webinar) ?: $webinar->title,
+                'deadline' => $assignment->deadline ? date('Y/m/d', (int) $assignment->deadline) : 'غير محدود',
+                'attempts' => $assignment->attempts ?? 'غير محدود',
+                'grade' => $assignment->grade ?? '—',
+                'pass_grade' => $assignment->pass_grade ?? '—',
+                'description' => $assignment->description ?? '',
+                'file_name' => '',
+                'file_size' => '',
             ];
         }
+
+        $courseTitle = $this->localizedTitle($webinar) ?: $webinar->title;
+        $courseSubtitle = $webinar->translate('ar')?->summary
+            ?: ($webinar->category->title ?? 'الادارة والتنفيذ');
 
         return [
-            'slug'=>$webinar->slug,
-            'course'=>[
-                'title'=>$webinar->title,
-                'subtitle'=>$webinar->category->title ?? '',
-                'progress'=>$progress,
-                'progress_label'=>'نسبة الإنجاز',
+            'slug' => $webinar->slug,
+            'course' => [
+                'title' => $courseTitle,
+                'subtitle' => $courseSubtitle,
+                'progress' => $progress,
+                'progress_label' => 'نسبة الإنجاز',
             ],
-            'chapters'=>$chapterList,
-            'currentLesson'=>$currentLesson,
-            'files'=>$files,
-            'lectureQuiz'=>$lectureQuiz,
-            'lectureAssignment'=>$lectureAssignment,
+            'chapters' => $chapterList,
+            'currentLesson' => $currentLesson,
+            'currentMedia' => $currentMedia,
+            'files' => $files,
+            'lectureQuiz' => $lectureQuiz,
+            'lectureAssignment' => $lectureAssignment,
         ];
+    }
+
+    private function markLessonVisited($user, array $lesson): void
+    {
+        $kind = $lesson['kind'] ?? null;
+        $id = (int) ($lesson['id'] ?? 0);
+        if ($id < 1 || empty($kind)) {
+            return;
+        }
+
+        $column = match ($kind) {
+            'file' => 'file_id',
+            'session' => 'session_id',
+            'text' => 'text_lesson_id',
+            default => null,
+        };
+
+        if (!$column) {
+            return;
+        }
+
+        $exists = \App\Models\CourseLearning::where('user_id', $user->id)
+            ->where($column, $id)
+            ->exists();
+
+        if (!$exists) {
+            \App\Models\CourseLearning::create([
+                'user_id' => $user->id,
+                $column => $id,
+                'created_at' => time(),
+            ]);
+        }
+    }
+
+    private function localizedTitle($model): string
+    {
+        if (!$model) {
+            return '';
+        }
+
+        foreach (['ar', app()->getLocale(), 'en'] as $locale) {
+            try {
+                $translated = $model->translate($locale);
+                if (!empty($translated?->title)) {
+                    return (string) $translated->title;
+                }
+            } catch (\Throwable $e) {
+            }
+        }
+
+        return (string) ($model->title ?? '');
+    }
+
+    private function buildMediaPayload(string $kind, $model, $webinar): ?array
+    {
+        if ($kind === 'file') {
+            $storage = $model->storage;
+            $src = $model->file;
+            $poster = method_exists($webinar, 'getImageCover') ? $webinar->getImageCover() : ($webinar->image_cover ?? null);
+
+            if ($storage === 'youtube') {
+                $embed = $this->youtubeEmbedUrl($src);
+
+                return [
+                    'mode' => 'youtube',
+                    'src' => $embed,
+                    'poster' => $poster,
+                    'title' => $this->localizedTitle($model),
+                    'downloadable' => false,
+                ];
+            }
+
+            if ($storage === 'vimeo') {
+                return [
+                    'mode' => 'vimeo',
+                    'src' => method_exists($model, 'getVimeoPath') ? $model->getVimeoPath() : $src,
+                    'poster' => $poster,
+                    'title' => $this->localizedTitle($model),
+                    'downloadable' => false,
+                ];
+            }
+
+            if (
+                $model->isVideo()
+                || (in_array($storage, ['upload', 'external_link'], true) && $model->file_type === 'video')
+            ) {
+                $playSrc = $src;
+                if (!empty($src) && str_starts_with($src, '/') && !str_starts_with($src, '//')) {
+                    $playSrc = url($src);
+                }
+
+                return [
+                    'mode' => 'html5',
+                    'src' => $playSrc,
+                    'poster' => $poster,
+                    'title' => $this->localizedTitle($model),
+                    'downloadable' => (bool) $model->downloadable,
+                ];
+            }
+
+            $downloadUrl = url('/course/' . $webinar->slug . '/file/' . $model->id . '/download');
+
+            return [
+                'mode' => 'download',
+                'src' => $downloadUrl,
+                'poster' => $poster,
+                'title' => $this->localizedTitle($model),
+                'downloadable' => true,
+                'file_type' => $model->file_type,
+                'volume' => $model->volume,
+            ];
+        }
+
+        if ($kind === 'session') {
+            return [
+                'mode' => 'session',
+                'src' => $model->link,
+                'poster' => method_exists($webinar, 'getImageCover') ? $webinar->getImageCover() : null,
+                'title' => $this->localizedTitle($model),
+                'date' => !empty($model->date) ? date('Y/m/d H:i', (int) $model->date) : null,
+                'duration' => $model->duration ?? null,
+            ];
+        }
+
+        if ($kind === 'text') {
+            return [
+                'mode' => 'text',
+                'src' => null,
+                'title' => $this->localizedTitle($model),
+                'content' => $model->content ?? ($model->description ?? ''),
+            ];
+        }
+
+        return null;
+    }
+
+    private function youtubeEmbedUrl(?string $url): string
+    {
+        $url = trim((string) $url);
+        if ($url === '') {
+            return '';
+        }
+
+        if (preg_match('~(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([A-Za-z0-9_-]{6,})~', $url, $m)) {
+            return 'https://www.youtube.com/embed/' . $m[1] . '?origin=' . urlencode(url('/'))
+                . '&iv_load_policy=3&modestbranding=1&playsinline=1&showinfo=0&rel=0&enablejsapi=1';
+        }
+
+        return $url;
     }
 
     public function forum(Request $request, string $slug)
