@@ -47,11 +47,15 @@
                         </div>
                         <div class="flex items-center gap-3">
                             <a href="{{ route('panel.v1.student.certificates.download', ['id' => $certificate->id]) }}"
-                                class="btn btn-primary rounded-10px h-11 flex-1 font-bold text-14px">تحميل الشهادة</a>
-                            @if (!empty($webinar))
-                                <a href="{{ route('panel.v1.student.course.watch', ['slug' => $webinar->slug]) }}"
-                                    class="btn btn-ghost rounded-10px h-11 px-4 font-bold text-14px text-primary">عرض الدورة</a>
-                            @endif
+                                class="btn btn-primary rounded-10px h-11 flex-1 font-bold text-14px gap-2">
+                                <span class="icon-[tabler--download] size-4"></span>
+                                تحميل الشهادة
+                            </a>
+                            <a href="{{ route('panel.v1.student.certificates.download', ['id' => $certificate->id, 'view' => 1]) }}"
+                                target="_blank" rel="noopener"
+                                class="btn btn-ghost rounded-10px h-11 px-4 font-bold text-14px text-primary border border-d9">
+                                عرض
+                            </a>
                         </div>
                     </article>
                 @endforeach

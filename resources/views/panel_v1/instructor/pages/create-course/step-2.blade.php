@@ -103,12 +103,19 @@
                 <details class="rounded-10px border border-d9">
                     <summary class="cursor-pointer px-4 py-3 font-semibold text-14px text-primary">+ إضافة ملف</summary>
                     <form method="POST" action="{{ route('panel.v1.instructor.curriculum.files.store') }}" enctype="multipart/form-data"
-                        class="grid grid-cols-1 sm:grid-cols-3 gap-3 px-4 pb-4">
+                        class="grid grid-cols-1 gap-3 px-4 pb-4">
                         @csrf
                         <input type="hidden" name="draft_id" value="{{ $draftIdValue }}">
                         <input type="hidden" name="chapter_id" value="{{ $unit['id'] }}">
                         <input type="text" name="title" required placeholder="عنوان الملف" class="{{ $input }}">
-                        <input type="file" name="upload" required class="{{ $input }}">
+                        @include('panel_v1.components.file-upload', [
+                            'name' => 'upload',
+                            'accept' => 'video/*,image/*,.pdf,.doc,.docx,.zip',
+                            'label' => 'اختر الملف من جهازك',
+                            'hint' => 'فيديو، صورة، PDF أو مستند',
+                            'required' => true,
+                            'compact' => true,
+                        ])
                         <button type="submit" class="btn btn-primary rounded-10px h-12 font-bold text-15px">رفع</button>
                     </form>
                 </details>

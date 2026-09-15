@@ -302,15 +302,34 @@ function bindDrawerRemoveButtons() {
  * Show a toast notification
  */
 window.showCartToast = function (title, msg, type = "success") {
-	const toast = document.getElementById("cart-toast");
+	let toast = document.getElementById("cart-toast");
+	const host = document.getElementById("landing-v1-app") || document.body;
+
+	// Create toast host if the page layout forgot it (course-player / admin / org)
+	if (!toast) {
+		toast = document.createElement("div");
+		toast.id = "cart-toast";
+		toast.className =
+			"fixed bottom-6 start-6 z-[2147483646] flex items-center gap-3 bg-white border border-gray-100 shadow-xl rounded-10px px-5 py-4 transition-all duration-300 translate-y-20 opacity-0 pointer-events-none max-w-sm";
+		toast.style.zIndex = "2147483646";
+		toast.setAttribute("role", "status");
+		toast.setAttribute("aria-live", "polite");
+		toast.innerHTML =
+			'<span id="cart-toast-icon" class="icon-[tabler--circle-check-filled] size-6 text-green-500 shrink-0"></span>' +
+			'<div class="min-w-0"><p id="cart-toast-title" class="font-bold text-14px text-primary"></p>' +
+			'<p id="cart-toast-msg" class="font-medium text-12px text-primary/60"></p></div>' +
+			'<button type="button" onclick="typeof hideCartToast===\'function\'&&hideCartToast()" class="ms-auto text-primary/40 hover:text-primary transition shrink-0" aria-label="إغلاق">' +
+			'<span class="icon-[tabler--x] size-4"></span></button>';
+		host.appendChild(toast);
+	}
+
 	const toastTitle = document.getElementById("cart-toast-title");
 	const toastMsg = document.getElementById("cart-toast-msg");
 	const toastIcon = document.getElementById("cart-toast-icon");
 
-	if (!toast) return;
+	if (!toastTitle || !toastMsg || !toastIcon) return;
 
 	// Keep toast above overlays/modals/drawers (FlyonUI stacking)
-	const host = document.getElementById("landing-v1-app") || document.body;
 	if (toast.parentElement !== host) {
 		host.appendChild(toast);
 	} else {
@@ -321,11 +340,13 @@ window.showCartToast = function (title, msg, type = "success") {
 	toastTitle.textContent = title;
 	toastMsg.textContent = msg;
 
+	const normalized = type === "danger" ? "error" : type;
+
 	// Icon & color
 	toastIcon.className = "size-6 shrink-0 " + (
-		type === "success" ? "icon-[tabler--circle-check-filled] text-green-500" :
-		type === "error"   ? "icon-[tabler--circle-x-filled] text-red-500" :
-		type === "info"    ? "icon-[tabler--info-circle-filled] text-blue-500" :
+		normalized === "success" ? "icon-[tabler--circle-check-filled] text-green-500" :
+		normalized === "error"   ? "icon-[tabler--circle-x-filled] text-red-500" :
+		normalized === "info"    ? "icon-[tabler--info-circle-filled] text-blue-500" :
 		"icon-[tabler--circle-check-filled] text-green-500"
 	);
 

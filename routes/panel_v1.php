@@ -77,6 +77,7 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
 
             Route::prefix('student/courses/{slug}')->name('student.course.')->group(function () {
                 Route::get('/watch', [CoursePlayerController::class, 'watch'])->name('watch');
+                Route::post('/comments', [CoursePlayerController::class, 'storeComment'])->name('comments.store');
                 Route::get('/forum', [CoursePlayerController::class, 'forum'])->name('forum');
                 Route::post('/forum', [CoursePlayerController::class, 'storeForumTopic'])->name('forum.store');
                 Route::get('/assignment', [CoursePlayerController::class, 'assignment'])->name('assignment');

@@ -2710,3 +2710,167 @@ if (!function_exists('panelV1HomeUrl')) {
         return '/panel';
     }
 }
+
+if (!function_exists('panelV1PublicUrl')) {
+    function panelV1PublicUrl(?string $path): ?string
+    {
+        if ($path === null || $path === '') {
+            return null;
+        }
+
+        if (
+            str_starts_with($path, 'http://') ||
+            str_starts_with($path, 'https://') ||
+            str_starts_with($path, 'data:') ||
+            str_starts_with($path, '/getDefaultAvatar')
+        ) {
+            return $path;
+        }
+
+        if (str_starts_with($path, '/')) {
+            return url($path);
+        }
+
+        return url('/' . ltrim($path, '/'));
+    }
+}
+
+if (!function_exists('panelV1UserMediaPreview')) {
+    /**
+     * Build a preview item for a profile media field (only if the user already uploaded one).
+     */
+    function panelV1UserMediaPreview($user, string $field): ?array
+    {
+        if (empty($user)) {
+            return null;
+        }
+
+        $labels = [
+            'avatar' => 'الصورة الشخصية',
+            'cover_img' => 'صورة الغلاف',
+            'profile_secondary_image' => 'الصورة الثانوية',
+            'profile_video' => 'فيديو الملف',
+            'signature_img' => 'التوقيع',
+            'identity_scan' => 'صورة الهوية',
+            'certificate' => 'الشهادة والمستندات',
+        ];
+
+        if ($field === 'signature_img' || $field === 'signature') {
+            $path = method_exists($user, 'getSignature') ? $user->getSignature(true) : null;
+            if (empty($path)) {
+                return null;
+            }
+
+            return panelV1FilePreviewItem(panelV1PublicUrl($path), $labels['signature_img'], null, 'image');
+        }
+
+        $raw = $user->{$field} ?? null;
+        if (empty($raw)) {
+            return null;
+        }
+
+        $mime = null;
+        $url = null;
+
+        if ($field === 'avatar' && method_exists($user, 'getAvatar')) {
+            $url = $user->getAvatar(400);
+            $mime = 'image';
+        } elseif ($field === 'cover_img' && method_exists($user, 'getCover')) {
+            $url = $user->getCover();
+            $mime = 'image';
+        } elseif ($field === 'profile_secondary_image' && method_exists($user, 'getProfileSecondaryImage')) {
+            $url = panelV1PublicUrl($user->getProfileSecondaryImage());
+            $mime = 'image';
+        } elseif ($field === 'profile_video') {
+            $url = panelV1PublicUrl($raw);
+            $mime = 'video';
+        } else {
+            $url = panelV1PublicUrl($raw);
+            $mime = panelV1FileKind($raw);
+        }
+
+        if (empty($url)) {
+            return null;
+        }
+
+        return panelV1FilePreviewItem($url, $labels[$field] ?? basename((string) $raw), null, $mime);
+    }
+}
+
+if (!function_exists('panelV1FileKind')) {
+    /**
+     * Detect file kind from path/url/name for panel_v1 upload previews.
+     */
+    function panelV1FileKind(?string $path, ?string $mime = null): string
+    {
+        $mime = strtolower((string) $mime);
+        $path = strtolower((string) $path);
+
+        if (
+            $mime === 'image' ||
+            str_starts_with($mime, 'image/') ||
+            preg_match('/\.(png|jpe?g|gif|webp|svg|bmp)(\?|$)/i', $path)
+        ) {
+            return 'image';
+        }
+        if ($mime === 'pdf' || $mime === 'application/pdf' || preg_match('/\.pdf(\?|$)/i', $path)) {
+            return 'pdf';
+        }
+        if (
+            $mime === 'video' ||
+            str_starts_with($mime, 'video/') ||
+            preg_match('/\.(mp4|webm|mov|m4v)(\?|$)/i', $path)
+        ) {
+            return 'video';
+        }
+        if (
+            $mime === 'document' ||
+            str_contains($mime, 'word') ||
+            str_contains($mime, 'document') ||
+            preg_match('/\.(docx?|rtf|txt)(\?|$)/i', $path)
+        ) {
+            return 'doc';
+        }
+
+        return 'file';
+    }
+}
+
+if (!function_exists('panelV1FormatBytes')) {
+    function panelV1FormatBytes($bytes): string
+    {
+        $n = (int) $bytes;
+        if ($n < 1024) {
+            return $n . ' B';
+        }
+        if ($n < 1024 * 1024) {
+            return round($n / 1024, 1) . ' KB';
+        }
+
+        return round($n / (1024 * 1024), 1) . ' MB';
+    }
+}
+
+if (!function_exists('panelV1FilePreviewItem')) {
+    /**
+     * Normalize an uploaded file for panel_v1.components.file-upload / file-preview-card.
+     */
+    function panelV1FilePreviewItem(?string $url, ?string $name = null, $size = null, ?string $mime = null): array
+    {
+        $url = $url ? (string) $url : null;
+        $name = $name ?: ($url ? basename(parse_url($url, PHP_URL_PATH) ?: $url) : 'ملف');
+        $sizeLabel = '';
+        if (is_string($size) && $size !== '') {
+            $sizeLabel = $size;
+        } elseif (is_numeric($size) && (int) $size > 0) {
+            $sizeLabel = panelV1FormatBytes($size);
+        }
+
+        return [
+            'name' => $name,
+            'url' => $url,
+            'kind' => panelV1FileKind($url ?: $name, $mime),
+            'size' => $sizeLabel,
+        ];
+    }
+}

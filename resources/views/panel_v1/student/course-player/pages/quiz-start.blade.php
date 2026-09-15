@@ -41,13 +41,15 @@
         </div>
 
         {{-- Deadline alert --}}
-        <div
-            class="rounded-14px border border-dashed border-[#FCA5A5] bg-[#FEF2F2] px-4 sm:px-5 py-3.5 mb-10 flex items-center justify-center gap-2.5 text-center">
-            <span class="icon-[tabler--clock] size-5 text-[#DC2626] shrink-0"></span>
-            <p class="font-semibold text-14px sm:text-15px text-[#DC2626] leading-snug">
-                {{ $quizData['deadline'] ?? '' }}
-            </p>
-        </div>
+        @if (!empty($quizData['deadline']))
+            <div
+                class="rounded-14px border border-dashed border-[#FCA5A5] bg-[#FEF2F2] px-4 sm:px-5 py-3.5 mb-10 flex items-center justify-center gap-2.5 text-center">
+                <span class="icon-[tabler--clock] size-5 text-[#DC2626] shrink-0"></span>
+                <p class="font-semibold text-14px sm:text-15px text-[#DC2626] leading-snug">
+                    {{ $quizData['deadline'] }}
+                </p>
+            </div>
+        @endif
 
         @if (!empty($lastResult))
             <div
@@ -56,14 +58,24 @@
                 <p class="font-medium text-14px text-gray">
                     الحالة: {{ ($lastResult['status'] ?? '') === 'passed' ? 'ناجح' : ((($lastResult['status'] ?? '') === 'waiting') ? 'بانتظار التصحيح' : 'راسب') }}
                 </p>
+                @if (isset($quizData['attempts_left']))
+                    <p class="font-medium text-13px text-gray mt-2">المحاولات المتبقية: {{ $quizData['attempts_left'] }}</p>
+                @endif
             </div>
         @endif
 
-        <a href="{{ route('panel.v1.student.course.quiz.take', ['slug' => $courseSlug]) }}"
-            class="btn btn-primary rounded-12px h-12 sm:h-14 px-8 sm:px-10 font-bold text-16px gap-2 inline-flex shadow-[0_8px_24px_rgba(15,76,69,0.25)]">
-            ابدأ الاختبار الآن
-            <span class="icon-[tabler--arrow-left] size-5"></span>
-        </a>
+        @if (($quizData['can_start'] ?? true))
+            <a href="{{ route('panel.v1.student.course.quiz.take', ['slug' => $courseSlug, 'quiz' => $quizData['id'] ?? null]) }}"
+                class="btn btn-primary rounded-12px h-12 sm:h-14 px-8 sm:px-10 font-bold text-16px gap-2 inline-flex shadow-[0_8px_24px_rgba(15,76,69,0.25)]">
+                ابدأ الاختبار الآن
+                <span class="icon-[tabler--arrow-left] size-5"></span>
+            </a>
+        @else
+            <button type="button" disabled
+                class="btn btn-primary rounded-12px h-12 sm:h-14 px-8 sm:px-10 font-bold text-16px opacity-50 cursor-not-allowed">
+                استنفدت المحاولات المتاحة
+            </button>
+        @endif
     </div>
 </div>
 @endsection

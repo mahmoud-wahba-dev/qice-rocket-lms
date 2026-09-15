@@ -58,6 +58,8 @@
         </div>
 
         @include('panel_v1.student.course-player.components.support-modal')
+        @include('panel_v1.student.components.calendar-event-modal')
+        @include('components.v1.toast')
     </div>
     @stack('scripts')
 </body>

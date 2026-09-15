@@ -548,6 +548,20 @@ class InstructorController extends Controller
         $firstQuiz = \App\Models\Quiz::where('webinar_id', $webinar->id)->orderBy('id')->first();
         $firstAssignment = \App\Models\WebinarAssignment::where('webinar_id', $webinar->id)->orderBy('id')->first();
         $files = \App\Models\File::where('webinar_id', $webinar->id)->orderBy('id')->limit(10)->get();
+        $courseComments = \App\Models\Comment::with(['user'])
+            ->where('webinar_id', $webinar->id)
+            ->whereNull('reply_id')
+            ->orderBy('id', 'desc')
+            ->limit(50)
+            ->get()
+            ->map(function ($comment) {
+                return [
+                    'author' => $comment->user->full_name ?? 'طالب',
+                    'body' => $comment->comment,
+                    'status' => $comment->status,
+                    'time' => !empty($comment->created_at) ? date('Y/m/d H:i', (int) $comment->created_at) : '',
+                ];
+            })->all();
 
         return $this->render(
             $request,
@@ -561,6 +575,7 @@ class InstructorController extends Controller
                 'hasFiles' => $files->isNotEmpty(),
                 'hasLectureQuiz' => !empty($firstQuiz),
                 'hasLectureAssignment' => !empty($firstAssignment),
+                'courseComments' => $courseComments,
                 'lectureQuiz' => $firstQuiz ? [
                     'title'=>$firstQuiz->title,
                     'subtitle'=>$webinar->title,
@@ -572,7 +587,7 @@ class InstructorController extends Controller
                 'lectureAssignment' => $firstAssignment ? [
                     'title'=>$firstAssignment->title ?? 'تكليف الدورة',
                     'subtitle'=>$webinar->title,
-                    'deadline'=>$firstAssignment->deadline?date('Y/m/d',(int)$firstAssignment->deadline):'غير محدود',
+                    'deadline'=> !empty($firstAssignment->deadline) ? ((int)$firstAssignment->deadline).' يوم من الشراء' : 'غير محدود',
                     'attempts'=>$firstAssignment->attempts ?? 'غير محدود',
                     'grade'=>$firstAssignment->grade ?? '—',
                     'pass_grade'=>$firstAssignment->pass_grade ?? '—',
@@ -722,7 +737,7 @@ class InstructorController extends Controller
             'currentAssignments'=> $assignments->take(4)->map(fn($a)=>[
                 'title'=>$a->title ?? 'تكليف',
                 'course'=>$a->webinar->title ?? '',
-                'deadline'=> $a->deadline ? date('Y/m/d',(int)$a->deadline) : 'غير محدود',
+                'deadline'=> !empty($a->deadline) ? ((int)$a->deadline).' يوم من الشراء' : 'غير محدود',
                 'submissions'=> \App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->count().' / '.$a->webinar->sales->count() ?? 0,
                 'pending'=> \App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->where('status','pending')->count().' طالب',
                 'graded'=> \App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->where('status','!=','pending')->count().' طالب',
@@ -740,7 +755,7 @@ class InstructorController extends Controller
                 'pending'=>\App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->where('status','pending')->count(),
                 'passed'=>\App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->where('status','passed')->count(),
                 'failed'=>\App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->where('status','not_passed')->count(),
-                'deadline'=>$a->deadline ? date('Y/m/d',(int)$a->deadline) : '—',
+                'deadline'=> !empty($a->deadline) ? ((int)$a->deadline).' يوم من الشراء' : '—',
                 'status'=>'نشط',
             ])->all(),
             'studentResultsRows'=> $histories->take(8)->map(fn($h)=>[

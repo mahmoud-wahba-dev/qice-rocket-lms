@@ -7,6 +7,32 @@ export function initCoursePlayer() {
     initSidebarDrawer(root);
     initAccordions(root);
     initAssignmentWordCount(root);
+    initCourseReminderButton(root);
+}
+
+function initCourseReminderButton(root) {
+    root.querySelectorAll('[data-course-reminder-open]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const dateInput = document.querySelector('[data-calendar-event-date]');
+            const titleInput = document.querySelector('[data-calendar-event-title]');
+            const notesInput = document.querySelector('[data-calendar-event-notes]');
+
+            if (dateInput && !dateInput.value) {
+                const today = new Date();
+                const m = String(today.getMonth() + 1).padStart(2, '0');
+                const d = String(today.getDate()).padStart(2, '0');
+                dateInput.value = `${today.getFullYear()}-${m}-${d}`;
+            }
+
+            if (titleInput) {
+                titleInput.value = btn.dataset.reminderTitle || titleInput.value || '';
+            }
+
+            if (notesInput) {
+                notesInput.value = btn.dataset.reminderNotes || '';
+            }
+        });
+    });
 }
 
 function initSidebarDrawer(root) {

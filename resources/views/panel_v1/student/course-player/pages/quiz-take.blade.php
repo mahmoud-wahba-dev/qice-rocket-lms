@@ -51,7 +51,7 @@
 
     <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
         @if (($take['current'] ?? 1) > 1)
-            <a href="{{ route('panel.v1.student.course.quiz.take', ['slug' => $courseSlug, 'q' => ($take['current'] ?? 1) - 1]) }}"
+            <a href="{{ route('panel.v1.student.course.quiz.take', ['slug' => $courseSlug, 'quiz' => $take['quiz_id'] ?? null, 'q' => ($take['current'] ?? 1) - 1]) }}"
                 class="btn btn-ghost rounded-12px h-12 px-6 font-semibold text-15px text-gray border border-d9">
                 السابق
             </a>

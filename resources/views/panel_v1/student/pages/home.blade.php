@@ -655,10 +655,16 @@
                                     <h5 class="font-bold text-[16px] text-[#0F3D36] leading-snug mb-1">{{ $certificate->webinar->title ?? 'شهادة إتمام' }}</h5>
                                     <p class="font-medium text-[12px] text-[#9CA3AF] mb-4">اكتمل في {{ date('Y/m/d', (int) $certificate->created_at) }}</p>
                                     <div class="flex items-center gap-2">
-                                        <a href="{{ route('panel.v1.student.certificates.download', ['id' => $certificate->id]) }}" class="flex-1 btn btn-primary rounded-[10px] h-9 font-bold text-[13px] center">تحميل الشهادة</a>
-                                        @if (!empty($certificate->webinar))
-                                            <a href="{{ route('panel.v1.student.course.watch', ['slug' => $certificate->webinar->slug]) }}" class="btn btn-ghost rounded-[10px] h-9 px-4 font-bold text-[13px] text-[#0F3D36] border border-[#E5E7EB]">عرض</a>
-                                        @endif
+                                        <a href="{{ route('panel.v1.student.certificates.download', ['id' => $certificate->id]) }}"
+                                            class="flex-1 btn btn-primary rounded-[10px] h-9 font-bold text-[13px] center gap-1.5">
+                                            <span class="icon-[tabler--download] size-4"></span>
+                                            تحميل الشهادة
+                                        </a>
+                                        <a href="{{ route('panel.v1.student.certificates.download', ['id' => $certificate->id, 'view' => 1]) }}"
+                                            target="_blank" rel="noopener"
+                                            class="btn btn-ghost rounded-[10px] h-9 px-4 font-bold text-[13px] text-[#0F3D36] border border-[#E5E7EB]">
+                                            عرض
+                                        </a>
                                     </div>
                                 </div>
                             </div>

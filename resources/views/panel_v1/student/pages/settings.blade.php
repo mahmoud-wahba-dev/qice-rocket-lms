@@ -301,15 +301,21 @@
                         <div class="lg:col-span-7 {{ $card }}">
                             <h2 class="font-bold text-22px text-primary mb-8">وثائق الهوية</h2>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                @foreach ([['identity_scan', 'صورة الهوية'], ['certificate', 'الشهادة والمستندات']] as [$field, $label])
+                                @foreach ([['identity_scan', 'صورة الهوية'], ['certificate', 'الشهادة والمستندات']] as [$field, $docLabel])
                                     <div>
-                                        <label class="font-semibold text-15px text-primary mb-3 block">{{ $label }}</label>
-                                        <label class="flex flex-col items-center justify-center gap-2 min-h-40 rounded-12px border border-dashed border-d9 bg-[#F7F0E6]/40 px-4 py-8 cursor-pointer hover:border-primary/40 transition">
-                                            <span class="font-semibold text-14px text-primary">اختر ملفًا</span>
-                                            <input type="file" name="{{ $field }}" class="hidden" {{ !empty($authUser->financial_approval) ? 'disabled' : '' }}>
-                                        </label>
-                                        @if (!empty($authUser->$field))
-                                            <p class="font-medium text-13px text-[#00B31B] mt-2">يوجد ملف مرفوع</p>
+                                        <label class="font-semibold text-15px text-primary mb-3 block">{{ $docLabel }}</label>
+                                        @include('panel_v1.components.file-upload', [
+                                            'name' => $field,
+                                            'accept' => 'image/*,.pdf',
+                                            'label' => !empty($authUser->financial_approval) ? 'الرفع مقفل بعد الاعتماد' : 'اختر ملفًا من جهازك',
+                                            'hint' => 'صورة أو PDF',
+                                            'media' => true,
+                                            'required' => false,
+                                            'disabled' => !empty($authUser->financial_approval),
+                                            'existing' => array_values(array_filter([panelV1UserMediaPreview($authUser, $field)])),
+                                        ])
+                                        @if (!empty($authUser->financial_approval))
+                                            <p class="font-medium text-12px text-gray mt-2">لا يمكن تعديل الوثائق بعد اعتماد الحساب المالي.</p>
                                         @endif
                                     </div>
                                 @endforeach
@@ -328,16 +334,25 @@
                 <form id="student-images-form" method="POST" action="{{ route('panel.v1.student.images.update') }}" enctype="multipart/form-data">
                     @csrf
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        @foreach ([['avatar', 'الصورة الشخصية'], ['cover_img', 'صورة الغلاف'], ['profile_secondary_image', 'الصورة الثانوية'], ['profile_video', 'فيديو الملف']] as [$field, $label])
+                        @foreach ([
+                            ['avatar', 'الصورة الشخصية', 'image/*', 'اختر صورة شخصية من جهازك', 'PNG أو JPG'],
+                            ['cover_img', 'صورة الغلاف', 'image/*', 'اختر صورة الغلاف من جهازك', 'يُفضّل عرض عريض'],
+                            ['profile_secondary_image', 'الصورة الثانوية', 'image/*', 'اختر الصورة الثانوية', 'PNG شفاف مفضّل'],
+                            ['profile_video', 'فيديو الملف', 'video/*', 'اختر فيديو من جهازك', 'MP4 أو WebM'],
+                        ] as [$field, $mediaLabel, $accept, $uploadLabel, $hint])
+                            @php $current = panelV1UserMediaPreview($authUser, $field); @endphp
                             <div class="{{ $card }}">
-                                <h2 class="font-bold text-20px text-primary mb-6">{{ $label }}</h2>
-                                @if ($field === 'avatar')
-                                    <div class="flex items-center gap-4 mb-6"><img src="{{ $authUser->getAvatar(80) }}" alt="" class="size-20 rounded-full object-cover"></div>
-                                @endif
-                                <label class="flex items-center justify-center gap-2 min-h-40 rounded-12px border border-dashed border-d9 cursor-pointer hover:border-primary/40 transition px-4 py-8">
-                                    <span class="font-semibold text-14px text-primary">اختر ملفًا</span>
-                                    <input type="file" name="{{ $field }}" class="hidden" accept="{{ $field === 'profile_video' ? 'video/*' : 'image/*' }}">
-                                </label>
+                                <h2 class="font-bold text-20px text-primary mb-6">{{ $mediaLabel }}</h2>
+                                @include('panel_v1.components.file-upload', [
+                                    'name' => $field,
+                                    'accept' => $accept,
+                                    'label' => $uploadLabel,
+                                    'hint' => $hint,
+                                    'media' => true,
+                                    'required' => false,
+                                    'existing' => $current ? [$current] : [],
+                                    'existingLabel' => 'الملف الحالي',
+                                ])
                                 @if (!empty($authUser->$field))
                                     <button type="submit" form="student-delete-media-{{ $field }}" class="mt-4 font-bold text-14px text-[#EF4444]" onclick="return confirm('حذف الملف؟');">حذف الملف الحالي</button>
                                 @endif
@@ -345,15 +360,23 @@
                         @endforeach
                         <div class="{{ $card }}">
                             <h2 class="font-bold text-20px text-primary mb-6">التوقيع</h2>
-                            @php $signature = $authUser->getSignature(true); @endphp
+                            @php
+                                $signature = $authUser->getSignature(true);
+                                $signaturePreview = panelV1UserMediaPreview($authUser, 'signature_img');
+                            @endphp
+                            @include('panel_v1.components.file-upload', [
+                                'name' => 'signature_img',
+                                'accept' => 'image/*',
+                                'label' => !empty($signature) ? 'استبدال التوقيع من جهازك' : 'رفع التوقيع من جهازك',
+                                'hint' => 'PNG أو JPG بخلفية بيضاء',
+                                'media' => true,
+                                'required' => false,
+                                'existing' => $signaturePreview ? [$signaturePreview] : [],
+                                'existingLabel' => 'التوقيع الحالي',
+                            ])
                             @if (!empty($signature))
-                                <div class="mb-6"><img src="{{ $signature }}" alt="" class="max-h-32 rounded-10px"></div>
-                                <button type="submit" form="student-delete-media-signature_img" class="mb-4 font-bold text-14px text-[#EF4444]" onclick="return confirm('حذف التوقيع؟');">حذف التوقيع</button>
+                                <button type="submit" form="student-delete-media-signature_img" class="mt-4 font-bold text-14px text-[#EF4444]" onclick="return confirm('حذف التوقيع؟');">حذف التوقيع</button>
                             @endif
-                            <label class="flex items-center justify-center gap-2 min-h-40 rounded-12px border border-dashed border-d9 cursor-pointer hover:border-primary/40 transition px-4 py-8">
-                                <span class="font-semibold text-14px text-primary">{{ !empty($signature) ? 'استبدال التوقيع' : 'رفع التوقيع' }}</span>
-                                <input type="file" name="signature_img" class="hidden" accept="image/*">
-                            </label>
                         </div>
                     </div>
                     <div class="mt-8">
@@ -430,18 +453,25 @@
                                 <h2 class="font-bold text-22px text-primary mb-6">الملفات والمرفقات</h2>
                                 <div class="space-y-3 mb-6">
                                     @forelse ($attachments ?? [] as $attachment)
-                                        <div class="flex items-center justify-between gap-3 border border-d9 rounded-10px px-4 py-3">
-                                            <div class="min-w-0">
-                                                <span class="block font-medium text-15px truncate">{{ $attachment->title }}</span>
+                                        <div class="space-y-2">
+                                            @include('panel_v1.components.file-preview-card', [
+                                                'item' => panelV1FilePreviewItem(
+                                                    $attachment->attachment ?? null,
+                                                    $attachment->title ?? 'مرفق',
+                                                    null,
+                                                    $attachment->file_type ?? null
+                                                ),
+                                                'removable' => false,
+                                            ])
+                                            <div class="flex items-center justify-between gap-2 px-1">
                                                 @if (!empty($attachment->description))
-                                                    <span class="block font-medium text-12px text-gray truncate">{{ $attachment->description }}</span>
+                                                    <p class="font-medium text-12px text-gray truncate">{{ $attachment->description }}</p>
+                                                @else
+                                                    <span></span>
                                                 @endif
-                                            </div>
-                                            <div class="flex items-center gap-3 shrink-0">
-                                                @if (!empty($attachment->attachment))
-                                                    <a href="{{ $attachment->attachment }}" target="_blank" rel="noopener" class="font-bold text-14px text-primary">تنزيل</a>
-                                                @endif
-                                                <button type="submit" form="student-delete-attachment-{{ $attachment->id }}" class="font-bold text-14px text-[#EF4444]" onclick="return confirm('حذف؟');">حذف</button>
+                                                <button type="submit" form="student-delete-attachment-{{ $attachment->id }}"
+                                                    class="font-bold text-13px text-[#EF4444] shrink-0"
+                                                    onclick="return confirm('حذف؟');">حذف</button>
                                             </div>
                                         </div>
                                     @empty
@@ -475,7 +505,15 @@
                             @endforeach
                         </select>
                         <input type="text" name="description" placeholder="وصف مختصر (اختياري)" class="input input-bordered h-12 rounded-10px font-medium text-15px focus:outline-none focus:border-primary sm:col-span-2">
-                        <input type="file" name="attachment" required class="input input-bordered h-12 rounded-10px font-medium text-15px focus:outline-none focus:border-primary sm:col-span-2">
+                        <div class="sm:col-span-2">
+                            @include('panel_v1.components.file-upload', [
+                                'name' => 'attachment',
+                                'accept' => 'image/*,.pdf,.doc,.docx,.zip,.rar,video/*',
+                                'label' => 'اختر الملف من جهازك',
+                                'hint' => 'صورة، PDF، مستند، فيديو أو مضغوط',
+                                'required' => true,
+                            ])
+                        </div>
                         <div class="sm:col-span-2">
                             <button type="submit" class="btn btn-primary rounded-10px h-12 px-8 font-bold text-16px">رفع المرفق</button>
                         </div>

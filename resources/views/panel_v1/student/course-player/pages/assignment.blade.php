@@ -91,17 +91,18 @@
             </div>
 
             <label class="font-medium text-14px text-[#64748B] mb-2.5 mt-6 block">
-                إرفاق المقال كملف خارجي (اختياري)
+                إرفاق ملف من جهازك (اختياري)
             </label>
 
-            <label
-                class="flex items-center justify-center gap-2.5 rounded-12px border border-dashed border-[#0FC787]/60 bg-[#ECFDF5] px-5 py-4 cursor-pointer hover:bg-[#D1FAE5]/50 transition mb-8">
-                <span class="icon-[tabler--paperclip] size-5 text-primary shrink-0"></span>
-                <span class="font-semibold text-14px sm:text-15px text-primary text-center">
-                    اضغط هنا لرفع الملف بصيغة (PDF أو DOCX)
-                </span>
-                <input type="file" name="upload" class="hidden" accept=".pdf,.doc,.docx">
-            </label>
+            @include('panel_v1.components.file-upload', [
+                'name' => 'upload',
+                'accept' => '.pdf,.doc,.docx,image/*',
+                'label' => 'اضغط أو اسحب الملف هنا للرفع من جهازك',
+                'hint' => 'PDF أو DOCX أو صورة',
+                'required' => false,
+                'existing' => $assignmentExistingFiles ?? [],
+                'class' => 'mb-8',
+            ])
 
             <div class="flex justify-end">
                 <button type="submit"

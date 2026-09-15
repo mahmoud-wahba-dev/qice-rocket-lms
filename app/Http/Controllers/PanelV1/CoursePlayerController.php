@@ -43,7 +43,6 @@ class CoursePlayerController extends Controller
             'currentMedia' => $player['currentMedia'] ?? null,
             'hasLectureQuiz' => $hasQuiz,
             'hasLectureAssignment' => $hasAssignment,
-            'hasComments' => false,
             'hasFiles' => $hasFiles,
             'files' => $files->map(function ($f) use ($webinar) {
                 $isDownloadable = (bool) ($f->downloadable ?? false);
@@ -61,7 +60,99 @@ class CoursePlayerController extends Controller
             })->all(),
             'lectureQuiz' => $player['lectureQuiz'] ?? null,
             'lectureAssignment' => $player['lectureAssignment'] ?? null,
+            'hasComments' => true,
+            'courseComments' => $this->courseCommentsForStudent($webinar, $user),
         ]));
+    }
+
+    public function storeComment(Request $request, string $slug)
+    {
+        $resolved = $this->resolveCourse($request, $slug);
+        if ($resolved instanceof \Illuminate\Http\RedirectResponse) {
+            return $resolved;
+        }
+        [$user, $webinar] = $resolved;
+
+        $request->validate([
+            'comment' => 'required|string|min:3|max:2000',
+            'lesson_title' => 'nullable|string|max:255',
+        ]);
+
+        $status = \App\Models\Comment::$pending;
+        try {
+            if (!empty(getGeneralOptionsSettings('direct_publication_of_comments'))) {
+                $status = \App\Models\Comment::$active;
+            }
+        } catch (\Throwable $e) {
+        }
+
+        $body = trim((string) $request->input('comment'));
+        $lessonTitle = trim((string) $request->input('lesson_title', ''));
+        if ($lessonTitle !== '') {
+            $body = '【' . $lessonTitle . '】' . "\n" . $body;
+        }
+
+        \App\Models\Comment::create([
+            'user_id' => $user->id,
+            'webinar_id' => $webinar->id,
+            'comment' => $body,
+            'status' => $status,
+            'created_at' => time(),
+        ]);
+
+        try {
+            $notifyOptions = [
+                '[c.title]' => $this->localizedTitle($webinar) ?: $webinar->title,
+                '[u.name]' => $user->full_name,
+            ];
+            sendNotification('new_comment', $notifyOptions, 1);
+            if (!empty($webinar->teacher_id)) {
+                sendNotification('new_comment', $notifyOptions, $webinar->teacher_id);
+            }
+        } catch (\Throwable $e) {
+        }
+
+        $redirect = route('panel.v1.student.course.watch', ['slug' => $slug]);
+        if ($request->filled('item')) {
+            $redirect .= '?item=' . urlencode($request->input('item'));
+        }
+        $redirect .= '#lesson-tabs-3';
+
+        $msg = $status === \App\Models\Comment::$active
+            ? 'تم نشر تعليقك'
+            : 'تم إرسال تعليقك وبانتظار مراجعة المدرب/الإدارة';
+
+        return redirect()->to($redirect)->with('toast', [
+            'title' => 'تم',
+            'msg' => $msg,
+            'type' => 'success',
+        ]);
+    }
+
+    private function courseCommentsForStudent($webinar, $user): array
+    {
+        return \App\Models\Comment::with(['user'])
+            ->where('webinar_id', $webinar->id)
+            ->whereNull('reply_id')
+            ->where(function ($q) use ($user) {
+                $q->where('status', \App\Models\Comment::$active)
+                    ->orWhere('user_id', $user->id);
+            })
+            ->orderBy('id', 'desc')
+            ->limit(50)
+            ->get()
+            ->map(function ($comment) use ($user) {
+                return [
+                    'id' => $comment->id,
+                    'author' => $comment->user->full_name ?? 'طالب',
+                    'body' => $comment->comment,
+                    'status' => $comment->status,
+                    'mine' => (int) $comment->user_id === (int) $user->id,
+                    'time' => !empty($comment->created_at) ? date('Y/m/d H:i', (int) $comment->created_at) : '',
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     private function buildPlayerData($webinar, $user, ?Request $request = null): array
@@ -246,30 +337,63 @@ class CoursePlayerController extends Controller
         }
 
         $lectureQuiz = null;
-        $quiz = \App\Models\Quiz::where('webinar_id', $webinar->id)->where('status', 'active')->orderBy('id')->first();
-        if ($quiz) {
-            $lectureQuiz = [
-                'title' => $this->localizedTitle($quiz) ?: $quiz->title,
-                'subtitle' => $this->localizedTitle($webinar) ?: $webinar->title,
-                'duration' => !empty($quiz->time) ? $quiz->time . ' دقيقة' : '—',
-                'questions_count' => \App\Models\QuizzesQuestion::where('quiz_id', $quiz->id)->count() . ' أسئلة',
-                'pass_score' => $quiz->pass_mark . '%',
-                'attempts' => $quiz->attempt ? $quiz->attempt . ' محاولات' : '—',
-            ];
+        if (!empty($activeChapterId)) {
+            $quiz = \App\Models\Quiz::where('webinar_id', $webinar->id)
+                ->where('status', 'active')
+                ->where('chapter_id', $activeChapterId)
+                ->orderBy('id')
+                ->first();
+            if ($quiz) {
+                $qCount = \App\Models\QuizzesQuestion::where('quiz_id', $quiz->id)->count();
+                $lectureQuiz = [
+                    'id' => $quiz->id,
+                    'title' => $this->localizedTitle($quiz) ?: ($quiz->title ?: 'اختبار المحاضرة'),
+                    'subtitle' => $this->localizedTitle($webinar) ?: $webinar->title,
+                    'duration' => !empty($quiz->time) ? $quiz->time . ' دقيقة' : '—',
+                    'questions_count' => $qCount . ' ' . ($qCount === 1 ? 'سؤال' : 'أسئلة'),
+                    'pass_score' => $quiz->pass_mark . '%',
+                    'attempts' => $quiz->attempt ? $quiz->attempt . ' محاولات' : 'غير محدود',
+                ];
+            }
         }
 
         $lectureAssignment = null;
-        $assignment = \App\Models\WebinarAssignment::where('webinar_id', $webinar->id)->where('status', 'active')->orderBy('id')->first();
+        $assignment = null;
+        if (!empty($activeChapterId)) {
+            $assignment = \App\Models\WebinarAssignment::where('webinar_id', $webinar->id)
+                ->where('status', 'active')
+                ->where('chapter_id', $activeChapterId)
+                ->orderBy('id')
+                ->first();
+        }
         if ($assignment) {
+            $history = \App\Models\WebinarAssignmentHistory::where('assignment_id', $assignment->id)
+                ->where('student_id', $user->id)
+                ->orderByDesc('id')
+                ->first();
+
+            $attach = $assignment->attachments()->orderBy('id')->first();
+            $statusLabel = 'متاح للتسليم';
+            if ($history) {
+                $statusLabel = match ($history->status) {
+                    'passed' => 'تم التقييم — ناجح',
+                    'not_passed' => 'تم التقييم — راسب',
+                    default => 'مُسلّم — بانتظار التقييم',
+                };
+            }
+
             $lectureAssignment = [
-                'title' => $this->localizedTitle($assignment) ?: ($assignment->title ?? 'تكليف الدورة'),
+                'id' => $assignment->id,
+                'title' => $this->localizedTitle($assignment) ?: ($assignment->title ?: 'تكليف الدورة'),
                 'subtitle' => $this->localizedTitle($webinar) ?: $webinar->title,
-                'deadline' => $assignment->deadline ? date('Y/m/d', (int) $assignment->deadline) : 'غير محدود',
-                'attempts' => $assignment->attempts ?? 'غير محدود',
+                'deadline' => $this->formatAssignmentDeadline($assignment, $user),
+                'attempts' => !empty($assignment->attempts) ? (string) $assignment->attempts : 'غير محدود',
                 'grade' => $assignment->grade ?? '—',
                 'pass_grade' => $assignment->pass_grade ?? '—',
-                'description' => $assignment->description ?? '',
-                'file_name' => '',
+                'description' => strip_tags((string) ($this->localizedDescription($assignment) ?: ($assignment->description ?? ''))),
+                'status_label' => $statusLabel,
+                'submitted' => !empty($history),
+                'file_name' => $attach->title ?? '',
                 'file_size' => '',
             ];
         }
@@ -277,6 +401,8 @@ class CoursePlayerController extends Controller
         $courseTitle = $this->localizedTitle($webinar) ?: $webinar->title;
         $courseSubtitle = $webinar->translate('ar')?->summary
             ?: ($webinar->category->title ?? 'الادارة والتنفيذ');
+
+        [$certificateLocked, $certificateUrl] = $this->resolveCourseCertificate($webinar, $user, $progress);
 
         return [
             'slug' => $webinar->slug,
@@ -292,7 +418,37 @@ class CoursePlayerController extends Controller
             'files' => $files,
             'lectureQuiz' => $lectureQuiz,
             'lectureAssignment' => $lectureAssignment,
+            'certificateLocked' => $certificateLocked,
+            'certificateUrl' => $certificateUrl,
         ];
+    }
+
+    /**
+     * Course certificate unlocks only when webinar.certificate is on and progress is 100%.
+     *
+     * @return array{0: bool, 1: string|null}
+     */
+    private function resolveCourseCertificate($webinar, $user, int $progress): array
+    {
+        if (empty($webinar->certificate)) {
+            return [true, null];
+        }
+
+        $certificate = null;
+        try {
+            $certificate = $webinar->getUserPassedCourseCertificate($user);
+            if (empty($certificate) && $progress >= 100) {
+                $certificate = $webinar->makeCertificateForUser($user);
+            }
+        } catch (\Throwable $e) {
+            $certificate = null;
+        }
+
+        if (!empty($certificate?->id)) {
+            return [false, route('panel.v1.student.certificates.download', ['id' => $certificate->id])];
+        }
+
+        return [true, null];
     }
 
     private function markLessonVisited($user, array $lesson): void
@@ -344,6 +500,52 @@ class CoursePlayerController extends Controller
         }
 
         return (string) ($model->title ?? '');
+    }
+
+    private function localizedDescription($model): string
+    {
+        if (!$model) {
+            return '';
+        }
+
+        foreach (['ar', app()->getLocale(), 'en'] as $locale) {
+            try {
+                $translated = $model->translate($locale);
+                if (!empty($translated?->description)) {
+                    return (string) $translated->description;
+                }
+            } catch (\Throwable $e) {
+            }
+        }
+
+        return (string) ($model->description ?? '');
+    }
+
+    /**
+     * Assignment.deadline is "days after purchase", not a unix timestamp.
+     */
+    private function formatAssignmentDeadline($assignment, $user = null): string
+    {
+        if (empty($assignment->deadline)) {
+            return 'غير محدود';
+        }
+
+        $days = (int) $assignment->deadline;
+        if ($days < 1) {
+            return 'غير محدود';
+        }
+
+        if ($user) {
+            try {
+                $ts = $assignment->getDeadlineTimestamp($user);
+                if (!empty($ts) && $ts !== false) {
+                    return date('Y/m/d', (int) $ts);
+                }
+            } catch (\Throwable $e) {
+            }
+        }
+
+        return $days . ' يوم من الشراء';
     }
 
     private function buildMediaPayload(string $kind, $model, $webinar): ?array
@@ -530,10 +732,16 @@ class CoursePlayerController extends Controller
 
         [$user, $webinar] = $resolved;
 
-        $assignment = \App\Models\WebinarAssignment::where('webinar_id', $webinar->id)
-            ->where('status', 'active')
-            ->orderBy('id')
-            ->first();
+        $player = $this->buildPlayerData($webinar, $user, $request);
+        $card = $player['lectureAssignment'] ?? null;
+
+        $assignment = null;
+        if (!empty($card['id'])) {
+            $assignment = \App\Models\WebinarAssignment::where('id', $card['id'])
+                ->where('webinar_id', $webinar->id)
+                ->where('status', 'active')
+                ->first();
+        }
 
         $existing = null;
         if ($assignment) {
@@ -543,25 +751,52 @@ class CoursePlayerController extends Controller
                 ->first();
         }
 
-        $player = $this->buildPlayerData($webinar,$user,$request);
+        $title = $card['title'] ?? ($assignment ? 'تكليف الدورة' : 'لا يوجد تكليف');
+        $description = $card['description'] ?? '';
+
+        $existingFiles = [];
+        if ($existing) {
+            $msgWithFile = \App\Models\WebinarAssignmentHistoryMessage::where('assignment_history_id', $existing->id)
+                ->whereNotNull('file_path')
+                ->orderByDesc('id')
+                ->first();
+            if ($msgWithFile && !empty($msgWithFile->file_path)) {
+                $existingFiles[] = panelV1FilePreviewItem(
+                    $msgWithFile->file_path,
+                    $msgWithFile->file_title ?: basename($msgWithFile->file_path)
+                );
+            }
+        }
 
         return view('panel_v1.student.course-player.pages.assignment', array_merge($player, [
             'pageTitle' => 'تقديم إجابة التكليف',
             'authUser' => $user,
             'webinar' => $webinar,
-            'courseTitle' => $webinar->title,
+            'courseTitle' => $player['course']['title'] ?? $webinar->title,
+            'courseSlug' => $webinar->slug,
             'assignmentPage' => [
-                'title' => $assignment ? 'تكليف الدورة' : 'لا يوجد تكليف',
-                'subtitle' => $webinar->title,
+                'title' => $title,
+                'subtitle' => $player['course']['title'] ?? $webinar->title,
                 'details_title' => 'تفاصيل التكليف',
-                'details_body' => $assignment ? ('الدرجة العظمى: ' . ($assignment->grade ?? '—') . ' — درجة النجاح: ' . ($assignment->pass_grade ?? '—')) : 'لم يضف المدرب تكليفًا لهذه الدورة بعد.',
-                'points_title' => 'تعليمات التسليم',
-                'points' => ['اكتب إجابتك بوضوح', 'يمكن إرفاق ملف PDF أو DOCX'],
+                'details_body' => $description !== ''
+                    ? $description
+                    : ($assignment
+                        ? ('الدرجة العظمى: ' . ($assignment->grade ?? '—') . ' — درجة النجاح: ' . ($assignment->pass_grade ?? '—') . ' — الموعد: ' . ($card['deadline'] ?? 'غير محدود'))
+                        : 'لم يضف المدرب تكليفًا لهذه المحاضرة بعد.'),
+                'points_title' => 'بيانات التسليم',
+                'points' => $assignment ? array_values(array_filter([
+                    'الموعد النهائي: ' . ($card['deadline'] ?? 'غير محدود'),
+                    'المحاولات: ' . ($card['attempts'] ?? 'غير محدود'),
+                    'درجة الواجب: ' . ($assignment->grade ?? '—'),
+                    'درجة النجاح: ' . ($assignment->pass_grade ?? '—'),
+                    !empty($card['status_label']) ? ('الحالة: ' . $card['status_label']) : null,
+                ])) : ['لا يوجد تكليف لهذه المحاضرة'],
                 'form_title' => 'إجابة التكليف والتسليم',
                 'word_limit' => 2000,
             ],
             'assignment' => $assignment,
             'existingHistory' => $existing,
+            'assignmentExistingFiles' => $existingFiles,
         ]));
     }
 
@@ -578,7 +813,7 @@ class CoursePlayerController extends Controller
         $request->validate([
             'assignment_id' => 'required|integer',
             'answer' => 'required|string|max:20000',
-            'upload' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
+            'upload' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp|max:10240',
         ]);
 
         $assignment = \App\Models\WebinarAssignment::where('id', $request->input('assignment_id'))
@@ -635,21 +870,39 @@ class CoursePlayerController extends Controller
             ->orderBy('id', 'desc')
             ->first();
 
-        $player = $this->buildPlayerData($webinar,$user,$request);
+        $attemptsUsed = QuizzesResult::where('quiz_id', $quiz->id)->where('user_id', $user->id)->count();
+        $attemptsLimit = !empty($quiz->attempt) ? (int) $quiz->attempt : null;
+        $attemptsLeft = $attemptsLimit === null ? null : max(0, $attemptsLimit - $attemptsUsed);
+        $canStart = $attemptsLeft === null || $attemptsLeft > 0;
+
+        $deadline = '';
+        try {
+            $expireTs = $quiz->getExpireTimestamp($user);
+            if (!empty($expireTs)) {
+                $deadline = 'آخر موعد: ' . date('Y/m/d H:i', (int) $expireTs);
+            }
+        } catch (\Throwable $e) {
+        }
+
+        $player = $this->buildPlayerData($webinar, $user, $request);
 
         return view('panel_v1.student.course-player.pages.quiz-start', array_merge($player, [
             'pageTitle' => 'بدء الاختبار',
             'authUser' => $user,
             'webinar' => $webinar,
-            'courseTitle' => $webinar->title,
+            'courseTitle' => $player['course']['title'] ?? $webinar->title,
             'quiz' => [
-                'title' => $quiz->title,
-                'description' => '',
+                'id' => $quiz->id,
+                'title' => $this->localizedTitle($quiz) ?: ($quiz->title ?: 'اختبار الدورة'),
+                'description' => $this->localizedTitle($webinar) ?: $webinar->title,
                 'duration' => !empty($quiz->time) ? $quiz->time . ' دقيقة' : '—',
                 'questions_count' => $questionsCount,
                 'pass_score' => $quiz->pass_mark,
                 'attempts' => $quiz->attempt ?? '—',
-                'deadline' => '',
+                'deadline' => $deadline,
+                'attempts_used' => $attemptsUsed,
+                'attempts_left' => $attemptsLeft,
+                'can_start' => $canStart,
             ],
             'lastResult' => $lastResult ? [
                 'grade' => $lastResult->user_grade,
@@ -765,7 +1018,7 @@ class CoursePlayerController extends Controller
             return $this->finishQuiz($user, $quiz, $slug);
         }
 
-        return redirect()->route('panel.v1.student.course.quiz.take', ['slug' => $slug, 'q' => $current + 1]);
+        return redirect()->route('panel.v1.student.course.quiz.take', ['slug' => $slug, 'quiz' => $quiz->id, 'q' => $current + 1]);
     }
 
     private function finishQuiz($user, $quiz, string $slug)
@@ -818,10 +1071,30 @@ class CoursePlayerController extends Controller
             'created_at' => time(),
         ]);
 
+        $result = QuizzesResult::where('quiz_id', $quiz->id)
+            ->where('user_id', $user->id)
+            ->orderByDesc('id')
+            ->first();
+
+        if ($status === 'passed' && $result) {
+            try {
+                if (!empty($quiz->certificate)) {
+                    $quiz->getUserCertificate($user, $result);
+                }
+                if (!empty($quiz->webinar_id)) {
+                    $course = \App\Models\Webinar::find($quiz->webinar_id);
+                    if ($course) {
+                        $course->makeCertificateForUser($user);
+                    }
+                }
+            } catch (\Throwable $e) {
+            }
+        }
+
         session()->forget($this->quizSessionKey($quiz->id));
 
         return redirect()
-            ->route('panel.v1.student.course.quiz', ['slug' => $slug])
+            ->route('panel.v1.student.course.quiz', ['slug' => $slug, 'quiz' => $quiz->id])
             ->with('toast', [
                 'title' => $status === 'passed' ? 'أحسنت!' : 'تم',
                 'msg' => $status === 'waiting' ? 'تم إرسال إجاباتك وهي بانتظار التصحيح' : ('درجتك: ' . max(0, $totalMark)),
@@ -845,7 +1118,8 @@ class CoursePlayerController extends Controller
             return $user;
         }
 
-        $webinar = \App\Models\Webinar::where('slug', $slug)
+        $webinar = \App\Models\Webinar::with(['teacher', 'translations'])
+            ->where('slug', $slug)
             ->where('status', 'active')
             ->first();
 
@@ -857,15 +1131,41 @@ class CoursePlayerController extends Controller
             return redirect()->route('landing.v1.course-details', ['slug' => $webinar->slug]);
         }
 
-        $quiz = Quiz::where('webinar_id', $webinar->id)
-            ->where('status', 'active')
-            ->orderBy('id')
-            ->first();
+        $quiz = null;
+        $quizId = (int) $request->get('quiz', 0);
+        if ($quizId > 0) {
+            $quiz = Quiz::where('webinar_id', $webinar->id)
+                ->where('id', $quizId)
+                ->where('status', 'active')
+                ->first();
+        }
+
+        if (empty($quiz)) {
+            $itemKey = (string) $request->get('item', '');
+            $chapterId = null;
+            if (preg_match('/^(file|session|text)_(\d+)$/', $itemKey, $m)) {
+                $kind = $m[1];
+                $id = (int) $m[2];
+                $chapterId = match ($kind) {
+                    'file' => \App\Models\File::where('id', $id)->where('webinar_id', $webinar->id)->value('chapter_id'),
+                    'session' => \App\Models\Session::where('id', $id)->where('webinar_id', $webinar->id)->value('chapter_id'),
+                    'text' => \App\Models\TextLesson::where('id', $id)->where('webinar_id', $webinar->id)->value('chapter_id'),
+                    default => null,
+                };
+            }
+            if (!empty($chapterId)) {
+                $quiz = Quiz::where('webinar_id', $webinar->id)
+                    ->where('chapter_id', $chapterId)
+                    ->where('status', 'active')
+                    ->orderBy('id')
+                    ->first();
+            }
+        }
 
         if (empty($quiz)) {
             return redirect()
                 ->route('panel.v1.student.course.watch', ['slug' => $slug])
-                ->with('toast', ['title' => 'تنبيه', 'msg' => 'لا يوجد اختبار نشط لهذه الدورة', 'type' => 'error']);
+                ->with('toast', ['title' => 'تنبيه', 'msg' => 'لا يوجد اختبار لهذه المحاضرة', 'type' => 'error']);
         }
 
         return [$user, $webinar, $quiz];
@@ -879,7 +1179,8 @@ class CoursePlayerController extends Controller
             return $user;
         }
 
-        $webinar = \App\Models\Webinar::where('slug', $slug)
+        $webinar = \App\Models\Webinar::with(['teacher', 'translations'])
+            ->where('slug', $slug)
             ->where('status', 'active')
             ->first();
 
@@ -900,7 +1201,10 @@ class CoursePlayerController extends Controller
         if ($user instanceof \Illuminate\Http\RedirectResponse) {
             return $user;
         }
-        $webinar = \App\Models\Webinar::where('slug', $slug)->where('status','active')->first();
+        $webinar = \App\Models\Webinar::with(['teacher', 'translations'])
+            ->where('slug', $slug)
+            ->where('status', 'active')
+            ->first();
         if (empty($webinar)) { abort(404); }
         if (!$this->canAccess($user,$webinar)) {
             return redirect()->route('landing.v1.course-details',['slug'=>$webinar->slug]);

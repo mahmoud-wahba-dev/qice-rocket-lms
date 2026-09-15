@@ -1,5 +1,11 @@
 @php
-    $courseSlug = $slug ?? ($demoSlug ?? 'demo');
+    $courseSlug = $slug ?? ($demoSlug ?? ((!empty($webinar) ? $webinar->slug : null) ?: 'demo'));
+    $courseTitle = $course['title'] ?? ((!empty($webinar) ? $webinar->title : null) ?: 'تذكير بالدورة');
+    $coursePageUrl = route('landing.v1.course-details', ['slug' => $courseSlug]);
+    $authUser = $authUser ?? auth()->user();
+    $instructorProfileUrl = !empty($authUser?->username)
+        ? route('landing.v1.instructor-details', ['username' => $authUser->username])
+        : route('panel.v1.instructor.settings');
 @endphp
 
 <header class="sticky top-0 z-50 bg-primary text-white shadow-sm">
@@ -34,27 +40,29 @@
                 </button>
                 <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-56 py-2 rounded-14px border border-d9 bg-white shadow-xl z-[60]">
                     <li>
-                        <a href="{{ route('panel.v1.instructor.courses.performance', ['slug' => $courseSlug]) }}"
+                        <a href="{{ $coursePageUrl }}" target="_blank" rel="noopener"
                             class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary inline-flex items-center gap-2">
                             <span class="icon-[tabler--external-link] size-4"></span>
                             صفحة الدورة
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary inline-flex items-center gap-2">
-                            <span class="icon-[tabler--bell] size-4"></span>
+                        <a href="{{ route('panel.v1.instructor.support') }}"
+                            class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary inline-flex items-center gap-2">
+                            <span class="icon-[tabler--messages] size-4"></span>
                             منتدى الدورة
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('panel.v1.instructor.settings') }}"
+                        <a href="{{ $instructorProfileUrl }}" target="_blank" rel="noopener"
                             class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary inline-flex items-center gap-2">
                             <span class="icon-[tabler--user] size-4"></span>
                             ملف المدرب
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary inline-flex items-center gap-2">
+                        <a href="{{ route('panel.v1.instructor.home') }}#calendar"
+                            class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary inline-flex items-center gap-2">
                             <span class="icon-[tabler--bell-plus] size-4"></span>
                             اضافة تاريخ تذكير
                         </a>

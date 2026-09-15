@@ -1057,6 +1057,100 @@ class PanelV1StudentDemoSeeder extends Seeder
         $webinar->duration = 180;
         $webinar->updated_at = $now;
         $webinar->save();
+
+        // Per-lecture quizzes: only some chapters have one (others show empty quiz tab)
+        $this->ensureChapterQuizzes($webinar, $teacher, $now, $locale);
+    }
+
+    private function ensureChapterQuizzes(Webinar $webinar, User $teacher, int $now, string $locale): void
+    {
+        $chapters = WebinarChapter::where('webinar_id', $webinar->id)->orderBy('order')->orderBy('id')->get();
+        $specs = [
+            1 => ['title' => 'اختبار المحاضرة الأولى', 'question' => 'ما الهدف من معايير الجودة؟', 'correct' => 'تحسين مستوى الخدمة وتقليل الأخطاء', 'wrong' => 'زيادة التكلفة فقط'],
+            3 => ['title' => 'اختبار مؤشرات الأداء', 'question' => 'ماذا يعني KPI؟', 'correct' => 'مؤشر أداء رئيسي', 'wrong' => 'خطة تسويق'],
+            5 => ['title' => 'اختبار التحسين المستمر', 'question' => 'أي منهج يركز على التحسين المستمر؟', 'correct' => 'PDCA / كايزن', 'wrong' => 'التجميد التام للعمليات'],
+            8 => ['title' => 'اختبار المراجعة النهائية', 'question' => 'متى تُعتبر الدورة مكتملة للشهادة؟', 'correct' => 'عند إتمام المحتوى والنجاح في المتطلبات', 'wrong' => 'عند فتح الصفحة فقط'],
+        ];
+
+        foreach ($chapters as $chapter) {
+            $order = (int) $chapter->order;
+            if (!isset($specs[$order])) {
+                continue;
+            }
+            $spec = $specs[$order];
+
+            $quiz = Quiz::updateOrCreate(
+                [
+                    'webinar_id' => $webinar->id,
+                    'chapter_id' => $chapter->id,
+                    'creator_id' => $teacher->id,
+                ],
+                [
+                    'attempt' => 3,
+                    'pass_mark' => 50,
+                    'time' => 10 + $order,
+                    'certificate' => $order === 8,
+                    'status' => Quiz::ACTIVE,
+                    'created_at' => $now,
+                ]
+            );
+
+            foreach ([$locale, 'en'] as $loc) {
+                QuizTranslation::updateOrCreate(
+                    ['quiz_id' => $quiz->id, 'locale' => $loc],
+                    [
+                        'title' => $spec['title'],
+                        'description' => 'اختبار خاص بهذه المحاضرة',
+                    ]
+                );
+            }
+
+            WebinarChapterItem::makeItem($teacher->id, $chapter->id, $quiz->id, WebinarChapterItem::$chapterQuiz);
+
+            $question = QuizzesQuestion::firstOrCreate(
+                [
+                    'quiz_id' => $quiz->id,
+                    'creator_id' => $teacher->id,
+                    'order' => 1,
+                ],
+                [
+                    'grade' => 50,
+                    'type' => 'multiple',
+                    'created_at' => $now,
+                ]
+            );
+
+            QuizzesQuestionTranslation::updateOrCreate(
+                ['quizzes_question_id' => $question->id, 'locale' => $locale],
+                ['title' => $spec['question']]
+            );
+
+            $correct = QuizzesQuestionsAnswer::firstOrCreate(
+                [
+                    'question_id' => $question->id,
+                    'creator_id' => $teacher->id,
+                    'correct' => 1,
+                ],
+                ['created_at' => $now]
+            );
+            QuizzesQuestionsAnswerTranslation::updateOrCreate(
+                ['quizzes_questions_answer_id' => $correct->id, 'locale' => $locale],
+                ['title' => $spec['correct']]
+            );
+
+            $wrong = QuizzesQuestionsAnswer::firstOrCreate(
+                [
+                    'question_id' => $question->id,
+                    'creator_id' => $teacher->id,
+                    'correct' => 0,
+                ],
+                ['created_at' => $now]
+            );
+            QuizzesQuestionsAnswerTranslation::updateOrCreate(
+                ['quizzes_questions_answer_id' => $wrong->id, 'locale' => $locale],
+                ['title' => $spec['wrong']]
+            );
+        }
     }
 
     /**

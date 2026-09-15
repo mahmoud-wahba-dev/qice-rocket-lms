@@ -138,10 +138,32 @@
         </div>
 
         <div id="inst-lesson-3" class="hidden" role="tabpanel" aria-labelledby="inst-lesson-tab-3">
-            <div class="border border-d9 rounded-16px bg-white px-6 py-14 text-center">
-                <p class="font-semibold text-17px text-primary mb-2">لا توجد تعليقات بعد</p>
-                <p class="font-medium text-14px text-gray">ستظهر تعليقات الطلاب على هذه المحاضرة هنا.</p>
-            </div>
+            @php $commentRows = $courseComments ?? []; @endphp
+            @if (count($commentRows))
+                <div class="space-y-4">
+                    @foreach ($commentRows as $row)
+                        <div class="border border-d9 rounded-16px bg-white px-5 py-4 text-start">
+                            <div class="flex items-center justify-between gap-3 mb-2">
+                                <p class="font-bold text-15px text-primary">{{ $row['author'] }}</p>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    @if (($row['status'] ?? '') === 'pending')
+                                        <span class="rounded-full bg-[#FEF6E7] px-2.5 py-1 font-semibold text-11px text-[#C9A46C]">بانتظار المراجعة</span>
+                                    @else
+                                        <span class="rounded-full bg-[#ECFDF5] px-2.5 py-1 font-semibold text-11px text-[#059669]">منشور</span>
+                                    @endif
+                                    <span class="font-medium text-12px text-gray">{{ $row['time'] }}</span>
+                                </div>
+                            </div>
+                            <p class="font-medium text-14px text-[#334155] leading-relaxed whitespace-pre-line">{{ $row['body'] }}</p>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="border border-d9 rounded-16px bg-white px-6 py-14 text-center">
+                    <p class="font-semibold text-17px text-primary mb-2">لا توجد تعليقات بعد</p>
+                    <p class="font-medium text-14px text-gray">ستظهر تعليقات الطلاب على هذه الدورة هنا.</p>
+                </div>
+            @endif
         </div>
 
         <div id="inst-lesson-4" class="hidden" role="tabpanel" aria-labelledby="inst-lesson-tab-4">

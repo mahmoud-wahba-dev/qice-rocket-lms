@@ -27,13 +27,13 @@
         <div class="rounded-20px border border-[#00000014] bg-white p-5 sm:p-7 lg:p-8 mb-5 sm:mb-6 shadow-sm">
             <div class="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
                 <div class="flex flex-col sm:flex-row gap-5 sm:gap-6 flex-1 min-w-0 w-full">
-                    <div class="relative shrink-0 mx-auto sm:mx-0">
+                    <div class="relative shrink-0 mx-auto sm:mx-0 flex flex-col items-center">
                         <div class="size-28 sm:size-32 lg:size-36 rounded-full overflow-hidden border-4 border-white shadow-md bg-primary/10">
                             <img src="{{ $avatar }}" alt="{{ $instructor->full_name }}"
                                 class="w-full h-full object-cover">
                         </div>
                         <span
-                            class="absolute -bottom-1 start-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 font-semibold text-11px text-white whitespace-nowrap shadow">
+                            class="-mt-3.5 relative z-10 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 font-semibold text-11px text-white whitespace-nowrap shadow">
                             <span class="icon-[tabler--rosette-discount-check] size-3.5"></span>
                             مدرب موثق
                         </span>

@@ -171,7 +171,7 @@ $mediaMode = $media['mode'] ?? null;
                 </div>
 
                 <div class="flex justify-end">
-                    <a href="{{ route('panel.v1.student.course.quiz', ['slug' => $courseSlug]) }}"
+                    <a href="{{ route('panel.v1.student.course.quiz', ['slug' => $courseSlug, 'quiz' => $quizCard['id'] ?? null]) }}"
                         class="btn btn-primary rounded-10px h-12 px-6 font-bold text-15px gap-2">
                         <span class="icon-[tabler--arrow-left] size-5"></span>
                         ابدأ الاختبار الآن
@@ -227,10 +227,16 @@ $mediaMode = $media['mode'] ?? null;
                         {{ $assignmentCard['description'] ?? '' }}
                     </p>
 
+                    @if (!empty($assignmentCard['status_label']))
+                        <p class="font-semibold text-13px text-primary mb-4 text-start">
+                            الحالة: {{ $assignmentCard['status_label'] }}
+                        </p>
+                    @endif
+
                     <div class="flex justify-end">
                         <a href="{{ route('panel.v1.student.course.assignment', ['slug' => $courseSlug]) }}"
                             class="btn btn-primary rounded-12px h-12 px-6 font-bold text-15px gap-2">
-                            الانتقال لحل الواجب
+                            {{ !empty($assignmentCard['submitted']) ? 'عرض / تحديث التسليم' : 'الانتقال لحل الواجب' }}
                             <span class="icon-[tabler--arrow-down] size-5"></span>
                         </a>
                     </div>
@@ -243,11 +249,53 @@ $mediaMode = $media['mode'] ?? null;
         </div>
 
         <div id="lesson-tabs-3" class="hidden" role="tabpanel" aria-labelledby="lesson-tabs-item-3">
-            @include('panel_v1.student.course-player.components.empty-state', [
-                'title' => 'لم تضف تعليق بعد',
-                'cta' => 'أضف تعليق',
-                'ctaHref' => '#',
-            ])
+            @php $commentRows = $courseComments ?? []; @endphp
+
+            <div class="border border-d9 rounded-20px bg-white px-5 sm:px-8 py-7 mb-6">
+                <h2 class="font-bold text-20px text-primary mb-2">أضف تعليقاً على المحاضرة</h2>
+                <p class="font-medium text-13px text-gray mb-5">
+                    يظهر تعليقك للمدرب ولوحة الإدارة. المحاضرة الحالية:
+                    <span class="text-primary font-bold">{{ $lessonTitle }}</span>
+                </p>
+                <form method="POST" action="{{ route('panel.v1.student.course.comments.store', ['slug' => $courseSlug]) }}" class="space-y-4">
+                    @csrf
+                    <input type="hidden" name="lesson_title" value="{{ $lessonTitle }}">
+                    @if (!empty($lesson['key']))
+                        <input type="hidden" name="item" value="{{ $lesson['key'] }}">
+                    @endif
+                    <textarea name="comment" rows="4" required maxlength="2000"
+                        placeholder="اكتب سؤالك أو ملاحظتك هنا..."
+                        class="textarea textarea-bordered w-full rounded-12px border-d9 font-medium text-15px text-primary focus:outline-none focus:border-primary min-h-28 resize-y"></textarea>
+                    <div class="flex justify-end">
+                        <button type="submit" class="btn btn-primary rounded-10px h-11 px-6 font-bold text-14px">
+                            إرسال التعليق
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            @if (count($commentRows))
+                <div class="space-y-4">
+                    @foreach ($commentRows as $row)
+                        <div class="border border-d9 rounded-16px bg-white px-5 py-4">
+                            <div class="flex items-center justify-between gap-3 mb-2">
+                                <p class="font-bold text-15px text-primary">{{ $row['author'] }}</p>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    @if (($row['status'] ?? '') === 'pending')
+                                        <span class="rounded-full bg-[#FEF6E7] px-2.5 py-1 font-semibold text-11px text-[#C9A46C]">بانتظار المراجعة</span>
+                                    @endif
+                                    <span class="font-medium text-12px text-gray">{{ $row['time'] }}</span>
+                                </div>
+                            </div>
+                            <p class="font-medium text-14px text-[#334155] leading-relaxed whitespace-pre-line">{{ $row['body'] }}</p>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                @include('panel_v1.student.course-player.components.empty-state', [
+                    'title' => 'لم تضف تعليق بعد',
+                ])
+            @endif
         </div>
 
         <div id="lesson-tabs-4" class="hidden" role="tabpanel" aria-labelledby="lesson-tabs-item-4">

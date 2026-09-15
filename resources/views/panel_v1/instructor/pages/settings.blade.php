@@ -39,7 +39,7 @@
         @endforeach
     </nav>
 
-    <form method="POST" action="{{ route('panel.v1.instructor.settings.update') }}">
+    <form method="POST" action="{{ route('panel.v1.instructor.settings.update') }}" enctype="multipart/form-data">
         @csrf
     {{-- ===================== Tab 1: Basic ===================== --}}
     <div id="instructor-settings-1" role="tabpanel" aria-labelledby="instructor-settings-tab-1">
@@ -318,16 +318,22 @@
                 <div class="lg:col-span-8 {{ $card }}">
                     <h2 class="font-bold text-20px sm:text-22px text-primary mb-6 sm:mb-8 text-start">وثائق الهوية</h2>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                        @foreach (['مسح الهوية', 'الشهادات والوثائق'] as $uploadLabel)
-                            <label class="flex flex-col items-center justify-center gap-3 min-h-44 rounded-14px border border-dashed border-d9 bg-[#FAFAFA] cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition px-4 py-8">
-                                <span class="size-12 rounded-full bg-primary/10 center">
-                                    <svg class="size-6 text-primary" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-                                    </svg>
-                                </span>
-                                <span class="font-semibold text-15px text-primary">{{ $uploadLabel }}</span>
-                                <input type="file" class="hidden" accept="image/*,.pdf">
-                            </label>
+                        @foreach ([
+                            ['name' => 'identity_scan', 'label' => 'مسح الهوية', 'accept' => 'image/*,.pdf'],
+                            ['name' => 'certificate', 'label' => 'الشهادات والوثائق', 'accept' => 'image/*,.pdf'],
+                        ] as $uploadField)
+                            <div>
+                                <p class="font-semibold text-14px text-primary mb-2 text-start">{{ $uploadField['label'] }}</p>
+                                @include('panel_v1.components.file-upload', [
+                                    'name' => $uploadField['name'],
+                                    'accept' => $uploadField['accept'],
+                                    'label' => 'رفع من الجهاز',
+                                    'hint' => 'صورة أو PDF',
+                                    'media' => true,
+                                    'required' => false,
+                                    'existing' => array_values(array_filter([panelV1UserMediaPreview($authUser, $uploadField['name'])])),
+                                ])
+                            </div>
                         @endforeach
                     </div>
                 </div>
@@ -337,93 +343,32 @@
 
     {{-- ===================== Tab 4: Images ===================== --}}
     <div id="instructor-settings-4" class="hidden" role="tabpanel" aria-labelledby="instructor-settings-tab-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-5 sm:gap-6 items-stretch">
-            <div class="xl:col-span-4 flex flex-col gap-5 sm:gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 items-start">
+            @foreach ([
+                ['avatar', 'صورة الملف الشخصي', 'image/*', 'اختر صورة من جهازك', 'PNG أو JPG'],
+                ['cover_img', 'غلاف الملف الشخصي', 'image/*', 'اختر صورة الغلاف', 'الطول الموصى به ~320px'],
+                ['profile_secondary_image', 'صورة الملف الثانوي', 'image/*', 'اختر الصورة الثانوية', 'PNG شفاف مفضّل'],
+                ['profile_video', 'فيديو الملف الشخصي', 'video/*', 'اختر فيديو من جهازك', 'MP4 أو WebM — 2 إلى 4 دقائق'],
+                ['signature_img', 'التوقيع', 'image/*', 'رفع التوقيع من جهازك', 'PNG أو JPG بخلفية بيضاء'],
+            ] as [$field, $mediaLabel, $accept, $uploadLabel, $hint])
+                @php $current = panelV1UserMediaPreview($authUser, $field); @endphp
                 <div class="{{ $card }}">
-                    <h2 class="font-bold text-20px sm:text-22px text-primary mb-6 text-start">صورة الملف الشخصي</h2>
-                    <div class="center flex-col mb-5">
-                        <div class="relative size-24 rounded-full bg-primary/10 center overflow-hidden mb-3">
-                            <span class="font-bold text-28px text-primary">{{ mb_substr($name, 0, 1) }}</span>
-                        </div>
-                        <p class="font-semibold text-16px text-primary text-center">{{ $name }}</p>
-                    </div>
-                    <label class="{{ $uploadBtn }}">
-                        <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-                        </svg>
-                        حدد صورة
-                        <input type="file" class="hidden" accept="image/*">
-                    </label>
+                    <h2 class="font-bold text-20px sm:text-22px text-primary mb-5 text-start">{{ $mediaLabel }}</h2>
+                    @include('panel_v1.components.file-upload', [
+                        'name' => $field,
+                        'accept' => $accept,
+                        'label' => $uploadLabel,
+                        'hint' => $hint,
+                        'media' => true,
+                        'required' => false,
+                        'existing' => $current ? [$current] : [],
+                        'existingLabel' => 'الملف الحالي',
+                    ])
                 </div>
-
-                <div class="{{ $card }} flex-1">
-                    <h2 class="font-bold text-20px sm:text-22px text-primary mb-5 text-start">غلاف الملف الشخصي</h2>
-                    <div class="{{ $mediaBox }} mb-4 min-h-36">
-                        <span class="size-12 rounded-12px bg-primary/10 center">
-                            <svg class="size-6 text-primary" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                            </svg>
-                        </span>
-                    </div>
-                    <p class="font-medium text-13px sm:text-14px text-gray leading-relaxed mb-4 text-start">
-                        ستُستخدم هذه الصورة كخلفية ضبابية لصفحة ملفك الشخصي. الطول الموصى به: 320 بكسل.
-                    </p>
-                    <label class="{{ $uploadBtn }}">
-                        حدد صورة
-                        <input type="file" class="hidden" accept="image/*">
-                    </label>
-                </div>
-            </div>
-
-            <div class="xl:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6">
-                @foreach ([
-                    [
-                        'title' => 'صورة الملف الثانوي',
-                        'hint' => 'ستظهر هذه الصورة في صفحات الدورات والمنتجات الخاصة بك. للحصول على أفضل تجربة، استخدم ملف PNG شفاف.',
-                        'action' => 'حدد صورة',
-                        'accept' => 'image/*',
-                        'icon' => 'image',
-                    ],
-                    [
-                        'title' => 'فيديو الملف الشخصي',
-                        'hint' => 'سيتم عرض هذا الفيديو في صفحة ملفك الشخصي. نوصي بأن تكون مدته بين 2 إلى 4 دقائق.',
-                        'action' => 'اختر فيديو',
-                        'accept' => 'video/*',
-                        'icon' => 'video',
-                    ],
-                    [
-                        'title' => 'التوقيع',
-                        'hint' => 'ستظهر التوقيع على شهاداتك. يرجى رفع ملف PNG أو JPG بخلفية بيضاء.',
-                        'action' => 'حدد صورة',
-                        'accept' => 'image/*',
-                        'icon' => 'image',
-                    ],
-                ] as $media)
-                    <div class="{{ $card }} flex flex-col h-full">
-                        <h2 class="font-bold text-18px sm:text-20px text-primary mb-4 text-start">{{ $media['title'] }}</h2>
-                        <div class="{{ $mediaBox }} mb-4 aspect-square max-h-52">
-                            @if ($media['icon'] === 'video')
-                                <span class="size-12 rounded-full bg-primary/10 center">
-                                    <svg class="size-6 text-primary" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path d="M8 5v14l11-7z"/>
-                                    </svg>
-                                </span>
-                            @else
-                                <span class="size-12 rounded-12px bg-primary/10 center">
-                                    <svg class="size-6 text-primary" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                    </svg>
-                                </span>
-                            @endif
-                        </div>
-                        <p class="font-medium text-13px sm:text-14px text-gray leading-relaxed mb-4 text-start flex-1">{{ $media['hint'] }}</p>
-                        <label class="{{ $uploadBtn }} mt-auto">
-                            {{ $media['action'] }}
-                            <input type="file" class="hidden" accept="{{ $media['accept'] }}">
-                        </label>
-                    </div>
-                @endforeach
-            </div>
+            @endforeach
+        </div>
+        <div class="mt-8">
+            <button type="submit" class="btn btn-primary rounded-10px h-14 px-10 font-bold text-18px">حفظ الصور</button>
         </div>
     </div>
 

@@ -12,9 +12,13 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class MakeCertificate
 {
+    /** @var bool */
+    private $inlineCertificate = false;
 
-    public function showCertificateByType($certificate)
+    public function showCertificateByType($certificate, bool $inline = false)
     {
+        $this->inlineCertificate = $inline;
+
         if ($certificate->type == "quiz") {
             $quizResult = $certificate->quizzesResult;
 
@@ -47,7 +51,7 @@ class MakeCertificate
                 $userCertificate,
                 $user,
                 $template->body,
-                $quiz->webinar ? $quiz->webinar->title : '-',
+                $this->resolveCourseTitle($quiz->webinar ?? null) ?: ($quiz->webinar ? $quiz->webinar->title : '-'),
                 $quizResult->user_grade,
                 $quiz->webinar->teacher->id,
                 $quiz->webinar->teacher->full_name,
@@ -58,7 +62,15 @@ class MakeCertificate
             ];
 
             $html = (string)view()->make('admin.certificates.create_template.show_certificate', $data);
-            return $this->sendToApi($userCertificate, $html);
+            $apiResponse = $this->sendToApi($userCertificate, $html);
+            if ($apiResponse instanceof \Illuminate\Http\Response
+                || $apiResponse instanceof \Symfony\Component\HttpFoundation\BinaryFileResponse
+                || $apiResponse instanceof \Symfony\Component\HttpFoundation\StreamedResponse) {
+                return $apiResponse;
+            }
+
+            // Local fallback when certificate image API is unavailable
+            return $this->localCertificateDownload($userCertificate, $html);
         }
 
         abort(404);
@@ -97,18 +109,24 @@ class MakeCertificate
 
     private function makeBody($template, $userCertificate, $user, $body, $courseTitle = null, $userGrade = null, $teacherId = null, $teacherFullName = null, $duration = null)
     {
-        $platformName = getGeneralSettings("site_name");
+        $platformName = getGeneralSettings("site_name") ?: 'QIEC';
 
-        $body = str_replace('[student]', $user->full_name, $body);
-        $body = str_replace('[student_name]', $user->full_name, $body);
-        $body = str_replace('[platform_name]', $platformName, $body);
-        $body = str_replace('[course]', $courseTitle, $body);
-        $body = str_replace('[course_name]', $courseTitle, $body);
-        $body = str_replace('[grade]', $userGrade, $body);
-        $body = str_replace('[certificate_id]', $userCertificate->id, $body);
-        $body = str_replace('[date]', dateTimeFormat($userCertificate->created_at, 'j M Y | H:i'), $body);
-        $body = str_replace('[instructor_name]', $teacherFullName, $body);
-        $body = str_replace('[duration]', $duration, $body);
+        $replacements = [
+            '[student]' => (string) ($user->full_name ?? ''),
+            '[student_name]' => (string) ($user->full_name ?? ''),
+            '[platform_name]' => (string) $platformName,
+            '[course]' => (string) ($courseTitle ?? ''),
+            '[course_name]' => (string) ($courseTitle ?? ''),
+            '[grade]' => (string) ($userGrade ?? ''),
+            '[certificate_id]' => (string) ($userCertificate->id ?? ''),
+            '[date]' => dateTimeFormat($userCertificate->created_at, 'j M Y | H:i') ?: date('Y/m/d'),
+            '[instructor_name]' => (string) ($teacherFullName ?? ''),
+            '[duration]' => (string) ($duration ?? ''),
+        ];
+
+        foreach ($replacements as $search => $replace) {
+            $body = str_replace($search, $replace, $body);
+        }
 
         $qrCode = $this->makeQrCode($template);
 
@@ -116,7 +134,7 @@ class MakeCertificate
             $body = str_replace('[qr_code]', $qrCode, $body);
         }
 
-        $instructorSignatureImg = null;
+        $instructorSignatureImg = '';
         if (!empty($teacherId)) {
             $instructorSignature = UserMeta::query()->where('user_id', $teacherId)
                 ->where('name', 'signature')
@@ -125,16 +143,204 @@ class MakeCertificate
 
             if (!empty($instructorSignatureImg)) {
                 $instructorSignatureImg = "<img src='{$instructorSignatureImg}' style='max-width: 100%; max-height: 100%'/>";
+            } else {
+                $instructorSignatureImg = '';
             }
         }
 
         $body = str_replace('[instructor_signature]', $instructorSignatureImg, $body);
 
         $userCertificateAdditional = $user->userMetas->where('name', 'certificate_additional')->first();
-        $userCertificateAdditionalValue = !empty($userCertificateAdditional) ? $userCertificateAdditional->value : null;
+        $userCertificateAdditionalValue = !empty($userCertificateAdditional) ? (string) $userCertificateAdditional->value : '';
         $body = str_replace('[user_certificate_additional]', $userCertificateAdditionalValue, $body);
 
         return $body;
+    }
+
+    /**
+     * Prefer a readable course title (ar then en) for certificates.
+     */
+    private function resolveCourseTitle($course): string
+    {
+        if (empty($course)) {
+            return '';
+        }
+
+        foreach (['ar', 'en', app()->getLocale()] as $locale) {
+            try {
+                $translated = $course->translate($locale);
+                if (!empty($translated?->title)) {
+                    return (string) $translated->title;
+                }
+            } catch (\Throwable $e) {
+            }
+        }
+
+        return (string) ($course->title ?? '');
+    }
+
+    /**
+     * Local downloadable certificate when HTML→Image API is unavailable.
+     */
+    private function localCertificateDownload($certificate, string $html)
+    {
+        $fileBase = 'certificate-' . ($certificate->id ?? 'course');
+        $html = $this->prepareCertificateHtmlForPdf($html);
+
+        try {
+            $pdf = Pdf::loadHTML($html)
+                ->setPaper([0, 0, 930, 600])
+                ->setOption('isHtml5ParserEnabled', true)
+                ->setOption('isRemoteEnabled', true)
+                ->setOption('isFontSubsettingEnabled', true)
+                ->setOption('defaultFont', 'DejaVu Sans')
+                ->setOption('chroot', public_path());
+
+            if ($this->inlineCertificate) {
+                return $pdf->stream($fileBase . '.pdf');
+            }
+
+            return $pdf->download($fileBase . '.pdf');
+        } catch (\Throwable $e) {
+            return response($html)
+                ->header('Content-Type', 'text/html; charset=UTF-8')
+                ->header('Content-Disposition', ($this->inlineCertificate ? 'inline' : 'attachment') . '; filename="' . $fileBase . '.html"');
+        }
+    }
+
+    /**
+     * Make certificate HTML DomPDF-safe: local/data-uri images, Arabic glyphs, Unicode fonts.
+     */
+    private function prepareCertificateHtmlForPdf(string $html): string
+    {
+        $html = $this->rewriteCertificateAssetUrls($html);
+
+        // Arabic shaping for course/student names (skip tags/attributes)
+        try {
+            if (class_exists(\I18N_Arabic::class) || class_exists('I18N_Arabic')) {
+                $arabic = new \I18N_Arabic('Glyphs');
+                $html = preg_replace_callback(
+                    '/>([^<]*[\x{0600}-\x{06FF}][^<]*)</u',
+                    function ($matches) use ($arabic) {
+                        $text = $matches[1];
+                        if (trim($text) === '') {
+                            return $matches[0];
+                        }
+
+                        return '>' . $arabic->utf8Glyphs($text) . '<';
+                    },
+                    $html
+                ) ?? $html;
+            }
+        } catch (\Throwable $e) {
+        }
+
+        $vazir = public_path('assets/default/fonts/vazir/Vazir-Medium.ttf');
+        $extraCss = 'body{margin:0;padding:0;}'
+            . '.certificate-template-container{width:930px;height:600px;position:relative;background-repeat:no-repeat;background-size:100% 100%;border:0;}'
+            . '.certificate-template-container .draggable-element{position:absolute !important;display:block;white-space:pre-wrap;}'
+            . '.certificate-template-container img{max-width:100%;max-height:100%;}';
+
+        if (is_file($vazir)) {
+            $fontUrl = $this->pathToFileUrl($vazir);
+            $extraCss = '@font-face{font-family:"VazirCert";src:url("' . $fontUrl . '") format("truetype");}'
+                . '*{font-family:"VazirCert", DejaVu Sans, sans-serif !important;}'
+                . $extraCss;
+        } else {
+            $extraCss = '*{font-family:DejaVu Sans, sans-serif !important;}' . $extraCss;
+        }
+
+        if (stripos($html, '</head>') !== false) {
+            $html = preg_replace('/<\/head>/i', '<style>' . $extraCss . '</style></head>', $html, 1) ?? $html;
+        } else {
+            $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' . $extraCss . '</style></head><body>' . $html . '</body></html>';
+        }
+
+        return $html;
+    }
+
+    private function rewriteCertificateAssetUrls(string $html): string
+    {
+        // background-image / css url(...)
+        $html = preg_replace_callback('/url\((["\']?)([^)\'"]+)\1\)/i', function ($m) {
+            $dataUri = $this->assetToDataUri($m[2]);
+
+            return $dataUri ? ('url("' . $dataUri . '")') : $m[0];
+        }, $html) ?? $html;
+
+        // <img src="...">
+        $html = preg_replace_callback('/(<img\b[^>]*\bsrc=)(["\'])([^"\']+)\2/i', function ($m) {
+            $dataUri = $this->assetToDataUri($m[3]);
+
+            return $dataUri ? ($m[1] . $m[2] . $dataUri . $m[2]) : $m[0];
+        }, $html) ?? $html;
+
+        return $html;
+    }
+
+    private function assetToDataUri(string $src): ?string
+    {
+        $src = html_entity_decode(trim($src), ENT_QUOTES);
+        if ($src === '' || str_starts_with($src, 'data:')) {
+            return $src !== '' ? $src : null;
+        }
+
+        $path = $this->resolvePublicAssetPath($src);
+        if (!$path || !is_file($path)) {
+            return null;
+        }
+
+        $mime = @mime_content_type($path) ?: 'image/png';
+        if (!str_starts_with($mime, 'image/')) {
+            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            $mime = match ($ext) {
+                'jpg', 'jpeg' => 'image/jpeg',
+                'gif' => 'image/gif',
+                'webp' => 'image/webp',
+                'svg' => 'image/svg+xml',
+                default => 'image/png',
+            };
+        }
+
+        return 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($path));
+    }
+
+    private function resolvePublicAssetPath(string $src): ?string
+    {
+        $src = trim($src);
+        if (preg_match('#^https?://[^/]+(/store/.+)$#i', $src, $m)) {
+            $src = $m[1];
+        }
+
+        if (str_starts_with($src, 'file://')) {
+            $path = urldecode(preg_replace('#^file:///#i', '', $src));
+            if (PHP_OS_FAMILY === 'Windows' && preg_match('#^[A-Za-z]:/#', $path) === 0 && preg_match('#^[A-Za-z]:\\\\#', $path) === 0) {
+                // keep as-is
+            }
+            return is_file($path) ? $path : null;
+        }
+
+        if (str_starts_with($src, '/')) {
+            $path = public_path($src);
+            return is_file($path) ? $path : null;
+        }
+
+        if (is_file($src)) {
+            return $src;
+        }
+
+        $path = public_path('/' . ltrim($src, '/'));
+        return is_file($path) ? $path : null;
+    }
+
+    private function pathToFileUrl(string $path): string
+    {
+        $normalized = str_replace('\\', '/', $path);
+        if (!str_starts_with($normalized, '/')) {
+            $normalized = '/' . $normalized;
+        }
+
+        return 'file://' . $normalized;
     }
 
     private function makeQrCode($template)
@@ -143,11 +349,18 @@ class MakeCertificate
         $elements = $template->elements;
 
         if (!empty($elements) and !empty($elements['qr_code']) and !empty($elements['qr_code']['image_size'])) {
-            $size = (int)$elements['qr_code']['image_size'];
+            $size = (int) $elements['qr_code']['image_size'];
         }
 
-        $url = url("/certificate_validation");
-        return QrCode::size($size)->generate($url);
+        $url = url('/certificate_validation');
+
+        try {
+            $png = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')->size($size)->generate($url);
+
+            return '<img src="data:image/png;base64,' . base64_encode($png) . '" width="' . $size . '" height="' . $size . '" alt="QR" />';
+        } catch (\Throwable $e) {
+            return QrCode::size($size)->generate($url);
+        }
     }
 
     private function makeImage($certificateTemplate, $body)
@@ -191,7 +404,7 @@ class MakeCertificate
                 $userCertificate,
                 $user,
                 $body,
-                $course->title,
+                $this->resolveCourseTitle($course),
                 null,
                 $course->teacher->id,
                 $course->teacher->full_name,
@@ -202,7 +415,15 @@ class MakeCertificate
             ];
 
             $html = (string)view()->make('admin.certificates.create_template.show_certificate', $data);
-            return $this->sendToApi($userCertificate, $html);
+            $apiResponse = $this->sendToApi($userCertificate, $html);
+            if ($apiResponse instanceof \Illuminate\Http\Response
+                || $apiResponse instanceof \Symfony\Component\HttpFoundation\BinaryFileResponse
+                || $apiResponse instanceof \Symfony\Component\HttpFoundation\StreamedResponse) {
+                return $apiResponse;
+            }
+
+            // Local fallback when certificate image API is unavailable
+            return $this->localCertificateDownload($userCertificate, $html);
         }
 
         $toastData = [
@@ -235,7 +456,7 @@ class MakeCertificate
                 $userCertificate,
                 $user,
                 $body,
-                $bundle->title,
+                $this->resolveCourseTitle($bundle),
                 null,
                 $bundle->teacher->id,
                 $bundle->teacher->full_name,
@@ -246,7 +467,14 @@ class MakeCertificate
             ];
 
             $html = (string)view()->make('admin.certificates.create_template.show_certificate', $data);
-            return $this->sendToApi($userCertificate, $html);
+            $apiResponse = $this->sendToApi($userCertificate, $html);
+            if ($apiResponse instanceof \Illuminate\Http\Response
+                || $apiResponse instanceof \Symfony\Component\HttpFoundation\BinaryFileResponse
+                || $apiResponse instanceof \Symfony\Component\HttpFoundation\StreamedResponse) {
+                return $apiResponse;
+            }
+
+            return $this->localCertificateDownload($userCertificate, $html);
         }
 
         $toastData = [
@@ -292,7 +520,7 @@ class MakeCertificate
         curl_close($ch);
         $res = json_decode($result, true);
 
-        if (!empty($res['url'])) {
+if (!empty($res['url'])) {
             $url = $res['url'] . ".png";
             $image = file_get_contents($url);
             $storage = Storage::disk('public');
@@ -309,18 +537,10 @@ class MakeCertificate
             );
 
             return response()->download($url, "certificate.png", $headers);
-        } elseif (!empty($res['error']) and $res['error'] == "Plan limit exceeded") {
-            $error = trans('update.plan_limit_exceeded');
-        } else {
-            $error = trans("update.bad_request");
         }
 
-        $toastData = [
-            'title' => trans('public.request_failed'),
-            'msg' => $error,
-            'status' => 'error'
-        ];
-        return redirect()->back()->with(['toast' => $toastData]);
+        // API unavailable / plan limit — let caller render local HTML fallback
+        return null;
     }
 
     public function saveCourseCertificate($user, $course)

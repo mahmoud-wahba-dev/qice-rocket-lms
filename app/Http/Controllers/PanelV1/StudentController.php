@@ -311,6 +311,9 @@ class StudentController extends Controller
             ->limit(10)
             ->get();
 
+        // Issue course certificates for finished purchased courses (progress 100%)
+        $this->syncFinishedCourseCertificates($user);
+
         $certificates = Certificate::with(['webinar'])
             ->where('student_id', $user->id)
             ->orderBy('id', 'desc')
@@ -381,8 +384,8 @@ class StudentController extends Controller
         ]);
 
         return redirect()
-            ->route('panel.v1.student.home')
-            ->with('toast', ['title' => 'تم', 'msg' => 'تمت إضافة الحدث بنجاح', 'type' => 'success']);
+            ->back()
+            ->with('toast', ['title' => 'تم', 'msg' => 'تمت إضافة التذكير بنجاح', 'type' => 'success']);
     }
 
     public function deleteCalendarEvent(Request $request, int $id)
@@ -1135,6 +1138,8 @@ class StudentController extends Controller
             return $user;
         }
 
+        $this->syncFinishedCourseCertificates($user);
+
         $certificates = Certificate::with(['webinar', 'quiz'])
             ->where('student_id', $user->id)
             ->orderBy('id', 'desc')
@@ -1180,7 +1185,53 @@ class StudentController extends Controller
             abort(404);
         }
         $make = new \App\Mixins\Certificate\MakeCertificate();
-        return $make->showCertificateByType($certificate);
+        $response = $make->showCertificateByType($certificate, $request->boolean('view'));
+
+        if (empty($response)) {
+            return redirect()
+                ->route('panel.v1.student.certificates')
+                ->with('toast', [
+                    'title' => 'تعذر التحميل',
+                    'msg' => 'تعذر إنشاء ملف الشهادة حالياً. حاول مرة أخرى.',
+                    'type' => 'error',
+                ]);
+        }
+
+        return $response;
+    }
+
+    /**
+     * Create missing course certificates for purchased webinars the student completed (100%).
+     */
+    private function syncFinishedCourseCertificates($user): void
+    {
+        try {
+            $ids = $user->getPurchasedCoursesIds();
+            if (empty($ids)) {
+                return;
+            }
+
+            $courses = \App\Models\Webinar::whereIn('id', $ids)
+                ->where('status', 'active')
+                ->where('certificate', true)
+                ->limit(20)
+                ->get();
+
+            foreach ($courses as $course) {
+                $existing = Certificate::where('type', 'course')
+                    ->where('student_id', $user->id)
+                    ->where('webinar_id', $course->id)
+                    ->exists();
+                if ($existing) {
+                    continue;
+                }
+                $progress = (float) $course->getProgress(true, $user);
+                if ($progress >= 100) {
+                    $course->makeCertificateForUser($user);
+                }
+            }
+        } catch (\Throwable $e) {
+        }
     }
 
     public function assignmentsPage(Request $request)
