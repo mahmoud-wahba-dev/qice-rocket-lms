@@ -210,11 +210,12 @@
                             يمكنك تحديث بيانات الحساب البنكي من إعدادات الملف المالي.
                         </p>
                     </div>
-                    <a href="{{ url('/panel/financial/payout') }}"
-                        class="btn rounded-[10px] h-11 px-6 font-bold text-[13px] text-white border-0 shrink-0"
-                        style="background:#6B7280;">
+                    <button type="button"
+                        class="btn rounded-[10px] h-11 px-6 font-bold text-[13px] text-white border-0 shrink-0 bg-primary hover:opacity-95 transition"
+                        aria-haspopup="dialog"
+                        data-overlay="#student-payout-request-modal">
                         طلب سحب الأرباح
-                    </a>
+                    </button>
                 </div>
 
                 <h3 class="font-bold text-[18px] sm:text-[20px] text-primary mb-5">سجل عمليات السحب الأخيرة</h3>
@@ -222,7 +223,7 @@
                     <div class="border border-d9 rounded-[12px] bg-white px-6 py-5 mb-3 flex flex-wrap items-center justify-between gap-3">
                         <p class="font-bold text-[16px] text-primary whitespace-nowrap">{{ handlePrice($payout->amount) }}</p>
                         <p class="font-medium text-[13px] text-gray whitespace-nowrap">
-                            {{ date('Y/m/d', (int) $payout->created_at) }} — {{ $payout->status }}
+                            {{ date('Y/m/d', (int) $payout->created_at) }} — {{ $payout->status_label ?? $payout->status }}
                         </p>
                     </div>
                 @empty
@@ -313,4 +314,6 @@
         </div>
     </div>
 </section>
+
+@include('panel_v1.student.components.payout-request-modal')
 @endsection

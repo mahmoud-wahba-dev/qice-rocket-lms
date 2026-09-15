@@ -1060,11 +1060,17 @@ document.addEventListener("click", (e) => {
 });
 
 try {
+	const hashTab =
+		location.hash && location.hash.startsWith("#") ? location.hash : null;
+	const hashBtn = hashTab
+		? document.querySelector(`button[data-v1-tab="${hashTab}"]`)
+		: null;
 	const savedTab = localStorage.getItem(v1TabStorageKey());
 	const savedBtn = savedTab
 		? document.querySelector(`button[data-v1-tab="${savedTab}"]`)
 		: null;
 	const activeBtn =
+		hashBtn ||
 		savedBtn ||
 		document.querySelector('nav[role="tablist"] button[data-v1-tab].active') ||
 		document.querySelector("button[data-v1-tab].active");

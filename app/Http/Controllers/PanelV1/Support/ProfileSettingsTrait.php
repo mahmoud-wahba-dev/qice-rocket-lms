@@ -92,33 +92,76 @@ trait ProfileSettingsTrait
                 ->get(),
             'formFieldsHtml' => $this->getFormFieldsByUserType($request, $userType, true, $user),
             'socials' => collect(getSocials())->sortBy('order')->toArray(),
-            'userSocials' => !empty($user->socials) ? json_decode($user->socials, true) : [],
+            'userSocials' => $this->profileUserSocials($user),
         ];
+    }
+
+    /**
+     * Social links are stored in user_metas.name = socials (JSON), not a users column.
+     */
+    public function profileUserSocials($user): array
+    {
+        $raw = null;
+
+        if (!empty($user->socials)) {
+            $raw = $user->socials;
+        } else {
+            $meta = $user->relationLoaded('userMetas')
+                ? $user->userMetas->firstWhere('name', 'socials')
+                : $user->userMetas()->where('name', 'socials')->first();
+
+            $raw = $meta->value ?? null;
+        }
+
+        if (empty($raw)) {
+            return [];
+        }
+
+        $decoded = is_array($raw) ? $raw : json_decode($raw, true);
+
+        return is_array($decoded) ? $decoded : [];
     }
 
     public function saveProfileExtra(Request $request, $user): void
     {
         $data = $request->all();
 
-        $user->update([
-            'meeting_type' => $data['meeting_type'] ?? null,
-            'level_of_training' => !empty($data['level_of_training'])
-                ? (new UserLevelOfTraining())->getValue($data['level_of_training'])
-                : null,
+        $update = [
             'country_id' => $data['country_id'] ?? null,
             'province_id' => $data['province_id'] ?? null,
             'city_id' => $data['city_id'] ?? null,
             'district_id' => $data['district_id'] ?? null,
-            'location' => (!empty($data['latitude']) and !empty($data['longitude']))
-                ? DB::raw('POINT(' . (float) $data['latitude'] . ',' . (float) $data['longitude'] . ')')
-                : null,
             'address' => $data['address'] ?? null,
-        ]);
+        ];
+
+        // meeting_type is NOT NULL with default `all` — never wipe it when the form omits it
+        if (!empty($data['meeting_type']) && in_array($data['meeting_type'], ['in_person', 'online', 'all'], true)) {
+            $update['meeting_type'] = $data['meeting_type'];
+        }
+
+        if (!empty($data['level_of_training'])) {
+            $update['level_of_training'] = (new UserLevelOfTraining())->getValue($data['level_of_training']);
+        }
+
+        if (!empty($data['latitude']) && !empty($data['longitude'])) {
+            $update['location'] = DB::raw('POINT(' . (float) $data['latitude'] . ',' . (float) $data['longitude'] . ')');
+        }
+
+        $user->update($update);
+
+        $socialsInput = $data['socials'] ?? [];
+        if (is_array($socialsInput)) {
+            $socialsInput = array_filter($socialsInput, static function ($value) {
+                return is_string($value) ? trim($value) !== '' : !empty($value);
+            });
+        } else {
+            $socialsInput = [];
+        }
 
         $this->saveProfileMetas($user, [
             'birthday' => !empty($data['birthday']) ? convertTimeToUTCzone($data['birthday'])->getTimestamp() : null,
             'gender' => $data['gender'] ?? null,
-            'socials' => (!empty($data['socials']) and is_array($data['socials'])) ? json_encode($data['socials']) : null,
+            'socials' => !empty($socialsInput) ? json_encode($socialsInput, JSON_UNESCAPED_UNICODE) : null,
         ]);
 
         $userType = 'organization';

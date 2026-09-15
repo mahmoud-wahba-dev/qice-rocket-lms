@@ -325,7 +325,7 @@
             </div>
 
             <div id="settings-tabs-4" class="hidden" role="tabpanel" aria-labelledby="settings-tabs-item-4">
-                <form method="POST" action="{{ route('panel.v1.student.images.update') }}" enctype="multipart/form-data">
+                <form id="student-images-form" method="POST" action="{{ route('panel.v1.student.images.update') }}" enctype="multipart/form-data">
                     @csrf
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         @foreach ([['avatar', 'الصورة الشخصية'], ['cover_img', 'صورة الغلاف'], ['profile_secondary_image', 'الصورة الثانوية'], ['profile_video', 'فيديو الملف']] as [$field, $label])
@@ -339,10 +339,7 @@
                                     <input type="file" name="{{ $field }}" class="hidden" accept="{{ $field === 'profile_video' ? 'video/*' : 'image/*' }}">
                                 </label>
                                 @if (!empty($authUser->$field))
-                                    <form method="POST" action="{{ route('panel.v1.student.media.delete', ['type' => $field]) }}" onsubmit="return confirm('حذف الملف؟');" class="mt-4">
-                                        @csrf
-                                        <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف الملف الحالي</button>
-                                    </form>
+                                    <button type="submit" form="student-delete-media-{{ $field }}" class="mt-4 font-bold text-14px text-[#EF4444]" onclick="return confirm('حذف الملف؟');">حذف الملف الحالي</button>
                                 @endif
                             </div>
                         @endforeach
@@ -351,10 +348,7 @@
                             @php $signature = $authUser->getSignature(true); @endphp
                             @if (!empty($signature))
                                 <div class="mb-6"><img src="{{ $signature }}" alt="" class="max-h-32 rounded-10px"></div>
-                                <form method="POST" action="{{ route('panel.v1.student.media.delete', ['type' => 'signature_img']) }}" onsubmit="return confirm('حذف التوقيع؟');" class="mb-4">
-                                    @csrf
-                                    <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف التوقيع</button>
-                                </form>
+                                <button type="submit" form="student-delete-media-signature_img" class="mb-4 font-bold text-14px text-[#EF4444]" onclick="return confirm('حذف التوقيع؟');">حذف التوقيع</button>
                             @endif
                             <label class="flex items-center justify-center gap-2 min-h-40 rounded-12px border border-dashed border-d9 cursor-pointer hover:border-primary/40 transition px-4 py-8">
                                 <span class="font-semibold text-14px text-primary">{{ !empty($signature) ? 'استبدال التوقيع' : 'رفع التوقيع' }}</span>
@@ -366,10 +360,17 @@
                         <button type="submit" class="btn btn-primary rounded-10px h-14 px-10 font-bold text-18px">حفظ الصور</button>
                     </div>
                 </form>
+                @foreach (['avatar', 'cover_img', 'profile_secondary_image', 'profile_video', 'signature_img'] as $mediaType)
+                    @if (($mediaType === 'signature_img' && !empty($signature)) || ($mediaType !== 'signature_img' && !empty($authUser->$mediaType)))
+                        <form id="student-delete-media-{{ $mediaType }}" method="POST" action="{{ route('panel.v1.student.media.delete', ['type' => $mediaType]) }}" class="hidden">
+                            @csrf
+                        </form>
+                    @endif
+                @endforeach
             </div>
 
             <div id="settings-tabs-5" class="hidden" role="tabpanel" aria-labelledby="settings-tabs-item-5">
-                <form method="POST" action="{{ route('panel.v1.student.about.update') }}">
+                <form id="student-about-form" method="POST" action="{{ route('panel.v1.student.about.update') }}">
                     @csrf
                     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                         <div class="lg:col-span-7 {{ $card }}">
@@ -397,10 +398,7 @@
                                     @forelse ($educations ?? [] as $education)
                                         <div class="flex items-center justify-between gap-3 border border-d9 rounded-10px px-4 py-3">
                                             <span class="font-medium text-15px">{{ $education->value }}</span>
-                                            <form method="POST" action="{{ route('panel.v1.student.metas.delete', ['metaId' => $education->id]) }}" onsubmit="return confirm('حذف؟');">
-                                                @csrf
-                                                <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف</button>
-                                            </form>
+                                            <button type="submit" form="student-delete-meta-{{ $education->id }}" class="font-bold text-14px text-[#EF4444]" onclick="return confirm('حذف؟');">حذف</button>
                                         </div>
                                     @empty
                                         <p class="font-medium text-14px text-gray">لا توجد مؤهلات مسجلة.</p>
@@ -417,10 +415,7 @@
                                     @forelse ($experiences ?? [] as $experience)
                                         <div class="flex items-center justify-between gap-3 border border-d9 rounded-10px px-4 py-3">
                                             <span class="font-medium text-15px">{{ $experience->value }}</span>
-                                            <form method="POST" action="{{ route('panel.v1.student.metas.delete', ['metaId' => $experience->id]) }}" onsubmit="return confirm('حذف؟');">
-                                                @csrf
-                                                <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف</button>
-                                            </form>
+                                            <button type="submit" form="student-delete-meta-{{ $experience->id }}" class="font-bold text-14px text-[#EF4444]" onclick="return confirm('حذف؟');">حذف</button>
                                         </div>
                                     @empty
                                         <p class="font-medium text-14px text-gray">لا توجد خبرات مسجلة.</p>
@@ -446,10 +441,7 @@
                                                 @if (!empty($attachment->attachment))
                                                     <a href="{{ $attachment->attachment }}" target="_blank" rel="noopener" class="font-bold text-14px text-primary">تنزيل</a>
                                                 @endif
-                                                <form method="POST" action="{{ route('panel.v1.student.attachments.delete', ['attachmentId' => $attachment->id]) }}" onsubmit="return confirm('حذف؟');">
-                                                    @csrf
-                                                    <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف</button>
-                                                </form>
+                                                <button type="submit" form="student-delete-attachment-{{ $attachment->id }}" class="font-bold text-14px text-[#EF4444]" onclick="return confirm('حذف؟');">حذف</button>
                                             </div>
                                         </div>
                                     @empty
@@ -463,6 +455,15 @@
                         <button type="submit" class="btn btn-primary rounded-10px h-14 px-10 font-bold text-18px">حفظ بيانات حول</button>
                     </div>
                 </form>
+                @foreach ($educations ?? [] as $education)
+                    <form id="student-delete-meta-{{ $education->id }}" method="POST" action="{{ route('panel.v1.student.metas.delete', ['metaId' => $education->id]) }}" class="hidden">@csrf</form>
+                @endforeach
+                @foreach ($experiences ?? [] as $experience)
+                    <form id="student-delete-meta-{{ $experience->id }}" method="POST" action="{{ route('panel.v1.student.metas.delete', ['metaId' => $experience->id]) }}" class="hidden">@csrf</form>
+                @endforeach
+                @foreach ($attachments ?? [] as $attachment)
+                    <form id="student-delete-attachment-{{ $attachment->id }}" method="POST" action="{{ route('panel.v1.student.attachments.delete', ['attachmentId' => $attachment->id]) }}" class="hidden">@csrf</form>
+                @endforeach
                 <div class="{{ $card }} mt-6">
                     <h2 class="font-bold text-22px text-primary mb-6">رفع مرفق جديد</h2>
                     <form method="POST" action="{{ route('panel.v1.student.attachments.store') }}" enctype="multipart/form-data" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -547,7 +548,12 @@ document.addEventListener('DOMContentLoaded', function () {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
             body: JSON.stringify({name: name, value: input.value.trim()}),
-        }).then(function (r) { if (r.ok) window.location.reload(); });
+        }).then(function (r) {
+            if (r.ok) {
+                window.location.hash = '#settings-tabs-5';
+                window.location.reload();
+            }
+        });
     }
     document.getElementById('student-education-add')?.addEventListener('click', function () { postMeta('education', 'student-education-val'); });
     document.getElementById('student-experience-add')?.addEventListener('click', function () { postMeta('experience', 'student-experience-val'); });

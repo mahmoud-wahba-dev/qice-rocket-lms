@@ -465,9 +465,21 @@ class StudentController extends Controller
         });
 
         $iban = trim((string) ($user->iban ?? ''));
-        $maskedIban = $iban !== ''
-            ? 'حساب بنكي (**** ' . substr(preg_replace('/\s+/', '', $iban), -4) . ')'
-            : null;
+        $maskedIban = $iban !== '';
+        if ($maskedIban) {
+            $maskedIban = 'حساب بنكي (**** ' . substr(preg_replace('/\s+/', '', $iban), -4) . ')';
+        } else {
+            $user->loadMissing(['selectedBank.bank', 'selectedBank.specifications']);
+            $bankTitle = optional(optional($user->selectedBank)->bank)->title;
+            $maskedIban = $bankTitle ? ('حساب بنكي — ' . $bankTitle) : null;
+        }
+
+        $financialSettings = getFinancialSettings();
+        $statusLabels = [
+            'waiting' => 'قيد المعالجة',
+            'done' => 'مكتمل',
+            'reject' => 'مرفوض',
+        ];
 
         return view('panel_v1.student.pages.purchases', [
             'pageTitle' => 'عمليات الشراء الخاصة بي',
@@ -480,15 +492,98 @@ class StudentController extends Controller
             'subscribePlans' => $subscribePlans,
             'hasActiveSubscribe' => Subscribe::getActiveSubscribe($user->id),
             'withdrawalMethodLabel' => $maskedIban,
+            'minimumPayout' => $financialSettings['minimum_payout'] ?? 0,
+            'hasFinancialApproval' => !empty($user->financial_approval),
+            'hasSelectedBank' => !empty($user->selectedBank),
             'userPayouts' => \App\Models\Payout::where('user_id', $user->id)
                 ->orderBy('id', 'desc')
                 ->limit(10)
-                ->get(),
+                ->get()
+                ->map(function ($payout) use ($statusLabels) {
+                    $payout->status_label = $statusLabels[$payout->status] ?? $payout->status;
+
+                    return $payout;
+                }),
             'userSubscribes' => SubscribeUse::with(['subscribe'])
                 ->where('user_id', $user->id)
                 ->orderBy('id', 'desc')
                 ->limit(10)
                 ->get(),
+        ]);
+    }
+
+    public function requestPayout(Request $request)
+    {
+        $user = $this->resolveStudent($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $readyPayout = $user->getPayout();
+        $financialSettings = getFinancialSettings();
+        $purchasesProfits = route('panel.v1.student.purchases') . '#purchase-tabs-3';
+
+        if (!empty($financialSettings['minimum_payout']) && $readyPayout < $financialSettings['minimum_payout']) {
+            return redirect()->to($purchasesProfits)->with('toast', [
+                'title' => 'تعذر الطلب',
+                'msg' => 'الرصيد أقل من الحد الأدنى للسحب (' . handlePrice($financialSettings['minimum_payout']) . ')',
+                'type' => 'error',
+            ]);
+        }
+
+        if (empty($user->financial_approval)) {
+            return redirect()->to($purchasesProfits)->with('toast', [
+                'title' => 'تعذر الطلب',
+                'msg' => 'بياناتك المالية غير معتمدة من الإدارة بعد. حدّثها من إعدادات الحساب.',
+                'type' => 'error',
+            ]);
+        }
+
+        $user->loadMissing('selectedBank');
+
+        if (empty($user->selectedBank)) {
+            return redirect()->to($purchasesProfits)->with('toast', [
+                'title' => 'تعذر الطلب',
+                'msg' => 'حدد حسابك البنكي من إعدادات الحساب (الهوية والمالية) أولاً.',
+                'type' => 'error',
+            ]);
+        }
+
+        if ($readyPayout <= 0) {
+            return redirect()->to($purchasesProfits)->with('toast', [
+                'title' => 'تعذر الطلب',
+                'msg' => 'لا يوجد رصيد جاهز للسحب حالياً.',
+                'type' => 'error',
+            ]);
+        }
+
+        \App\Models\Payout::create([
+            'user_id' => $user->id,
+            'user_selected_bank_id' => $user->selectedBank->id,
+            'amount' => $readyPayout,
+            'status' => \App\Models\Payout::$waiting,
+            'created_at' => time(),
+        ]);
+
+        $notifyOptions = [
+            '[payout.amount]' => handlePrice($readyPayout),
+            '[amount]' => handlePrice($readyPayout),
+            '[u.name]' => $user->full_name,
+        ];
+
+        try {
+            sendNotification('payout_request', $notifyOptions, $user->id);
+            sendNotification('payout_request_admin', $notifyOptions, 1);
+            sendNotification('new_user_payout_request', $notifyOptions, 1);
+        } catch (\Throwable $e) {
+            // Keep request success even if notification channels fail.
+        }
+
+        return redirect()->to($purchasesProfits)->with('toast', [
+            'title' => 'تم',
+            'msg' => 'تم تسجيل طلب سحب الأرباح بنجاح',
+            'type' => 'success',
         ]);
     }
 
@@ -572,12 +667,27 @@ class StudentController extends Controller
             return $user;
         }
 
+        $user->load([
+            'selectedBank.bank.specifications',
+            'selectedBank.specifications',
+            'userMetas',
+            'occupations',
+            'profileAttachments',
+        ]);
+
         return view('panel_v1.student.pages.settings', array_merge([
             'pageTitle' => 'اعدادات الحساب',
             'authUser' => $user,
         ], $this->profileExtraViewData($request, $user), $this->profileAboutData($user), $this->profileFinancialData($user), [
             'loginHistories' => $this->profileLoginHistories($user),
         ]));
+    }
+
+    private function settingsRedirect(string $tabHash, string $msg)
+    {
+        return redirect()
+            ->to(route('panel.v1.student.settings') . '#' . ltrim($tabHash, '#'))
+            ->with('toast', ['title' => 'تم', 'msg' => $msg, 'type' => 'success']);
     }
 
     public function updateExtra(Request $request)
@@ -595,13 +705,13 @@ class StudentController extends Controller
             'district_id' => 'nullable|integer|exists:regions,id',
             'address' => 'nullable|string|max:255',
             'gender' => 'nullable|in:man,woman',
+            'birthday' => 'nullable|date',
             'meeting_type' => 'nullable|in:in_person,online,all',
         ]);
 
         $this->saveProfileExtra($request, $user);
 
-        return redirect()->route('panel.v1.student.settings')
-            ->with('toast', ['title' => 'تم', 'msg' => 'تم حفظ المعلومات الإضافية', 'type' => 'success']);
+        return $this->settingsRedirect('settings-tabs-2', 'تم حفظ المعلومات الإضافية');
     }
 
     public function updateFinancial(Request $request)
@@ -612,10 +722,19 @@ class StudentController extends Controller
             return $user;
         }
 
+        if (!empty($user->financial_approval)) {
+            return $this->settingsRedirect('settings-tabs-3', 'البيانات المالية موثقة ولا يمكن تعديلها');
+        }
+
+        $request->validate([
+            'bank_id' => 'nullable|integer|exists:user_banks,id',
+            'identity_scan' => 'nullable|file|max:10240',
+            'certificate' => 'nullable|file|max:10240',
+        ]);
+
         $this->saveProfileFinancial($request, $user);
 
-        return redirect()->route('panel.v1.student.settings')
-            ->with('toast', ['title' => 'تم', 'msg' => 'تم حفظ بيانات الهوية والمالية', 'type' => 'success']);
+        return $this->settingsRedirect('settings-tabs-3', 'تم حفظ بيانات الهوية والمالية');
     }
 
     public function updateImages(Request $request)
@@ -636,8 +755,7 @@ class StudentController extends Controller
 
         $this->saveProfileMedia($request, $user);
 
-        return redirect()->route('panel.v1.student.settings')
-            ->with('toast', ['title' => 'تم', 'msg' => 'تم حفظ الصور', 'type' => 'success']);
+        return $this->settingsRedirect('settings-tabs-4', 'تم حفظ الصور');
     }
 
     public function deleteMedia(string $type)
@@ -652,7 +770,9 @@ class StudentController extends Controller
             abort(404);
         }
 
-        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم حذف الملف', 'type' => 'success']);
+        return redirect()
+            ->to(route('panel.v1.student.settings') . '#settings-tabs-4')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم حذف الملف', 'type' => 'success']);
     }
 
     public function updateAbout(Request $request)
@@ -673,8 +793,7 @@ class StudentController extends Controller
 
         $this->saveProfileAbout($request, $user);
 
-        return redirect()->route('panel.v1.student.settings')
-            ->with('toast', ['title' => 'تم', 'msg' => 'تم حفظ بيانات "حول"', 'type' => 'success']);
+        return $this->settingsRedirect('settings-tabs-5', 'تم حفظ بيانات "حول"');
     }
 
     public function storeMeta(Request $request)
@@ -719,7 +838,9 @@ class StudentController extends Controller
             abort(404);
         }
 
-        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم الحذف', 'type' => 'success']);
+        return redirect()
+            ->to(route('panel.v1.student.settings') . '#settings-tabs-5')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم الحذف', 'type' => 'success']);
     }
 
     public function storeAttachment(Request $request)
@@ -732,8 +853,7 @@ class StudentController extends Controller
 
         $this->storeProfileAttachment($request, $user);
 
-        return redirect()->route('panel.v1.student.settings')
-            ->with('toast', ['title' => 'تم', 'msg' => 'تمت إضافة المرفق', 'type' => 'success']);
+        return $this->settingsRedirect('settings-tabs-5', 'تمت إضافة المرفق');
     }
 
     public function updateAttachment(Request $request, $attachmentId)
@@ -748,8 +868,7 @@ class StudentController extends Controller
             abort(404);
         }
 
-        return redirect()->route('panel.v1.student.settings')
-            ->with('toast', ['title' => 'تم', 'msg' => 'تم تحديث المرفق', 'type' => 'success']);
+        return $this->settingsRedirect('settings-tabs-5', 'تم تحديث المرفق');
     }
 
     public function deleteAttachment($attachmentId)
@@ -764,7 +883,9 @@ class StudentController extends Controller
             abort(404);
         }
 
-        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم حذف المرفق', 'type' => 'success']);
+        return redirect()
+            ->to(route('panel.v1.student.settings') . '#settings-tabs-5')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم حذف المرفق', 'type' => 'success']);
     }
 
     public function endSession($sessionId)
@@ -779,7 +900,9 @@ class StudentController extends Controller
             abort(404);
         }
 
-        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم إنهاء الجلسة', 'type' => 'success']);
+        return redirect()
+            ->to(route('panel.v1.student.settings') . '#settings-tabs-6')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم إنهاء الجلسة', 'type' => 'success']);
     }
 
     public function updateSettings(Request $request)
@@ -824,13 +947,7 @@ class StudentController extends Controller
 
         $this->saveProfileAccountOptions($request, $user);
 
-        return redirect()
-            ->route('panel.v1.student.settings')
-            ->with('toast', [
-                'title' => 'تم',
-                'msg' => 'تم حفظ الإعدادات بنجاح',
-                'type' => 'success',
-            ]);
+        return $this->settingsRedirect('settings-tabs-1', 'تم حفظ الإعدادات بنجاح');
     }
 
     public function markAllNotificationsRead(Request $request)
