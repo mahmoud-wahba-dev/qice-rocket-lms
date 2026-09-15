@@ -177,77 +177,135 @@
             </div>
 
             <div id="purchase-tabs-3" class="hidden" role="tabpanel" aria-labelledby="purchase-tabs-item-3">
-                <div class="bg-[#F9F5F5] rounded-12px px-8 py-6 mb-10">
-                    <h3 class="font-semibold text-24px text-primary mb-2">رصيدك وعمليات السحب</h3>
-                    <p class="font-semibold text-15px text-[#64748B]">
-                        سحب الأرباح متاح لحسابات المدربين — رصيدك الحالي يظهر أدناه.
+                <div class="bg-[#F3F4F6] rounded-[12px] px-6 sm:px-8 py-6 mb-8">
+                    <h3 class="font-bold text-[20px] sm:text-[22px] text-primary mb-2">إدارة طلبات سحب الأرباح والعمولات</h3>
+                    <p class="font-medium text-[14px] sm:text-[15px] text-gray leading-relaxed">
+                        تابع رصيدك الجاهز للسحب وطريقة التحويل وسجل عمليات السحب من هنا.
                     </p>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                    <div class="bg-primary rounded-16px px-8 py-8 text-white">
-                        <p class="font-bold text-20px text-white mb-10">الرصيد الحالي</p>
-                        <p class="font-semibold text-32px text-white leading-none">{{ handlePrice($balance ?? 0) }}</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 mb-8">
+                    <div class="bg-primary rounded-[12px] px-6 py-7 text-white">
+                        <p class="font-medium text-[14px] text-white/90 mb-4">الرصيد الجاهز للدفع</p>
+                        <p class="font-extrabold text-[28px] sm:text-[32px] text-white leading-none">{{ handlePrice($readyPayout ?? 0) }}</p>
+                    </div>
+                    <div class="bg-primary rounded-[12px] px-6 py-7 text-white">
+                        <p class="font-medium text-[14px] text-white/90 mb-4">رصيد المحفظة</p>
+                        <p class="font-extrabold text-[28px] sm:text-[32px] text-white leading-none">{{ handlePrice($accountCharge ?? 0) }}</p>
+                    </div>
+                    <div class="bg-primary rounded-[12px] px-6 py-7 text-white">
+                        <p class="font-medium text-[14px] text-white/90 mb-4">الرصيد الحالي</p>
+                        <p class="font-extrabold text-[28px] sm:text-[32px] text-white leading-none">{{ handlePrice($balance ?? 0) }}</p>
                     </div>
                 </div>
 
-                <h3 class="font-bold text-20px text-[#0F172A] mb-6">سجل عمليات السحب الأخيرة</h3>
+                <div class="border border-d9 rounded-[12px] bg-white px-5 sm:px-7 py-5 mb-10 flex flex-wrap items-center justify-between gap-4">
+                    <div class="min-w-0">
+                        <p class="font-bold text-[15px] text-[#C9A46C] mb-1">
+                            طريقة السحب المحددة:
+                            {{ $withdrawalMethodLabel ?? 'غير محددة بعد' }}
+                        </p>
+                        <p class="font-medium text-[13px] text-gray inline-flex items-start gap-1.5">
+                            <span class="icon-[tabler--bulb] size-4 text-[#C9A46C] shrink-0 mt-0.5" aria-hidden="true"></span>
+                            يمكنك تحديث بيانات الحساب البنكي من إعدادات الملف المالي.
+                        </p>
+                    </div>
+                    <a href="{{ url('/panel/financial/payout') }}"
+                        class="btn rounded-[10px] h-11 px-6 font-bold text-[13px] text-white border-0 shrink-0"
+                        style="background:#6B7280;">
+                        طلب سحب الأرباح
+                    </a>
+                </div>
+
+                <h3 class="font-bold text-[18px] sm:text-[20px] text-primary mb-5">سجل عمليات السحب الأخيرة</h3>
                 @forelse ($userPayouts ?? [] as $payout)
-                    <div class="border border-d9 rounded-12px bg-white px-8 py-5 mb-4 flex items-center justify-between gap-4">
-                        <p class="font-semibold text-18px text-primary">{{ handlePrice($payout->amount) }}</p>
-                        <p class="font-medium text-14px text-gray">{{ date('Y/m/d', (int) $payout->created_at) }} — {{ $payout->status }}</p>
+                    <div class="border border-d9 rounded-[12px] bg-white px-6 py-5 mb-3 flex flex-wrap items-center justify-between gap-3">
+                        <p class="font-bold text-[16px] text-primary whitespace-nowrap">{{ handlePrice($payout->amount) }}</p>
+                        <p class="font-medium text-[13px] text-gray whitespace-nowrap">
+                            {{ date('Y/m/d', (int) $payout->created_at) }} — {{ $payout->status }}
+                        </p>
                     </div>
                 @empty
-                    <div class="border border-d9 rounded-12px bg-white px-8 py-20 center flex-col text-center">
-                        <p class="font-semibold text-24px text-gray mb-3">لا توجد عمليات سحب سابقة</p>
+                    <div class="border border-d9 rounded-[12px] bg-white px-8 py-16 center flex-col text-center">
+                        <div class="size-16 rounded-full bg-[#EEF2FF] center mb-4">
+                            <span class="icon-[tabler--plus] size-7 text-[#94A3B8]" aria-hidden="true"></span>
+                        </div>
+                        <p class="font-bold text-[16px] text-primary mb-1">لا توجد عمليات سحب سابقة</p>
+                        <p class="font-medium text-[13px] text-gray">ستظهر هنا طلبات سحب الأرباح بعد إرسالها.</p>
                     </div>
                 @endforelse
             </div>
 
             <div id="purchase-tabs-4" class="hidden" role="tabpanel" aria-labelledby="purchase-tabs-item-4">
-                @if (($userSubscribes ?? collect())->isNotEmpty())
-                    <div class="bg-fa rounded-12px px-8 py-6 mb-12">
-                        <h3 class="font-semibold text-24px text-black mb-4">اشتراكاتك النشطة</h3>
-                        @foreach ($userSubscribes as $userSubscribe)
-                            <p class="font-semibold text-18px text-primary mb-2">
-                                {{ $userSubscribe->subscribe->title ?? '' }}
+                @if (!empty($hasActiveSubscribe) || ($userSubscribes ?? collect())->isNotEmpty())
+                    <div class="bg-[#F3F4F6] rounded-[12px] px-6 sm:px-8 py-6 mb-8">
+                        <h3 class="font-bold text-[20px] text-primary mb-3">اشتراكاتك النشطة</h3>
+                        @forelse ($userSubscribes ?? [] as $userSubscribe)
+                            <p class="font-semibold text-[15px] text-primary mb-1">
+                                {{ $userSubscribe->subscribe->title ?? 'باقة اشتراك' }}
                                 ({{ $userSubscribe->subscribe->days ?? 0 }} يوم)
                             </p>
-                        @endforeach
+                        @empty
+                            <p class="font-medium text-[14px] text-gray">لديك اشتراك نشط حالياً.</p>
+                        @endforelse
                     </div>
                 @else
-                    <div class="bg-fa rounded-12px px-8 py-6 mb-12 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-                        <div>
-                            <h3 class="font-semibold text-24px text-black mb-2">لا توجد خطة اشتراك!</h3>
-                            <p class="font-semibold text-20px text-gray">
+                    <div class="bg-[#F3F4F6] rounded-[12px] px-6 sm:px-8 py-6 mb-8 flex flex-wrap items-center justify-between gap-4">
+                        <div class="min-w-0">
+                            <h3 class="font-bold text-[20px] text-primary mb-2">لا توجد خطة اشتراك!</h3>
+                            <p class="font-medium text-[14px] sm:text-[15px] text-gray">
                                 فعل خطة اشتراك من القائمة أدناه للوصول إلى المزيد من الميزات.
                             </p>
                         </div>
+                        <a href="#purchase-subscribe-plans"
+                            class="btn btn-primary rounded-[10px] h-11 px-6 font-bold text-[13px] shrink-0">
+                            اختر خطة دفع
+                        </a>
                     </div>
                 @endif
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div id="purchase-subscribe-plans" class="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
                     @forelse ($subscribePlans ?? [] as $plan)
-                        <article class="border-2 border-primary rounded-13px bg-white px-8 py-10 flex flex-col">
-                            <h4 class="font-bold text-28px text-primary mb-4">{{ $plan->title }}</h4>
-                            <p class="font-normal text-20px text-colorTextPrimary mb-4">
-                                <span class="font-bold">المدة</span>: {{ $plan->days }} يوم
-                            </p>
-                            <p class="font-normal text-20px text-colorTextPrimary mb-10">
-                                الاستخدامات: {{ $plan->infinite_use ? 'غير محدود' : $plan->usable_count }}
-                            </p>
-                            <div class="flex items-center gap-3 mb-8">
-                                <span class="font-bold text-32px text-primary">{{ handlePrice($plan->price) }}</span>
+                        <article class="border border-primary/40 rounded-[16px] bg-white px-6 py-8 flex flex-col min-h-[28rem]">
+                            <div class="center flex-col text-center mb-6">
+                                @if (!empty($plan['icon']))
+                                    <img src="{{ $plan['icon'] }}" alt="" class="size-10 object-contain mb-3" loading="lazy">
+                                @elseif (($plan['tierKey'] ?? '') === 'gold')
+                                    <span class="icon-[tabler--crown] size-9 mb-3 text-[#C9A46C]" aria-hidden="true"></span>
+                                @elseif (($plan['tierKey'] ?? '') === 'silver')
+                                    <span class="icon-[tabler--diamond] size-9 mb-3 text-[#6B7280]" aria-hidden="true"></span>
+                                @else
+                                    <span class="icon-[tabler--box] size-9 mb-3 text-[#874C09]" aria-hidden="true"></span>
+                                @endif
+                                <h4 class="font-bold text-[22px] leading-snug" style="color: {{ $plan['tierColor'] }}">
+                                    {{ $plan['title'] }}
+                                </h4>
                             </div>
-                            <a href="{{ url('/panel/financial/subscribes') }}"
-                                class="btn btn-primary rounded-10px h-13 font-semibold text-20px w-full center">
+
+                            <ul class="space-y-2.5 mb-8 grow">
+                                <li class="font-medium text-[14px] text-primary">
+                                    المدة: ساري لمدة {{ $plan['days'] }} يوم
+                                </li>
+                                @foreach (($plan['features'] ?? []) as $feature)
+                                    <li class="font-medium text-[14px] text-primary leading-relaxed">{{ $feature }}</li>
+                                @endforeach
+                            </ul>
+
+                            <div class="mb-6">
+                                <p class="font-extrabold text-[28px] text-primary leading-none">
+                                    {{ handlePrice($plan['price']) }}
+                                </p>
+                            </div>
+
+                            <a href="{{ $plan['subscribeUrl'] }}"
+                                class="btn btn-primary rounded-[10px] h-12 font-bold text-[15px] w-full mt-auto">
                                 اشترك الآن
                             </a>
                         </article>
                     @empty
-                        <div class="md:col-span-3 border border-d9 rounded-13px bg-white px-8 py-16 center flex-col text-center">
-                            <p class="font-semibold text-22px text-gray">لا توجد خطط اشتراك متاحة حالياً</p>
-                            <p class="font-medium text-16px text-gray mt-2">تُدار خطط الاشتراك من لوحة الإدارة.</p>
+                        <div class="md:col-span-3 border border-d9 rounded-[16px] bg-white px-8 py-16 center flex-col text-center">
+                            <p class="font-semibold text-[18px] text-gray">لا توجد خطط اشتراك متاحة حالياً</p>
+                            <p class="font-medium text-[14px] text-gray mt-2">تُدار خطط الاشتراك من لوحة الإدارة.</p>
                         </div>
                     @endforelse
                 </div>

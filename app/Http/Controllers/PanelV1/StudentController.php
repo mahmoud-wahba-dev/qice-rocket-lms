@@ -425,13 +425,62 @@ class StudentController extends Controller
             ->limit(4)
             ->get();
 
+        $subscribePlans = Subscribe::orderBy('id')->get()->map(function (Subscribe $plan, int $index) {
+            $rawDescription = $plan->translate('ar')?->description ?: ($plan->description ?? '');
+            $features = collect(preg_split('/[\r\n]+|<\/li>|<br\s*\/?>/i', (string) $rawDescription))
+                ->map(fn ($line) => trim(html_entity_decode(strip_tags($line))))
+                ->filter()
+                ->values()
+                ->take(6)
+                ->all();
+
+            if (empty($features)) {
+                $features = [
+                    'المدة: ساري لمدة ' . ((int) $plan->days) . ' يوم',
+                    'الاستخدامات: ' . (!empty($plan->infinite_use) ? 'غير محدود' : ((int) $plan->usable_count)),
+                ];
+            }
+
+            $tiers = [
+                ['key' => 'bronze', 'color' => '#874C09', 'icon' => 'tabler--box'],
+                ['key' => 'silver', 'color' => '#6B7280', 'icon' => 'tabler--diamond'],
+                ['key' => 'gold', 'color' => '#C9A46C', 'icon' => 'tabler--crown'],
+            ];
+            $tier = $tiers[$index % 3];
+
+            return [
+                'id' => $plan->id,
+                'title' => $plan->translate('ar')?->title ?: ($plan->title ?: 'باقة اشتراك'),
+                'days' => (int) $plan->days,
+                'price' => $plan->price,
+                'usableCount' => (int) $plan->usable_count,
+                'infiniteUse' => (bool) $plan->infinite_use,
+                'icon' => $plan->icon,
+                'features' => $features,
+                'tierKey' => $tier['key'],
+                'tierColor' => $tier['color'],
+                'tierIcon' => $tier['icon'],
+                'subscribeUrl' => url('/panel/financial/subscribes'),
+            ];
+        });
+
+        $iban = trim((string) ($user->iban ?? ''));
+        $maskedIban = $iban !== ''
+            ? 'حساب بنكي (**** ' . substr(preg_replace('/\s+/', '', $iban), -4) . ')'
+            : null;
+
         return view('panel_v1.student.pages.purchases', [
             'pageTitle' => 'عمليات الشراء الخاصة بي',
             'authUser' => $user,
             'sales' => $sales,
             'balance' => $user->getAccountingBalance(),
+            'accountCharge' => $user->getAccountingCharge(),
+            'readyPayout' => $user->getPayout(),
             'transactions' => $transactions,
-            'subscribePlans' => Subscribe::orderBy('id')->get(),            'userPayouts' => \App\Models\Payout::where('user_id', $user->id)
+            'subscribePlans' => $subscribePlans,
+            'hasActiveSubscribe' => Subscribe::getActiveSubscribe($user->id),
+            'withdrawalMethodLabel' => $maskedIban,
+            'userPayouts' => \App\Models\Payout::where('user_id', $user->id)
                 ->orderBy('id', 'desc')
                 ->limit(10)
                 ->get(),
