@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\PanelV1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Certificate;
 use App\Models\Notification;
 use App\Models\NotificationStatus;
 use App\Models\Quiz;
+use App\Models\QuizzesResult;
 use App\Models\Sale;
 use App\Models\Session;
 use App\Models\File;
+use App\Models\TimeSpentOnCourse;
 use App\Models\Translation\WebinarAssignmentTranslation;
 use App\Models\Translation\WebinarChapterTranslation;
 use App\Models\Webinar;
@@ -1822,30 +1825,124 @@ class InstructorController extends Controller
 
     public function coursePerformance(Request $request, string $slug)
     {
-        $guardUser = $request->user();
-        if (!$guardUser) { return redirect('/login'); }
+        $guardUser = $this->resolveInstructor($request);
+        if ($guardUser instanceof \Illuminate\Http\RedirectResponse) {
+            return $guardUser;
+        }
+
         $webinar = $this->teacherWebinarOrFail($guardUser, $slug);
-        $perf = $this->performanceData($webinar);
-        $salesCount = \App\Models\Sale::where('webinar_id',$webinar->id)->whereNull('refund_at')->count();
-        $pending = \App\Models\WebinarAssignmentHistory::whereIn('assignment_id', \App\Models\WebinarAssignment::where('webinar_id',$webinar->id)->pluck('id'))->where('status','pending')->count();
+        $perf = $this->performanceData($webinar, $request);
+
+        $assignmentIds = WebinarAssignment::where('webinar_id', $webinar->id)->pluck('id');
+        $pendingHistories = $assignmentIds->isEmpty()
+            ? collect()
+            : WebinarAssignmentHistory::whereIn('assignment_id', $assignmentIds)
+                ->where('status', WebinarAssignmentHistory::$pending)
+                ->orderBy('id')
+                ->get();
+
+        $pendingCount = $pendingHistories->count();
+        $firstPendingId = optional($pendingHistories->first())->id;
+        $quizCount = Quiz::where('webinar_id', $webinar->id)->count();
+        $salesCount = Sale::where('webinar_id', $webinar->id)->whereNull('refund_at')->count();
+        $avgProgress = (int) ($perf['avg_progress'] ?? 0);
+        $certsCount = Certificate::where('webinar_id', $webinar->id)->count();
+
+        $filters = [
+            'q' => trim((string) $request->get('q', '')),
+            'progress' => (string) $request->get('progress', ''),
+        ];
+
         return $this->render(
             $request,
             'panel_v1.instructor.pages.course-performance',
             'لوحة أداء الدورة',
-            array_merge($perf, [
-                'webinar'=>$webinar,
-                'courseSlug'=>$webinar->slug,
-                'slug'=>$webinar->slug,
-                'courseTitle'=>$webinar->title,
-                'courseSubtitle'=>$webinar->category->title ?? '',
-                'alertText'=> $pending>0 ? "لديك $pending واجبات بانتظار التصحيح" : "لا توجد مهام عاجلة",
-                'perfStats'=>[
-                    ['value'=>$salesCount.' طالب','label'=>'مسجلون','tone'=>'green'],
-                    ['value'=>$pending.' واجبات','label'=>'بانتظار التصحيح','tone'=>'red'],
-                    ['value'=>count($perf['students'] ?? []).' طالب','label'=>'إجمالي','tone'=>'yellow'],
+            [
+                'webinar' => $webinar,
+                'courseSlug' => $webinar->slug,
+                'slug' => $webinar->slug,
+                'courseTitle' => $webinar->title,
+                'courseSubtitle' => $webinar->category->title ?? '',
+                'courseDetailsUrl' => route('panel.v1.instructor.courses.watch', ['slug' => $webinar->slug]),
+                'courseAssignmentsUrl' => route('panel.v1.instructor.courses.assignments', ['slug' => $webinar->slug]),
+                'alertText' => $pendingCount > 0
+                    ? "لديك {$pendingCount} واجبات بانتظار التصحيح"
+                    : 'لا توجد مهام عاجلة حالياً',
+                'reviewId' => $firstPendingId,
+                'canGradeNow' => !empty($firstPendingId),
+                'perfStats' => [
+                    ['value' => $salesCount . ' طالب', 'label' => 'مسجلون في الدورة', 'tone' => 'green'],
+                    ['value' => $avgProgress . '%', 'label' => 'متوسط التقدم', 'tone' => 'yellow'],
+                    ['value' => $pendingCount . ' واجبات', 'label' => 'بانتظار التصحيح', 'tone' => 'red'],
                 ],
-            ])
+                'extraStats' => [
+                    ['label' => 'اختبارات الدورة', 'value' => (string) $quizCount],
+                    ['label' => 'شهادات صادرة', 'value' => (string) $certsCount],
+                    ['label' => 'طلاب في القائمة', 'value' => (string) count($perf['students'] ?? [])],
+                ],
+                'students' => $perf['students'] ?? [],
+                'filters' => $filters,
+                'exportUrl' => route('panel.v1.instructor.courses.performance.export', array_filter([
+                    'slug' => $webinar->slug,
+                    'q' => $filters['q'] ?: null,
+                    'progress' => $filters['progress'] ?: null,
+                ])),
+            ]
         );
+    }
+
+    public function exportCoursePerformance(Request $request, string $slug)
+    {
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $webinar = $this->teacherWebinarOrFail($user, $slug);
+        $perf = $this->performanceData($webinar, $request);
+        $fileName = 'course_students_' . $webinar->slug . '_' . date('Ymd_His') . '.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\InstructorCoursePerformanceExport($perf['students'] ?? []),
+            $fileName
+        );
+    }
+
+    public function remindCourseStudent(Request $request, string $slug, int $studentId)
+    {
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $webinar = $this->teacherWebinarOrFail($user, $slug);
+        $sale = Sale::query()
+            ->where('webinar_id', $webinar->id)
+            ->where('buyer_id', $studentId)
+            ->whereNull('refund_at')
+            ->first();
+
+        if (empty($sale)) {
+            abort(404);
+        }
+
+        $student = \App\User::find($studentId);
+        Notification::create([
+            'user_id' => $studentId,
+            'sender_id' => $user->id,
+            'webinar_id' => $webinar->id,
+            'title' => 'تذكير بمتابعة الدورة',
+            'message' => 'تذكير من المدرب لمتابعة تقدمك في دورة: ' . ($webinar->title ?? ''),
+            'sender' => 'system',
+            'type' => 'single',
+            'created_at' => time(),
+        ]);
+
+        return back()->with('toast', [
+            'title' => 'تم',
+            'msg' => 'تم إرسال تذكير إلى ' . ($student->full_name ?? 'الطالب'),
+            'type' => 'success',
+        ]);
     }
 
     public function courseAssignments(Request $request, string $slug)
@@ -5764,53 +5861,109 @@ class InstructorController extends Controller
         })->all();
     }
 
-    private function performanceData($webinar): array
+    private function performanceData($webinar, ?Request $request = null): array
     {
-        $sales = \App\Models\Sale::with(['buyer'])
+        $assignmentIds = WebinarAssignment::where('webinar_id', $webinar->id)->pluck('id');
+        $quizIds = Quiz::where('webinar_id', $webinar->id)->pluck('id');
+
+        $salesQuery = Sale::with(['buyer'])
             ->where('webinar_id', $webinar->id)
             ->whereNull('refund_at')
-            ->orderBy('id', 'desc')
-            ->limit(20)
-            ->get();
+            ->orderByDesc('id');
 
-        $students = $sales->map(function ($sale) use ($webinar) {
+        $q = trim((string) ($request?->get('q', '') ?? ''));
+        if ($q !== '') {
+            $salesQuery->whereHas('buyer', function ($buyerQuery) use ($q) {
+                $buyerQuery->where('full_name', 'like', '%' . $q . '%')
+                    ->orWhere('email', 'like', '%' . $q . '%')
+                    ->orWhere('id', (int) ltrim($q, '#'));
+            });
+        }
+
+        $sales = $salesQuery->limit(100)->get()->unique('buyer_id')->values();
+
+        $students = $sales->map(function ($sale) use ($webinar, $assignmentIds, $quizIds) {
+            $buyer = $sale->buyer;
+            $buyerId = (int) $sale->buyer_id;
             $progress = 0;
             try {
-                $progress = (int) $webinar->getProgress(false, $sale->buyer);
+                $progress = $this->studentLearningProgressPercent($webinar, $buyer);
             } catch (\Throwable $e) {
                 $progress = 0;
             }
-            $passedExams = \App\Models\QuizzesResult::where('user_id', $sale->buyer_id)
-                ->where('status', 'passed')
+
+            $passedExams = $quizIds->isEmpty()
+                ? 0
+                : QuizzesResult::where('user_id', $buyerId)
+                    ->whereIn('quiz_id', $quizIds)
+                    ->where('status', QuizzesResult::$passed)
+                    ->count();
+
+            $passedAssignments = $assignmentIds->isEmpty()
+                ? 0
+                : WebinarAssignmentHistory::where('student_id', $buyerId)
+                    ->whereIn('assignment_id', $assignmentIds)
+                    ->where('status', WebinarAssignmentHistory::$passed)
+                    ->count();
+
+            $pendingAssignment = $assignmentIds->isEmpty()
+                ? null
+                : WebinarAssignmentHistory::where('student_id', $buyerId)
+                    ->whereIn('assignment_id', $assignmentIds)
+                    ->where('status', WebinarAssignmentHistory::$pending)
+                    ->orderByDesc('id')
+                    ->first();
+
+            $seconds = (int) TimeSpentOnCourse::where('user_id', $buyerId)
+                ->where('course_id', $webinar->id)
+                ->sum('seconds_spent');
+            $activity = $seconds > 0
+                ? (round($seconds / 60) . ' دقيقة')
+                : ($progress > 0 ? 'نشط' : 'لم يبدأ');
+
+            $certs = Certificate::where('student_id', $buyerId)
+                ->where('webinar_id', $webinar->id)
                 ->count();
+
             return [
-                'name' => $sale->buyer->full_name ?? '',
-                'email' => $sale->buyer->email ?? '',
+                'id' => $buyerId,
+                'name' => $buyer->full_name ?? 'طالب',
+                'email' => $buyer->email ?? '',
+                'avatar' => method_exists($buyer, 'getAvatar') ? $buyer->getAvatar() : null,
                 'progress' => $progress,
-                'activity' => '—',
+                'activity' => $activity,
                 'exams' => $passedExams,
-                'assignments' => \App\Models\WebinarAssignmentHistory::where('student_id', $sale->buyer_id)
-                    ->where('status', 'passed')->count(),
-                'certificates' => \App\Models\Certificate::where('student_id', $sale->buyer_id)
-                    ->where('webinar_id', $webinar->id)->count(),
+                'assignments' => $passedAssignments,
+                'certificates' => $certs,
+                'joined_at' => !empty($sale->created_at) ? date('Y/m/d', (int) $sale->created_at) : '—',
+                'review_url' => $pendingAssignment
+                    ? route('panel.v1.instructor.assignments.review', ['id' => $pendingAssignment->id])
+                    : route('panel.v1.instructor.courses.assignments', ['slug' => $webinar->slug]),
+                'remind_url' => route('panel.v1.instructor.courses.performance.remind', [
+                    'slug' => $webinar->slug,
+                    'studentId' => $buyerId,
+                ]),
+                'has_pending' => !empty($pendingAssignment),
             ];
-        })->all();
+        });
 
-        $avgProgress = !empty($students)
-            ? (int) round(collect($students)->avg('progress'))
-            : 0;
-
-        if ($avgProgress < 1) {
-            $avgProgress = $this->webinarAverageProgress($webinar);
+        $progressFilter = (string) ($request?->get('progress', '') ?? '');
+        if ($progressFilter === 'low') {
+            $students = $students->filter(fn ($row) => (int) $row['progress'] < 40);
+        } elseif ($progressFilter === 'mid') {
+            $students = $students->filter(fn ($row) => (int) $row['progress'] >= 40 && (int) $row['progress'] < 80);
+        } elseif ($progressFilter === 'high') {
+            $students = $students->filter(fn ($row) => (int) $row['progress'] >= 80);
         }
 
+        $students = $students->values();
+        $avgProgress = $students->isNotEmpty()
+            ? (int) round($students->avg('progress'))
+            : $this->webinarAverageProgress($webinar);
+
         return [
-            'perfStats' => [
-                ['value' => count($students) . ' طالب', 'label' => 'طلاب الدورة', 'tone' => 'green'],
-                ['value' => $avgProgress . '%', 'label' => 'متوسط التقدم', 'tone' => 'yellow'],
-                ['value' => count($students) . ' مبيعات', 'label' => 'إجمالي المبيعات', 'tone' => 'green'],
-            ],
-            'students' => $students,
+            'students' => $students->all(),
+            'avg_progress' => $avgProgress,
         ];
     }
 

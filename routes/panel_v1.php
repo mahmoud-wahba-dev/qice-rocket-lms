@@ -145,6 +145,11 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 ->name('instructor.courses.assignment');
             Route::get('/instructor/courses/{slug}/performance', [InstructorController::class, 'coursePerformance'])
                 ->name('instructor.courses.performance');
+            Route::get('/instructor/courses/{slug}/performance/export', [InstructorController::class, 'exportCoursePerformance'])
+                ->name('instructor.courses.performance.export');
+            Route::post('/instructor/courses/{slug}/performance/remind/{studentId}', [InstructorController::class, 'remindCourseStudent'])
+                ->whereNumber('studentId')
+                ->name('instructor.courses.performance.remind');
             Route::get('/instructor/courses/{slug}/assignments', [InstructorController::class, 'courseAssignments'])
                 ->name('instructor.courses.assignments');
             Route::get('/instructor/assignments', [InstructorController::class, 'assignments'])->name('instructor.assignments');
