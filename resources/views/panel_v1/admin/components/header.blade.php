@@ -9,12 +9,14 @@
 <nav class="navbar min-h-14 py-0 px-2 sm:px-4 bg-white items-center gap-2">
     <div class="navbar-start gap-2 !flex !items-center">
         <button type="button"
-            class="btn btn-soft btn-square btn-sm lg:hidden text-primary !inline-flex !items-center !justify-center"
-            aria-haspopup="dialog"
-            aria-expanded="false"
+            class="btn btn-soft btn-square btn-sm text-primary !inline-flex !items-center !justify-center"
+            data-admin-sidebar-toggle
             aria-controls="admin-layout-toggle"
-            data-overlay="#admin-layout-toggle">
-            <span class="icon-[tabler--menu-2] size-5"></span>
+            aria-expanded="false"
+            aria-label="فتح القائمة الجانبية"
+            title="القائمة الجانبية">
+            <span class="icon-[tabler--layout-sidebar-right-collapse] size-5" data-sidebar-icon="collapse"></span>
+            <span class="icon-[tabler--layout-sidebar-right-expand] size-5 hidden" data-sidebar-icon="expand"></span>
         </button>
 
         <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-start]">
@@ -39,7 +41,7 @@
         </div>
     </div>
 
-    <div class="navbar-end gap-1 sm:gap-2 !flex !items-center">
+    <div class="navbar-end gap-0.5 sm:gap-1 !flex !items-center">
         @if (!empty($cta))
             <a href="{{ $cta['href'] }}"
                 class="hidden sm:inline-flex items-center justify-center h-11 px-4 rounded-12px bg-color2 text-white font-semibold text-14px hover:opacity-95 transition">
@@ -47,13 +49,13 @@
             </a>
         @endif
 
-        <button type="button" class="btn btn-text btn-square btn-sm text-primary" aria-label="اللغة">
+        <button type="button" class="btn btn-text btn-square btn-sm text-primary !inline-flex !items-center !justify-center" aria-label="اللغة">
             <span class="icon-[tabler--world] size-5"></span>
         </button>
-        <button type="button" class="btn btn-text btn-square btn-sm text-primary" aria-label="المفضلة">
+        <button type="button" class="btn btn-text btn-square btn-sm text-primary !inline-flex !items-center !justify-center" aria-label="المفضلة">
             <span class="icon-[tabler--heart] size-5"></span>
         </button>
-        <button type="button" class="btn btn-text btn-square btn-sm text-primary" aria-label="الإشعارات">
+        <button type="button" class="btn btn-text btn-square btn-sm text-primary !inline-flex !items-center !justify-center relative" aria-label="الإشعارات">
             <span class="icon-[tabler--bell] size-5"></span>
         </button>
 

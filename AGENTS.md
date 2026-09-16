@@ -9,6 +9,7 @@
 - **QIEC للتدريب** على RocketLMS v2.1 — Laravel 9 · PHP 8.2 + ionCube Loader 15.5 · MySQL 8.
 - ثلاث طبقات: `design_1` (Stisla قديم — Mix) + `landing_v1` (تسويقية — Vite+Tailwind) + `panel_v1` (لوحات Student/Instructor/Admin/Organization — Vite).
 - الحالة: **Student/CoursePlayer/Landing/Instructor/Organization/Admin 100% حقيقي** (`v1` بديل حرفي كامل 1:1) — صفر Mock في الإنتاج (تمت إزالة `InstructorMockData` و `CoursePlayerMockData` من `PanelV1` — `AdminMockData` باقٍ للـ `shell` فقط).
+- Admin V1 مكتمل CRUD: دورات/حزم/اختبارات+أسئلة/تكليفات/فعاليات+تذاكر ومتحدثون/مراجعات (اعتماد)/مستخدمون (إنشاء/تعديل/حذف)/خصومات/مجموعات/شارات/أدوار/سحب (موافقة)/offline (تأكيد)/استيراد CSV/تصدير Excel — اختبارات `AdminV1 12/12`.
 - الترخيص مربوط بـ `training.qiec.local` — `localhost` يُحول لـ `/purchase-code`.
 
 ---

@@ -7,11 +7,11 @@
         'subtitle' => $pageSubtitle ?? '',
     ])
         @slot('actions')
-            <button type="button"
+            <a href="{{ route('panel.v1.admin.sales.export', request()->query()) }}"
                 class="inline-flex items-center gap-2 h-12 px-5 rounded-12px bg-color2 text-white font-semibold text-15px hover:opacity-95 transition">
                 <span class="icon-[tabler--file-spreadsheet] size-5"></span>
                 استخرج التقرير إكسل
-            </button>
+            </a>
         @endslot
     @endcomponent
 
@@ -19,6 +19,12 @@
 
     <div class="border border-d9 rounded-14px bg-white p-4 sm:p-6 shadow-sm">
         @include('panel_v1.admin.components.filter-bar')
+
+        @if (!empty($paginator))
+            <div class="mb-4">
+                @include('panel_v1.admin.components.stats-cards', ['stats' => [['label'=>'إجمالي النتائج','value'=> (string)$paginator->total(), 'icon'=>'icon-[tabler--database]']]])
+            </div>
+        @endif
 
         <div class="overflow-x-auto">
             <table class="table w-full text-14px sm:text-15px">
@@ -75,7 +81,7 @@
             </table>
         </div>
 
-        @include('panel_v1.admin.components.pagination', ['pagination' => $pagination ?? []])
+        @include('panel_v1.admin.components.pagination', ['paginator' => $paginator ?? null, 'pagination' => $pagination ?? []])
     </div>
 </div>
 @endsection

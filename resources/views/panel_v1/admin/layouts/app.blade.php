@@ -26,19 +26,47 @@
         'resources/css/panel_v1/admin.css',
         'resources/js/panel_v1/admin.js',
     ])
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem('panel_v1_admin_sidebar') === 'collapsed'
+                    && window.matchMedia('(min-width: 1024px)').matches) {
+                    document.documentElement.dataset.adminSidebarPref = 'collapsed';
+                }
+            } catch (e) {}
+        })();
+    </script>
 </head>
 
 <body>
-    <div id="landing-v1-app" class="bg-[#F9FAF5] flex min-h-screen flex-col panel-v1-admin">
-        <div class="bg-white border-[#E8E8E8] sticky top-0 z-50 flex border-b lg:ps-[280px]">
+    {{-- Admin dashboard shell: fixed sidebar + header/main padding synced via CSS (parity with instructor) --}}
+    <div id="landing-v1-app" class="bg-[#F9FAF5] flex min-h-screen flex-col panel-v1-admin"
+        data-admin-sidebar="expanded">
+        <script>
+            (function () {
+                var app = document.getElementById('landing-v1-app');
+                if (app && document.documentElement.dataset.adminSidebarPref === 'collapsed') {
+                    app.setAttribute('data-admin-sidebar', 'collapsed');
+                }
+            })();
+        </script>
+
+        {{-- ---------- HEADER ---------- --}}
+        <div class="admin-shell-header bg-white border-[#E8E8E8] sticky top-0 z-50 flex border-b">
             <div class="mx-auto w-full">
                 @include('panel_v1.admin.components.header')
             </div>
         </div>
 
+        {{-- ---------- SIDEBAR ---------- --}}
         @include('panel_v1.admin.components.sidebar')
+        <div id="admin-sidebar-backdrop"
+            class="fixed inset-0 z-[55] bg-black/40 opacity-0 pointer-events-none transition-opacity duration-300 ease-out lg:hidden"
+            data-admin-sidebar-close
+            aria-hidden="true"></div>
 
-        <div class="flex grow flex-col lg:ps-[280px]">
+        {{-- ---------- MAIN ---------- --}}
+        <div class="admin-shell-main flex grow flex-col">
             <main class="mx-auto mt-0 w-full flex-1 space-y-6 p-4 sm:p-6 lg:p-8 bg-[#FAFAF4]">
                 @include('components.v1.flash')
                 @yield('content')

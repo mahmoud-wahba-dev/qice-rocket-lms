@@ -46,7 +46,7 @@ class AdminMockData
             'adminNav' => self::nav($dashboard),
             'adminActive' => $active ?? 'home',
             'adminCta' => $dashboard === 'education'
-                ? ['label' => '+ إنشاء دورة جديدة', 'href' => '#']
+                ? ['label' => '+ إنشاء دورة جديدة', 'href' => route('panel.v1.admin.education.section', ['section' => 'courses'])]
                 : null,
         ];
     }
@@ -63,6 +63,8 @@ class AdminMockData
 
     public static function educationNav(): array
     {
+        // مبسط ومتسق: حذف المكرر (منتديات/إشعارات/تسجيل موجودة في النظام) + الزائد (فلاتر/انتظار/تواريخ حضور)
+        // الدرج العلوي = الأقسام الكبرى (تعليم/مبيعات/تسويق/نظام) + السايدبار يملأ بصفحات القسم المختار
         return [
             [
                 'title' => 'الرئيسية',
@@ -71,44 +73,28 @@ class AdminMockData
                 ],
             ],
             [
-                'title' => 'الإدارة الأكاديمية والدورات',
+                'title' => 'إدارة المحتوى الأكاديمي',
                 'items' => [
                     ['key' => 'courses', 'label' => 'إدارة الدورات', 'icon' => 'icon-[tabler--book]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'courses']],
                     ['key' => 'bundles', 'label' => 'حزم الدورات والباقات', 'icon' => 'icon-[tabler--package]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'bundles']],
-                    ['key' => 'live', 'label' => 'البث والمحاضرات المباشرة', 'icon' => 'icon-[tabler--video]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'live']],
+                    ['key' => 'departments', 'label' => 'الأقسام والتصنيفات', 'icon' => 'icon-[tabler--building]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'departments']],
                     ['key' => 'events', 'label' => 'الفعاليات', 'icon' => 'icon-[tabler--calendar-event]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'events']],
                 ],
             ],
             [
-                'title' => 'التقييمات والشهادات',
+                'title' => 'التقييم والاعتماد',
                 'items' => [
-                    ['key' => 'assignments', 'label' => 'التكليفات والواجبات', 'icon' => 'icon-[tabler--clipboard-list]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'assignments']],
                     ['key' => 'quizzes', 'label' => 'الاختبارات', 'icon' => 'icon-[tabler--list-check]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'quizzes']],
+                    ['key' => 'assignments', 'label' => 'التكليفات والواجبات', 'icon' => 'icon-[tabler--clipboard-list]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'assignments']],
                     ['key' => 'certificates', 'label' => 'الشهادات والاعتمادات', 'icon' => 'icon-[tabler--certificate]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'certificates']],
-                ],
-            ],
-            [
-                'title' => 'التواصل والإنشاء',
-                'items' => [
-                    ['key' => 'forums', 'label' => 'منتديات الدورات', 'icon' => 'icon-[tabler--messages]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'forums']],
-                    ['key' => 'notifications', 'label' => 'إشعارات الدورات', 'icon' => 'icon-[tabler--bell]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'notifications']],
                     ['key' => 'reviews', 'label' => 'المراجعات والتقييمات', 'icon' => 'icon-[tabler--star]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'reviews']],
                 ],
             ],
             [
-                'title' => 'القبول والمتابعة',
+                'title' => 'التفاعل المباشر والحضور',
                 'items' => [
-                    ['key' => 'registration', 'label' => 'التسجيل', 'icon' => 'icon-[tabler--user-plus]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'registration']],
-                    ['key' => 'waitlists', 'label' => 'قوائم الانتظار', 'icon' => 'icon-[tabler--list]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'waitlists']],
-                    ['key' => 'departments', 'label' => 'الأقسام', 'icon' => 'icon-[tabler--building]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'departments']],
-                    ['key' => 'filters', 'label' => 'فلاتر الدورات المخصصة', 'icon' => 'icon-[tabler--filter]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'filters']],
-                ],
-            ],
-            [
-                'title' => 'الحضور والتأخير',
-                'items' => [
-                    ['key' => 'attendance', 'label' => 'الحضور', 'icon' => 'icon-[tabler--calendar-check]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'attendance']],
-                    ['key' => 'attendance-history', 'label' => 'تواريخ الحضور والغياب', 'icon' => 'icon-[tabler--history]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'attendance-history']],
+                    ['key' => 'live', 'label' => 'البث والمحاضرات المباشرة', 'icon' => 'icon-[tabler--video]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'live']],
+                    ['key' => 'attendance', 'label' => 'الحضور والغياب', 'icon' => 'icon-[tabler--calendar-check]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'attendance']],
                 ],
             ],
         ];
@@ -128,6 +114,7 @@ class AdminMockData
                 'items' => [
                     ['key' => 'sales-list', 'label' => 'قائمة المبيعات', 'icon' => 'icon-[tabler--receipt]', 'route' => 'panel.v1.admin.sales.home'],
                     ['key' => 'budget', 'label' => 'الميزانية', 'icon' => 'icon-[tabler--chart-bar]', 'route' => 'panel.v1.admin.sales.section', 'params' => ['section' => 'budget']],
+                    ['key' => 'documents', 'label' => 'المستندات والأرصدة', 'icon' => 'icon-[tabler--file-text]', 'route' => 'panel.v1.admin.sales.section', 'params' => ['section' => 'documents']],
                 ],
             ],
             [
@@ -164,6 +151,9 @@ class AdminMockData
                 'title' => 'إدارة المحتوى والمظهر',
                 'items' => [
                     ['key' => 'home', 'label' => 'لوحة إدارة المحتوى والمظهر', 'icon' => 'icon-[tabler--device-desktop]', 'route' => 'panel.v1.admin.marketing.home'],
+                    ['key' => 'products', 'label' => 'منتجات المتجر', 'icon' => 'icon-[tabler--shopping-cart]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'products']],
+                    ['key' => 'blog', 'label' => 'المدونة', 'icon' => 'icon-[tabler--article]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'blog']],
+                    ['key' => 'pages', 'label' => 'الصفحات', 'icon' => 'icon-[tabler--file-text]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'pages']],
                 ],
             ],
             [

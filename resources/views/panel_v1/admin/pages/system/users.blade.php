@@ -7,11 +7,18 @@
         'subtitle' => $pageSubtitle ?? '',
     ])
         @slot('actions')
-            <button type="button"
-                class="inline-flex items-center gap-2 h-12 px-5 rounded-12px bg-color2 text-white font-semibold text-15px hover:opacity-95 transition">
-                <span class="icon-[tabler--plus] size-5"></span>
-                اضافة مستخدم جديد
-            </button>
+            <div class="flex items-center gap-2">
+                <a href="{{ route('panel.v1.admin.system.users.export', request()->query()) }}"
+                    class="inline-flex items-center gap-2 h-12 px-4 rounded-12px border border-d9 bg-white font-semibold text-14px text-primary hover:bg-[#FAFAF4] transition">
+                    <span class="icon-[tabler--file-spreadsheet] size-4"></span>
+                    تصدير Excel
+                </a>
+                <a href="{{ route('panel.v1.admin.system.users.create') }}"
+                    class="inline-flex items-center gap-2 h-12 px-5 rounded-12px bg-color2 text-white font-semibold text-15px hover:opacity-95 transition">
+                    <span class="icon-[tabler--plus] size-5"></span>
+                    اضافة مستخدم جديد
+                </a>
+            </div>
         @endslot
     @endcomponent
 
@@ -76,9 +83,9 @@
                                             <span class="icon-[tabler--dots] size-4 text-primary"></span>
                                         </button>
                                         <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-40 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20">
-                                            <li><a href="{{ route('panel.v1.admin.system.section', ['section' => 'users']) }}" class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary">عرض الملف</a></li>
-                                            <li><a href="{{ route('panel.v1.admin.system.section', ['section' => 'users']) }}" class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary">تعديل</a></li>
-                                            <li><button type="button" onclick="alert('قريباً — حذف المستخدم من لوحة الإدارة القديمة /admin/users')" class="dropdown-item px-4 py-2.5 font-medium text-14px text-red-500 w-full text-start">حذف</button></li>
+                                            <li><a href="{{ route('panel.v1.admin.system.users.edit', ['id' => $row['id']]) }}" class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary">عرض الملف</a></li>
+                                            <li><a href="{{ route('panel.v1.admin.system.users.edit', ['id' => $row['id']]) }}" class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary">تعديل</a></li>
+                                            <li><form method="POST" action="{{ route('panel.v1.admin.system.users.delete', ['id' => $row['id']]) }}" onsubmit="return confirm('حذف المستخدم؟')">@csrf<button type="submit" class="dropdown-item px-4 py-2.5 font-medium text-14px text-red-500 w-full text-start">حذف</button></form></li>
                                         </ul>
                                     </div>
                                 </td>
@@ -88,7 +95,7 @@
                 </table>
             </div>
 
-            @include('panel_v1.admin.components.pagination', ['pagination' => $pagination ?? []])
+            @include('panel_v1.admin.components.pagination', ['paginator' => $paginator ?? null, 'pagination' => $pagination ?? []])
         </div>
     </div>
 
