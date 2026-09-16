@@ -26,6 +26,7 @@ class DefaultGeneralSeeder extends Seeder
             'site_language' => 'EN',
             'user_languages' => ['AR', 'EN'],
             'rtl_languages' => ['AR', 'UR', 'FA'],
+            'default_time_zone' => 'Asia/Riyadh',
         ], JSON_UNESCAPED_UNICODE);
 
         foreach (['ar', 'en'] as $locale) {

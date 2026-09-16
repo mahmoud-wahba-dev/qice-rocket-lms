@@ -1140,27 +1140,30 @@ class StudentController extends Controller
 
         $this->syncFinishedCourseCertificates($user);
 
-        $certificates = Certificate::with(['webinar', 'quiz'])
+        $certificates = Certificate::with(['webinar.category', 'quiz.webinar', 'bundle'])
             ->where('student_id', $user->id)
             ->orderBy('id', 'desc')
             ->limit(30)
             ->get();
 
         $pendingCount = 0;
+        $totalCertificates = $certificates->count();
+        $courseCertCount = $certificates->where('type', 'course')->count();
+        $quizCertCount = $certificates->where('type', 'quiz')->count();
         try {
             $purchasedIds = $user->getPurchasedCoursesIds();
-            $pendingQuizzes = \App\Models\Quiz::whereIn('webinar_id', $purchasedIds)
+            $pendingQuizzes = !empty($purchasedIds) ? \App\Models\Quiz::whereIn('webinar_id', $purchasedIds)
                 ->where('certificate', true)
                 ->where('status', \App\Models\Quiz::ACTIVE)
                 ->whereDoesntHave('quizResults', function ($q) use ($user) {
-                    $q->where('user_id', $user->id);
-                })->count();
-            $pendingWebinars = \App\Models\Webinar::where('status', 'active')
+                    $q->where('user_id', $user->id)->where('status', 'passed');
+                })->count() : 0;
+            $pendingWebinars = !empty($purchasedIds) ? \App\Models\Webinar::where('status', 'active')
                 ->where('certificate', true)
                 ->whereIn('id', $purchasedIds)
                 ->whereDoesntHave('certificates', function ($q) use ($user) {
-                    $q->where('student_id', $user->id);
-                })->count();
+                    $q->where('student_id', $user->id)->where('type', 'course');
+                })->count() : 0;
             $pendingCount = $pendingQuizzes + $pendingWebinars;
         } catch (\Throwable $e) {
         }
@@ -1170,6 +1173,9 @@ class StudentController extends Controller
             'authUser' => $user,
             'certificates' => $certificates,
             'pendingCount' => $pendingCount,
+            'totalCertificates' => $totalCertificates,
+            'courseCertCount' => $courseCertCount,
+            'quizCertCount' => $quizCertCount,
             'hasCerts' => $certificates->isNotEmpty(),
         ]);
     }

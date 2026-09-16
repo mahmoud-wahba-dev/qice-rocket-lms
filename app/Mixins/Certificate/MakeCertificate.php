@@ -128,7 +128,7 @@ class MakeCertificate
             $body = str_replace($search, $replace, $body);
         }
 
-        $qrCode = $this->makeQrCode($template);
+        $qrCode = $this->makeQrCode($template, $userCertificate);
 
         if (!empty($qrCode)) {
             $body = str_replace('[qr_code]', $qrCode, $body);
@@ -343,7 +343,7 @@ class MakeCertificate
         return 'file://' . $normalized;
     }
 
-    private function makeQrCode($template)
+    private function makeQrCode($template, $certificate = null)
     {
         $size = 128;
         $elements = $template->elements;
@@ -353,6 +353,9 @@ class MakeCertificate
         }
 
         $url = url('/certificate_validation');
+        if (!empty($certificate?->id)) {
+            $url = url('/certificate_validation?certificate_id=' . $certificate->id);
+        }
 
         try {
             $png = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')->size($size)->generate($url);

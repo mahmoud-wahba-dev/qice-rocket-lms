@@ -26,12 +26,19 @@ class SettingFallbackTest extends TestCase
 
     public function test_missing_key_returns_empty_string_on_empty_table(): void
     {
+        \Illuminate\Support\Facades\DB::table('settings')->delete();
+        \Illuminate\Support\Facades\Cache::forget('settings.'.Setting::$financialName);
+        \Illuminate\Support\Facades\Cache::forget('settings.'.Setting::$generalSecuritySettingsName);
+        foreach (['financial','generalSecuritySettings'] as $prop) { $r=new \ReflectionProperty(Setting::class,$prop); $r->setAccessible(true); $r->setValue(null,null); }
         $this->assertSame('', Setting::getGeneralSecuritySettings('admin_panel_url'));
         $this->assertSame('', Setting::getFinancialSettings('tax'));
     }
 
     public function test_no_key_returns_empty_array_on_empty_table(): void
     {
+        \Illuminate\Support\Facades\DB::table('settings')->delete();
+        \Illuminate\Support\Facades\Cache::forget('settings.'.Setting::$financialName);
+        $r=new \ReflectionProperty(Setting::class,'financial'); $r->setAccessible(true); $r->setValue(null,null);
         $this->assertSame([], Setting::getFinancialSettings());
     }
 

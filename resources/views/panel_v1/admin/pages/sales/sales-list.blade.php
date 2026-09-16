@@ -7,11 +7,11 @@
         'subtitle' => $pageSubtitle ?? '',
     ])
         @slot('actions')
-            <button type="button"
+            <a href="{{ route('panel.v1.admin.sales.export', request()->query()) }}"
                 class="inline-flex items-center gap-2 h-12 px-5 rounded-12px bg-color2 text-white font-semibold text-15px hover:opacity-95 transition">
                 <span class="icon-[tabler--file-spreadsheet] size-5"></span>
                 استخرج التقرير إكسل
-            </button>
+            </a>
         @endslot
     @endcomponent
 
@@ -19,6 +19,12 @@
 
     <div class="border border-d9 rounded-14px bg-white p-4 sm:p-6 shadow-sm">
         @include('panel_v1.admin.components.filter-bar')
+
+        @if (!empty($paginator))
+            <div class="mb-4">
+                @include('panel_v1.admin.components.stats-cards', ['stats' => [['label'=>'إجمالي النتائج','value'=> (string)$paginator->total(), 'icon'=>'icon-[tabler--database]']]])
+            </div>
+        @endif
 
         <div class="overflow-x-auto">
             <table class="table w-full text-14px sm:text-15px">
@@ -64,8 +70,8 @@
                                         <span class="icon-[tabler--dots] size-4 text-primary"></span>
                                     </button>
                                     <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-40 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20">
-                                        <li><a href="{{ route('panel.v1.admin.sales.section', ['section' => 'sales']) }}" class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary">عرض الفاتورة</a></li>
-                                        <li><button type="button" onclick="alert('الاسترداد من لوحة الإدارة القديمة /admin/financial/sales')" class="dropdown-item px-4 py-2.5 font-medium text-14px text-red-500 w-full text-start">استرداد</button></li>
+                                        <li><a href="{{ route('panel.v1.admin.sales.sales.invoice', ['id' => $row['id']]) }}" class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary">عرض الفاتورة</a></li>
+                                        <li><form method="POST" action="{{ route('panel.v1.admin.sales.sales.refund', ['id' => $row['id']]) }}" onsubmit="return confirm('تنفيذ الاسترداد؟')">@csrf<button type="submit" class="dropdown-item px-4 py-2.5 font-medium text-14px text-red-500 w-full text-start">استرداد</button></form></li>
                                     </ul>
                                 </div>
                             </td>
@@ -75,7 +81,7 @@
             </table>
         </div>
 
-        @include('panel_v1.admin.components.pagination', ['pagination' => $pagination ?? []])
+        @include('panel_v1.admin.components.pagination', ['paginator' => $paginator ?? null, 'pagination' => $pagination ?? []])
     </div>
 </div>
 @endsection

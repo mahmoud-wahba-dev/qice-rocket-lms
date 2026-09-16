@@ -115,7 +115,7 @@ function getTimezone()
         }
     }
 
-    return $timezone;
+    return !empty($timezone) ? $timezone : 'UTC';
 }
 
 function handleDateAndTimeFormat($format)
@@ -2692,7 +2692,7 @@ if (!function_exists('panelV1HomeUrl')) {
         }
 
         if ($user->isAdmin()) {
-            return getAdminPanelUrl('/');
+            return route('panel.v1.admin.home');
         }
 
         if ($user->isTeacher()) {

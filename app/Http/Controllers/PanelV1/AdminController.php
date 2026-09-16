@@ -60,6 +60,7 @@ class AdminController extends Controller
         return view($view, array_merge($data, [
             'pageTitle' => $pageTitle,
             'authUser' => $user,
+            'unReadNotifications' => $user->getUnReadNotifications(),
             'stats' => [
                 ['label' => 'المتدربون', 'value' => (string) \App\User::where('role_name', 'user')->count()],
                 ['label' => 'المدربون', 'value' => (string) \App\User::where('role_name', 'teacher')->count()],

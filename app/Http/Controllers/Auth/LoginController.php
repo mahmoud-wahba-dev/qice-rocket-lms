@@ -296,7 +296,7 @@ class LoginController extends Controller
         $userLoginHistoryMixin->storeUserLoginHistory($user);
 
         if ($user->isAdmin()) {
-            return redirect(getAdminPanelUrl());
+            return redirect(panelV1HomeUrl($user));
         }
 
         if ($redirect = $this->resolveLandingAuthRedirect($request, $user)) {

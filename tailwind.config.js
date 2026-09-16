@@ -13,6 +13,7 @@ module.exports = {
         "./resources/views/landing_v1/**/*.blade.php",
         "./resources/views/panel_v1/student/**/*.blade.php",
         "./resources/views/panel_v1/instructor/**/*.blade.php",
+        "./resources/views/panel_v1/admin/**/*.blade.php",
         "./resources/views/vendor/pagination/**/*.blade.php",
         "./resources/js/landing_v1.js",
         "./resources/js/panel_v1/**/*.js",

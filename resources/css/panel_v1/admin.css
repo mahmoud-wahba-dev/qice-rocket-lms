@@ -1,9 +1,231 @@
-/* Admin panel_v1 — complements landing_v1 tokens */
-.panel-v1-admin .admin-sidebar-scroll {
+/**
+ * Admin panel — parity with instructor panel.
+ * Keep ONLY what Tailwind cannot do (scrollbars + collapse).
+ * Layout / colors / active states live as Tailwind classes on the Blade views.
+ */
+
+/* Page scrollbar */
+html:has(.panel-v1-admin),
+body:has(.panel-v1-admin) {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+    scrollbar-color: #0f4c45 #e8ecea;
 }
 
+html:has(.panel-v1-admin)::-webkit-scrollbar,
+body:has(.panel-v1-admin)::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+html:has(.panel-v1-admin)::-webkit-scrollbar-track,
+body:has(.panel-v1-admin)::-webkit-scrollbar-track {
+    background: #e8ecea;
+}
+
+html:has(.panel-v1-admin)::-webkit-scrollbar-thumb,
+body:has(.panel-v1-admin)::-webkit-scrollbar-thumb {
+    background: #0f4c45;
+    border-radius: 999px;
+    border: 2px solid #e8ecea;
+}
+
+html:has(.panel-v1-admin)::-webkit-scrollbar-thumb:hover,
+body:has(.panel-v1-admin)::-webkit-scrollbar-thumb:hover {
+    background: #0a3833;
+}
+
+/* Main scrollbar */
+.panel-v1-admin main {
+    scrollbar-width: thin;
+    scrollbar-color: #0f4c45 #e8ecea;
+}
+
+.panel-v1-admin main::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.panel-v1-admin main::-webkit-scrollbar-track {
+    background: #e8ecea;
+    border-radius: 999px;
+}
+
+.panel-v1-admin main::-webkit-scrollbar-thumb {
+    background: #0f4c45;
+    border-radius: 999px;
+    border: 2px solid #e8ecea;
+}
+
+.panel-v1-admin main::-webkit-scrollbar-thumb:hover {
+    background: #0a3833;
+}
+
+/* Dashboard sidebar nav scrollbar (light on primary) */
+.panel-v1-admin .admin-sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
+}
+
+.panel-v1-admin .admin-sidebar-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.panel-v1-admin .admin-sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.panel-v1-admin .admin-sidebar-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 999px;
+}
+
+.panel-v1-admin .admin-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Override FlyonUI .table th base-content color with design-token gray */
 .panel-v1-admin .table :where(thead, tfoot, th) {
     color: var(--color-gray, #8e8f8f) !important;
+}
+
+/* Header dropdown (dashboards switcher) must never be clipped by sticky/overflow ancestors */
+.panel-v1-admin .admin-shell-header,
+.panel-v1-admin .admin-shell-header .navbar,
+.panel-v1-admin .admin-shell-header .navbar-start {
+    overflow: visible;
+}
+
+.panel-v1-admin [data-admin-menu-panel] {
+    z-index: 80;
+}
+
+/* ---------- Desktop sidebar collapse (icons-only) — exact parity with instructor ---------- */
+.panel-v1-admin .admin-shell-header,
+.panel-v1-admin .admin-shell-main {
+    transition: padding-inline-start 0.3s ease;
+}
+
+.panel-v1-admin .admin-dashboard-sidebar {
+    transition: transform 0.3s ease-out, width 0.3s ease;
+}
+
+@media (min-width: 1024px) {
+    .panel-v1-admin .admin-dashboard-sidebar {
+        transform: none !important;
+    }
+}
+
+@media (min-width: 1024px) {
+    .panel-v1-admin .admin-shell-header,
+    .panel-v1-admin .admin-shell-main {
+        padding-inline-start: 280px;
+    }
+
+    .panel-v1-admin[data-admin-sidebar="collapsed"] .admin-shell-header,
+    .panel-v1-admin[data-admin-sidebar="collapsed"] .admin-shell-main {
+        padding-inline-start: 80px;
+    }
+
+    .panel-v1-admin .admin-dashboard-sidebar {
+        width: 280px !important;
+        max-width: 280px !important;
+    }
+
+    .panel-v1-admin[data-admin-sidebar="collapsed"] .admin-dashboard-sidebar {
+        width: 80px !important;
+        max-width: 80px !important;
+    }
+
+    .panel-v1-admin[data-admin-sidebar="collapsed"] .admin-nav-label,
+    .panel-v1-admin[data-admin-sidebar="collapsed"] [data-sidebar-section] {
+        max-width: 0;
+        opacity: 0;
+        margin: 0;
+        padding-inline: 0;
+        pointer-events: none;
+    }
+
+    .panel-v1-admin[data-admin-sidebar="collapsed"] [data-sidebar-section] {
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        margin: 0;
+        overflow: hidden;
+    }
+
+    .panel-v1-admin[data-admin-sidebar="collapsed"] .admin-nav-link {
+        justify-content: center;
+        gap: 0;
+        padding-inline: 0.5rem;
+    }
+
+    /* CSS ::after tooltips kept as fallback; JS fixed tooltip preferred (avoids overflow clip) */
+    .panel-v1-admin[data-admin-sidebar="collapsed"] .admin-nav-link[data-tooltip]::after,
+    .panel-v1-admin[data-admin-sidebar="collapsed"] .admin-nav-link[data-tooltip]::before {
+        content: none;
+        display: none;
+    }
+
+    .panel-v1-admin[data-admin-sidebar="collapsed"] .admin-sidebar-logo {
+        width: 40px;
+        height: auto;
+    }
+
+    .panel-v1-admin[data-admin-sidebar="collapsed"] .admin-sidebar-scroll {
+        padding-inline: 0.5rem;
+    }
+
+    .panel-v1-admin[data-admin-sidebar="collapsed"] .admin-sidebar-brand {
+        padding-inline: 0.5rem;
+    }
+}
+
+/* ---------- Native selects: FlyonUI sets display:inline-flex + width:100% which
+   blanks the selected-option text in Chromium and forces full-width stacking.
+   Restore native rendering inside admin v1 while keeping the theme look. ---------- */
+.panel-v1-admin select.select {
+    display: inline-block;
+    width: auto;
+    max-width: 100%;
+    vertical-align: middle;
+    text-align: start;
+    color: var(--color-primary, #0f4c45);
+    background-color: #fff;
+}
+
+.panel-v1-admin select.select option {
+    color: #0f4c45;
+    background-color: #fff;
+}
+
+/* RTL: move the chevron to the inline-end so it never covers Arabic text */
+[dir="rtl"] .panel-v1-admin select.select {
+    background-position: left 0.75rem center;
+    padding-left: 2.25rem;
+    padding-right: 0.75rem;
+}
+
+/* Floating tooltip for collapsed sidebar icons */
+.admin-sidebar-tooltip {
+    position: fixed;
+    z-index: 2147483000;
+    padding: 0.4rem 0.7rem;
+    border-radius: 0.5rem;
+    background: #0a3833;
+    color: #fff;
+    font-family: Cairo, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    box-shadow: 0 8px 20px rgba(15, 76, 69, 0.25);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(2px) scale(0.98);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.admin-sidebar-tooltip.is-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
 }
