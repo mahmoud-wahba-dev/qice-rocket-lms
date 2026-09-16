@@ -133,6 +133,574 @@ class InstructorController extends Controller
         ]);
     }
 
+    public function bundles(Request $request)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $bundlesQuery = \App\Models\Bundle::query()
+            ->where(function ($q) use ($user) {
+                $q->where('teacher_id', $user->id)->orWhere('creator_id', $user->id);
+            });
+
+        $bundles = (clone $bundlesQuery)
+            ->with([
+                'category',
+                'translations',
+                'bundleWebinars.webinar',
+                'sales' => function ($q) {
+                    $q->where('type', 'bundle')->whereNull('refund_at');
+                },
+            ])
+            ->orderByDesc('updated_at')
+            ->orderByDesc('id')
+            ->get();
+
+        $bundlesHours = 0;
+        try {
+            $bundlesHours = (float) \Illuminate\Support\Facades\DB::table('bundles')
+                ->join('bundle_webinars', 'bundle_webinars.bundle_id', '=', 'bundles.id')
+                ->join('webinars', 'webinars.id', '=', 'bundle_webinars.webinar_id')
+                ->where(function ($q) use ($user) {
+                    $q->where('bundles.teacher_id', $user->id)->orWhere('bundles.creator_id', $user->id);
+                })
+                ->sum('webinars.duration');
+        } catch (\Throwable $e) {
+            $bundlesHours = $bundles->sum(fn ($b) => method_exists($b, 'getBundleDuration') ? (float) $b->getBundleDuration() : 0);
+        }
+
+        $sales = \App\Models\Sale::query()
+            ->where('seller_id', $user->id)
+            ->where('type', 'bundle')
+            ->whereNotNull('bundle_id')
+            ->whereNull('refund_at')
+            ->get();
+
+        $cards = $bundles->map(function ($bundle) {
+            $tr = $bundle->translate('ar')
+                ?: $bundle->translate(app()->getLocale())
+                ?: $bundle->translations->first();
+            $status = $bundle->status ?? 'is_draft';
+            $statusLabel = [
+                'active' => 'منشورة',
+                'pending' => 'قيد المراجعة',
+                'is_draft' => 'مسودة',
+                'inactive' => 'معطّلة',
+            ][$status] ?? $status;
+
+            $duration = method_exists($bundle, 'getBundleDuration') ? (float) $bundle->getBundleDuration() : 0;
+            $image = null;
+            try {
+                $image = $bundle->getImage();
+            } catch (\Throwable $e) {
+                $image = $bundle->thumbnail;
+            }
+
+            return [
+                'id' => $bundle->id,
+                'title' => $tr->title ?? ('حزمة #' . $bundle->id),
+                'summary' => $tr->summary ?? $tr->seo_description ?? '',
+                'status' => $status,
+                'status_label' => $statusLabel,
+                'price' => $bundle->price,
+                'price_label' => !empty($bundle->price) ? handlePrice($bundle->price) : 'مجانية',
+                'courses_count' => $bundle->bundleWebinars->count(),
+                'students_count' => $bundle->sales->count(),
+                'sales_amount' => $bundle->sales->sum('amount'),
+                'duration' => $duration,
+                'duration_label' => convertMinutesToHourAndMinute($duration),
+                'rate' => round(method_exists($bundle, 'getRate') ? (float) $bundle->getRate() : 0, 1),
+                'rate_count' => method_exists($bundle, 'getRateCount') ? (int) $bundle->getRateCount() : 0,
+                'thumbnail' => $image,
+                'category' => $bundle->category->title ?? '—',
+                'public_url' => !empty($bundle->slug) ? url('/bundles/' . $bundle->slug) : null,
+                'edit_url' => route('panel.v1.instructor.bundles.edit', ['id' => $bundle->id]),
+                'courses_url' => route('panel.v1.instructor.bundles.courses', ['id' => $bundle->id]),
+                'preview_url' => route('panel.v1.instructor.bundles.preview', ['id' => $bundle->id]),
+                'courses' => $bundle->bundleWebinars->map(function ($bw) {
+                    $w = $bw->webinar;
+                    if (!$w) {
+                        return null;
+                    }
+                    $wTr = $w->translate('ar') ?: $w->translate(app()->getLocale()) ?: $w->translations->first();
+                    return $wTr->title ?? ('دورة #' . $w->id);
+                })->filter()->values()->all(),
+            ];
+        })->values()->all();
+
+        $teacherCourses = Webinar::query()
+            ->with('translations')
+            ->where(function ($q) use ($user) {
+                $q->where('teacher_id', $user->id)->orWhere('creator_id', $user->id);
+            })
+            ->whereIn('status', [Webinar::$active, Webinar::$pending, 'active', 'pending'])
+            ->orderByDesc('id')
+            ->limit(50)
+            ->get()
+            ->map(function ($w) {
+                $tr = $w->translate('ar') ?: $w->translate(app()->getLocale()) ?: $w->translations->first();
+                return [
+                    'id' => $w->id,
+                    'title' => $tr->title ?? ('دورة #' . $w->id),
+                ];
+            })->all();
+
+        return $this->render($request, 'panel_v1.instructor.pages.bundles', 'حزم الدورات والباقات', [
+            'bundleCards' => $cards,
+            'bundleStats' => [
+                'total' => $bundles->count(),
+                'hours_label' => convertMinutesToHourAndMinute($bundlesHours),
+                'sales_count' => $sales->count(),
+                'sales_amount' => $sales->sum('amount'),
+            ],
+            'teacherCourses' => $teacherCourses,
+        ]);
+    }
+
+    public function storeBundle(Request $request)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'summary' => 'nullable|string|max:500',
+            'price' => 'nullable|integer|min:0',
+            'webinar_ids' => 'nullable|array',
+            'webinar_ids.*' => 'integer|exists:webinars,id',
+            'publish' => 'nullable|boolean',
+        ], [
+            'required' => 'حقل :attribute مطلوب',
+            'integer' => 'حقل :attribute يجب أن يكون رقمًا',
+        ], [
+            'title' => 'عنوان الحزمة',
+            'summary' => 'الوصف المختصر',
+            'price' => 'السعر',
+            'webinar_ids' => 'الدورات',
+        ]);
+
+        $webinarIds = array_values(array_unique(array_map('intval', (array) $request->input('webinar_ids', []))));
+        if (!empty($webinarIds)) {
+            $owned = Webinar::query()
+                ->whereIn('id', $webinarIds)
+                ->where(function ($q) use ($user) {
+                    $q->where('teacher_id', $user->id)->orWhere('creator_id', $user->id);
+                })
+                ->pluck('id')
+                ->all();
+            $webinarIds = array_values(array_intersect($webinarIds, $owned));
+        }
+
+        $title = trim((string) $request->input('title'));
+        $slugBase = \Illuminate\Support\Str::slug($title);
+        if ($slugBase === '') {
+            $slugBase = 'bundle';
+        }
+
+        $bundle = new \App\Models\Bundle();
+        $bundle->creator_id = $user->id;
+        $bundle->teacher_id = $user->id;
+        $bundle->slug = $slugBase . '-' . time();
+        $bundle->price = $request->filled('price') ? (int) $request->input('price') : null;
+        $bundle->status = $request->boolean('publish') ? \App\Models\Bundle::$pending : \App\Models\Bundle::$isDraft;
+        $bundle->created_at = time();
+        $bundle->updated_at = time();
+        $bundle->save();
+
+        foreach (array_unique(array_filter(['ar', app()->getLocale()])) as $loc) {
+            $tr = $bundle->translateOrNew($loc);
+            $tr->locale = $loc;
+            $tr->title = $title;
+            $tr->summary = $request->input('summary');
+            $tr->seo_description = $request->input('summary');
+            $tr->description = $request->input('summary');
+            $tr->save();
+        }
+
+        foreach ($webinarIds as $order => $webinarId) {
+            \App\Models\BundleWebinar::create([
+                'creator_id' => $user->id,
+                'bundle_id' => $bundle->id,
+                'webinar_id' => $webinarId,
+                'order' => $order + 1,
+            ]);
+        }
+
+        return redirect()
+            ->route('panel.v1.instructor.bundles')
+            ->with('toast', [
+                'title' => 'تم',
+                'msg' => $request->boolean('publish') ? 'تم إنشاء الحزمة وإرسالها للمراجعة' : 'تم حفظ الحزمة كمسودة',
+                'type' => 'success',
+            ]);
+    }
+
+    public function deleteBundle(Request $request, int $id)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $bundle = \App\Models\Bundle::query()
+            ->where('id', $id)
+            ->where(function ($q) use ($user) {
+                $q->where('teacher_id', $user->id)->orWhere('creator_id', $user->id);
+            })
+            ->firstOrFail();
+
+        $bundle->update([
+            'status' => \App\Models\Bundle::$inactive,
+            'updated_at' => time(),
+        ]);
+
+        return redirect()
+            ->route('panel.v1.instructor.bundles')
+            ->with('toast', [
+                'title' => 'تم',
+                'msg' => 'تم تعطيل الحزمة',
+                'type' => 'success',
+            ]);
+    }
+
+    public function editBundle(Request $request, int $id)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $bundle = $this->teacherBundleOrFail($user, $id);
+        $tr = $bundle->translate('ar') ?: $bundle->translate(app()->getLocale()) ?: $bundle->translations->first();
+
+        $selectedIds = $bundle->bundleWebinars()->pluck('webinar_id')->all();
+        $teacherCourses = Webinar::query()
+            ->with('translations')
+            ->where(function ($q) use ($user) {
+                $q->where('teacher_id', $user->id)->orWhere('creator_id', $user->id);
+            })
+            ->whereIn('status', [Webinar::$active, Webinar::$pending, Webinar::$isDraft, 'active', 'pending', 'is_draft'])
+            ->orderByDesc('id')
+            ->limit(80)
+            ->get()
+            ->map(function ($w) use ($selectedIds) {
+                $wTr = $w->translate('ar') ?: $w->translate(app()->getLocale()) ?: $w->translations->first();
+                return [
+                    'id' => $w->id,
+                    'title' => $wTr->title ?? ('دورة #' . $w->id),
+                    'selected' => in_array($w->id, $selectedIds, true),
+                ];
+            })->all();
+
+        return $this->render($request, 'panel_v1.instructor.pages.bundle-edit', 'تعديل الحزمة', [
+            'bundleEdit' => [
+                'id' => $bundle->id,
+                'title' => $tr->title ?? '',
+                'seo_description' => $tr->seo_description ?? '',
+                'summary' => $tr->summary ?? '',
+                'description' => $tr->description ?? '',
+                'price' => $bundle->price,
+                'status' => $bundle->status,
+                'thumbnail' => $bundle->thumbnail,
+                'image_cover' => $bundle->image_cover,
+                'video_demo' => $bundle->video_demo_source === 'external_link' ? $bundle->video_demo : null,
+                'preview_url' => route('panel.v1.instructor.bundles.preview', ['id' => $bundle->id]),
+                'courses_url' => route('panel.v1.instructor.bundles.courses', ['id' => $bundle->id]),
+            ],
+            'teacherCourses' => $teacherCourses,
+        ]);
+    }
+
+    public function updateBundle(Request $request, int $id)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $bundle = $this->teacherBundleOrFail($user, $id);
+
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'seo_description' => 'nullable|string|max:160',
+            'summary' => 'nullable|string|max:1000',
+            'description' => 'nullable|string',
+            'price' => 'nullable|integer|min:0',
+            'status' => 'required|in:is_draft,pending,active,inactive',
+            'video_demo' => 'nullable|url|max:2000',
+            'thumbnail' => 'nullable|image|max:5120',
+            'image_cover' => 'nullable|image|max:5120',
+            'webinar_ids' => 'nullable|array',
+            'webinar_ids.*' => 'integer|exists:webinars,id',
+        ], [
+            'required' => 'حقل :attribute مطلوب',
+            'in' => 'قيمة :attribute غير صحيحة',
+            'url' => 'حقل :attribute يجب أن يكون رابطًا صالحًا',
+            'image' => 'حقل :attribute يجب أن يكون صورة',
+        ], [
+            'title' => 'عنوان الحزمة',
+            'seo_description' => 'الوصف المختصر',
+            'summary' => 'الملخص',
+            'description' => 'الوصف التفصيلي',
+            'price' => 'السعر',
+            'status' => 'الحالة',
+            'video_demo' => 'رابط الفيديو الترويجي',
+            'thumbnail' => 'الصورة المصغرة',
+            'image_cover' => 'غلاف الحزمة',
+            'webinar_ids' => 'الدورات',
+        ]);
+
+        $webinarIds = array_values(array_unique(array_map('intval', (array) $request->input('webinar_ids', []))));
+        if (!empty($webinarIds)) {
+            $owned = Webinar::query()
+                ->whereIn('id', $webinarIds)
+                ->where(function ($q) use ($user) {
+                    $q->where('teacher_id', $user->id)->orWhere('creator_id', $user->id);
+                })
+                ->pluck('id')
+                ->all();
+            $webinarIds = array_values(array_intersect($webinarIds, $owned));
+        }
+
+        if ($request->hasFile('thumbnail')) {
+            $bundle->thumbnail = '/storage/' . $request->file('thumbnail')->store('bundles', 'public');
+        }
+        if ($request->hasFile('image_cover')) {
+            $bundle->image_cover = '/storage/' . $request->file('image_cover')->store('bundles', 'public');
+        }
+        if ($request->filled('video_demo')) {
+            $bundle->video_demo = $request->input('video_demo');
+            $bundle->video_demo_source = 'external_link';
+        }
+
+        $bundle->price = $request->filled('price') ? (int) $request->input('price') : null;
+        $bundle->status = $request->input('status');
+        $bundle->updated_at = time();
+        $bundle->save();
+
+        $title = trim((string) $request->input('title'));
+        foreach (array_unique(array_filter(['ar', app()->getLocale()])) as $loc) {
+            $tr = $bundle->translateOrNew($loc);
+            $tr->locale = $loc;
+            $tr->title = $title;
+            $tr->seo_description = $request->input('seo_description');
+            $tr->summary = $request->input('summary');
+            $tr->description = $request->input('description');
+            $tr->save();
+        }
+
+        \App\Models\BundleWebinar::where('bundle_id', $bundle->id)->delete();
+        foreach ($webinarIds as $order => $webinarId) {
+            \App\Models\BundleWebinar::create([
+                'creator_id' => $user->id,
+                'bundle_id' => $bundle->id,
+                'webinar_id' => $webinarId,
+                'order' => $order + 1,
+            ]);
+        }
+
+        return redirect()
+            ->route('panel.v1.instructor.bundles.edit', ['id' => $bundle->id])
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم حفظ تعديلات الحزمة', 'type' => 'success']);
+    }
+
+    public function bundleCourses(Request $request, int $id)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $bundle = $this->teacherBundleOrFail($user, $id);
+        $tr = $bundle->translate('ar') ?: $bundle->translate(app()->getLocale()) ?: $bundle->translations->first();
+
+        $attachedIds = $bundle->bundleWebinars()->pluck('webinar_id')->all();
+        $courses = Webinar::query()
+            ->with(['translations', 'category'])
+            ->whereIn('id', $attachedIds ?: [0])
+            ->orderByDesc('id')
+            ->get()
+            ->map(function ($w) {
+                $wTr = $w->translate('ar') ?: $w->translate(app()->getLocale()) ?: $w->translations->first();
+                return [
+                    'id' => $w->id,
+                    'title' => $wTr->title ?? ('دورة #' . $w->id),
+                    'thumbnail' => $w->thumbnail,
+                    'status' => $w->status,
+                    'category' => $w->category->title ?? '—',
+                    'price_label' => !empty($w->price) ? handlePrice($w->price) : 'مجانية',
+                    'watch_url' => !empty($w->slug) ? route('panel.v1.instructor.courses.watch', ['slug' => $w->slug]) : null,
+                ];
+            })->all();
+
+        $availableCourses = Webinar::query()
+            ->with('translations')
+            ->where(function ($q) use ($user) {
+                $q->where('teacher_id', $user->id)->orWhere('creator_id', $user->id);
+            })
+            ->whereNotIn('id', $attachedIds ?: [0])
+            ->whereIn('status', [Webinar::$active, Webinar::$pending, 'active', 'pending'])
+            ->orderByDesc('id')
+            ->limit(50)
+            ->get()
+            ->map(function ($w) {
+                $wTr = $w->translate('ar') ?: $w->translate(app()->getLocale()) ?: $w->translations->first();
+                return [
+                    'id' => $w->id,
+                    'title' => $wTr->title ?? ('دورة #' . $w->id),
+                ];
+            })->all();
+
+        return $this->render($request, 'panel_v1.instructor.pages.bundle-courses', 'دورات الحزمة', [
+            'bundleMeta' => [
+                'id' => $bundle->id,
+                'title' => $tr->title ?? ('حزمة #' . $bundle->id),
+                'edit_url' => route('panel.v1.instructor.bundles.edit', ['id' => $bundle->id]),
+                'preview_url' => route('panel.v1.instructor.bundles.preview', ['id' => $bundle->id]),
+            ],
+            'bundleCourses' => $courses,
+            'availableCourses' => $availableCourses,
+        ]);
+    }
+
+    public function attachBundleCourse(Request $request, int $id)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $bundle = $this->teacherBundleOrFail($user, $id);
+        $request->validate([
+            'webinar_id' => 'required|integer|exists:webinars,id',
+        ], [], ['webinar_id' => 'الدورة']);
+
+        $webinarId = (int) $request->input('webinar_id');
+        $owned = Webinar::query()
+            ->where('id', $webinarId)
+            ->where(function ($q) use ($user) {
+                $q->where('teacher_id', $user->id)->orWhere('creator_id', $user->id);
+            })
+            ->exists();
+
+        if (!$owned) {
+            abort(404);
+        }
+
+        $exists = \App\Models\BundleWebinar::where('bundle_id', $bundle->id)->where('webinar_id', $webinarId)->exists();
+        if (!$exists) {
+            $order = (int) \App\Models\BundleWebinar::where('bundle_id', $bundle->id)->max('order') + 1;
+            \App\Models\BundleWebinar::create([
+                'creator_id' => $user->id,
+                'bundle_id' => $bundle->id,
+                'webinar_id' => $webinarId,
+                'order' => $order,
+            ]);
+        }
+
+        return redirect()
+            ->route('panel.v1.instructor.bundles.courses', ['id' => $bundle->id])
+            ->with('toast', ['title' => 'تم', 'msg' => 'تمت إضافة الدورة للحزمة', 'type' => 'success']);
+    }
+
+    public function detachBundleCourse(Request $request, int $id, int $webinarId)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $bundle = $this->teacherBundleOrFail($user, $id);
+        \App\Models\BundleWebinar::where('bundle_id', $bundle->id)->where('webinar_id', $webinarId)->delete();
+
+        return redirect()
+            ->route('panel.v1.instructor.bundles.courses', ['id' => $bundle->id])
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم إزالة الدورة من الحزمة', 'type' => 'success']);
+    }
+
+    public function bundlePreview(Request $request, int $id)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $bundle = $this->teacherBundleOrFail($user, $id);
+        $bundle->load(['category', 'teacher', 'bundleWebinars.webinar.translations', 'translations']);
+        $tr = $bundle->translate('ar') ?: $bundle->translate(app()->getLocale()) ?: $bundle->translations->first();
+
+        $courses = $bundle->bundleWebinars->map(function ($bw) {
+            $w = $bw->webinar;
+            if (!$w) {
+                return null;
+            }
+            $wTr = $w->translate('ar') ?: $w->translate(app()->getLocale()) ?: $w->translations->first();
+            return [
+                'id' => $w->id,
+                'title' => $wTr->title ?? ('دورة #' . $w->id),
+                'thumbnail' => $w->thumbnail,
+                'summary' => $wTr->seo_description ?? '',
+                'price_label' => !empty($w->price) ? handlePrice($w->price) : 'مجانية',
+            ];
+        })->filter()->values()->all();
+
+        $salesCount = \App\Models\Sale::query()
+            ->where('bundle_id', $bundle->id)
+            ->where('type', 'bundle')
+            ->whereNull('refund_at')
+            ->count();
+
+        return $this->render($request, 'panel_v1.instructor.pages.bundle-preview', 'عرض الحزمة', [
+            'preview' => [
+                'id' => $bundle->id,
+                'title' => $tr->title ?? ('حزمة #' . $bundle->id),
+                'summary' => $tr->summary ?? '',
+                'description' => $tr->description ?? '',
+                'seo_description' => $tr->seo_description ?? '',
+                'cover' => $bundle->image_cover ?: $bundle->thumbnail,
+                'thumbnail' => $bundle->thumbnail,
+                'price_label' => !empty($bundle->price) ? handlePrice($bundle->price) : 'مجانية',
+                'rate' => round(method_exists($bundle, 'getRate') ? (float) $bundle->getRate() : 0, 1),
+                'rate_count' => method_exists($bundle, 'getRateCount') ? (int) $bundle->getRateCount() : 0,
+                'students_count' => $salesCount,
+                'courses_count' => count($courses),
+                'duration_label' => convertMinutesToHourAndMinute(method_exists($bundle, 'getBundleDuration') ? $bundle->getBundleDuration() : 0),
+                'category' => $bundle->category->title ?? null,
+                'teacher_name' => $bundle->teacher->full_name ?? $user->full_name,
+                'teacher_avatar' => method_exists($bundle->teacher ?? $user, 'getAvatar') ? ($bundle->teacher ?? $user)->getAvatar(80) : null,
+                'public_url' => !empty($bundle->slug) ? url('/bundles/' . $bundle->slug) : null,
+                'edit_url' => route('panel.v1.instructor.bundles.edit', ['id' => $bundle->id]),
+                'courses_url' => route('panel.v1.instructor.bundles.courses', ['id' => $bundle->id]),
+                'status' => $bundle->status,
+                'courses' => $courses,
+            ],
+        ]);
+    }
+
+    private function teacherBundleOrFail($user, int $id): \App\Models\Bundle
+    {
+        return \App\Models\Bundle::query()
+            ->with(['translations', 'bundleWebinars'])
+            ->where('id', $id)
+            ->where(function ($q) use ($user) {
+                $q->where('teacher_id', $user->id)->orWhere('creator_id', $user->id);
+            })
+            ->firstOrFail();
+    }
+
     public function deleteCourse(Request $request, int $id)
     {
         $user = $this->resolveInstructor($request);
@@ -1235,108 +1803,46 @@ class InstructorController extends Controller
             return $user;
         }
 
-        $dayLabels = [
-            'saturday' => 'السبت',
-            'sunday' => 'الأحد',
-            'monday' => 'الإثنين',
-            'tuesday' => 'الثلاثاء',
-            'wednesday' => 'الأربعاء',
-            'thursday' => 'الخميس',
-            'friday' => 'الجمعة',
-        ];
-
         $meeting = \App\Models\Meeting::where('creator_id', $user->id)->first();
-        $meetingIds = $meeting ? [$meeting->id] : [];
+        $reservations = $this->instructorReserveMeetingsQuery($user)
+            ->with(['user', 'meetingTime', 'session', 'sale'])
+            ->orderByDesc('id')
+            ->limit(50)
+            ->get();
 
-        $timeIds = !empty($meetingIds)
-            ? \App\Models\MeetingTime::whereIn('meeting_id', $meetingIds)->pluck('id')->all()
-            : [];
-
-        $reservations = !empty($timeIds)
-            ? \App\Models\ReserveMeeting::with(['user', 'meetingTime'])
-                ->whereIn('meeting_time_id', $timeIds)
-                ->orderByDesc('id')
-                ->limit(50)
-                ->get()
-            : collect();
-
-        $rows = [];
-        foreach ($reservations as $reservation) {
-            $slot = $reservation->meetingTime;
-            $dayKey = $slot->day_label ?? null;
-            $joinType = match ($reservation->meeting_type) {
-                'in_person' => 'وجهاً لوجه',
-                'all' => 'الكل',
-                default => 'أونلاين',
-            };
-            $statusLabel = match ($reservation->status) {
-                \App\Models\ReserveMeeting::$finished => 'منتهية',
-                \App\Models\ReserveMeeting::$canceled => 'ملغاة',
-                \App\Models\ReserveMeeting::$pending => 'قيد الانتظار',
-                default => 'مفتوحة',
-            };
-
-            $ts = (int) ($reservation->date ?: $reservation->start_at ?: $reservation->reserved_at);
-            $timeLabel = $slot->time ?? (!empty($reservation->start_at) ? date('H:i', (int) $reservation->start_at) : '');
-
-            $rows[] = [
-                'initials' => mb_substr($reservation->user->full_name ?? '?', 0, 2),
-                'name' => $reservation->user->full_name ?? '',
-                'email' => $reservation->user->email ?? '',
-                'joinType' => $joinType,
-                'day' => $dayLabels[$dayKey] ?? ($reservation->day ?? '—'),
-                'date' => $ts > 0 ? date('Y/m/d', $ts) : ($reservation->day ?? '—'),
-                'time' => $timeLabel,
-                'amount' => handlePrice($reservation->paid_amount),
-                'students' => (int) ($reservation->student_count ?? 1),
-                'status' => $statusLabel,
-                'link' => $reservation->link,
-            ];
-        }
+        $rows = $reservations->map(fn ($reservation) => $this->mapConsultationRow($reservation))->values()->all();
 
         $now = time();
-        $upcoming = !empty($timeIds)
-            ? \App\Models\ReserveMeeting::with(['meetingTime', 'user'])
-                ->whereIn('meeting_time_id', $timeIds)
-                ->where(function ($q) use ($now) {
-                    $q->where('date', '>=', $now)
-                        ->orWhere('start_at', '>=', $now);
-                })
-                ->whereIn('status', [
-                    \App\Models\ReserveMeeting::$open,
-                    \App\Models\ReserveMeeting::$pending,
-                ])
-                ->orderByRaw('COALESCE(start_at, date) asc')
-                ->first()
-            : null;
+        $upcoming = $this->instructorReserveMeetingsQuery($user)
+            ->with(['meetingTime', 'user', 'session'])
+            ->whereIn('status', [
+                \App\Models\ReserveMeeting::$open,
+                \App\Models\ReserveMeeting::$pending,
+            ])
+            ->where(function ($q) use ($now) {
+                $q->where('date', '>=', $now)->orWhere('start_at', '>=', $now);
+            })
+            ->orderByRaw('COALESCE(start_at, date) asc')
+            ->first();
 
         $session = [];
         if ($upcoming) {
+            $mapped = $this->mapConsultationRow($upcoming);
             $slot = $upcoming->meetingTime;
-            $ts = (int) ($upcoming->date ?: $upcoming->start_at ?: $upcoming->reserved_at);
             $session = [
+                'id' => $upcoming->id,
                 'title' => $slot->description ?: 'جلسة استشارية',
                 'status' => $upcoming->status === \App\Models\ReserveMeeting::$pending ? 'قيد الانتظار' : 'مجدولة',
+                'status_key' => $upcoming->status,
                 'price' => handlePrice($upcoming->paid_amount ?: ($meeting->amount ?? 0)),
                 'instructor' => $user->full_name,
                 'instructorInitials' => mb_substr($user->full_name ?? '?', 0, 1),
-                'date' => $ts > 0 ? date('Y/m/d', $ts) : ($upcoming->day ?? ''),
-                'time' => $slot->time ?? ($upcoming->start_at ? date('H:i', (int) $upcoming->start_at) : ''),
-                'linkLabel' => ($upcoming->meeting_type === 'in_person') ? 'لقاء حضوري' : 'لقاء أونلاين',
-                'link' => $upcoming->link,
-            ];
-        } elseif (!empty($meeting) && empty($rows)) {
-            // Show meeting package card when no upcoming reservation yet.
-            $session = [
-                'title' => 'الجلسات الاستشارية',
-                'status' => !empty($meeting->disabled) ? 'متوقفة' : 'متاحة للحجز',
-                'price' => handlePrice($meeting->amount ?? 0),
-                'instructor' => $user->full_name,
-                'instructorInitials' => mb_substr($user->full_name ?? '?', 0, 1),
-                'date' => '—',
-                'time' => 'حدد مواعيدك من إعدادات الجلسات',
-                'linkLabel' => 'لقاء أونلاين',
-                'link' => null,
+                'date' => $mapped['date'],
+                'time' => $mapped['time'],
+                'linkLabel' => $upcoming->meeting_type === 'in_person' ? 'لقاء حضوري' : 'لقاء أونلاين',
+                'link' => $mapped['link'],
+                'detail_url' => $mapped['detail_url'],
+                'join_url' => $mapped['join_url'],
             ];
         }
 
@@ -1347,8 +1853,208 @@ class InstructorController extends Controller
             [
                 'attendees' => $rows,
                 'session' => $session,
+                'settingsUrl' => url('/panel/meetings/settings'),
             ]
         );
+    }
+
+    public function consultationShow(Request $request, int $id)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $reservation = $this->instructorReserveMeetingOrFail($user, $id);
+        $row = $this->mapConsultationRow($reservation);
+        $slot = $reservation->meetingTime;
+
+        return $this->render(
+            $request,
+            'panel_v1.instructor.pages.consultation-show',
+            'تفاصيل الجلسة',
+            [
+                'detail' => array_merge($row, [
+                    'title' => $slot->description ?: 'جلسة استشارية',
+                    'phone' => $reservation->user->mobile ?? null,
+                    'password' => $reservation->password,
+                    'description' => $reservation->description,
+                    'start_label' => !empty($reservation->start_at) ? date('Y/m/d H:i', (int) $reservation->start_at) : $row['date'] . ' ' . $row['time'],
+                    'end_label' => !empty($reservation->end_at) ? date('H:i', (int) $reservation->end_at) : null,
+                    'calendar_url' => method_exists($reservation, 'addToCalendarLink') ? $reservation->addToCalendarLink() : null,
+                ]),
+            ]
+        );
+    }
+
+    public function consultationJoin(Request $request, int $id)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $reservation = $this->instructorReserveMeetingOrFail($user, $id);
+
+        if ($reservation->meeting_type === 'in_person') {
+            return back()->with('toast', [
+                'title' => 'تنبيه',
+                'msg' => 'هذه جلسة حضورية ولا يوجد رابط انضمام',
+                'type' => 'error',
+            ]);
+        }
+
+        $link = $reservation->link;
+        if (empty($link) && !empty($reservation->session) && method_exists($reservation->session, 'getJoinLink')) {
+            $link = $reservation->session->getJoinLink();
+        }
+
+        if (empty($link)) {
+            return back()->with('toast', [
+                'title' => 'تنبيه',
+                'msg' => 'لم يُضف رابط اللقاء بعد',
+                'type' => 'error',
+            ]);
+        }
+
+        return \Illuminate\Support\Facades\Redirect::away($link);
+    }
+
+    public function consultationFinish(Request $request, int $id)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $reservation = $this->instructorReserveMeetingOrFail($user, $id);
+
+        if ($reservation->status === \App\Models\ReserveMeeting::$finished) {
+            return back()->with('toast', [
+                'title' => 'تنبيه',
+                'msg' => 'الجلسة منتهية مسبقاً',
+                'type' => 'info',
+            ]);
+        }
+
+        $reservation->update(['status' => \App\Models\ReserveMeeting::$finished]);
+
+        return redirect()
+            ->route('panel.v1.instructor.consultations')
+            ->with('toast', [
+                'title' => 'تم',
+                'msg' => 'تم إنهاء الجلسة',
+                'type' => 'success',
+            ]);
+    }
+
+    private function instructorReserveMeetingsQuery($user)
+    {
+        $meetingIds = \App\Models\Meeting::where('creator_id', $user->id)->pluck('id');
+
+        return \App\Models\ReserveMeeting::query()
+            ->where(function ($q) use ($meetingIds) {
+                $q->whereIn('meeting_id', $meetingIds->all() ?: [0])
+                    ->orWhereIn(
+                        'meeting_time_id',
+                        \App\Models\MeetingTime::whereIn('meeting_id', $meetingIds->all() ?: [0])->pluck('id')->all() ?: [0]
+                    );
+            });
+    }
+
+    private function instructorReserveMeetingOrFail($user, int $id): \App\Models\ReserveMeeting
+    {
+        return $this->instructorReserveMeetingsQuery($user)
+            ->with(['user', 'meetingTime', 'session'])
+            ->where('id', $id)
+            ->firstOrFail();
+    }
+
+    private function mapConsultationRow(\App\Models\ReserveMeeting $reservation): array
+    {
+        $dayLabels = [
+            'saturday' => 'السبت',
+            'sunday' => 'الأحد',
+            'monday' => 'الإثنين',
+            'tuesday' => 'الثلاثاء',
+            'wednesday' => 'الأربعاء',
+            'thursday' => 'الخميس',
+            'friday' => 'الجمعة',
+        ];
+
+        $slot = $reservation->meetingTime;
+        $dayKey = $slot->day_label ?? null;
+        $joinType = match ($reservation->meeting_type) {
+            'in_person' => 'وجهاً لوجه',
+            'all' => 'الكل',
+            default => 'أونلاين',
+        };
+        $statusLabel = match ($reservation->status) {
+            \App\Models\ReserveMeeting::$finished => 'منتهية',
+            \App\Models\ReserveMeeting::$canceled => 'ملغاة',
+            \App\Models\ReserveMeeting::$pending => 'قيد الانتظار',
+            default => 'مفتوحة',
+        };
+
+        $ts = (int) ($reservation->date ?: $reservation->start_at ?: $reservation->reserved_at);
+        if (!empty($reservation->start_at) && !empty($reservation->end_at)) {
+            $timeLabel = date('H:i', (int) $reservation->start_at) . '-' . date('H:i', (int) $reservation->end_at);
+        } else {
+            $timeLabel = $slot->time ?? '';
+        }
+
+        $joinLink = $reservation->link;
+        if (empty($joinLink) && !empty($reservation->session) && method_exists($reservation->session, 'getJoinLink')) {
+            $joinLink = $reservation->session->getJoinLink();
+        }
+
+        $canJoin = $reservation->meeting_type !== 'in_person'
+            && in_array($reservation->status, [
+                \App\Models\ReserveMeeting::$open,
+                \App\Models\ReserveMeeting::$pending,
+            ], true)
+            && !empty($joinLink);
+
+        $canFinish = !in_array($reservation->status, [
+            \App\Models\ReserveMeeting::$finished,
+            \App\Models\ReserveMeeting::$canceled,
+        ], true);
+
+        $avatar = null;
+        try {
+            $avatar = $reservation->user ? $reservation->user->getAvatar(44) : null;
+        } catch (\Throwable $e) {
+            $avatar = null;
+        }
+
+        return [
+            'id' => $reservation->id,
+            'initials' => mb_substr($reservation->user->full_name ?? '?', 0, 2),
+            'avatar' => $avatar,
+            'name' => $reservation->user->full_name ?? '',
+            'email' => $reservation->user->email ?? '',
+            'joinType' => $joinType,
+            'day' => $dayLabels[$dayKey] ?? '—',
+            'date' => $ts > 0 ? date('Y/m/d', $ts) : ($reservation->day ?? '—'),
+            'time' => $timeLabel ?: '—',
+            'amount' => handlePrice($reservation->paid_amount),
+            'students' => (int) ($reservation->student_count ?? 1),
+            'status' => $statusLabel,
+            'status_key' => $reservation->status,
+            'link' => $joinLink,
+            'detail_url' => route('panel.v1.instructor.consultations.show', ['id' => $reservation->id]),
+            'join_url' => $canJoin
+                ? route('panel.v1.instructor.consultations.join', ['id' => $reservation->id])
+                : null,
+            'finish_url' => $canFinish
+                ? route('panel.v1.instructor.consultations.finish', ['id' => $reservation->id])
+                : null,
+            'can_join' => $canJoin,
+            'can_finish' => $canFinish,
+        ];
     }
 
     public function quizzes(Request $request)

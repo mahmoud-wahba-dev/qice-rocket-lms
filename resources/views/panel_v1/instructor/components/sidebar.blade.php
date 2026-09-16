@@ -10,7 +10,7 @@
             'items' => [
                 ['label' => 'لوحة التحكم', 'icon' => 'tabler--layout-dashboard', 'route' => 'panel.v1.instructor.home', 'active' => $is('panel.v1.instructor.home')],
                 ['label' => 'الدورات', 'icon' => 'tabler--book', 'route' => 'panel.v1.instructor.courses', 'active' => $is('panel.v1.instructor.courses') || $is('panel.v1.instructor.courses.*')],
-                ['label' => 'حزم الدورات والباقات', 'icon' => 'tabler--package', 'href' => '#', 'active' => false],
+                ['label' => 'حزم الدورات والباقات', 'icon' => 'tabler--package', 'route' => 'panel.v1.instructor.bundles', 'active' => $is('panel.v1.instructor.bundles') || $is('panel.v1.instructor.bundles.*')],
                 ['label' => 'الجلسات الاستشارية', 'icon' => 'tabler--video', 'route' => 'panel.v1.instructor.consultations', 'active' => $is('panel.v1.instructor.consultations')],
                 ['label' => 'تقويم الأحداث', 'icon' => 'tabler--calendar', 'href' => '#', 'active' => false],
             ],

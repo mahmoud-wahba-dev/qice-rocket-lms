@@ -90,6 +90,31 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
             Route::get('/instructor', [InstructorController::class, 'home'])->name('instructor.home');
             Route::get('/instructor/students', [InstructorController::class, 'students'])->name('instructor.students');
             Route::get('/instructor/courses', [InstructorController::class, 'courses'])->name('instructor.courses');
+            Route::get('/instructor/bundles', [InstructorController::class, 'bundles'])->name('instructor.bundles');
+            Route::post('/instructor/bundles/store', [InstructorController::class, 'storeBundle'])
+                ->name('instructor.bundles.store');
+            Route::get('/instructor/bundles/{id}/edit', [InstructorController::class, 'editBundle'])
+                ->whereNumber('id')
+                ->name('instructor.bundles.edit');
+            Route::post('/instructor/bundles/{id}/update', [InstructorController::class, 'updateBundle'])
+                ->whereNumber('id')
+                ->name('instructor.bundles.update');
+            Route::get('/instructor/bundles/{id}/courses', [InstructorController::class, 'bundleCourses'])
+                ->whereNumber('id')
+                ->name('instructor.bundles.courses');
+            Route::post('/instructor/bundles/{id}/courses/attach', [InstructorController::class, 'attachBundleCourse'])
+                ->whereNumber('id')
+                ->name('instructor.bundles.courses.attach');
+            Route::post('/instructor/bundles/{id}/courses/{webinarId}/detach', [InstructorController::class, 'detachBundleCourse'])
+                ->whereNumber('id')
+                ->whereNumber('webinarId')
+                ->name('instructor.bundles.courses.detach');
+            Route::get('/instructor/bundles/{id}/preview', [InstructorController::class, 'bundlePreview'])
+                ->whereNumber('id')
+                ->name('instructor.bundles.preview');
+            Route::post('/instructor/bundles/{id}/delete', [InstructorController::class, 'deleteBundle'])
+                ->whereNumber('id')
+                ->name('instructor.bundles.delete');
             Route::post('/instructor/courses/{id}/delete', [InstructorController::class, 'deleteCourse'])
                 ->whereNumber('id')
                 ->name('instructor.courses.delete');
@@ -129,6 +154,15 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 ->name('instructor.assignments.grade');
             Route::get('/instructor/consultations', [InstructorController::class, 'consultations'])
                 ->name('instructor.consultations');
+            Route::get('/instructor/consultations/{id}', [InstructorController::class, 'consultationShow'])
+                ->whereNumber('id')
+                ->name('instructor.consultations.show');
+            Route::get('/instructor/consultations/{id}/join', [InstructorController::class, 'consultationJoin'])
+                ->whereNumber('id')
+                ->name('instructor.consultations.join');
+            Route::post('/instructor/consultations/{id}/finish', [InstructorController::class, 'consultationFinish'])
+                ->whereNumber('id')
+                ->name('instructor.consultations.finish');
             Route::get('/instructor/quizzes', [InstructorController::class, 'quizzes'])
                 ->name('instructor.quizzes');
             Route::get('/instructor/quizzes/create', [InstructorController::class, 'quizCreate'])
