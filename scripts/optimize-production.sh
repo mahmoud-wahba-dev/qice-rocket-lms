@@ -7,6 +7,7 @@ REMOTE_APP="${QIEC_REMOTE_APP:-/home/qiec-training/htdocs/training.qiec.sa}"
 
 ssh "${SSH_HOST}" "
   set -e
+  git config --global --add safe.directory ${REMOTE_APP} 2>/dev/null || true
   cd ${REMOTE_APP}
 
   # Never leave Vite hot file on production (forces [::1]:5173 and breaks CSS)
