@@ -7,14 +7,15 @@
         'subtitle' => 'متابعة الشهادات الصادرة وتصميم القوالب المعتمدة للطلاب.',
     ])
         @slot('actions')
-            <a href="#"
+            <a href="{{ url('/certificate_validation') }}" target="_blank"
                 class="inline-flex items-center gap-2 rounded-12px border border-color2 px-5 h-12 font-semibold text-16px text-color2 hover:opacity-90 transition bg-white">
-                عرض جميع الشهادات
+                <span class="icon-[tabler--shield-check] size-5"></span>
+                صفحة التحقق
             </a>
-            <a href="#"
+            <a href="{{ route('panel.v1.admin.education.section', ['section' => 'certificates']) }}"
                 class="inline-flex items-center gap-2 rounded-12px bg-color2 px-5 h-12 font-semibold text-16px text-white hover:opacity-95 transition">
-                <span class="icon-[tabler--plus] size-5"></span>
-                تصميم قالب شهادة جديد
+                <span class="icon-[tabler--certificate] size-5"></span>
+                إدارة القوالب
             </a>
         @endslot
     @endcomponent
@@ -33,25 +34,42 @@
     {{-- Latest issued --}}
     <div>
         <h2 class="font-semibold text-24px text-primary mb-4">أحدث الشهادات الصادرة</h2>
+        @if(empty($recentCertificates))
+            <div class="rounded-14px border border-dashed border-d9 bg-white px-6 py-10 text-center">
+                <p class="font-medium text-15px text-gray">لا توجد شهادات صادرة بعد — ستظهر هنا أول شهادة بعد إتمام طالب لدورة مفعّل بها <span class="font-bold text-primary">الشهادة</span> بنسبة 100% أو نجاحه في اختبار بشهادة.</p>
+            </div>
+        @else
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             @foreach ($recentCertificates ?? [] as $cert)
-                <article class="rounded-14px border border-d9 bg-white overflow-hidden shadow-sm">
-                    <div class="aspect-[4/3] bg-[#F1F5F9] center">
+                <article class="rounded-14px border border-d9 bg-white overflow-hidden shadow-sm hover:shadow-md transition">
+                    <div class="aspect-[4/3] bg-[#F1F5F9] center relative overflow-hidden">
                         @if (!empty($cert['preview']))
                             <img src="{{ $cert['preview'] }}" alt="" class="w-full h-full object-cover">
                         @else
                             <span class="icon-[tabler--certificate] size-10 text-d9"></span>
                         @endif
+                        @if(!empty($cert['type']))
+                            <span class="absolute top-2 end-2 rounded-full bg-primary/90 text-white px-2.5 py-1 font-bold text-10px">{{ $cert['type'] }}</span>
+                        @endif
                     </div>
-                    <div class="px-4 py-3 min-h-14">
+                    <div class="px-4 py-3">
                         @if (!empty($cert['title']))
-                            <p class="font-semibold text-14px text-primary truncate">{{ $cert['title'] }}</p>
+                            <p class="font-semibold text-13px text-primary truncate">{{ $cert['title'] }}</p>
                             <p class="font-medium text-12px text-gray truncate">{{ $cert['student'] ?? '' }}</p>
+                            @if(!empty($cert['date']))
+                                <p class="font-medium text-11px text-[#00B31B] mt-1">{{ $cert['date'] }}</p>
+                            @endif
+                            @if(!empty($cert['validation_url']))
+                                <a href="{{ $cert['validation_url'] }}" target="_blank" class="inline-flex items-center gap-1 mt-1 font-bold text-10px text-primary hover:underline">
+                                    <span class="icon-[tabler--qrcode] size-3"></span> تحقق
+                                </a>
+                            @endif
                         @endif
                     </div>
                 </article>
             @endforeach
         </div>
+        @endif
     </div>
 
     {{-- Tabs + table --}}
@@ -93,8 +111,8 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-44 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20"
                                         role="menu" aria-labelledby="cert-complete-menu-{{ $index }}">
-                                        <li><a href="#" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض الشهادات</a></li>
-                                        <li><a href="#" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">تعديل القالب</a></li>
+                                        <li><a href="{{ route('panel.v1.admin.education.section', ['section' => 'certificates']) }}" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض الشهادات (الإدارة)</a></li>
+                                        <li><a href="{{ url('/certificate_validation') }}" target="_blank" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">صفحة التحقق</a></li>
                                     </ul>
                                 </div>
                             </td>
@@ -138,8 +156,8 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-44 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20"
                                         role="menu" aria-labelledby="cert-exam-menu-{{ $index }}">
-                                        <li><a href="#" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض الشهادات</a></li>
-                                        <li><a href="#" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">تعديل القالب</a></li>
+                                        <li><a href="{{ route('panel.v1.admin.education.section', ['section' => 'certificates']) }}" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض الشهادات (الإدارة)</a></li>
+                                        <li><a href="{{ url('/certificate_validation') }}" target="_blank" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">صفحة التحقق</a></li>
                                     </ul>
                                 </div>
                             </td>

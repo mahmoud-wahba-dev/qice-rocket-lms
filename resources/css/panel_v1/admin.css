@@ -88,6 +88,17 @@ body:has(.panel-v1-admin)::-webkit-scrollbar-thumb:hover {
     color: var(--color-gray, #8e8f8f) !important;
 }
 
+/* Header dropdown (dashboards switcher) must never be clipped by sticky/overflow ancestors */
+.panel-v1-admin .admin-shell-header,
+.panel-v1-admin .admin-shell-header .navbar,
+.panel-v1-admin .admin-shell-header .navbar-start {
+    overflow: visible;
+}
+
+.panel-v1-admin [data-admin-menu-panel] {
+    z-index: 80;
+}
+
 /* ---------- Desktop sidebar collapse (icons-only) — exact parity with instructor ---------- */
 .panel-v1-admin .admin-shell-header,
 .panel-v1-admin .admin-shell-main {

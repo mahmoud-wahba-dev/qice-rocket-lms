@@ -8,6 +8,67 @@ export function initAdminShell() {
         return;
     }
     initDashboardSidebarCollapse(root);
+    initAdminHeaderMenus(root);
+}
+
+/**
+ * Header menus (dashboards switcher, language, notifications, user) —
+ * custom toggle (no FlyonUI Popper) so menus are never clipped
+ * by the sticky header / RTL placement.
+ */
+function initAdminHeaderMenus(root) {
+    const wraps = root.querySelectorAll('[data-admin-menu]');
+    if (!wraps.length) return;
+
+    const closeAll = (except = null) => {
+        wraps.forEach((w) => {
+            if (w === except) return;
+            w.querySelector('[data-admin-menu-panel]')?.setAttribute('hidden', '');
+            w.querySelector('[data-admin-menu-toggle]')?.setAttribute('aria-expanded', 'false');
+            w.querySelector('[data-admin-menu-chevron]')?.classList.remove('rotate-180');
+        });
+    };
+
+    wraps.forEach((wrap) => {
+        const btn = wrap.querySelector('[data-admin-menu-toggle]');
+        const menu = wrap.querySelector('[data-admin-menu-panel]');
+        const chevron = wrap.querySelector('[data-admin-menu-chevron]');
+        if (!btn || !menu) return;
+
+        const isOpen = () => !menu.hasAttribute('hidden');
+        const setOpen = (open) => {
+            if (open) {
+                closeAll(wrap);
+                menu.removeAttribute('hidden');
+            } else {
+                menu.setAttribute('hidden', '');
+            }
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            chevron?.classList.toggle('rotate-180', open);
+        };
+
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen(!isOpen());
+        });
+
+        // keep menu open for in-menu interaction (forms/links handle themselves)
+        menu.addEventListener('click', (e) => e.stopPropagation());
+
+        document.addEventListener('click', () => {
+            if (isOpen()) setOpen(false);
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && isOpen()) {
+                setOpen(false);
+                btn.focus();
+            }
+        });
+
+        setOpen(false);
+    });
 }
 
 const SIDEBAR_STORAGE_KEY = 'panel_v1_admin_sidebar';
@@ -178,6 +239,7 @@ function initAdminGroupsAccordion(root) {
     const groups = sidebar.querySelectorAll('[data-admin-group]');
     if (!groups.length) return;
 
+    const dashboard = root.getAttribute('data-admin-dashboard') || 'education';
     const isCollapsedDesktop = () => root.getAttribute('data-admin-sidebar') === 'collapsed'
         && window.matchMedia('(min-width: 1024px)').matches;
 
@@ -188,7 +250,7 @@ function initAdminGroupsAccordion(root) {
         if (!btn || !panel) return;
 
         const idx = group.getAttribute('data-group-index') || '0';
-        const storageKey = GROUP_STORAGE_PREFIX + idx;
+        const storageKey = GROUP_STORAGE_PREFIX + dashboard + ':' + idx;
 
         // restore persisted state (default: already set via Blade: active group open, others closed)
         try {

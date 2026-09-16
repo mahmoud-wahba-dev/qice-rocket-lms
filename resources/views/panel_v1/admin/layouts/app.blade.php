@@ -41,7 +41,7 @@
 <body>
     {{-- Admin dashboard shell: fixed sidebar + header/main padding synced via CSS (parity with instructor) --}}
     <div id="landing-v1-app" class="bg-[#F9FAF5] flex min-h-screen flex-col panel-v1-admin"
-        data-admin-sidebar="expanded">
+        data-admin-sidebar="expanded" data-admin-dashboard="{{ $adminDashboard ?? 'education' }}">
         <script>
             (function () {
                 var app = document.getElementById('landing-v1-app');

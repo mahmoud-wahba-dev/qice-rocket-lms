@@ -131,12 +131,65 @@
     @endif
 
     @if (!empty($certificates))
+        @if (!empty($certificateStats))
+            @include('panel_v1.admin.components.stats-cards', ['stats' => $certificateStats])
+        @endif
+        <div class="px-2 sm:px-0 mb-3 flex flex-wrap gap-2">
+            <form method="GET" action="{{ url()->current() }}" class="flex flex-wrap gap-2 items-center">
+                @foreach (request()->except(['type','page']) as $k=>$v) @if(!is_array($v))<input type="hidden" name="{{ $k }}" value="{{ $v }}">@endif @endforeach
+                <select name="type" onchange="this.form.submit()" class="select select-bordered h-9 rounded-10px border-d9 text-12px bg-white">
+                    <option value="">كل الأنواع</option>
+                    <option value="course" @selected(request('type')=='course')>إتمام دورة</option>
+                    <option value="quiz" @selected(request('type')=='quiz')>اختبار</option>
+                    <option value="bundle" @selected(request('type')=='bundle')>حزمة</option>
+                </select>
+                <a href="{{ url('/certificate_validation') }}" target="_blank" class="h-9 px-3 rounded-10px border border-d9 bg-white text-12px font-semibold text-primary center gap-1"><span class="icon-[tabler--shield-check] size-4"></span> صفحة التحقق</a>
+            </form>
+        </div>
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden mb-4">
+            <div class="px-4 py-3 bg-[#FAFAF4] border-b border-d9 flex items-center justify-between">
+                <h3 class="font-bold text-14px text-primary">قوالب الشهادات</h3>
+                <a href="{{ route('panel.v1.admin.education.certificates.templates.create') }}" class="h-9 px-4 rounded-10px bg-primary text-white font-bold text-12px center">+ قالب جديد</a>
+            </div>
+            @if (!empty($certificateTemplates) && $certificateTemplates->count())
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
+                    @foreach($certificateTemplates as $tmpl)
+                        <div class="rounded-12px border border-d9 p-3 flex items-center gap-3">
+                            <div class="size-10 rounded-8px bg-primary/10 center shrink-0"><span class="icon-[tabler--certificate] size-5 text-primary"></span></div>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-bold text-13px text-primary truncate">{{ $tmpl->title ?? 'قالب #' . $tmpl->id }}</p>
+                                <p class="font-medium text-11px text-gray">{{ $tmpl->type ?? '' }} — {{ $tmpl->status ?? '' }}</p>
+                            </div>
+                            <div class="flex items-center gap-1 shrink-0">
+                                <a href="{{ route('panel.v1.admin.education.certificates.templates.edit',['id'=>$tmpl->id]) }}" class="size-7 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-3.5 text-primary"></span></a>
+                                <form method="POST" action="{{ route('panel.v1.admin.education.certificates.templates.delete',['id'=>$tmpl->id]) }}" onsubmit="return confirm('حذف القالب؟')" class="inline">@csrf<button type="submit" class="size-7 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-3.5 text-red-500"></span></button></form>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <p class="font-medium text-13px text-gray text-center py-8">لا توجد قوالب — أنشئ أول قالب شهادة</p>
+            @endif
+        </div>
         <div class="border border-d9 rounded-14px bg-white overflow-hidden">
-            <table class="table w-full text-14px">
-                <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الشهادة</th><th class="px-4 py-3">الطالب</th><th class="px-4 py-3">الدورة</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead>
+            <table class="table w-full text-13px">
+                <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-3 py-3 text-start">الشهادة</th><th class="px-3 py-3">النوع</th><th class="px-3 py-3">الطالب</th><th class="px-3 py-3">الدورة/الاختبار</th><th class="px-3 py-3">التاريخ</th><th class="px-3 py-3">تحقق</th><th class="px-3 py-3 text-center">إجراءات</th></tr></thead>
                 <tbody>
                 @foreach ($certificates as $c)
-                    <tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">#{{ $c->id }}</td><td class="px-4 py-3 text-center">{{ $c->student->full_name ?? '' }}</td><td class="px-4 py-3 text-center">{{ $c->webinar->title ?? '' }}</td><td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.education.certificates.delete',['id'=>$c->id]) }}" onsubmit="return confirm('حذف؟')">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td></tr>
+                    @php
+                        $cTitle = $c->type==='quiz' ? ($c->quiz->title ?? 'اختبار #'.$c->quiz_id) : ($c->type==='bundle' ? ($c->bundle->title ?? 'حزمة #'.$c->bundle_id) : ($c->webinar->title ?? '—'));
+                        $typeLabel = $c->type==='quiz' ? 'اختبار' : ($c->type==='bundle' ? 'حزمة' : 'إتمام');
+                        $validUrl = url('/certificate_validation?certificate_id='.$c->id);
+                    @endphp
+                    <tr class="border-b border-d9 last:border-0">
+                        <td class="px-3 py-3 font-bold text-primary font-mono">#{{ $c->id }}</td>
+                        <td class="px-3 py-3 text-center"><span class="inline-flex rounded-full px-2 py-1 font-bold text-11px {{ $c->type==='quiz' ? 'bg-[#EDE9FE] text-[#6D28D9]' : ($c->type==='bundle' ? 'bg-[#FEF3C7] text-[#92400E]' : 'bg-[#D1FAE5] text-[#065F46]') }}">{{ $typeLabel }}</span></td>
+                        <td class="px-3 py-3 text-center">{{ $c->student->full_name ?? '' }}<br><span class="text-11px text-gray">{{ $c->student->email ?? '' }}</span></td>
+                        <td class="px-3 py-3 text-center truncate max-w-[14rem]">{{ $cTitle }}</td>
+                        <td class="px-3 py-3 text-center whitespace-nowrap">{{ date('Y/m/d', (int)$c->created_at) }}</td>
+                        <td class="px-3 py-3 text-center"><a href="{{ $validUrl }}" target="_blank" class="inline-flex items-center gap-1 font-bold text-11px text-primary hover:underline"><span class="icon-[tabler--qrcode] size-3.5"></span> تحقق</a></td>
+                        <td class="px-3 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.education.certificates.delete',['id'=>$c->id]) }}" onsubmit="return confirm('حذف الشهادة #{{ $c->id }}؟')">@csrf<button type="submit" class="size-7 rounded-8px border border-red-200 center hover:bg-red-50" title="حذف"><span class="icon-[tabler--trash] size-3.5 text-red-500"></span></button></form></td>
+                    </tr>
                 @endforeach
                 </tbody>
             </table>
@@ -249,7 +302,7 @@
                 <input type="text" name="title" placeholder="اسم القسم الجديد" class="input input-bordered flex-1 h-10 rounded-10px text-14px" required>
                 <button type="submit" class="btn btn-primary rounded-10px h-10 px-5 font-bold text-13px">إضافة</button>
             </form>
-            <table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">القسم</th><th class="px-4 py-3">الترتيب</th><th class="px-4 py-3">إجراء</th></tr></thead><tbody>@foreach($departments as $d)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $d->title }}</td><td class="px-4 py-3 text-center">{{ $d->order ?? '—' }}</td><td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.education.departments.delete',['id'=>$d->id]) }}" onsubmit="return confirm('حذف؟')">@csrf<button type="submit" class="text-red-500 font-bold text-12px">حذف</button></form></td></tr>@endforeach</tbody></table>
+            <table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">القسم</th><th class="px-4 py-3">الترتيب</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead><tbody>@foreach($departments as $d)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $d->title }}</td><td class="px-4 py-3 text-center">{{ $d->order ?? '—' }}</td><td class="px-4 py-3 text-center"><div class="flex items-center justify-center gap-1.5"><a href="{{ route('panel.v1.admin.education.departments.edit',['id'=>$d->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a><form method="POST" action="{{ route('panel.v1.admin.education.departments.delete',['id'=>$d->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center hover:bg-red-50" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></div></td></tr>@endforeach</tbody></table>
         </div>
     @endif
 

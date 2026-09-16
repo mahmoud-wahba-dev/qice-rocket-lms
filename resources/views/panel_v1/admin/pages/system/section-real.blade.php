@@ -230,7 +230,7 @@
             </div>
             <div class="overflow-x-auto">
                 <table class="table w-full text-14px">
-                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">#</th><th class="px-4 py-3 text-start">المُبلّغ</th><th class="px-4 py-3 text-start">السبب</th><th class="px-4 py-3 text-center">التاريخ</th></tr></thead>
+                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">#</th><th class="px-4 py-3 text-start">المُبلّغ</th><th class="px-4 py-3 text-start">السبب</th><th class="px-4 py-3 text-center">التاريخ</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead>
                     <tbody>
                     @foreach ($reports as $rep)
                         <tr class="border-b border-d9 last:border-0">
@@ -238,6 +238,7 @@
                             <td class="px-4 py-3 font-medium text-primary">{{ $rep->user->full_name ?? '—' }}</td>
                             <td class="px-4 py-3 font-medium text-gray">{{ \Illuminate\Support\Str::limit($rep->reason ?? $rep->message ?? '',50) }}</td>
                             <td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d',(int)$rep->created_at) }}</td>
+                            <td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.system.reports.delete',['id'=>$rep->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td>
                         </tr>
                     @endforeach
                     </tbody>
@@ -253,7 +254,7 @@
             </div>
             <div class="overflow-x-auto">
                 <table class="table w-full text-14px">
-                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">#</th><th class="px-4 py-3 text-start">الاسم</th><th class="px-4 py-3 text-start">البريد</th><th class="px-4 py-3 text-start">الموضوع</th><th class="px-4 py-3 text-center">التاريخ</th></tr></thead>
+                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">#</th><th class="px-4 py-3 text-start">الاسم</th><th class="px-4 py-3 text-start">البريد</th><th class="px-4 py-3 text-start">الموضوع</th><th class="px-4 py-3 text-center">التاريخ</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead>
                     <tbody>
                     @foreach ($contacts as $co)
                         <tr class="border-b border-d9 last:border-0">
@@ -262,6 +263,7 @@
                             <td class="px-4 py-3 font-medium text-gray">{{ $co->email ?? '—' }}</td>
                             <td class="px-4 py-3 font-medium text-gray">{{ \Illuminate\Support\Str::limit($co->subject ?? $co->title ?? '',30) }}</td>
                             <td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d',(int)$co->created_at) }}</td>
+                            <td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.system.contacts.delete',['id'=>$co->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td>
                         </tr>
                     @endforeach
                     </tbody>
@@ -301,13 +303,14 @@
             </div>
             <div class="overflow-x-auto">
                 <table class="table w-full text-14px">
-                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">#</th><th class="px-4 py-3 text-start">العنوان</th><th class="px-4 py-3 text-center">الحالة</th></tr></thead>
+                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">#</th><th class="px-4 py-3 text-start">العنوان</th><th class="px-4 py-3 text-center">الحالة</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead>
                     <tbody>
                     @foreach ($forums as $f)
                         <tr class="border-b border-d9 last:border-0">
                             <td class="px-4 py-3 font-bold text-primary">#{{ $f->id }}</td>
                             <td class="px-4 py-3 font-medium text-primary">{{ $f->title ?? $f->slug ?? 'منتدى #'.$f->id }}</td>
                             <td class="px-4 py-3 text-center"><span class="inline-flex rounded-full bg-[#D1FAE5] text-[#059669] px-3 py-1 font-semibold text-11px">{{ $f->status ?? 'نشط' }}</span></td>
+                            <td class="px-4 py-3 text-center"><div class="flex items-center justify-center gap-1.5"><a href="{{ route('panel.v1.admin.system.forums.edit',['id'=>$f->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a><form method="POST" action="{{ route('panel.v1.admin.system.forums.delete',['id'=>$f->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></div></td>
                         </tr>
                     @endforeach
                     </tbody>
@@ -323,7 +326,7 @@
             </div>
             <div class="overflow-x-auto">
                 <table class="table w-full text-14px">
-                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">#</th><th class="px-4 py-3 text-start">العنوان</th><th class="px-4 py-3 text-start">المستخدم</th><th class="px-4 py-3 text-center">التاريخ</th></tr></thead>
+                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">#</th><th class="px-4 py-3 text-start">العنوان</th><th class="px-4 py-3 text-start">المستخدم</th><th class="px-4 py-3 text-center">التاريخ</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead>
                     <tbody>
                     @foreach ($notifications as $n)
                         <tr class="border-b border-d9 last:border-0">
@@ -331,6 +334,7 @@
                             <td class="px-4 py-3 font-medium text-primary">{{ \Illuminate\Support\Str::limit($n->title ?? '',40) }}</td>
                             <td class="px-4 py-3 font-medium text-gray">{{ $n->user->full_name ?? $n->user_id ?? '—' }}</td>
                             <td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d',(int)$n->created_at) }}</td>
+                            <td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.system.notifications.delete',['id'=>$n->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td>
                         </tr>
                     @endforeach
                     </tbody>

@@ -24,8 +24,11 @@
 
                                     <div class="form-group mt-40">
                                         <label class="form-group-label" for="code">{{ trans('public.certificate_id') }}:</label>
-                                        <input type="tel" name="certificate_id" class="form-control" id="certificate_id" aria-describedby="certificate_idHelp">
+                                        <input type="tel" name="certificate_id" class="form-control" id="certificate_id" aria-describedby="certificate_idHelp" value="{{ $prefilledId ?? '' }}">
                                         <div class="invalid-feedback"></div>
+                                        @if(!empty($prefilledId))
+                                            <small class="text-success mt-2 d-block">رابط QR يحمل المعرف #{{ $prefilledId }} — اضغط تحقق أو سيتم التحقق تلقائياً</small>
+                                        @endif
                                     </div>
 
                                     @include('design_1.web.includes.captcha_input')
@@ -33,6 +36,11 @@
                                     <div class="mt-16">
                                         <button type="button" class="js-submit-certificate-validation-form-btn btn btn-primary btn-block btn-lg" data-title="{{ trans('site.certificate_validation') }}">{{ trans('cart.validate') }}</button>
                                     </div>
+                                    @if(!empty($prefilledResult))
+                                        <div class="mt-16 p-16 border rounded-12 bg-white">
+                                            @include('design_1.web.certificate_validation.status', $prefilledResult)
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
 

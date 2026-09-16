@@ -152,23 +152,27 @@
         </div>
     @endif
 
-    @if (!empty($meetings) && $meetings->count())
+    @if (!empty($meetings))
         <div class="border border-d9 rounded-14px bg-white overflow-hidden">
-            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4]">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex items-center justify-between">
                 <h2 class="font-bold text-16px text-primary">باقات الاجتماعات</h2>
+                <a href="{{ route('panel.v1.admin.sales.meeting-packages.create') }}" class="h-10 px-4 rounded-12px bg-primary text-white font-bold text-13px center">+ باقة جديدة</a>
             </div>
             <div class="overflow-x-auto">
                 <table class="table w-full text-14px">
-                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">#</th><th class="px-4 py-3 text-start">العنوان</th><th class="px-4 py-3 text-center">السعر</th><th class="px-4 py-3 text-center">الحالة</th></tr></thead>
+                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">#</th><th class="px-4 py-3 text-start">العنوان</th><th class="px-4 py-3 text-center">السعر</th><th class="px-4 py-3 text-center">الحالة</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead>
                     <tbody>
-                    @foreach ($meetings as $m)
+                    @forelse ($meetings as $m)
                         <tr class="border-b border-d9 last:border-0">
                             <td class="px-4 py-3 font-bold text-primary">#{{ $m->id }}</td>
                             <td class="px-4 py-3 font-bold text-primary">{{ $m->title ?? $m->name ?? 'اجتماع #'.$m->id }}</td>
                             <td class="px-4 py-3 text-center font-semibold text-primary">{{ handlePrice($m->price ?? $m->amount ?? 0) }}</td>
-                            <td class="px-4 py-3 text-center"><span class="inline-flex rounded-full bg-[#EFF6FF] text-[#2563EB] px-3 py-1 font-semibold text-11px">{{ $m->status ?? '—' }}</span></td>
+                            <td class="px-4 py-3 text-center"><span class="inline-flex rounded-full px-3 py-1 font-semibold text-11px {{ ($m->enable ?? false) ? 'bg-[#D1FAE5] text-[#059669]' : 'bg-[#FEE2E2] text-[#DC2626]' }}">{{ ($m->enable ?? false) ? 'مفعّل' : 'معطل' }}</span></td>
+                            <td class="px-4 py-3 text-center"><div class="flex items-center justify-center gap-1.5"><a href="{{ route('panel.v1.admin.sales.meeting-packages.edit',['id'=>$m->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a><form method="POST" action="{{ route('panel.v1.admin.sales.meeting-packages.delete',['id'=>$m->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></div></td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr><td colspan="5" class="px-4 py-14 text-center font-medium text-gray">لا توجد باقات اجتماعات — أنشئ أول باقة</td></tr>
+                    @endforelse
                     </tbody>
                 </table>
             </div>

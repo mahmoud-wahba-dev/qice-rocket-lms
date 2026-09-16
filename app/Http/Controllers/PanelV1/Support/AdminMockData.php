@@ -95,6 +95,18 @@ class AdminMockData
                 'items' => [
                     ['key' => 'live', 'label' => 'البث والمحاضرات المباشرة', 'icon' => 'icon-[tabler--video]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'live']],
                     ['key' => 'attendance', 'label' => 'الحضور والغياب', 'icon' => 'icon-[tabler--calendar-check]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'attendance']],
+                    ['key' => 'noticeboard', 'label' => 'لوح الإعلانات', 'icon' => 'icon-[tabler--speakerphone]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'noticeboard']],
+                ],
+            ],
+            [
+                'title' => 'إدارة متقدمة',
+                'items' => [
+                    ['key' => 'filters', 'label' => 'الفلاتر', 'icon' => 'icon-[tabler--filter]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'filters']],
+                    ['key' => 'trends', 'label' => 'التصنيفات الرائجة', 'icon' => 'icon-[tabler--trending-up]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'trends']],
+                    ['key' => 'enrollment', 'label' => 'التسجيل', 'icon' => 'icon-[tabler--user-plus]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'enrollment']],
+                    ['key' => 'upcoming', 'label' => 'الدورات القادمة', 'icon' => 'icon-[tabler--calendar-time]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'upcoming']],
+                    ['key' => 'waitlists', 'label' => 'قوائم الانتظار', 'icon' => 'icon-[tabler--hourglass]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'waitlists']],
+                    ['key' => 'statistics', 'label' => 'الإحصائيات', 'icon' => 'icon-[tabler--chart-bar]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'statistics']],
                 ],
             ],
         ];
@@ -133,6 +145,14 @@ class AdminMockData
                     ['key' => 'meetings', 'label' => 'باقات الاجتماعات', 'icon' => 'icon-[tabler--users]', 'route' => 'panel.v1.admin.sales.section', 'params' => ['section' => 'meetings']],
                 ],
             ],
+            [
+                'title' => 'المالية والإعدادات',
+                'items' => [
+                    ['key' => 'payment_channels', 'label' => 'قنوات الدفع', 'icon' => 'icon-[tabler--credit-card]', 'route' => 'panel.v1.admin.sales.section', 'params' => ['section' => 'payment_channels']],
+                    ['key' => 'meeting_packages_sold', 'label' => 'باقات الاجتماعات المباعة', 'icon' => 'icon-[tabler--packages]', 'route' => 'panel.v1.admin.sales.section', 'params' => ['section' => 'meeting_packages_sold']],
+                    ['key' => 'event_sold_tickets', 'label' => 'تذاكر الفعاليات المباعة', 'icon' => 'icon-[tabler--ticket]', 'route' => 'panel.v1.admin.sales.section', 'params' => ['section' => 'event_sold_tickets']],
+                ],
+            ],
         ];
     }
 
@@ -143,6 +163,12 @@ class AdminMockData
                 'title' => 'التسويق والعروض',
                 'items' => [
                     ['key' => 'dashboard', 'label' => 'لوحة قيادة التسويق', 'icon' => 'icon-[tabler--chart-pie]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'dashboard']],
+                    ['key' => 'discounts', 'label' => 'القسائم والخصومات', 'icon' => 'icon-[tabler--discount]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'discounts']],
+                    ['key' => 'special_offers', 'label' => 'العروض الخاصة', 'icon' => 'icon-[tabler--confetti]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'special_offers']],
+                    ['key' => 'cart_discount', 'label' => 'خصم السلة', 'icon' => 'icon-[tabler--shopping-cart-discount]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'cart_discount']],
+                    ['key' => 'abandoned_cart', 'label' => 'السلة المتروكة', 'icon' => 'icon-[tabler--shopping-cart-off]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'abandoned_cart']],
+                    ['key' => 'abandoned_users', 'label' => 'سلال المستخدمين', 'icon' => 'icon-[tabler--users]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'abandoned_users']],
+                    ['key' => 'cashback_transactions', 'label' => 'معاملات الكاش باك', 'icon' => 'icon-[tabler--cash]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'cashback_transactions']],
                     ['key' => 'tools', 'label' => 'إدارة أدوات التسويق', 'icon' => 'icon-[tabler--tool]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'tools']],
                     ['key' => 'affiliate', 'label' => 'التسويق بالعمولة', 'icon' => 'icon-[tabler--share]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'affiliate']],
                 ],
@@ -154,6 +180,13 @@ class AdminMockData
                     ['key' => 'products', 'label' => 'منتجات المتجر', 'icon' => 'icon-[tabler--shopping-cart]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'products']],
                     ['key' => 'blog', 'label' => 'المدونة', 'icon' => 'icon-[tabler--article]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'blog']],
                     ['key' => 'pages', 'label' => 'الصفحات', 'icon' => 'icon-[tabler--file-text]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'pages']],
+                    ['key' => 'forms', 'label' => 'النماذج', 'icon' => 'icon-[tabler--forms]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'forms']],
+                    ['key' => 'banners', 'label' => 'البانرات الإعلانية', 'icon' => 'icon-[tabler--photo]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'banners']],
+                    ['key' => 'floating_bars', 'label' => 'الشريط العائم', 'icon' => 'icon-[tabler--layout-navbar]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'floating_bars']],
+                    ['key' => 'purchase_notifications', 'label' => 'إشعارات الشراء', 'icon' => 'icon-[tabler--bell-ringing]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'purchase_notifications']],
+                    ['key' => 'advertising_modal', 'label' => 'النافذة الإعلانية', 'icon' => 'icon-[tabler--window]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'advertising_modal']],
+                    ['key' => 'newsletters', 'label' => 'النشرات البريدية', 'icon' => 'icon-[tabler--mail]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'newsletters']],
+                    ['key' => 'product_badges', 'label' => 'شارات المنتجات', 'icon' => 'icon-[tabler--badge]', 'route' => 'panel.v1.admin.marketing.section', 'params' => ['section' => 'product_badges']],
                 ],
             ],
             [
@@ -168,7 +201,7 @@ class AdminMockData
         ];
     }
 
-    public static function systemNav(): array
+     public static function systemNav(): array
     {
         return [
             [
@@ -183,23 +216,33 @@ class AdminMockData
                     ['key' => 'instructor-requests', 'label' => 'طلبات انضمام المدربين', 'icon' => 'icon-[tabler--user-plus]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'instructor-requests']],
                     ['key' => 'delete-requests', 'label' => 'طلبات حذف الحساب', 'icon' => 'icon-[tabler--trash]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'delete-requests']],
                     ['key' => 'ip', 'label' => 'إدارة عناوين IP', 'icon' => 'icon-[tabler--world]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'ip']],
+                    ['key' => 'login_history', 'label' => 'سجل الدخول', 'icon' => 'icon-[tabler--history]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'login_history']],
+                    ['key' => 'not_access', 'label' => 'بلا وصول', 'icon' => 'icon-[tabler--ban]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'not_access']],
                 ],
             ],
             [
                 'title' => 'الدعم والمجتمع',
                 'items' => [
                     ['key' => 'forums', 'label' => 'المنتديات', 'icon' => 'icon-[tabler--messages]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'forums']],
+                    ['key' => 'forum_topics', 'label' => 'مواضيع المنتدى', 'icon' => 'icon-[tabler--message]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'forum_topics']],
+                    ['key' => 'forum_settings', 'label' => 'إعدادات المنتدى', 'icon' => 'icon-[tabler--settings]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'forum_settings']],
+                    ['key' => 'support_departments', 'label' => 'أقسام الدعم', 'icon' => 'icon-[tabler--headset]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'support_departments']],
                     ['key' => 'tickets', 'label' => 'نظام التذاكر', 'icon' => 'icon-[tabler--ticket]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'tickets']],
                     ['key' => 'reports', 'label' => 'البلاغات', 'icon' => 'icon-[tabler--flag]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'reports']],
                     ['key' => 'contact', 'label' => 'رسائل التواصل', 'icon' => 'icon-[tabler--mail]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'contact']],
                     ['key' => 'consultations', 'label' => 'الاستشارات', 'icon' => 'icon-[tabler--video]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'consultations']],
                     ['key' => 'notifications', 'label' => 'مركز الإشعارات', 'icon' => 'icon-[tabler--bell]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'notifications']],
+                    ['key' => 'notification_templates', 'label' => 'قوالب الإشعارات', 'icon' => 'icon-[tabler--template]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'notification_templates']],
                 ],
             ],
             [
                 'title' => 'الإعدادات العامة',
                 'items' => [
                     ['key' => 'settings', 'label' => 'إعدادات النظام', 'icon' => 'icon-[tabler--settings]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'settings']],
+                    ['key' => 'region', 'label' => 'المناطق', 'icon' => 'icon-[tabler--map]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'region']],
+                    ['key' => 'ai_contents', 'label' => 'محتوى AI', 'icon' => 'icon-[tabler--robot]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'ai_contents']],
+                    ['key' => 'agora_history', 'label' => 'سجل Agora', 'icon' => 'icon-[tabler--video]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'agora_history']],
+                    ['key' => 'themes', 'label' => 'الثيمات', 'icon' => 'icon-[tabler--palette]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'themes']],
                     ['key' => 'import', 'label' => 'الاستيراد الجماعي', 'icon' => 'icon-[tabler--database-import]', 'route' => 'panel.v1.admin.system.section', 'params' => ['section' => 'import']],
                 ],
             ],

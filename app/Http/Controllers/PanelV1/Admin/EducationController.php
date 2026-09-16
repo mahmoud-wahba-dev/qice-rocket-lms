@@ -96,11 +96,19 @@ class EducationController extends AdminController
                 $real['stubTitle']=$title;
                 break;
             case 'certificates':
-                $title='الشهادات';
-                $q = \App\Models\Certificate::with(['webinar','student'])->orderBy('id','desc');
-                if($search !== '') $q->where('id',$search);
+                $title='الشهادات والاعتمادات';
+                $q = \App\Models\Certificate::with(['webinar','student','quiz.webinar','bundle'])->orderBy('id','desc');
+                if($search !== '') $q->where('id',$search)->orWhereHas('student', fn($sq)=>$sq->where('full_name','like',"%{$search}%"));
+                if($type=$request->input('type')) $q->where('type',$type);
                 $real['certificates'] = $q->paginate(15)->withQueryString();
                 $real['paginator'] = $real['certificates'];
+                $real['certificateStats'] = [
+                    ['label'=>'إجمالي الشهادات','value'=>(string)\App\Models\Certificate::count(),'icon'=>'icon-[tabler--certificate]'],
+                    ['label'=>'إتمام دورة','value'=>(string)\App\Models\Certificate::where('type','course')->count(),'icon'=>'icon-[tabler--school]'],
+                    ['label'=>'اختبارات','value'=>(string)\App\Models\Certificate::where('type','quiz')->count(),'icon'=>'icon-[tabler--list-check]'],
+                    ['label'=>'حزم','value'=>(string)\App\Models\Certificate::where('type','bundle')->count(),'icon'=>'icon-[tabler--package]'],
+                ];
+                $real['certificateTemplates'] = \App\Models\CertificateTemplate::with('translations')->orderBy('id','desc')->limit(10)->get();
                 $real['stubTitle']=$title;
                 break;
             case 'live':
@@ -156,12 +164,23 @@ class EducationController extends AdminController
                 $real['paginator']=$real['attendances'];
                 $real['stubTitle']=$title;
                 break;
-            // صفحات محذوفة لعدم الاتساق (موجودة في النظام أو مشتتة): forums/notifications/registration/waitlists/filters/attendance-history
+            case 'filters':
+                $title='الفلاتر'; $q=\App\Models\Filter::with('category')->orderBy('id','desc'); if($search!=='') $q->whereHas('translations',fn($t)=>$t->where('title','like',"%{$search}%")); $real['filters']=$q->paginate(15)->withQueryString(); $real['paginator']=$real['filters']; $real['stubTitle']=$title; break;
+            case 'trends':
+                $title='التصنيفات الرائجة'; $q=\App\Models\TrendCategory::with('category')->orderBy('created_at','desc'); $real['trends']=$q->paginate(15)->withQueryString(); $real['paginator']=$real['trends']; $real['stubTitle']=$title; break;
+            case 'enrollment':
+                $title='التسجيل'; $q=\App\Models\Sale::whereNotNull('webinar_id')->with(['buyer','webinar'])->orderBy('created_at','desc'); if($search!=='') $q->where('id',$search); $real['sales']=$q->paginate(15)->withQueryString(); $real['paginator']=$real['sales']; $real['stubTitle']=$title; break;
+            case 'upcoming':
+                $title='الدورات القادمة'; $q=\App\Models\UpcomingCourse::withCount('followers')->with('teacher')->orderBy('created_at','desc'); if($search!=='') $q->whereTranslationLike('title',"%{$search}%"); $real['upcomingCourses']=$q->paginate(15)->withQueryString(); $real['paginator']=$real['upcomingCourses']; $real['stubTitle']=$title; break;
+            case 'waitlists':
+                $title='قوائم الانتظار'; $q=\App\Models\Webinar::where('enable_waitlist',true); $p=$q->paginate(15)->withQueryString(); foreach($p as $w){ $wq=\App\Models\Waitlist::where('webinar_id',$w->id); $w->members=$wq->count(); } $real['waitlists']=$p; $real['paginator']=$p; $real['stubTitle']=$title; break;
+            case 'statistics':
+                $title='الإحصائيات'; $real['stats']=['total'=>\App\Models\Webinar::count(),'active'=>\App\Models\Webinar::where('status','active')->count()]; $real['stubTitle']=$title; break;
+            case 'noticeboard':
+                $title='الإعلانات'; $q=\App\Models\Noticeboard::orderBy('created_at','desc'); $real['noticeboards']=$q->paginate(15)->withQueryString(); $real['paginator']=$real['noticeboards']; $real['stubTitle']=$title; break;
             case 'forums':
             case 'notifications':
             case 'registration':
-            case 'waitlists':
-            case 'filters':
             case 'attendance-history':
                 abort(404, 'الصفحة غير موجودة — تم تنظيم النظام');
             default:
@@ -171,9 +190,7 @@ class EducationController extends AdminController
                 break;
         }
         $data = array_merge($shell, $real, ['stubTitle'=>$title]);
-
-        // مبسط: 10 صفحات متسقة فقط (الدرج الكبير = التعليم/المبيعات/التسويق/النظام، والسايدبار يملأ حسب القسم)
-        $view = in_array($section,['courses','bundles','departments','events','quizzes','assignments','certificates','reviews','live','attendance']) ? 'panel_v1.admin.pages.education.section-real' : 'panel_v1.admin.pages.education.stub';
+        $view = in_array($section,['courses','bundles','departments','events','quizzes','assignments','certificates','reviews','live','attendance','filters','trends','enrollment','upcoming','waitlists','statistics','noticeboard']) ? 'panel_v1.admin.pages.education.section-real' : 'panel_v1.admin.pages.education.stub';
 
         // fallback to stub if real view not exists
         if(!view()->exists($view)) $view='panel_v1.admin.pages.education.stub';
@@ -186,25 +203,104 @@ class EducationController extends AdminController
         );
     }
 
+    public function createDepartment(Request $request){
+        $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
+        return $this->renderAdmin($request,'panel_v1.admin.pages.education.department-form','إنشاء قسم جديد',array_merge(AdminMockData::shell('education','departments'),['category'=>null,'subCategories'=>collect(),'formAction'=>route('panel.v1.admin.education.departments.store')]));
+    }
     public function storeDepartment(Request $request)
     {
-        $request->validate(['title'=>'required|string|max:255']);
-        $cat = new \App\Models\Category();
-        $cat->title = $request->input('title');
-        $cat->slug = \Illuminate\Support\Str::slug($request->input('title')).'-'.time();
-        $cat->order = \App\Models\Category::max('order')+1;
-        $cat->save();
-        $trans = $cat->translateOrNew(app()->getLocale());
-        $trans->title = $request->input('title');
-        $trans->save();
-        return back()->with('toast',['title'=>'تم','msg'=>'تم إنشاء القسم','type'=>'success']);
+        $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
+        $request->validate(['title'=>'required|string|min:3|max:255','slug'=>'nullable|max:255|unique:categories,slug']);
+        $data=$request->all(); $order=!empty($data['order'])?$data['order']:(\App\Models\Category::whereNull('parent_id')->count()+1);
+        $cat=\App\Models\Category::create(['slug'=>$data['slug']??\App\Models\Category::makeSlug($data['title']),'icon'=>$data['icon']??null,'cover_image'=>$data['cover_image']??null,'icon2'=>$data['icon2']??null,'icon2_box_color'=>$data['icon2_box_color']??null,'overlay_image'=>$data['overlay_image']??null,'order'=>$order,'enable'=>!empty($data['enable'])&&$data['enable']=='on']);
+        \App\Models\Translation\CategoryTranslation::updateOrCreate(['category_id'=>$cat->id,'locale'=>mb_strtolower($data['locale']??app()->getLocale())],['title'=>$data['title'],'subtitle'=>$data['subtitle']??null,'bottom_seo_title'=>$data['bottom_seo_title']??null,'bottom_seo_content'=>$data['bottom_seo_content']??null]);
+        $hasSub=!empty($data['has_sub'])&&$data['has_sub']=='on'; $this->setDepartmentSubCategories($cat,$data['sub_categories']??[],$hasSub,$data['locale']??app()->getLocale());
+        cache()->forget(\App\Models\Category::$cacheKey ?? 'categories'); return redirect()->route('panel.v1.admin.education.departments.edit',['id'=>$cat->id])->with('toast',['title'=>'تم','msg'=>'تم إنشاء القسم','type'=>'success']);
+    }
+
+    public function editDepartment(Request $request, int $id)
+    {
+        $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
+        $category=\App\Models\Category::findOrFail($id);
+        $subCategories=\App\Models\Category::where('parent_id',$category->id)->orderBy('order')->get();
+        return $this->renderAdmin($request,'panel_v1.admin.pages.education.department-form','تعديل قسم',array_merge(AdminMockData::shell('education','departments'),[
+            'category'=>$category,'subCategories'=>$subCategories,
+            'formAction'=>route('panel.v1.admin.education.departments.update',['id'=>$category->id]),
+        ]));
+    }
+
+    public function updateDepartment(Request $request, int $id)
+    {
+        $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
+        $category=\App\Models\Category::findOrFail($id);
+        $request->validate(['title'=>'required|min:3|max:255','slug'=>'nullable|max:255|unique:categories,slug,'.$category->id]);
+        $data=$request->all();
+        $category->update([
+            'slug'=> $data['slug'] ?? \App\Models\Category::makeSlug($data['title']),
+            'order'=> $data['order'] ?? $category->order,
+            'icon'=> $data['icon'] ?? $category->icon,
+            'cover_image'=> $data['cover_image'] ?? $category->cover_image,
+            'icon2'=> $data['icon2'] ?? $category->icon2,
+            'icon2_box_color'=> $data['icon2_box_color'] ?? $category->icon2_box_color,
+            'overlay_image'=> $data['overlay_image'] ?? $category->overlay_image,
+            'enable'=> !empty($data['enable']) && $data['enable']=='on',
+            'updated_at'=>time(),
+        ]);
+        \App\Models\Translation\CategoryTranslation::updateOrCreate([
+            'category_id'=>$category->id,'locale'=>mb_strtolower($data['locale'] ?? app()->getLocale()),
+        ],['title'=>$data['title'],'subtitle'=>$data['subtitle']??null,'bottom_seo_title'=>$data['bottom_seo_title']??null,'bottom_seo_content'=>$data['bottom_seo_content']??null]);
+        $hasSub=!empty($data['has_sub'])&&$data['has_sub']=='on'; $this->setDepartmentSubCategories($category,$data['sub_categories']??[],$hasSub,$data['locale']??app()->getLocale());
+        cache()->forget(\App\Models\Category::$cacheKey ?? 'categories');
+        return redirect()->route('panel.v1.admin.education.section',['section'=>'departments'])->with('toast',['title'=>'تم','msg'=>'تم تحديث القسم','type'=>'success']);
     }
 
     public function deleteDepartment(Request $request, int $id)
     {
-        \App\Models\Category::where('id',$id)->delete();
-        return back()->with('toast',['title'=>'تم','msg'=>'تم الحذف','type'=>'success']);
+        $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
+        $cat=\App\Models\Category::where('id',$id)->first(); $parent=!empty($cat->parent_id)?$cat->parent_id:null;
+        if(!empty($cat)){\App\Models\Category::where('parent_id',$cat->id)->delete(); $cat->delete();}
+        cache()->forget(\App\Models\Category::$cacheKey ?? 'categories');
+        return !empty($parent)?back()->with('toast',['title'=>'تم','msg'=>'تم الحذف','type'=>'success']):redirect()->route('panel.v1.admin.education.section',['section'=>'departments'])->with('toast',['title'=>'تم','msg'=>'تم الحذف','type'=>'success']);
     }
+    private function setDepartmentSubCategories(\App\Models\Category $category,$subCategories,$hasSubCategories,$locale){
+        $order=1; $oldIds=[];
+        if($hasSubCategories && !empty($subCategories) && count($subCategories)){
+            foreach($subCategories as $key=>$sub){
+                if(empty($sub['title'])) continue;
+                $check=is_numeric($key)?\App\Models\Category::where('id',$key)->first():null;
+                if(is_numeric($key)) $oldIds[]=(int)$key;
+                $checkSlug=0; if(!empty($sub['slug'])) $checkSlug=\App\Models\Category::where('slug',$sub['slug'])->count();
+                $slug=(!empty($sub['slug'])&&($checkSlug==0||($checkSlug==1&&!empty($check)&&$check->slug==$sub['slug'])))?$sub['slug']:\App\Models\Category::makeSlug($sub['title']);
+                if(!empty($check)){
+                    $check->update(['slug'=>$slug,'order'=>$order,'icon'=>$sub['icon']??null,'cover_image'=>$sub['cover_image']??null,'icon2'=>$sub['icon2']??null,'icon2_box_color'=>$sub['icon2_box_color']??null,'overlay_image'=>$sub['overlay_image']??null,'enable'=>!empty($sub['enable'])&&$sub['enable']=='on']);
+                    \App\Models\Translation\CategoryTranslation::updateOrCreate(['category_id'=>$check->id,'locale'=>mb_strtolower($locale)],['title'=>$sub['title'],'subtitle'=>$sub['subtitle']??null,'bottom_seo_title'=>$sub['bottom_seo_title']??null,'bottom_seo_content'=>$sub['bottom_seo_content']??null]);
+                }else{
+                    $new=\App\Models\Category::create(['parent_id'=>$category->id,'slug'=>$slug,'order'=>$order,'icon'=>$sub['icon']??null,'cover_image'=>$sub['cover_image']??null,'icon2'=>$sub['icon2']??null,'icon2_box_color'=>$sub['icon2_box_color']??null,'overlay_image'=>$sub['overlay_image']??null,'enable'=>!empty($sub['enable'])&&$sub['enable']=='on']);
+                    \App\Models\Translation\CategoryTranslation::updateOrCreate(['category_id'=>$new->id,'locale'=>mb_strtolower($locale)],['title'=>$sub['title'],'subtitle'=>$sub['subtitle']??null,'bottom_seo_title'=>$sub['bottom_seo_title']??null,'bottom_seo_content'=>$sub['bottom_seo_content']??null]);
+                    $oldIds[]=$new->id;
+                }
+                $order++;
+            }
+        }
+        \App\Models\Category::where('parent_id',$category->id)->whereNotIn('id',$oldIds)->delete(); return true;
+    }
+
+    // ===== Filters — parity Admin\FilterController =====
+    public function filtersList(Request $request){ $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user; $q=\App\Models\Filter::with('category')->orderBy('id','desc'); $p=$q->paginate(15)->withQueryString(); return $this->renderAdmin($request,'panel_v1.admin.pages.education.section-real','الفلاتر',array_merge(AdminMockData::shell('education','departments'),['filters'=>$p,'paginator'=>$p,'stubTitle'=>'الفلاتر'])); }
+    public function createFilter(Request $request){ $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user; $cats=\App\Models\Category::getCategories(); return $this->renderAdmin($request,'panel_v1.admin.pages.education.filter-form','فلتر جديد',array_merge(AdminMockData::shell('education','departments'),['categories'=>$cats,'filter'=>null,'filterOptions'=>collect(),'formAction'=>route('panel.v1.admin.education.filters.store')])); }
+    public function storeFilter(Request $request){ $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user; $request->validate(['title'=>'required|min:3|max:128','category_id'=>'required|exists:categories,id']); $data=$request->all(); $filter=\App\Models\Filter::create(['category_id'=>$data['category_id']]); \App\Models\Translation\FilterTranslation::updateOrCreate(['filter_id'=>$filter->id,'locale'=>mb_strtolower($data['locale']??app()->getLocale())],['title'=>$data['title']]); $this->setFilterOptions($filter,$data['sub_filters']??[],$data['locale']??app()->getLocale()); return redirect()->route('panel.v1.admin.education.filters.edit',['id'=>$filter->id])->with('toast',['title'=>'تم','msg'=>'تم إنشاء الفلتر','type'=>'success']); }
+    public function editFilter(Request $request,int $id){ $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user; $filter=\App\Models\Filter::findOrFail($id); $cats=\App\Models\Category::getCategories(); $opts=\App\Models\FilterOption::where('filter_id',$filter->id)->orderBy('order')->get(); return $this->renderAdmin($request,'panel_v1.admin.pages.education.filter-form','تعديل فلتر',array_merge(AdminMockData::shell('education','departments'),['categories'=>$cats,'filter'=>$filter,'filterOptions'=>$opts,'formAction'=>route('panel.v1.admin.education.filters.update',['id'=>$filter->id])])); }
+    public function updateFilter(Request $request,int $id){ $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user; $request->validate(['title'=>'required|min:3|max:128','category_id'=>'required|exists:categories,id']); $data=$request->all(); $filter=\App\Models\Filter::findOrFail($id); $filter->update(['category_id'=>$data['category_id']]); \App\Models\Translation\FilterTranslation::updateOrCreate(['filter_id'=>$filter->id,'locale'=>mb_strtolower($data['locale']??app()->getLocale())],['title'=>$data['title']]); $this->setFilterOptions($filter,$data['sub_filters']??[],$data['locale']??app()->getLocale()); return redirect()->route('panel.v1.admin.education.filters.edit',['id'=>$filter->id])->with('toast',['title'=>'تم','msg'=>'تم التحديث','type'=>'success']); }
+    public function deleteFilter(Request $request,int $id){ $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user; \App\Models\Filter::where('id',$id)->delete(); return back()->with('toast',['title'=>'تم','msg'=>'تم الحذف','type'=>'success']); }
+    private function setFilterOptions(\App\Models\Filter $filter,$filterOptions,$locale){ $allIds=$filter->options->pluck('id')->toArray(); if(!empty($filterOptions)&&count($filterOptions)){ $order=1; foreach($filterOptions as $key=>$opt){ if(empty($opt['title'])) continue; $old=\App\Models\FilterOption::where('filter_id',$filter->id)->where('id',$key)->first(); if(!empty($old)){ $idx=array_search($key,$allIds); if($idx!==false) unset($allIds[$idx]); $old->update(['order'=>$order]); \App\Models\Translation\FilterOptionTranslation::updateOrCreate(['filter_option_id'=>$old->id,'locale'=>mb_strtolower($locale)],['title'=>$opt['title']]); }else{ $o=\App\Models\FilterOption::create(['filter_id'=>$filter->id,'order'=>$order]); \App\Models\Translation\FilterOptionTranslation::updateOrCreate(['filter_option_id'=>$o->id,'locale'=>mb_strtolower($locale)],['title'=>$opt['title']]); } $order++; } } if(!empty($allIds)) \App\Models\FilterOption::whereIn('id',$allIds)->delete(); }
+
+    // ===== Trend Categories — parity Admin\TrendCategoriesController =====
+    public function trendCategoriesList(Request $request){ $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user; $q=\App\Models\TrendCategory::with('category')->orderBy('created_at','desc'); $p=$q->paginate(15)->withQueryString(); return $this->renderAdmin($request,'panel_v1.admin.pages.education.section-real','التصنيفات الرائجة',array_merge(AdminMockData::shell('education','departments'),['trends'=>$p,'paginator'=>$p,'stubTitle'=>'التصنيفات الرائجة'])); }
+    public function createTrendCategory(Request $request){ $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user; $cats=\App\Models\Category::getCategories(); return $this->renderAdmin($request,'panel_v1.admin.pages.education.trend-form','تصنيف رائج جديد',array_merge(AdminMockData::shell('education','departments'),['categories'=>$cats,'trend'=>null,'formAction'=>route('panel.v1.admin.education.trends.store')])); }
+    public function storeTrendCategory(Request $request){ $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user; $request->validate(['category_id'=>'required','icon'=>'required','color'=>'required']); $data=$request->all(); \App\Models\TrendCategory::create(['category_id'=>$data['category_id'],'icon'=>$data['icon'],'color'=>$data['color'],'created_at'=>time()]); return redirect()->route('panel.v1.admin.education.trends.list')->with('toast',['title'=>'تم','msg'=>'تم الإنشاء','type'=>'success']); }
+    public function editTrendCategory(Request $request,int $id){ $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user; $trend=\App\Models\TrendCategory::findOrFail($id); $cats=\App\Models\Category::getCategories(); return $this->renderAdmin($request,'panel_v1.admin.pages.education.trend-form','تعديل تصنيف رائج',array_merge(AdminMockData::shell('education','departments'),['categories'=>$cats,'trend'=>$trend,'formAction'=>route('panel.v1.admin.education.trends.update',['id'=>$trend->id])])); }
+    public function updateTrendCategory(Request $request,int $id){ $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user; $request->validate(['category_id'=>'required','icon'=>'required','color'=>'required']); $data=$request->all(); $t=\App\Models\TrendCategory::findOrFail($id); $t->update(['category_id'=>$data['category_id'],'icon'=>$data['icon'],'color'=>$data['color']]); return redirect()->route('panel.v1.admin.education.trends.list')->with('toast',['title'=>'تم','msg'=>'تم التحديث','type'=>'success']); }
+    public function deleteTrendCategory(Request $request,int $id){ $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user; \App\Models\TrendCategory::where('id',$id)->delete(); return back()->with('toast',['title'=>'تم','msg'=>'تم الحذف','type'=>'success']); }
 
     // ===== دورات — منطق حرفي مستند لـ Admin\WebinarController (قابل للاستخدام) =====
     public function createCourse(Request $request)
@@ -730,11 +826,52 @@ class EducationController extends AdminController
         return back()->with('toast',['title'=>'تم','msg'=>'تم حذف المراجعة','type'=>'success']);
     }
 
-    // ===== شهادات — حذف =====
+    // ===== شهادات — حذف + قوالب (parity مع Admin\CertificateController) =====
     public function deleteCertificate(Request $request,int $id){
         $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
         \App\Models\Certificate::where('id',$id)->delete();
         return back()->with('toast',['title'=>'تم','msg'=>'تم حذف الشهادة','type'=>'success']);
+    }
+    public function createCertificateTemplate(Request $request){
+        $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
+        return $this->renderAdmin($request,'panel_v1.admin.pages.education.certificate-template-form','إنشاء قالب شهادة',array_merge(AdminMockData::shell('education','certificates'),[
+            'template'=>null,'formAction'=>route('panel.v1.admin.education.certificates.templates.store'),
+        ]));
+    }
+    public function storeCertificateTemplate(Request $request){
+        $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
+        $request->validate(['title'=>'required|string|max:255','image'=>'required|string|max:1000','type'=>'required|in:quiz,course,bundle']);
+        $data=$request->all();
+        $tmpl=\App\Models\CertificateTemplate::create([
+            'image'=>$data['image'],'status'=>$data['status'] ?? 'draft','type'=>$data['type'],'created_at'=>time(),
+        ]);
+        \App\Models\Translation\CertificateTemplateTranslation::updateOrCreate([
+            'certificate_template_id'=>$tmpl->id,'locale'=>mb_strtolower($data['locale'] ?? app()->getLocale()),
+        ],['title'=>$data['title'],'body'=>$data['template_contents'] ?? $data['title']]);
+        return redirect()->route('panel.v1.admin.education.section',['section'=>'certificates'])->with('toast',['title'=>'تم','msg'=>'تم إنشاء القالب','type'=>'success']);
+    }
+    public function editCertificateTemplate(Request $request,int $id){
+        $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
+        $tmpl=\App\Models\CertificateTemplate::findOrFail($id);
+        return $this->renderAdmin($request,'panel_v1.admin.pages.education.certificate-template-form','تعديل قالب',array_merge(AdminMockData::shell('education','certificates'),[
+            'template'=>$tmpl,'formAction'=>route('panel.v1.admin.education.certificates.templates.update',['id'=>$tmpl->id]),
+        ]));
+    }
+    public function updateCertificateTemplate(Request $request,int $id){
+        $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
+        $tmpl=\App\Models\CertificateTemplate::findOrFail($id);
+        $request->validate(['title'=>'required|string|max:255','image'=>'required|string|max:1000','type'=>'required|in:quiz,course,bundle']);
+        $data=$request->all();
+        $tmpl->update(['image'=>$data['image'],'status'=>$data['status'] ?? $tmpl->status,'type'=>$data['type']]);
+        \App\Models\Translation\CertificateTemplateTranslation::updateOrCreate([
+            'certificate_template_id'=>$tmpl->id,'locale'=>mb_strtolower($data['locale'] ?? app()->getLocale()),
+        ],['title'=>$data['title'],'body'=>$data['template_contents'] ?? $data['title']]);
+        return redirect()->route('panel.v1.admin.education.section',['section'=>'certificates'])->with('toast',['title'=>'تم','msg'=>'تم تحديث القالب','type'=>'success']);
+    }
+    public function deleteCertificateTemplate(Request $request,int $id){
+        $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
+        \App\Models\CertificateTemplate::where('id',$id)->delete();
+        return back()->with('toast',['title'=>'تم','msg'=>'تم حذف القالب','type'=>'success']);
     }
 
     // ===== عام — حذف لكل جداول التعليم المتبقية =====
@@ -928,4 +1065,48 @@ class EducationController extends AdminController
             }
         }
     }
+
+    // ===== Quiz Results — parity Admin\QuizResultsController =====
+    public function quizResults(Request $request,int $quizId){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $results=\App\Models\QuizzesResult::where('quiz_id',$quizId)->with(['quiz.teacher','user'])->orderBy('created_at','desc')->paginate(15)->withQueryString(); return $this->renderAdmin($request,'panel_v1.admin.pages.education.section-real','نتائج الاختبار #'.$quizId,array_merge(AdminMockData::shell('education','quizzes'),['quizzesResults'=>$results,'paginator'=>$results,'quiz_id'=>$quizId,'stubTitle'=>'نتائج الاختبار'])); }
+    public function quizResultReview(Request $request,int $quizId,int $resultId){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $qr=\App\Models\QuizzesResult::where('id',$resultId)->where('quiz_id',$quizId)->with(['quiz.quizQuestions','quiz.webinar'])->firstOrFail(); return $this->renderAdmin($request,'panel_v1.admin.pages.education.quiz-result-review','مراجعة النتيجة',array_merge(AdminMockData::shell('education','quizzes'),['quiz'=>$qr->quiz,'quizResult'=>$qr,'userAnswers'=>json_decode($qr->results,true)])); }
+    public function quizResultUpdate(Request $request,int $quizId,int $resultId){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $qr=\App\Models\QuizzesResult::where('id',$resultId)->where('quiz_id',$quizId)->with(['quiz.quizQuestions','quiz.webinar'])->firstOrFail(); $reviews=$request->get('question',[]); $old=json_decode($qr->results,true); $grade=$qr->user_grade; if(!empty($old)&&!empty($reviews)){ foreach($old as $qid=>$res){ if(isset($reviews[$qid])){ $q=\App\Models\QuizzesQuestion::where('id',$qid)->where('quiz_id',$quizId)->first(); if($q&&$q->type=='descriptive'){ $old[$qid]['status']=true; $old[$qid]['grade']=$reviews[$qid]['grade']??$q->grade; } } } $grade=array_sum(array_map(fn($r)=>isset($r['grade'])?(int)$r['grade']:0,$old)); } $qr->user_grade=$grade; $qr->status=$grade>=($qr->quiz->pass_mark??0)?\App\Models\QuizzesResult::$passed:\App\Models\QuizzesResult::$failed; $qr->results=json_encode($old); $qr->save(); if($qr->status==\App\Models\QuizzesResult::$passed){ $reward=\App\Models\RewardAccounting::calculateScore(\App\Models\Reward::PASS_THE_QUIZ); \App\Models\RewardAccounting::makeRewardAccounting($qr->user_id,$reward,\App\Models\Reward::PASS_THE_QUIZ,$qr->id,true); } return redirect()->route('panel.v1.admin.education.quiz-results',['quizId'=>$quizId])->with('toast',['title'=>'تم','msg'=>'تم تحديث النتيجة','type'=>'success']); }
+    public function quizResultDelete(Request $request,int $quizId,int $resultId){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; \App\Models\QuizzesResult::where('id',$resultId)->where('quiz_id',$quizId)->delete(); return back()->with('toast',['title'=>'تم','msg'=>'تم الحذف','type'=>'success']); }
+    public function quizResultsExport(Request $request,int $quizId){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $results=\App\Models\QuizzesResult::where('quiz_id',$quizId)->with(['quiz.teacher','user'])->orderBy('created_at','desc')->get(); return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\QuizResultsExport($results),'quiz_'.$quizId.'_results.xlsx'); }
+
+    // ===== Enrollment — parity Admin\EnrollmentController =====
+    public function enrollmentHistory(Request $request){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $q=\App\Models\Sale::whereNotNull('webinar_id'); $from=$request->get('from'); $to=$request->get('to'); $q=fromAndToDateFilter($from,$to,$q,'created_at'); if($s=$request->get('search')) $q->where('id',$s); $p=$q->with(['buyer','webinar'])->orderBy('created_at','desc')->paginate(15)->withQueryString(); return $this->renderAdmin($request,'panel_v1.admin.pages.education.section-real','سجل التسجيل',array_merge(AdminMockData::shell('education','courses'),['sales'=>$p,'paginator'=>$p,'stubTitle'=>'سجل التسجيل'])); }
+    public function enrollmentAddStudentForm(Request $request){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; return $this->renderAdmin($request,'panel_v1.admin.pages.education.enrollment-form','إضافة طالب لدورة',array_merge(AdminMockData::shell('education','courses'),['formAction'=>route('panel.v1.admin.education.enrollment.store')])); }
+    public function enrollmentStore(Request $request){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $data=$request->all(); $request->validate(['user_id'=>'required|exists:users,id']); $user=\App\User::find($data['user_id']); $sellerId=null; $itemId=null; $itemCol=null; $type=null; $product=null; if(!empty($data['webinar_id'])){ $c=\App\Models\Webinar::find($data['webinar_id']); if($c){ $sellerId=$c->creator_id; $itemId=$c->id; $type=\App\Models\Sale::$webinar; $itemCol='webinar_id'; } }elseif(!empty($data['bundle_id'])){ $b=\App\Models\Bundle::find($data['bundle_id']); if($b){ $sellerId=$b->creator_id; $itemId=$b->id; $type=\App\Models\Sale::$bundle; $itemCol='bundle_id'; } }elseif(!empty($data['product_id'])){ $product=\App\Models\Product::find($data['product_id']); if($product){ $sellerId=$product->creator_id; $itemCol='product_order_id'; $type=\App\Models\Sale::$product; $po=\App\Models\ProductOrder::create(['product_id'=>$product->id,'seller_id'=>$product->creator_id,'buyer_id'=>$user->id,'quantity'=>1,'status'=>'pending','created_at'=>time()]); $itemId=$po->id; } } if(!empty($type)&&!empty($itemId)){ $sale=\App\Models\Sale::create(['buyer_id'=>$user->id,'seller_id'=>$sellerId,$itemCol=>$itemId,'type'=>$type,'manual_added'=>true,'payment_method'=>\App\Models\Sale::$credit,'amount'=>0,'total_amount'=>0,'created_at'=>time()]); if(!empty($product)&&!empty($po)) $po->update(['sale_id'=>$sale->id]); return redirect()->route('panel.v1.admin.education.enrollment.history')->with('toast',['title'=>'تم','msg'=>'تمت الإضافة','type'=>'success']); } return back()->withErrors(['user_id'=>[trans('update.something_went_wrong')]]); }
+    public function enrollmentBlock(Request $request,int $saleId){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $sale=\App\Models\Sale::where('id',$saleId)->whereNull('refund_at')->firstOrFail(); if($sale->manual_added) $sale->delete(); else $sale->update(['access_to_purchased_item'=>false]); return back()->with('toast',['title'=>'تم','msg'=>'تم الحظر','type'=>'success']); }
+    public function enrollmentEnable(Request $request,int $saleId){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; \App\Models\Sale::where('id',$saleId)->whereNull('refund_at')->firstOrFail()->update(['access_to_purchased_item'=>true]); return back()->with('toast',['title'=>'تم','msg'=>'تم التفعيل','type'=>'success']); }
+
+    // ===== Upcoming Courses — parity Admin\UpcomingCoursesController =====
+    public function upcomingList(Request $request){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $q=\App\Models\UpcomingCourse::query(); $q=fromAndToDateFilter($request->get('from'),$request->get('to'),$q,'created_at'); if($t=$request->get('title')) $q->whereTranslationLike('title',"%$t%"); if($c=$request->get('category_id')) $q->where('category_id',$c); $p=$q->withCount('followers')->with('teacher')->orderBy('created_at','desc')->paginate(15)->withQueryString(); $cats=\App\Models\Category::getCategories(); return $this->renderAdmin($request,'panel_v1.admin.pages.education.section-real','الدورات القادمة',array_merge(AdminMockData::shell('education','courses'),['upcomingCourses'=>$p,'paginator'=>$p,'categories'=>$cats,'stubTitle'=>'الدورات القادمة'])); }
+    public function upcomingCreate(Request $request){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $teachers=\App\User::where('role_name',\App\Models\Role::$teacher)->get(); $cats=\App\Models\Category::getCategories(); return $this->renderAdmin($request,'panel_v1.admin.pages.education.upcoming-form','دورة قادمة جديدة',array_merge(AdminMockData::shell('education','courses'),['teachers'=>$teachers,'categories'=>$cats,'upcomingCourse'=>null,'formAction'=>route('panel.v1.admin.education.upcoming.store')])); }
+    public function upcomingStore(Request $request){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $request->validate(['type'=>'required|in:webinar,course,text_lesson','title'=>'required|max:255','thumbnail'=>'required','image_cover'=>'required','description'=>'required','teacher_id'=>'required|exists:users,id','category_id'=>'required|exists:categories,id','publish_date'=>'required','timezone'=>'required']); $data=$request->all(); $sd=convertTimeToUTCzone($data['publish_date'],$data['timezone']); $up=\App\Models\UpcomingCourse::create(['creator_id'=>$data['teacher_id'],'teacher_id'=>$data['teacher_id'],'category_id'=>$data['category_id'],'slug'=>!empty($data['slug'])?$data['slug']:\App\Models\UpcomingCourse::makeSlug($data['title']),'type'=>$data['type'],'thumbnail'=>$data['thumbnail'],'image_cover'=>$data['image_cover'],'publish_date'=>$sd->getTimestamp(),'timezone'=>$data['timezone'],'price'=>!empty($data['price'])?convertPriceToDefaultCurrency($data['price']):null,'status'=>\App\Models\UpcomingCourse::$pending,'created_at'=>time()]); \App\Models\Translation\UpcomingCourseTranslation::updateOrCreate(['upcoming_course_id'=>$up->id,'locale'=>mb_strtolower($data['locale']??app()->getLocale())],['title'=>$data['title'],'description'=>$data['description'],'seo_description'=>$data['seo_description']??null]); return redirect()->route('panel.v1.admin.education.upcoming.edit',['id'=>$up->id])->with('toast',['title'=>'تم','msg'=>'تم الإنشاء','type'=>'success']); }
+    public function upcomingEdit(Request $request,int $id){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $up=\App\Models\UpcomingCourse::where('id',$id)->with(['tags'])->firstOrFail(); $teachers=\App\User::where('role_name',\App\Models\Role::$teacher)->get(); $cats=\App\Models\Category::getCategories(); return $this->renderAdmin($request,'panel_v1.admin.pages.education.upcoming-form','تعديل دورة قادمة',array_merge(AdminMockData::shell('education','courses'),['teachers'=>$teachers,'categories'=>$cats,'upcomingCourse'=>$up,'formAction'=>route('panel.v1.admin.education.upcoming.update',['id'=>$up->id])])); }
+    public function upcomingUpdate(Request $request,int $id){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $up=\App\Models\UpcomingCourse::findOrFail($id); $request->validate(['type'=>'required|in:webinar,course,text_lesson','title'=>'required|max:255','thumbnail'=>'required','image_cover'=>'required','description'=>'required','teacher_id'=>'required|exists:users,id','category_id'=>'required|exists:categories,id','publish_date'=>'required','timezone'=>'required']); $data=$request->all(); $sd=convertTimeToUTCzone($data['publish_date'],$data['timezone']); $isDraft=!empty($data['draft'])&&$data['draft']=='1'; $reject=!empty($data['draft'])&&$data['draft']=='reject'; $publish=!empty($data['draft'])&&$data['draft']=='publish'; $status=$publish?\App\Models\UpcomingCourse::$active:($reject?\App\Models\UpcomingCourse::$inactive:($isDraft?\App\Models\UpcomingCourse::$isDraft:\App\Models\UpcomingCourse::$pending)); $up->update(['creator_id'=>$data['teacher_id'],'teacher_id'=>$data['teacher_id'],'category_id'=>$data['category_id'],'slug'=>!empty($data['slug'])?$data['slug']:\App\Models\UpcomingCourse::makeSlug($data['title']),'type'=>$data['type'],'thumbnail'=>$data['thumbnail'],'image_cover'=>$data['image_cover'],'publish_date'=>$sd->getTimestamp(),'timezone'=>$data['timezone'],'price'=>!empty($data['price'])?convertPriceToDefaultCurrency($data['price']):null,'status'=>$status]); \App\Models\Translation\UpcomingCourseTranslation::updateOrCreate(['upcoming_course_id'=>$up->id,'locale'=>mb_strtolower($data['locale']??app()->getLocale())],['title'=>$data['title'],'description'=>$data['description'],'seo_description'=>$data['seo_description']??null]); return redirect()->route('panel.v1.admin.education.upcoming.edit',['id'=>$up->id])->with('toast',['title'=>'تم','msg'=>'تم التحديث','type'=>'success']); }
+    public function upcomingDelete(Request $request,int $id){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; \App\Models\UpcomingCourse::where('id',$id)->delete(); return back()->with('toast',['title'=>'تم','msg'=>'تم الحذف','type'=>'success']); }
+    public function upcomingApprove(Request $request,int $id){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $up=\App\Models\UpcomingCourse::findOrFail($id); $up->update(['status'=>\App\Models\UpcomingCourse::$active]); try{ sendNotification("upcoming_course_approved",['[item_title]'=>$up->title],$up->teacher_id); }catch(\Throwable $e){} return back()->with('toast',['title'=>'تم','msg'=>'تمت الموافقة','type'=>'success']); }
+    public function upcomingReject(Request $request,int $id){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; \App\Models\UpcomingCourse::findOrFail($id)->update(['status'=>\App\Models\UpcomingCourse::$inactive]); return back()->with('toast',['title'=>'تم','msg'=>'تم الرفض','type'=>'success']); }
+
+    // ===== Waitlist =====
+    public function waitlistIndex(Request $request){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $q=\App\Models\Webinar::where('enable_waitlist',true); $p=$q->paginate(15)->withQueryString(); foreach($p as $w){ $wq=\App\Models\Waitlist::where('webinar_id',$w->id); $w->members=$wq->count(); $w->registered_members=(clone $wq)->whereNotNull('user_id')->count(); } return $this->renderAdmin($request,'panel_v1.admin.pages.education.section-real','قوائم الانتظار',array_merge(AdminMockData::shell('education','courses'),['waitlists'=>$p,'paginator'=>$p,'stubTitle'=>'قوائم الانتظار'])); }
+    public function waitlistView(Request $request,int $webinarId){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $webinar=\App\Models\Webinar::findOrFail($webinarId); $q=\App\Models\Waitlist::where('webinar_id',$webinarId); $q=fromAndToDateFilter($request->get('from'),$request->get('to'),$q,'created_at'); if($s=$request->get('search')) $q->where('full_name','like',"%$s%"); $p=$q->orderBy('created_at','desc')->paginate(15)->withQueryString(); return $this->renderAdmin($request,'panel_v1.admin.pages.education.section-real','قائمة الانتظار: '.$webinar->title,array_merge(AdminMockData::shell('education','courses'),['waitlistItems'=>$p,'paginator'=>$p,'webinar'=>$webinar,'stubTitle'=>'قائمة الانتظار'])); }
+    public function waitlistDelete(Request $request,int $id){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; \App\Models\Waitlist::where('id',$id)->delete(); return back()->with('toast',['title'=>'تم','msg'=>'تم الحذف','type'=>'success']); }
+    public function waitlistDeleteAll(Request $request,int $webinarId){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; \App\Models\Waitlist::where('webinar_id',$webinarId)->delete(); return back()->with('toast',['title'=>'تم','msg'=>'تم الحذف','type'=>'success']); }
+
+    // ===== WebinarStatistic =====
+    public function webinarStatistic(Request $request){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $stats=['total'=>\App\Models\Webinar::count(),'active'=>\App\Models\Webinar::where('status','active')->count(),'pending'=>\App\Models\Webinar::where('status','pending')->count(),'draft'=>\App\Models\Webinar::where('status','is_draft')->count(),'sales'=>\App\Models\Sale::whereNotNull('webinar_id')->whereNull('refund_at')->sum('total_amount')]; return $this->renderAdmin($request,'panel_v1.admin.pages.education.section-real','إحصائيات الدورات',array_merge(AdminMockData::shell('education','home'),['stats'=>$stats,'stubTitle'=>'الإحصائيات'])); }
+
+    // ===== Related Courses =====
+    public function relatedCourses(Request $request,int $itemId){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $q=\App\Models\RelatedCourse::where('targetable_id',$itemId)->orderBy('id','desc'); $p=$q->paginate(15)->withQueryString(); return $this->renderAdmin($request,'panel_v1.admin.pages.education.section-real','دورات ذات صلة #'.$itemId,array_merge(AdminMockData::shell('education','courses'),['relatedCourses'=>$p,'paginator'=>$p,'stubTitle'=>'دورات ذات صلة'])); }
+    public function storeRelatedCourse(Request $request){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $request->validate(['item_id'=>'required','item_type'=>'required|in:webinar,bundle,product,upcomingCourse,event','course_id'=>'required|exists:webinars,id']); $data=$request->all(); $map=['webinar'=>'App\Models\Webinar','bundle'=>'App\Models\Bundle','product'=>'App\Models\Product','upcomingCourse'=>'App\Models\UpcomingCourse','event'=>'App\Models\Event']; $type=$map[$data['item_type']]; \App\Models\RelatedCourse::updateOrCreate(['targetable_id'=>$data['item_id'],'targetable_type'=>$type,'course_id'=>$data['course_id']],['order'=>null]); return back()->with('toast',['title'=>'تم','msg'=>'تم الحفظ','type'=>'success']); }
+    public function deleteRelatedCourse(Request $request,int $id){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; \App\Models\RelatedCourse::where('id',$id)->delete(); return back()->with('toast',['title'=>'تم','msg'=>'تم الحذف','type'=>'success']); }
+
+    // ===== Noticeboard =====
+    public function noticeboardList(Request $request){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $q=\App\Models\Noticeboard::orderBy('created_at','desc'); $p=$q->paginate(15)->withQueryString(); return $this->renderAdmin($request,'panel_v1.admin.pages.education.section-real','لوح الإعلانات',array_merge(AdminMockData::shell('education','courses'),['noticeboards'=>$p,'paginator'=>$p,'stubTitle'=>'لوح الإعلانات'])); }
+    public function noticeboardCreate(Request $request){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; return $this->renderAdmin($request,'panel_v1.admin.pages.education.noticeboard-form','إعلان جديد',array_merge(AdminMockData::shell('education','courses'),['formAction'=>route('panel.v1.admin.education.noticeboard.store')])); }
+    public function noticeboardStore(Request $request){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $request->validate(['title'=>'required','type'=>'required','message'=>'required']); $data=$request->all(); \App\Models\Noticeboard::create(['organ_id'=>null,'type'=>$data['type'],'sender'=>'Staff','sender_id'=>auth()->id(),'sender_type'=>'platform','title'=>$data['title'],'message'=>$data['message'],'created_at'=>time()]); return redirect()->route('panel.v1.admin.education.noticeboard.list')->with('toast',['title'=>'تم','msg'=>'تم الإرسال','type'=>'success']); }
+    public function noticeboardDelete(Request $request,int $id){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; \App\Models\Noticeboard::where('id',$id)->delete(); return back()->with('toast',['title'=>'تم','msg'=>'تم الحذف','type'=>'success']); }
 }

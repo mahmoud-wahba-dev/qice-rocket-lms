@@ -1326,14 +1326,25 @@ class InstructorController extends Controller
     {
         $user = $request->user();
         $webinarIds = $user ? $this->teacherWebinars($user)->pluck('id')->all() : [];
+        $quizIds = !empty($webinarIds) ? \App\Models\Quiz::whereIn('webinar_id', $webinarIds)->pluck('id')->all() : [];
 
-        $issued = !empty($webinarIds)
-            ? \App\Models\Certificate::with(['student', 'webinar'])
-                ->whereIn('webinar_id', $webinarIds)
-                ->orderBy('id', 'desc')
-                ->limit(30)
-                ->get()
+        // All certificates belonging to instructor: course via webinar_id OR quiz via quiz_id
+        $issuedCourse = !empty($webinarIds)
+            ? \App\Models\Certificate::with(['student', 'webinar', 'quiz.webinar'])
+                ->where('type', 'course')->whereIn('webinar_id', $webinarIds)
+                ->orderBy('id', 'desc')->limit(30)->get()
             : collect();
+        $issuedQuiz = !empty($quizIds)
+            ? \App\Models\Certificate::with(['student', 'quiz.webinar'])
+                ->where('type', 'quiz')->whereIn('quiz_id', $quizIds)
+                ->orderBy('id', 'desc')->limit(30)->get()
+            : collect();
+        $issuedBundle = !empty($webinarIds) ? collect() : collect(); // bundle certificates tied via bundle_id owned by teacher if needed
+        $issued = $issuedCourse->merge($issuedQuiz)->sortByDesc('id')->values()->take(30);
+
+        $courseCertCount = \App\Models\Certificate::where('type', 'course')->when(!empty($webinarIds), fn($q) => $q->whereIn('webinar_id', $webinarIds))->count();
+        $quizCertCount = \App\Models\Certificate::where('type', 'quiz')->when(!empty($quizIds), fn($q) => $q->whereIn('quiz_id', $quizIds))->count();
+        $templatesCount = \App\Models\CertificateTemplate::where('status', 'publish')->count();
 
         $completionRows = !empty($webinarIds)
             ? \App\Models\Webinar::whereIn('id', $webinarIds)
@@ -1341,8 +1352,8 @@ class InstructorController extends Controller
                 ->limit(20)
                 ->get()
                 ->map(function ($webinar) {
-                    $generated = \App\Models\Certificate::where('webinar_id', $webinar->id)->count();
-                    $last = \App\Models\Certificate::where('webinar_id', $webinar->id)->orderBy('id', 'desc')->first();
+                    $generated = \App\Models\Certificate::where('type', 'course')->where('webinar_id', $webinar->id)->count();
+                    $last = \App\Models\Certificate::where('type', 'course')->where('webinar_id', $webinar->id)->orderBy('id', 'desc')->first();
                     return [
                         'title' => $webinar->title,
                         'course' => $webinar->category->title ?? '',
@@ -1352,22 +1363,52 @@ class InstructorController extends Controller
                 })->all()
             : [];
 
+        $examRows = !empty($quizIds)
+            ? \App\Models\Quiz::with(['webinar'])
+                ->whereIn('id', $quizIds)
+                ->orderBy('id', 'desc')
+                ->limit(20)
+                ->get()
+                ->map(function ($quiz) {
+                    $generated = \App\Models\Certificate::where('type', 'quiz')->where('quiz_id', $quiz->id)->count();
+                    $last = \App\Models\Certificate::where('type', 'quiz')->where('quiz_id', $quiz->id)->orderBy('id', 'desc')->first();
+                    return [
+                        'title' => $quiz->title,
+                        'course' => $quiz->webinar->title ?? '',
+                        'generated' => $generated,
+                        'last_at' => $last ? date('Y/m/d', (int) $last->created_at) : '—',
+                    ];
+                })->all()
+            : [];
+
+        $recentCertificates = $issued->take(8)->map(function ($certificate) {
+            $isQuiz = $certificate->type === 'quiz';
+            $webinar = $isQuiz ? ($certificate->quiz->webinar ?? null) : $certificate->webinar;
+            $title = $isQuiz ? ($certificate->quiz->title ?? 'اختبار') : ($webinar->title ?? 'شهادة');
+            return [
+                'title' => $title,
+                'student' => $certificate->student->full_name ?? '',
+                'preview' => $webinar->thumbnail ?? null,
+                'type' => $isQuiz ? 'اختبار' : 'إتمام دورة',
+                'date' => !empty($certificate->created_at) ? date('Y/m/d', (int) $certificate->created_at) : '',
+                'validation_url' => url('/certificate_validation?certificate_id=' . $certificate->id),
+            ];
+        })->all();
+
         return $this->render(
             $request,
             'panel_v1.instructor.pages.certificates',
             'إدارة الشهادات',
             [
                 'certificateStats' => [
-                    ['value' => (string) $issued->count(), 'label' => 'شهادات مصدرة'],
-                    ['value' => (string) count($webinarIds), 'label' => 'دورات'],
+                    ['value' => (string) $issuedCourse->count() + $issuedQuiz->count(), 'label' => 'إجمالي الشهادات الصادرة'],
+                    ['value' => (string) $courseCertCount, 'label' => 'شهادات الإتمام'],
+                    ['value' => (string) $quizCertCount, 'label' => 'شهادات الاختبارات'],
+                    ['value' => (string) $templatesCount, 'label' => 'القوالب المنشأة'],
                 ],
-                'recentCertificates' => $issued->take(8)->map(function ($certificate) {
-                    return [
-                        'title' => $certificate->webinar->title ?? '',
-                        'student' => $certificate->student->full_name ?? '',
-                    ];
-                })->all(),
+                'recentCertificates' => $recentCertificates,
                 'completionRows' => $completionRows,
+                'examRows' => $examRows,
             ]
         );
     }
