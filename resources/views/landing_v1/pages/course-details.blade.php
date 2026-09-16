@@ -191,7 +191,7 @@
 
                                                     @foreach($chapter->textLessons as $textLesson)
                                                     <li class="flex items-center gap-3 text-16px text-primary/90 font-medium">
-                                                        <span class="icon-[tabler--book-open] text-primary size-5 shrink-0"></span>
+                                                        <span class="icon-[tabler--book-2] text-primary size-5 shrink-0"></span>
                                                         <span class="flex-grow">{{ $textLesson->title }}</span>
                                                         <span class="text-12px bg-emerald-500/10 text-emerald-600 px-2.5 py-0.5 rounded-full">{{ trans('public.text_lesson') }}</span>
                                                     </li>
