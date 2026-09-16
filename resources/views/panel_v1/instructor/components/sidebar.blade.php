@@ -13,7 +13,7 @@
                 ['label' => 'الدورات', 'icon' => 'icon-[tabler--book]', 'route' => 'panel.v1.instructor.courses', 'active' => $is('panel.v1.instructor.courses') || $is('panel.v1.instructor.courses.*')],
                 ['label' => 'حزم الدورات والباقات', 'icon' => 'icon-[tabler--package]', 'route' => 'panel.v1.instructor.bundles', 'active' => $is('panel.v1.instructor.bundles') || $is('panel.v1.instructor.bundles.*')],
                 ['label' => 'الجلسات الاستشارية', 'icon' => 'icon-[tabler--video]', 'route' => 'panel.v1.instructor.consultations', 'active' => $is('panel.v1.instructor.consultations')],
-                ['label' => 'تقويم الأحداث', 'icon' => 'icon-[tabler--calendar]', 'href' => '#', 'active' => false],
+                ['label' => 'تقويم الأحداث', 'icon' => 'icon-[tabler--calendar]', 'route' => 'panel.v1.instructor.calendar', 'active' => $is('panel.v1.instructor.calendar')],
             ],
         ],
         [
@@ -21,7 +21,7 @@
             'items' => [
                 ['label' => 'التكليفات', 'icon' => 'icon-[tabler--clipboard-list]', 'route' => 'panel.v1.instructor.assignments', 'active' => $is('panel.v1.instructor.assignments') || $is('panel.v1.instructor.assignments.review')],
                 ['label' => 'الاختبارات', 'icon' => 'icon-[tabler--file-check]', 'route' => 'panel.v1.instructor.quizzes', 'active' => $is('panel.v1.instructor.quizzes') || $is('panel.v1.instructor.quizzes.*')],
-                ['label' => 'تعليقات الدورات', 'icon' => 'icon-[tabler--message]', 'href' => '#', 'active' => false],
+                ['label' => 'تعليقات الدورات', 'icon' => 'icon-[tabler--message]', 'route' => 'panel.v1.instructor.comments', 'active' => $is('panel.v1.instructor.comments') || $is('panel.v1.instructor.comments.*')],
                 ['label' => 'قائمة الطلاب', 'icon' => 'icon-[tabler--users]', 'route' => 'panel.v1.instructor.students', 'active' => $is('panel.v1.instructor.students')],
                 ['label' => 'الشهادات', 'icon' => 'icon-[tabler--certificate]', 'route' => 'panel.v1.instructor.certificates', 'active' => $is('panel.v1.instructor.certificates')],
             ],
@@ -39,7 +39,6 @@
             'items' => [
                 ['label' => 'الإعدادات', 'icon' => 'icon-[tabler--settings]', 'route' => 'panel.v1.instructor.settings', 'active' => $is('panel.v1.instructor.settings')],
                 ['label' => 'المساعدة والدعم', 'icon' => 'icon-[tabler--help-circle]', 'route' => 'panel.v1.instructor.support', 'active' => $is('panel.v1.instructor.support')],
-                ['label' => 'اللوحة القديمة', 'icon' => 'icon-[tabler--layout-dashboard]', 'href' => '/panel', 'active' => false],
                 ['label' => 'تسجيل الخروج', 'icon' => 'icon-[tabler--logout]', 'href' => '/logout', 'active' => false, 'danger' => true],
             ],
         ],

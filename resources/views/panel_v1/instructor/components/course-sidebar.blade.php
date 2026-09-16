@@ -48,7 +48,7 @@
                     aria-expanded="{{ $isExpanded ? 'true' : 'false' }}">
                     <span class="flex items-start gap-3 min-w-0">
                         @if ($isCompleted)
-                            <span class="size-7 rounded-full bg-[#0FC787] center shrink-0 mt-0.5">
+                            <span class="size-7 rounded-full bg-primary center shrink-0 mt-0.5">
                                 <span class="icon-[tabler--check] size-4 text-white"></span>
                             </span>
                         @else
@@ -71,29 +71,35 @@
                 <div class="{{ $isExpanded ? '' : 'hidden' }} px-4 pb-4" data-course-accordion-panel>
                     <div class="relative ms-3 ps-6 space-y-1">
                         <span class="pointer-events-none absolute top-3 bottom-3 start-[0.35rem] w-px bg-d9" aria-hidden="true"></span>
-                        @foreach ($chapter['items'] ?? [] as $item)
+                        @forelse ($chapter['items'] ?? [] as $item)
                             @php
                                 $isActive = !empty($item['active']);
-                                $itemRoute = $item['route'] ?? 'panel.v1.instructor.courses.watch';
-                                $itemHref = route($itemRoute, ['slug' => $courseSlug]);
+                                $itemDone = !empty($item['completed']);
+                                $itemHref = $item['url']
+                                    ?? route($item['route'] ?? 'panel.v1.instructor.courses.watch', ['slug' => $courseSlug]);
                                 $type = $item['type'] ?? 'video';
                             @endphp
                             <a href="{{ $itemHref }}"
                                 class="relative flex items-center gap-3 py-2.5 font-medium text-14px rounded-8px px-1 -mx-1 transition
-                                    {{ $isActive ? 'text-primary font-semibold' : 'text-black hover:text-primary' }}">
+                                    {{ $isActive ? 'text-primary font-bold' : ($itemDone ? 'text-primary/80' : 'text-black hover:text-primary') }}">
                                 <span class="absolute -start-[1.4rem] top-1/2 -translate-y-1/2 size-3 rounded-full border-2 border-[#FAF8F4] shrink-0
-                                        {{ $isActive ? 'bg-primary' : 'bg-d9' }}"
+                                        {{ $itemDone ? 'bg-[#0FC787]' : ($isActive ? 'bg-primary' : 'bg-d9') }}"
                                     aria-hidden="true"></span>
                                 @if ($type === 'assignment')
-                                    <span class="icon-[tabler--clipboard-list] size-5 shrink-0"></span>
-                                @elseif ($type === 'text')
-                                    <span class="icon-[tabler--file-text] size-5 shrink-0"></span>
+                                    <span class="icon-[tabler--clipboard-list] size-5 shrink-0 {{ ($isActive || $itemDone) ? 'text-primary' : 'text-black' }}"></span>
+                                @elseif ($type === 'text' || $type === 'file')
+                                    <span class="icon-[tabler--file-text] size-5 shrink-0 {{ ($isActive || $itemDone) ? 'text-primary' : 'text-black' }}"></span>
                                 @else
-                                    <span class="icon-[tabler--player-play] size-5 shrink-0"></span>
+                                    <span class="icon-[tabler--player-play] size-5 shrink-0 {{ ($isActive || $itemDone) ? 'text-primary' : 'text-black' }}"></span>
                                 @endif
-                                <span class="leading-snug">{{ $item['title'] }}</span>
+                                <span class="leading-snug flex-1">{{ $item['title'] }}</span>
+                                @if ($itemDone)
+                                    <span class="icon-[tabler--circle-check-filled] size-4 text-[#0FC787] shrink-0" aria-label="مكتمل"></span>
+                                @endif
                             </a>
-                        @endforeach
+                        @empty
+                            <p class="font-medium text-13px text-gray py-2">لا يوجد محتوى بعد</p>
+                        @endforelse
                     </div>
                 </div>
             </div>

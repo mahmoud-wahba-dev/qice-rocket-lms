@@ -148,18 +148,25 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
             Route::get('/instructor/courses/{slug}/assignments', [InstructorController::class, 'courseAssignments'])
                 ->name('instructor.courses.assignments');
             Route::get('/instructor/assignments', [InstructorController::class, 'assignments'])->name('instructor.assignments');
+            Route::post('/instructor/assignments', [InstructorController::class, 'storeAssignment'])
+                ->name('instructor.assignments.store');
             Route::get('/instructor/assignments/{id}/review', [InstructorController::class, 'assignmentReview'])
                 ->name('instructor.assignments.review');
             Route::post('/instructor/assignments/{id}/grade', [InstructorController::class, 'gradeAssignment'])
                 ->name('instructor.assignments.grade');
             Route::get('/instructor/consultations', [InstructorController::class, 'consultations'])
                 ->name('instructor.consultations');
+            Route::get('/instructor/calendar', [InstructorController::class, 'calendar'])
+                ->name('instructor.calendar');
             Route::get('/instructor/consultations/{id}', [InstructorController::class, 'consultationShow'])
                 ->whereNumber('id')
                 ->name('instructor.consultations.show');
             Route::get('/instructor/consultations/{id}/join', [InstructorController::class, 'consultationJoin'])
                 ->whereNumber('id')
                 ->name('instructor.consultations.join');
+            Route::post('/instructor/consultations/{id}/session', [InstructorController::class, 'consultationCreateSession'])
+                ->whereNumber('id')
+                ->name('instructor.consultations.session');
             Route::post('/instructor/consultations/{id}/finish', [InstructorController::class, 'consultationFinish'])
                 ->whereNumber('id')
                 ->name('instructor.consultations.finish');
@@ -185,6 +192,14 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 ->name('instructor.quiz-results.grade');
             Route::post('/instructor/quiz-results/{resultId}/grade', [InstructorController::class, 'storeQuizResultGrade'])
                 ->name('instructor.quiz-results.grade.store');
+            Route::get('/instructor/comments', [InstructorController::class, 'comments'])
+                ->name('instructor.comments');
+            Route::post('/instructor/comments/{id}/reply', [InstructorController::class, 'commentReply'])
+                ->whereNumber('id')
+                ->name('instructor.comments.reply');
+            Route::post('/instructor/comments/{id}/report', [InstructorController::class, 'commentReport'])
+                ->whereNumber('id')
+                ->name('instructor.comments.report');
             Route::get('/instructor/certificates', [InstructorController::class, 'certificates'])
                 ->name('instructor.certificates');
             Route::get('/instructor/finance', [InstructorController::class, 'finance'])

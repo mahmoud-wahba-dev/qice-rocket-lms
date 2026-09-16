@@ -1,7 +1,14 @@
 @extends('panel_v1.instructor.layouts.app')
 
 @section('content')
-@php $slug = $demoSlug ?? 'demo'; @endphp
+@php
+    $statusToneClass = [
+        'success' => 'bg-[#ECFDF5] text-[#059669]',
+        'warning' => 'bg-[#FFFBEB] text-[#D97706]',
+        'danger' => 'bg-[#FEF2F2] text-[#DC2626]',
+        'muted' => 'bg-[#F1F5F9] text-[#64748B]',
+    ];
+@endphp
 
 <div class="space-y-6 pb-8">
     @component('panel_v1.instructor.components.page-header', [
@@ -9,11 +16,12 @@
         'subtitle' => 'جميع الاختبارات والدرجات',
     ])
         @slot('actions')
-            <a href="#"
-                class="inline-flex items-center gap-2 rounded-12px border border-color2 px-5 h-12 font-semibold text-16px text-color2 hover:opacity-90 transition bg-white">
+            <a href="#q-panel-1"
+                class="inline-flex items-center gap-2 rounded-12px border border-color2 px-5 h-12 font-semibold text-16px text-color2 hover:opacity-90 transition bg-white"
+                onclick="document.querySelector('[data-v1-tab=&quot;#q-panel-1&quot;]')?.click()">
                 عرض جميع الاختبارات
             </a>
-            <a href="{{ route('panel.v1.instructor.quizzes.create') }}"
+            <a href="{{ $createQuizUrl ?? route('panel.v1.instructor.quizzes.create') }}"
                 class="inline-flex items-center gap-2 rounded-12px bg-color2 px-5 h-12 font-semibold text-16px text-white hover:opacity-95 transition">
                 <span class="icon-[tabler--plus] size-5"></span>
                 إضافة اختبار جديد
@@ -21,7 +29,6 @@
         @endslot
     @endcomponent
 
-    {{-- Stats --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
         @foreach ($quizStats ?? [] as $stat)
             <div class="rounded-14px bg-primary text-white px-5 py-5 center gap-4 min-h-[110px]">
@@ -34,40 +41,42 @@
         @endforeach
     </div>
 
-    {{-- Pending review --}}
     <div>
         <h2 class="font-semibold text-24px text-primary mb-1">اختبارات بانتظار المراجعة</h2>
         <p class="font-medium text-16px text-gray mb-4">
             لديك اختبارات بانتظار المراجعة، يرجى فحصها لحساب درجات الطلاب.
         </p>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            @foreach ($pendingQuizzes ?? [] as $item)
-                <a href="{{ route('panel.v1.instructor.quiz-results.grade', ['resultId' => $item['result_id']]) }}"
-                    class="rounded-14px border border-d9 bg-white p-5 shadow-sm cursor-pointer hover:border-primary/40 transition block">
-                    <div class="flex items-center justify-between gap-3 mb-4">
-                        <div class="flex items-center gap-2.5 min-w-0">
-                            <span class="size-10 rounded-full bg-primary/10 center shrink-0 overflow-hidden">
-                                <span class="font-bold text-14px text-primary">{{ mb_substr($item['name'], 0, 1) }}</span>
+        @if (empty($pendingQuizzes))
+            <div class="rounded-14px border border-d9 bg-white p-8 text-center">
+                <p class="font-semibold text-16px text-primary mb-1">لا توجد إجابات بانتظار التصحيح</p>
+                <p class="font-medium text-14px text-gray">ستظهر هنا محاولات الطلاب التي تحتوي أسئلة وصفية.</p>
+            </div>
+        @else
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                @foreach ($pendingQuizzes as $item)
+                    <a href="{{ $item['grade_url'] }}"
+                        class="rounded-14px border border-d9 bg-white p-5 shadow-sm cursor-pointer hover:border-primary/40 transition block">
+                        <div class="flex items-center justify-between gap-3 mb-4">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <span class="size-10 rounded-full bg-primary/10 center shrink-0 overflow-hidden">
+                                    <span class="font-bold text-14px text-primary">{{ mb_substr($item['name'], 0, 1) }}</span>
+                                </span>
+                                <span class="font-semibold text-16px text-primary truncate">{{ $item['name'] }}</span>
+                            </div>
+                            <span class="inline-flex shrink-0 rounded-full bg-[#FEF3C7] px-3 py-1 font-semibold text-12px text-[#B45309]">
+                                {{ $item['status'] }}
                             </span>
-                            <span class="font-semibold text-16px text-primary truncate">{{ $item['name'] }}</span>
                         </div>
-                        <span class="inline-flex shrink-0 rounded-full bg-[#FEF3C7] px-3 py-1 font-semibold text-12px text-[#B45309]">
-                            {{ $item['status'] }}
-                        </span>
-                    </div>
-
-                    <h3 class="font-semibold text-16px sm:text-17px text-primary leading-snug mb-1.5">
-                        {{ $item['title'] }}
-                    </h3>
-                    <p class="font-medium text-14px text-gray mb-3">{{ $item['course'] }}</p>
-                    <p class="font-medium text-13px text-gray">{{ $item['date'] }}</p>
-                </a>
-            @endforeach
-        </div>
+                        <h3 class="font-semibold text-16px sm:text-17px text-primary leading-snug mb-1.5">{{ $item['title'] }}</h3>
+                        <p class="font-medium text-14px text-gray mb-3">{{ $item['course'] }}</p>
+                        <p class="font-medium text-13px text-gray">{{ $item['date'] }}</p>
+                    </a>
+                @endforeach
+            </div>
+        @endif
     </div>
 
-    {{-- Tabs + tables --}}
     <div>
         <nav class="tabs tabs-bordered flex w-full overflow-x-auto mb-5 border-b border-d9" role="tablist">
             <button type="button"
@@ -80,28 +89,16 @@
 
         <div id="q-panel-1" class="hidden space-y-4" role="tabpanel">
             <div class="bg-white border border-d9 p-4 sm:p-5 rounded-14px">
-                <div class="flex flex-col lg:flex-row gap-3">
-                    <div class="relative flex-1">
-                        <span class="icon-[tabler--search] size-5 absolute top-1/2 start-3 -translate-y-1/2 text-gray"></span>
-                        <input type="search"
-                            placeholder="البحث عن طريق المعرّف أو اسم الدورة أو غير ذلك..."
-                            class="input input-bordered w-full h-12 rounded-10px border-d9 bg-[#F8FAFC] ps-10 font-medium text-15px">
-                    </div>
-                    <button type="button"
-                        class="inline-flex items-center justify-center gap-2 rounded-10px border border-d9 px-4 h-12 font-semibold text-15px text-primary bg-[#F8FAFC] hover:bg-fa transition">
-                        <span class="icon-[tabler--filter] size-4"></span>
-                        فلتر
-                    </button>
-                    <button type="button"
-                        class="inline-flex items-center justify-center gap-2 rounded-10px border border-d9 px-4 h-12 font-semibold text-15px text-primary bg-white hover:bg-fa transition">
-                        <span class="icon-[tabler--file-spreadsheet] size-4"></span>
-                        استخراج في الأكسل
-                    </button>
+                <div class="relative flex-1">
+                    <span class="icon-[tabler--search] size-5 absolute top-1/2 start-3 -translate-y-1/2 text-gray"></span>
+                    <input type="search" data-quiz-search="quizzes"
+                        placeholder="البحث عن طريق المعرّف أو اسم الدورة أو غير ذلك..."
+                        class="input input-bordered w-full h-12 rounded-10px border-d9 bg-[#F8FAFC] ps-10 font-medium text-15px">
                 </div>
             </div>
 
             <div class="bg-white border border-d9 rounded-14px overflow-x-auto">
-                <table class="table w-full text-15px">
+                <table class="table w-full text-15px" id="quiz-rows-table">
                     <thead>
                         <tr class="border-b border-d9 text-gray bg-f9">
                             <th class="px-4 py-3.5 text-start font-semibold">العنوان والدورة</th>
@@ -116,8 +113,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($quizRows ?? [] as $index => $row)
-                            <tr class="border-b border-d9 last:border-0">
+                        @forelse ($quizRows ?? [] as $index => $row)
+                            <tr class="border-b border-d9 last:border-0" data-quiz-row>
                                 <td class="px-4 py-4 min-w-48">
                                     <p class="font-semibold text-16px text-primary">{{ $row['title'] }}</p>
                                     <p class="font-medium text-13px text-gray">{{ $row['course'] }}</p>
@@ -128,7 +125,7 @@
                                 <td class="px-4 py-4 font-semibold">{{ $row['passGrade'] }}</td>
                                 <td class="px-4 py-4 font-semibold">{{ $row['students'] }}</td>
                                 <td class="px-4 py-4">
-                                    <span class="inline-flex rounded-full bg-[#ECFDF5] px-3 py-1 font-semibold text-13px text-[#059669]">
+                                    <span class="inline-flex rounded-full px-3 py-1 font-semibold text-13px {{ $statusToneClass[$row['status_tone'] ?? 'success'] }}">
                                         {{ $row['status'] }}
                                     </span>
                                 </td>
@@ -142,35 +139,25 @@
                                         </button>
                                         <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-48 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20"
                                             role="menu" aria-labelledby="quiz-row-menu-{{ $index }}">
+                                            <li><a href="{{ $row['view_url'] }}" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض الاختبار</a></li>
+                                            <li><a href="{{ $row['edit_url'] }}" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">تعديل</a></li>
                                             <li>
-                                                <a href="{{ route('panel.v1.instructor.quizzes.view', ['id' => $row['id']]) }}"
-                                                    class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض الاختبار</a>
-                                            </li>
-                                            <li>
-                                                <a href="{{ route('panel.v1.instructor.quizzes.edit', ['id' => $row['id']]) }}"
-                                                    class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">تعديل</a>
-                                            </li>
-                                            <li>
-                                                <form method="POST" action="{{ route('panel.v1.instructor.quizzes.delete', ['id' => $row['id']]) }}"
-                                                    onsubmit="return confirm('حذف الاختبار؟');">
+                                                <form method="POST" action="{{ $row['delete_url'] }}" onsubmit="return confirm('حذف الاختبار؟');">
                                                     @csrf
-                                                    <button type="submit"
-                                                        class="dropdown-item px-4 py-2.5 font-medium text-15px text-[#EF4444] w-full text-start">حذف</button>
+                                                    <button type="submit" class="dropdown-item px-4 py-2.5 font-medium text-15px text-[#EF4444] w-full text-start">حذف</button>
                                                 </form>
                                             </li>
-                                            <li>
-                                                <a href="{{ route('panel.v1.instructor.quizzes.view', ['id' => $row['id']]) }}"
-                                                    class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض النتائج</a>
-                                            </li>
-                                            <li>
-                                                <a href="{{ route('panel.v1.instructor.courses.performance', ['slug' => $slug]) }}"
-                                                    class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض الدورة</a>
-                                            </li>
+                                            <li><a href="{{ $row['view_url'] }}#waiting-results" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض النتائج</a></li>
+                                            <li><a href="{{ $row['course_url'] }}" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض الدورة</a></li>
                                         </ul>
                                     </div>
                                 </td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr>
+                                <td colspan="9" class="px-4 py-10 text-center font-medium text-15px text-gray">لا توجد اختبارات بعد</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
@@ -178,28 +165,16 @@
 
         <div id="q-panel-2" class="space-y-4" role="tabpanel">
             <div class="bg-white border border-d9 p-4 sm:p-5 rounded-14px">
-                <div class="flex flex-col lg:flex-row gap-3">
-                    <div class="relative flex-1">
-                        <span class="icon-[tabler--search] size-5 absolute top-1/2 start-3 -translate-y-1/2 text-gray"></span>
-                        <input type="search"
-                            placeholder="البحث عن طريق المعرّف أو اسم الدورة أو غير ذلك..."
-                            class="input input-bordered w-full h-12 rounded-10px border-d9 bg-[#F8FAFC] ps-10 font-medium text-15px">
-                    </div>
-                    <button type="button"
-                        class="inline-flex items-center justify-center gap-2 rounded-10px border border-d9 px-4 h-12 font-semibold text-15px text-primary bg-[#F8FAFC] hover:bg-fa transition">
-                        <span class="icon-[tabler--filter] size-4"></span>
-                        فلتر
-                    </button>
-                    <button type="button"
-                        class="inline-flex items-center justify-center gap-2 rounded-10px border border-d9 px-4 h-12 font-semibold text-15px text-primary bg-white hover:bg-fa transition">
-                        <span class="icon-[tabler--file-spreadsheet] size-4"></span>
-                        استخراج في الأكسل
-                    </button>
+                <div class="relative flex-1">
+                    <span class="icon-[tabler--search] size-5 absolute top-1/2 start-3 -translate-y-1/2 text-gray"></span>
+                    <input type="search" data-quiz-search="students"
+                        placeholder="البحث عن طريق المعرّف أو اسم الدورة أو غير ذلك..."
+                        class="input input-bordered w-full h-12 rounded-10px border-d9 bg-[#F8FAFC] ps-10 font-medium text-15px">
                 </div>
             </div>
 
             <div class="bg-white border border-d9 rounded-14px overflow-x-auto">
-                <table class="table w-full text-15px">
+                <table class="table w-full text-15px" id="quiz-students-table">
                     <thead>
                         <tr class="border-b border-d9 text-gray bg-f9">
                             <th class="px-4 py-3.5 text-start font-semibold">المتدرب</th>
@@ -212,8 +187,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($quizStudentRows ?? [] as $index => $row)
-                            <tr class="border-b border-d9 last:border-0">
+                        @forelse ($quizStudentRows ?? [] as $index => $row)
+                            <tr class="border-b border-d9 last:border-0" data-quiz-row>
                                 <td class="px-4 py-4">
                                     <div class="flex items-center gap-3">
                                         <span class="size-11 rounded-full bg-primary/10 center shrink-0">
@@ -230,30 +205,22 @@
                                 <td class="px-4 py-4 font-semibold">{{ $row['attempts'] }}</td>
                                 <td class="px-4 py-4 font-medium whitespace-nowrap">{{ $row['attempted_at'] }}</td>
                                 <td class="px-4 py-4">
-                                    <span class="inline-flex rounded-full bg-[#ECFDF5] px-3 py-1 font-semibold text-13px text-[#059669]">
+                                    <span class="inline-flex rounded-full px-3 py-1 font-semibold text-13px {{ $statusToneClass[$row['status_tone'] ?? 'success'] }}">
                                         {{ $row['status'] }}
                                     </span>
                                 </td>
                                 <td class="px-4 py-4">
-                                    <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end]">
-                                        <button type="button"
-                                            class="dropdown-toggle size-9 rounded-full bg-[#F1F5F9] !inline-flex !items-center !justify-center border-0 hover:bg-[#E8ECEA] transition"
-                                            aria-label="الاجراء" id="quiz-student-menu-{{ $index }}">
-                                            <span class="icon-[tabler--dots-vertical] size-5 text-gray"></span>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-44 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20"
-                                            role="menu" aria-labelledby="quiz-student-menu-{{ $index }}">
-                                            <li>
-                                                <a href="#"
-                                                    class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary"
-                                                    aria-haspopup="dialog" aria-controls="instructor-quiz-review-modal"
-                                                    data-overlay="#instructor-quiz-review-modal">عرض النتيجة</a>
-                                            </li>
-                                        </ul>
-                                    </div>
+                                    <a href="{{ $row['grade_url'] }}"
+                                        class="inline-flex items-center justify-center rounded-10px bg-primary/10 px-3 h-9 font-semibold text-13px text-primary hover:bg-primary hover:text-white transition">
+                                        عرض النتيجة
+                                    </a>
                                 </td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr>
+                                <td colspan="7" class="px-4 py-10 text-center font-medium text-15px text-gray">لا توجد نتائج طلاب بعد</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
@@ -261,6 +228,21 @@
     </div>
 </div>
 
-@include('panel_v1.instructor.components.quiz-builder-modal')
-@include('panel_v1.instructor.components.quiz-review-modal')
+<script>
+(() => {
+    const bind = (inputSel, tableSel) => {
+        const input = document.querySelector(inputSel);
+        const table = document.querySelector(tableSel);
+        if (!input || !table) return;
+        input.addEventListener('input', () => {
+            const q = (input.value || '').trim().toLowerCase();
+            table.querySelectorAll('[data-quiz-row]').forEach((row) => {
+                row.classList.toggle('hidden', q !== '' && !(row.textContent || '').toLowerCase().includes(q));
+            });
+        });
+    };
+    bind('[data-quiz-search="quizzes"]', '#quiz-rows-table');
+    bind('[data-quiz-search="students"]', '#quiz-students-table');
+})();
+</script>
 @endsection

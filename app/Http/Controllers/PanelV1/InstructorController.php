@@ -8,10 +8,16 @@ use App\Models\NotificationStatus;
 use App\Models\Quiz;
 use App\Models\Sale;
 use App\Models\Session;
+use App\Models\File;
+use App\Models\Translation\WebinarAssignmentTranslation;
+use App\Models\Translation\WebinarChapterTranslation;
 use App\Models\Webinar;
 use App\Models\WebinarAssignment;
 use App\Models\WebinarAssignmentHistory;
+use App\Models\WebinarChapter;
+use App\Models\WebinarChapterItem;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class InstructorController extends Controller
 {
@@ -1546,56 +1552,272 @@ class InstructorController extends Controller
         );
     }
 
-    private function instructorCourseShell($webinar, ?Request $request = null): array
+    private function instructorCourseShell($webinar, ?Request $request = null, $progressUser = null, ?int $activeAssignmentId = null): array
     {
-        $chapters = \App\Models\WebinarChapter::with(['sessions','files','textLessons'])->where('webinar_id',$webinar->id)->orderBy('order')->orderBy('id')->get();
-        $requested = $request ? $request->get('item') : null;
-        $list=[]; $first=true;
-        foreach($chapters as $ch){
-            $items=[];
-            foreach($ch->sessions as $s){ $active=$first && empty($requested) ? true : ($requested=='session_'.$s->id); $items[]=['title'=>$s->title,'type'=>'video','active'=>$active,'route'=>'panel.v1.instructor.courses.watch']; $first=false; }
-            foreach($ch->files as $f){ $active=$requested=='file_'.$f->id; $items[]=['title'=>$f->title,'type'=>'file','active'=>$active,'route'=>'panel.v1.instructor.courses.watch']; }
-            foreach($ch->textLessons as $t){ $active=$requested=='text_'.$t->id; $items[]=['title'=>$t->title,'type'=>'text','active'=>$active,'route'=>'panel.v1.instructor.courses.watch']; }
-            $list[]=['title'=>$ch->title ?: 'الوحدة','completed'=>false,'expanded'=>false,'subtitle'=>'محتوى الوحدة','items'=>$items];
+        $chapters = WebinarChapter::with(['sessions', 'files', 'textLessons', 'assignments'])
+            ->where('webinar_id', $webinar->id)
+            ->orderBy('order')
+            ->orderBy('id')
+            ->get();
+
+        $learnedFileIds = [];
+        $learnedSessionIds = [];
+        $learnedTextIds = [];
+        $progress = 0;
+        $completedLessons = 0;
+        $totalLessons = 0;
+
+        if (!empty($progressUser)) {
+            $learned = \App\Models\CourseLearning::where('user_id', $progressUser->id)->get();
+            $learnedFileIds = $learned->pluck('file_id')->filter()->map(fn ($id) => (int) $id)->all();
+            $learnedSessionIds = $learned->pluck('session_id')->filter()->map(fn ($id) => (int) $id)->all();
+            $learnedTextIds = $learned->pluck('text_lesson_id')->filter()->map(fn ($id) => (int) $id)->all();
+            $progress = $this->studentLearningProgressPercent($webinar, $progressUser);
         }
-        if(empty($list)){
-            $list[]=['title'=>'المحاضرة الأولى','completed'=>false,'expanded'=>true,'subtitle'=>'لا يوجد محتوى بعد','items'=>[]];
+
+        $requested = $request ? (string) $request->get('item', '') : '';
+        $list = [];
+        $activeChapterIndex = null;
+
+        foreach ($chapters as $chapterIndex => $chapter) {
+            $items = [];
+            $completedInChapter = 0;
+
+            foreach ($chapter->sessions->sortBy('id') as $session) {
+                $key = 'session_' . $session->id;
+                $done = in_array((int) $session->id, $learnedSessionIds, true);
+                if ($done) {
+                    $completedInChapter++;
+                }
+                $totalLessons++;
+                if ($done) {
+                    $completedLessons++;
+                }
+                $active = $requested !== '' ? $requested === $key : false;
+                $items[] = [
+                    'title' => $session->title ?: ('جلسة #' . $session->id),
+                    'type' => 'video',
+                    'kind' => 'session',
+                    'key' => $key,
+                    'active' => $active,
+                    'completed' => $done,
+                    'route' => 'panel.v1.instructor.courses.watch',
+                    'url' => route('panel.v1.instructor.courses.watch', [
+                        'slug' => $webinar->slug,
+                        'item' => $key,
+                    ]),
+                ];
+                if ($active) {
+                    $activeChapterIndex = $chapterIndex;
+                }
+            }
+
+            foreach ($chapter->files->sortBy('order') as $file) {
+                $key = 'file_' . $file->id;
+                $done = in_array((int) $file->id, $learnedFileIds, true);
+                if ($done) {
+                    $completedInChapter++;
+                }
+                $totalLessons++;
+                if ($done) {
+                    $completedLessons++;
+                }
+                $isVideo = ($file->file_type === 'video' || in_array($file->storage, ['youtube', 'vimeo'], true));
+                $active = $requested !== '' ? $requested === $key : false;
+                $items[] = [
+                    'title' => $file->title ?: ('محتوى #' . $file->id),
+                    'type' => $isVideo ? 'video' : 'file',
+                    'kind' => 'file',
+                    'key' => $key,
+                    'active' => $active,
+                    'completed' => $done,
+                    'route' => 'panel.v1.instructor.courses.watch',
+                    'url' => route('panel.v1.instructor.courses.watch', [
+                        'slug' => $webinar->slug,
+                        'item' => $key,
+                    ]),
+                ];
+                if ($active) {
+                    $activeChapterIndex = $chapterIndex;
+                }
+            }
+
+            foreach ($chapter->textLessons->sortBy('id') as $text) {
+                $key = 'text_' . $text->id;
+                $done = in_array((int) $text->id, $learnedTextIds, true);
+                if ($done) {
+                    $completedInChapter++;
+                }
+                $totalLessons++;
+                if ($done) {
+                    $completedLessons++;
+                }
+                $active = $requested !== '' ? $requested === $key : false;
+                $items[] = [
+                    'title' => $text->title ?: ('نص #' . $text->id),
+                    'type' => 'text',
+                    'kind' => 'text',
+                    'key' => $key,
+                    'active' => $active,
+                    'completed' => $done,
+                    'route' => 'panel.v1.instructor.courses.watch',
+                    'url' => route('panel.v1.instructor.courses.watch', [
+                        'slug' => $webinar->slug,
+                        'item' => $key,
+                    ]),
+                ];
+                if ($active) {
+                    $activeChapterIndex = $chapterIndex;
+                }
+            }
+
+            $chapterAssignments = WebinarAssignment::where('webinar_id', $webinar->id)
+                ->where('chapter_id', $chapter->id)
+                ->orderBy('id')
+                ->get();
+
+            foreach ($chapterAssignments as $assignment) {
+                $key = 'assignment_' . $assignment->id;
+                $done = false;
+                if (!empty($progressUser)) {
+                    $done = WebinarAssignmentHistory::where('assignment_id', $assignment->id)
+                        ->where('student_id', $progressUser->id)
+                        ->whereIn('status', [
+                            WebinarAssignmentHistory::$passed,
+                            WebinarAssignmentHistory::$pending,
+                            WebinarAssignmentHistory::$notPassed,
+                        ])
+                        ->exists();
+                }
+                if ($done) {
+                    $completedInChapter++;
+                }
+                $totalLessons++;
+                if ($done) {
+                    $completedLessons++;
+                }
+                $active = $activeAssignmentId
+                    ? ((int) $assignment->id === (int) $activeAssignmentId)
+                    : ($requested !== '' && $requested === $key);
+                $items[] = [
+                    'title' => $assignment->title ?: ('تكليف #' . $assignment->id),
+                    'type' => 'assignment',
+                    'kind' => 'assignment',
+                    'key' => $key,
+                    'active' => $active,
+                    'completed' => $done,
+                    'route' => 'panel.v1.instructor.courses.assignments',
+                    'url' => route('panel.v1.instructor.courses.assignments', ['slug' => $webinar->slug]),
+                ];
+                if ($active) {
+                    $activeChapterIndex = $chapterIndex;
+                }
+            }
+
+            $itemCount = count($items);
+            $list[] = [
+                'title' => $chapter->title ?: ('الوحدة ' . ($chapterIndex + 1)),
+                'subtitle' => $items[0]['title'] ?? 'محتوى الوحدة',
+                'completed' => $itemCount > 0 && $completedInChapter >= $itemCount,
+                'expanded' => false,
+                'completed_count' => $completedInChapter,
+                'items_count' => $itemCount,
+                'items' => $items,
+            ];
+        }
+
+        if (empty($list)) {
+            $list[] = [
+                'title' => 'المحاضرة الأولى',
+                'completed' => false,
+                'expanded' => true,
+                'subtitle' => 'لا يوجد محتوى بعد',
+                'completed_count' => 0,
+                'items_count' => 0,
+                'items' => [],
+            ];
         } else {
-            $list[0]['expanded']=true;
+            $expandIndex = $activeChapterIndex ?? 0;
+            foreach ($list as $i => &$row) {
+                $row['expanded'] = ((int) $i === (int) $expandIndex);
+            }
+            unset($row);
         }
+
+        $progressLabel = !empty($progressUser)
+            ? ('إنجاز ' . ($progressUser->full_name ?? 'الطالب'))
+            : 'نسبة الإنجاز';
+
         return [
-            'slug'=>$webinar->slug,
-            'course'=>['title'=>$webinar->title,'subtitle'=>$webinar->category->title ?? '','progress'=>0,'progress_label'=>'نسبة الإنجاز'],
-            'chapters'=>$list,
+            'slug' => $webinar->slug,
+            'course' => [
+                'title' => $webinar->title,
+                'subtitle' => $webinar->category->title ?? '',
+                'progress' => $progress,
+                'progress_label' => $progressLabel,
+            ],
+            'chapters' => $list,
+            'studentProgressMeta' => [
+                'progress' => $progress,
+                'completed_lessons' => $completedLessons,
+                'total_lessons' => $totalLessons,
+                'student_name' => $progressUser->full_name ?? null,
+                'student_id' => $progressUser->id ?? null,
+            ],
         ];
+    }
+
+    private function studentLearningProgressPercent($webinar, $student): int
+    {
+        if (empty($student)) {
+            return 0;
+        }
+
+        $userId = (int) $student->id;
+        $filesStat = $webinar->getFilesLearningProgressStat($userId);
+        $sessionsStat = $webinar->getSessionsLearningProgressStat($userId);
+        $textLessonsStat = $webinar->getTextLessonsLearningProgressStat($userId);
+        $assignmentsStat = $webinar->getAssignmentsLearningProgressStat($userId);
+        $quizzesStat = $webinar->getQuizzesLearningProgressStat($userId);
+
+        $passed = ($filesStat['passed'] ?? 0)
+            + ($sessionsStat['passed'] ?? 0)
+            + ($textLessonsStat['passed'] ?? 0)
+            + ($assignmentsStat['passed'] ?? 0)
+            + ($quizzesStat['passed'] ?? 0);
+        $count = ($filesStat['count'] ?? 0)
+            + ($sessionsStat['count'] ?? 0)
+            + ($textLessonsStat['count'] ?? 0)
+            + ($assignmentsStat['count'] ?? 0)
+            + ($quizzesStat['count'] ?? 0);
+
+        if ($count < 1 || $passed < 1) {
+            return 0;
+        }
+
+        return (int) max(0, min(100, round(($passed * 100) / $count)));
     }
 
     public function courseAssignment(Request $request, string $slug)
     {
         $guardUser = $request->user();
-        if (!$guardUser) { return redirect('/login'); }
+        if (!$guardUser) {
+            return redirect('/login');
+        }
+
         $webinar = $this->teacherWebinarOrFail($guardUser, $slug);
-        $assignment = \App\Models\WebinarAssignment::where('webinar_id',$webinar->id)->orderBy('id')->first();
-        $shell = $this->instructorCourseShell($webinar,$request);
-        return $this->render(
-            $request,
-            'panel_v1.instructor.pages.assignment-review',
-            'تقييم التكليف',
-            array_merge($shell, [
-                'webinar'=>$webinar,
-                'courseSlug'=>$webinar->slug,
-                'assignmentId'=>$assignment->id ?? 0,
-                'reviewTitle'=> $assignment->title ?? 'تكليف الدورة',
-                'detailsTitle'=>'تفاصيل التكليف',
-                'detailsBody'=> $assignment->description ?? 'لا يوجد وصف',
-                'points'=>['التزام بالموعد','جودة المحتوى','الالتزام بالمعايير'],
-                'pointsTitle'=>'نقاط التقييم',
-                'maxGrade'=>$assignment->grade ?? 50,
-                'passGrade'=>$assignment->pass_grade ?? 25,
-                'studentAnswerParagraphs'=>[],
-                'studentAnswerPoints'=>[],
-            ])
-        );
+        $assignmentIds = WebinarAssignment::where('webinar_id', $webinar->id)->pluck('id');
+
+        $pending = WebinarAssignmentHistory::whereIn('assignment_id', $assignmentIds)
+            ->where('status', WebinarAssignmentHistory::$pending)
+            ->orderBy('id')
+            ->first();
+
+        if ($pending) {
+            return redirect()->route('panel.v1.instructor.assignments.review', ['id' => $pending->id]);
+        }
+
+        return redirect()->route('panel.v1.instructor.courses.assignments', ['slug' => $webinar->slug]);
     }
 
     public function coursePerformance(Request $request, string $slug)
@@ -1629,95 +1851,377 @@ class InstructorController extends Controller
     public function courseAssignments(Request $request, string $slug)
     {
         $guardUser = $request->user();
-        if (!$guardUser) { return redirect('/login'); }
+        if (!$guardUser) {
+            return redirect('/login');
+        }
+
         $webinar = $this->teacherWebinarOrFail($guardUser, $slug);
-        $assignments = \App\Models\WebinarAssignment::where('webinar_id',$webinar->id)->orderBy('id','desc')->get();
-        $histories = \App\Models\WebinarAssignmentHistory::with(['student'])->whereIn('assignment_id',$assignments->pluck('id'))->orderBy('id','desc')->limit(30)->get();
+        $assignments = WebinarAssignment::where('webinar_id', $webinar->id)->orderByDesc('id')->get();
+        $assignmentIds = $assignments->pluck('id');
+
+        $histories = $assignmentIds->isEmpty()
+            ? collect()
+            : WebinarAssignmentHistory::with(['student', 'assignment', 'messages'])
+                ->whereIn('assignment_id', $assignmentIds)
+                ->where('status', '!=', WebinarAssignmentHistory::$notSubmitted)
+                ->orderByDesc('id')
+                ->limit(50)
+                ->get();
+
         $total = $histories->count();
-        $passed = $histories->where('status','passed')->count();
-        $pending = $histories->where('status','pending')->count();
-        $rate = $total>0 ? (int) round($passed/$total*100) : 0;
+        $passed = $histories->where('status', WebinarAssignmentHistory::$passed)->count();
+        $pending = $histories->where('status', WebinarAssignmentHistory::$pending)->count();
+        $rate = $total > 0 ? (int) round($passed / $total * 100) : 0;
+
         return $this->render(
             $request,
             'panel_v1.instructor.pages.course-assignments',
             'متطلبات الدورات',
             [
-                'webinar'=>$webinar,
-                'courseSlug'=>$webinar->slug,
-                'slug'=>$webinar->slug,
-                'pageTitleMain'=>'متطلبات دورة '. $webinar->title,
-                'pageSubtitle'=>$webinar->category->title ?? '',
-                'summaryCards'=>[
-                    ['label'=>'إجمالي التسليمات','value'=>(string)$total,'edge'=>'#0f4c45','valueClass'=>'text-primary'],
-                    ['label'=>'التسليمات المجتازة','value'=>(string)$passed,'edge'=>'#0FC787','valueClass'=>'text-[#0FC787]'],
-                    ['label'=>'قيد المراجعة','value'=>(string)$pending,'edge'=>'#F59E0B','valueClass'=>'text-[#F59E0B]'],
-                    ['label'=>'معدل النجاح','value'=>$rate.'%','edge'=>'#6366F1','valueClass'=>'text-[#6366F1]'],
+                'webinar' => $webinar,
+                'courseSlug' => $webinar->slug,
+                'slug' => $webinar->slug,
+                'pageTitleMain' => 'متطلبات دورة ' . $webinar->title,
+                'pageSubtitle' => $webinar->category->title ?? '',
+                'summaryCards' => [
+                    ['label' => 'إجمالي التسليمات', 'value' => (string) $total, 'edge' => '#0f4c45', 'valueClass' => 'text-primary'],
+                    ['label' => 'التسليمات المجتازة', 'value' => (string) $passed, 'edge' => '#0FC787', 'valueClass' => 'text-[#0FC787]'],
+                    ['label' => 'قيد المراجعة', 'value' => (string) $pending, 'edge' => '#F59E0B', 'valueClass' => 'text-[#F59E0B]'],
+                    ['label' => 'معدل النجاح', 'value' => $rate . '%', 'edge' => '#6366F1', 'valueClass' => 'text-[#6366F1]'],
                 ],
-                'submissions'=> $histories->map(fn($h)=>[
-                    'name'=>$h->student->full_name ?? '',
-                    'joined_at'=> $h->created_at ? date('Y/m/d',(int)$h->created_at) : '—',
-                    'latest_at'=> $h->updated_at ? date('Y/m/d',(int)$h->updated_at) : '—',
-                    'last_at'=>'—',
-                    'attempts'=>'1 / '.($h->assignment->attempts ?? '—'),
-                    'grade'=> ($h->grade ?? '—').' / '.($h->assignment->grade ?? '—'),
-                    'status'=> $h->status==='passed' ? 'مجتاز' : ($h->status==='pending' ? 'قيد المراجعة' : $h->status),
-                ])->all(),
+                'submissions' => $histories->map(function ($history) {
+                    $statusMeta = $this->assignmentHistoryStatusMeta($history->status);
+                    $latestMessageAt = $history->messages->max('created_at');
+                    $attemptCount = max(1, $history->messages->where('sender_id', $history->student_id)->count());
+                    $maxAttempts = $history->assignment->attempts ?? null;
+
+                    return [
+                        'history_id' => $history->id,
+                        'review_url' => route('panel.v1.instructor.assignments.review', ['id' => $history->id]),
+                        'name' => $history->student->full_name ?? 'طالب',
+                        'joined_at' => $this->formatAssignmentDate($history->created_at),
+                        'latest_at' => $this->formatAssignmentDate($latestMessageAt ?: $history->created_at),
+                        'last_at' => $this->formatAssignmentDate($latestMessageAt ?: $history->created_at),
+                        'attempts' => $attemptCount . ' / ' . ($maxAttempts ?: '—'),
+                        'grade' => ($history->grade ?? '—') . ' / ' . ($history->assignment->grade ?? '—'),
+                        'status' => $statusMeta['label'],
+                        'status_tone' => $statusMeta['tone'],
+                    ];
+                })->all(),
             ]
         );
     }
 
     public function assignments(Request $request)
     {
-        $user = $request->user();
-        if (!$user || !$user->isTeacher()) { return redirect('/login'); }
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
         $webinarIds = $this->teacherWebinars($user)->pluck('id')->all();
-        $assignments = !empty($webinarIds) ? \App\Models\WebinarAssignment::with(['webinar'])->whereIn('webinar_id',$webinarIds)->orderBy('id','desc')->limit(20)->get() : collect();
-        $histories = !empty($webinarIds) ? \App\Models\WebinarAssignmentHistory::with(['assignment.webinar','student'])->whereIn('assignment_id',$assignments->pluck('id'))->orderBy('id','desc')->limit(30)->get() : collect();
-        $pending = $histories->where('status','pending')->count();
-        $graded = $histories->where('status','!=','pending')->count();
+
+        $assignments = empty($webinarIds)
+            ? collect()
+            : WebinarAssignment::with(['webinar'])
+                ->withCount([
+                    'instructorAssignmentHistories as submissions_count',
+                    'instructorAssignmentHistories as pending_count' => function ($q) {
+                        $q->where('status', WebinarAssignmentHistory::$pending);
+                    },
+                    'instructorAssignmentHistories as passed_count' => function ($q) {
+                        $q->where('status', WebinarAssignmentHistory::$passed);
+                    },
+                    'instructorAssignmentHistories as failed_count' => function ($q) {
+                        $q->where('status', WebinarAssignmentHistory::$notPassed);
+                    },
+                    'instructorAssignmentHistories as graded_count' => function ($q) {
+                        $q->whereIn('status', [
+                            WebinarAssignmentHistory::$passed,
+                            WebinarAssignmentHistory::$notPassed,
+                        ]);
+                    },
+                ])
+                ->whereIn('webinar_id', $webinarIds)
+                ->orderByDesc('id')
+                ->get();
+
+        $assignmentIds = $assignments->pluck('id')->all();
+
+        $salesByWebinar = empty($webinarIds)
+            ? collect()
+            : Sale::whereIn('webinar_id', $webinarIds)
+                ->whereNull('refund_at')
+                ->selectRaw('webinar_id, COUNT(*) as c')
+                ->groupBy('webinar_id')
+                ->pluck('c', 'webinar_id');
+
+        $firstPendingByAssignment = empty($assignmentIds)
+            ? collect()
+            : WebinarAssignmentHistory::whereIn('assignment_id', $assignmentIds)
+                ->where('status', WebinarAssignmentHistory::$pending)
+                ->orderBy('id')
+                ->get()
+                ->groupBy('assignment_id')
+                ->map(fn ($group) => $group->first());
+
+        $histories = empty($assignmentIds)
+            ? collect()
+            : WebinarAssignmentHistory::with(['assignment.webinar', 'student', 'messages'])
+                ->whereIn('assignment_id', $assignmentIds)
+                ->where('status', '!=', WebinarAssignmentHistory::$notSubmitted)
+                ->orderByDesc('id')
+                ->limit(50)
+                ->get();
+
+        $pendingTotal = (int) $assignments->sum('pending_count');
+        $gradedTotal = (int) $assignments->sum('graded_count');
+        $submissionsTotal = (int) $assignments->sum('submissions_count');
+
+        $currentAssignments = $assignments->take(6)->map(function ($assignment) use ($salesByWebinar, $firstPendingByAssignment) {
+            $slug = $assignment->webinar->slug ?? null;
+            $studentsCount = (int) ($salesByWebinar[$assignment->webinar_id] ?? 0);
+            $submissions = (int) ($assignment->submissions_count ?? 0);
+            $pending = (int) ($assignment->pending_count ?? 0);
+            $graded = (int) ($assignment->graded_count ?? 0);
+            $progress = $studentsCount > 0 ? (int) min(100, round(($submissions / $studentsCount) * 100)) : 0;
+            $courseAssignmentsUrl = $slug
+                ? route('panel.v1.instructor.courses.assignments', ['slug' => $slug])
+                : route('panel.v1.instructor.assignments');
+            $pendingHistory = $firstPendingByAssignment->get($assignment->id);
+            $reviewUrl = $pendingHistory
+                ? route('panel.v1.instructor.assignments.review', ['id' => $pendingHistory->id])
+                : $courseAssignmentsUrl;
+
+            return [
+                'id' => $assignment->id,
+                'title' => $assignment->title ?: 'تكليف',
+                'course' => $assignment->webinar->title ?? '',
+                'slug' => $slug,
+                'deadline' => !empty($assignment->deadline)
+                    ? ((int) $assignment->deadline) . ' يوم من الشراء'
+                    : 'غير محدود',
+                'submissions' => $submissions . ' / ' . $studentsCount,
+                'pending' => $pending . ' طالب',
+                'graded' => $graded . ' طالب',
+                'progress' => $progress,
+                'points' => (int) ($assignment->grade ?? 0),
+                'badge' => $pending,
+                'cta' => 'عرض التسليمات',
+                'review_url' => $reviewUrl,
+                'course_assignments_url' => $courseAssignmentsUrl,
+                'preview_url' => $courseAssignmentsUrl,
+                'edit_url' => $slug
+                    ? route('panel.v1.instructor.courses.watch', ['slug' => $slug])
+                    : route('panel.v1.instructor.courses'),
+            ];
+        })->values()->all();
+
+        $resultsRows = $assignments->map(function ($assignment) use ($firstPendingByAssignment) {
+            $slug = $assignment->webinar->slug ?? null;
+            $courseAssignmentsUrl = $slug
+                ? route('panel.v1.instructor.courses.assignments', ['slug' => $slug])
+                : route('panel.v1.instructor.assignments');
+            $pendingHistory = $firstPendingByAssignment->get($assignment->id);
+            $pendingUrl = $pendingHistory
+                ? route('panel.v1.instructor.assignments.review', ['id' => $pendingHistory->id])
+                : $courseAssignmentsUrl;
+
+            return [
+                'id' => $assignment->id,
+                'title' => $assignment->title ?: 'تكليف',
+                'course' => $assignment->webinar->title ?? '',
+                'slug' => $slug,
+                'grade' => (int) ($assignment->grade ?? 0),
+                'passGrade' => (int) ($assignment->pass_grade ?? 0),
+                'submissions' => (int) ($assignment->submissions_count ?? 0),
+                'pending' => (int) ($assignment->pending_count ?? 0),
+                'passed' => (int) ($assignment->passed_count ?? 0),
+                'failed' => (int) ($assignment->failed_count ?? 0),
+                'deadline' => !empty($assignment->deadline)
+                    ? ((int) $assignment->deadline) . ' يوم من الشراء'
+                    : '—',
+                'status' => ($assignment->status ?? 'active') === 'active' ? 'نشط' : 'غير نشط',
+                'status_tone' => ($assignment->status ?? 'active') === 'active' ? 'success' : 'muted',
+                'pending_url' => $pendingUrl,
+                'course_assignments_url' => $courseAssignmentsUrl,
+                'edit_url' => $slug
+                    ? route('panel.v1.instructor.courses.watch', ['slug' => $slug])
+                    : route('panel.v1.instructor.courses'),
+                'course_url' => $slug
+                    ? route('panel.v1.instructor.courses.performance', ['slug' => $slug])
+                    : route('panel.v1.instructor.courses'),
+            ];
+        })->values()->all();
+
+        $studentResultsRows = $histories->map(function ($history) {
+            $statusMeta = $this->assignmentHistoryStatusMeta($history->status);
+            $latestMessageAt = $history->messages->max('created_at');
+            $attemptCount = max(
+                $history->status === WebinarAssignmentHistory::$notSubmitted ? 0 : 1,
+                $history->messages->where('sender_id', $history->student_id)->count()
+            );
+            $maxAttempts = $history->assignment->attempts ?? null;
+            $createdTs = (int) ($history->created_at ?: 0);
+
+            return [
+                'history_id' => $history->id,
+                'review_url' => route('panel.v1.instructor.assignments.review', ['id' => $history->id]),
+                'name' => $history->student->full_name ?? 'طالب',
+                'title' => $history->assignment->title ?? 'تكليف',
+                'course' => $history->assignment->webinar->title ?? '',
+                'first_at' => $this->formatAssignmentDate($history->created_at),
+                'last_at' => $this->formatAssignmentDate($latestMessageAt ?: $history->created_at),
+                'attempts' => $attemptCount . ' / ' . ($maxAttempts ?: '—'),
+                'grade' => $history->grade !== null
+                    ? ((int) $history->grade) . ' / ' . ((int) ($history->assignment->grade ?? 0))
+                    : '—',
+                'created_day' => $createdTs > 0 ? date('d', $createdTs) : '—',
+                'created_month' => $createdTs > 0 ? $this->formatAssignmentMonthYear($createdTs) : '—',
+                'status' => $statusMeta['label'],
+                'status_tone' => $statusMeta['tone'],
+            ];
+        })->values()->all();
+
+        $assignmentCourses = $this->teacherWebinars($user)->map(function ($webinar) {
+            $chapters = WebinarChapter::where('webinar_id', $webinar->id)
+                ->orderBy('order')
+                ->orderBy('id')
+                ->get()
+                ->map(fn ($chapter) => [
+                    'id' => $chapter->id,
+                    'title' => $chapter->title ?: ('وحدة #' . $chapter->id),
+                ])
+                ->values()
+                ->all();
+
+            return [
+                'id' => $webinar->id,
+                'title' => $webinar->title ?: ('دورة #' . $webinar->id),
+                'chapters' => $chapters,
+            ];
+        })->values()->all();
+
         return $this->render($request, 'panel_v1.instructor.pages.assignments', 'إدارة الواجبات والتكليفات', [
-            'assignmentStats'=>[
-                ['value'=>$pending.' تكليف','label'=>'بانتظار التصحيح'],
-                ['value'=>$graded.' تكليف','label'=>'تم تصحيحها'],
-                ['value'=>$histories->count().' تكليف','label'=>'تسليم'],
+            'assignmentStats' => [
+                ['value' => $pendingTotal . ' تكليف', 'label' => 'بانتظار التصحيح'],
+                ['value' => $gradedTotal . ' تكليف', 'label' => 'تم تصحيحها'],
+                ['value' => $submissionsTotal . ' تكليف', 'label' => 'تسليم'],
             ],
-            'currentAssignments'=> $assignments->take(4)->map(fn($a)=>[
-                'title'=>$a->title ?? 'تكليف',
-                'course'=>$a->webinar->title ?? '',
-                'deadline'=> !empty($a->deadline) ? ((int)$a->deadline).' يوم من الشراء' : 'غير محدود',
-                'submissions'=> \App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->count().' / '.$a->webinar->sales->count() ?? 0,
-                'pending'=> \App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->where('status','pending')->count().' طالب',
-                'graded'=> \App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->where('status','!=','pending')->count().' طالب',
-                'progress'=> 0,
-                'points'=>$a->grade ?? 0,
-                'badge'=>0,
-                'cta'=>'عرض التسليمات',
-            ])->all(),
-            'resultsRows'=> $assignments->take(6)->map(fn($a)=>[
-                'title'=>$a->title ?? '',
-                'course'=>$a->webinar->title ?? '',
-                'grade'=>$a->grade ?? 0,
-                'passGrade'=>$a->pass_grade ?? 0,
-                'submissions'=>\App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->count(),
-                'pending'=>\App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->where('status','pending')->count(),
-                'passed'=>\App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->where('status','passed')->count(),
-                'failed'=>\App\Models\WebinarAssignmentHistory::where('assignment_id',$a->id)->where('status','not_passed')->count(),
-                'deadline'=> !empty($a->deadline) ? ((int)$a->deadline).' يوم من الشراء' : '—',
-                'status'=>'نشط',
-            ])->all(),
-            'studentResultsRows'=> $histories->take(8)->map(fn($h)=>[
-                'name'=>$h->student->full_name ?? '',
-                'title'=>$h->assignment->title ?? '',
-                'course'=>$h->assignment->webinar->title ?? '',
-                'first_at'=> $h->created_at ? date('Y/m/d',(int)$h->created_at) : '—',
-                'last_at'=>'—',
-                'attempts'=>'—',
-                'grade'=>$h->grade ?? '—',
-                'created_day'=> $h->created_at ? date('d',(int)$h->created_at) : '—',
-                'created_month'=> $h->created_at ? date('F Y',(int)$h->created_at) : '—',
-                'status'=> $h->status==='passed' ? 'تم التسليم' : ($h->status==='pending' ? 'بانتظار التصحيح' : $h->status),
-            ])->all(),
+            'currentAssignments' => $currentAssignments,
+            'resultsRows' => $resultsRows,
+            'studentResultsRows' => $studentResultsRows,
+            'assignmentCourses' => $assignmentCourses,
         ]);
+    }
+
+    public function storeAssignment(Request $request)
+    {
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $data = $request->validate([
+            'webinar_id' => 'required|integer',
+            'chapter_id' => 'nullable|integer',
+            'title' => 'required|string|max:255',
+            'description' => 'required|string|max:5000',
+            'grade' => 'required|integer|min:1|max:1000',
+            'pass_grade' => 'required|integer|min:0|max:1000',
+            'deadline' => 'nullable|integer|min:1|max:365',
+            'attempts' => 'nullable|integer|min:1|max:50',
+        ], [
+            'webinar_id.required' => 'اختر الدورة',
+            'title.required' => 'عنوان التكليف مطلوب',
+            'description.required' => 'وصف التكليف مطلوب',
+            'grade.required' => 'الدرجة العظمى مطلوبة',
+            'pass_grade.required' => 'درجة النجاح مطلوبة',
+        ]);
+
+        if ((int) $data['pass_grade'] > (int) $data['grade']) {
+            throw ValidationException::withMessages([
+                'pass_grade' => 'درجة النجاح لا يمكن أن تتجاوز الدرجة العظمى',
+            ]);
+        }
+
+        $webinar = Webinar::where('id', $data['webinar_id'])
+            ->where('teacher_id', $user->id)
+            ->firstOrFail();
+
+        $chapterId = !empty($data['chapter_id']) ? (int) $data['chapter_id'] : null;
+        if ($chapterId) {
+            $chapter = WebinarChapter::where('id', $chapterId)
+                ->where('webinar_id', $webinar->id)
+                ->first();
+            if (empty($chapter)) {
+                throw ValidationException::withMessages([
+                    'chapter_id' => 'الوحدة المحددة غير صحيحة',
+                ]);
+            }
+        } else {
+            $chapter = WebinarChapter::where('webinar_id', $webinar->id)
+                ->orderBy('order')
+                ->orderBy('id')
+                ->first();
+
+            if (empty($chapter)) {
+                $chapter = WebinarChapter::create([
+                    'user_id' => $user->id,
+                    'webinar_id' => $webinar->id,
+                    'order' => 1,
+                    'status' => WebinarChapter::$chapterActive,
+                    'created_at' => time(),
+                ]);
+
+                WebinarChapterTranslation::updateOrCreate(
+                    [
+                        'webinar_chapter_id' => $chapter->id,
+                        'locale' => mb_strtolower(app()->getLocale() ?: getDefaultLocale()),
+                    ],
+                    ['title' => 'الوحدة الأولى']
+                );
+            }
+
+            $chapterId = (int) $chapter->id;
+        }
+
+        $assignment = WebinarAssignment::create([
+            'creator_id' => $user->id,
+            'webinar_id' => $webinar->id,
+            'chapter_id' => $chapterId,
+            'grade' => (int) $data['grade'],
+            'pass_grade' => (int) $data['pass_grade'],
+            'deadline' => !empty($data['deadline']) ? (int) $data['deadline'] : null,
+            'attempts' => !empty($data['attempts']) ? (int) $data['attempts'] : null,
+            'check_previous_parts' => false,
+            'access_after_day' => null,
+            'status' => File::$Active,
+            'created_at' => time(),
+        ]);
+
+        WebinarAssignmentTranslation::updateOrCreate(
+            [
+                'webinar_assignment_id' => $assignment->id,
+                'locale' => mb_strtolower(app()->getLocale() ?: getDefaultLocale()),
+            ],
+            [
+                'title' => $data['title'],
+                'description' => $data['description'],
+            ]
+        );
+
+        WebinarChapterItem::makeItem($user->id, $chapterId, $assignment->id, WebinarChapterItem::$chapterAssignment);
+
+        $webinar->update(['updated_at' => time()]);
+
+        return redirect()
+            ->route('panel.v1.instructor.assignments')
+            ->with('toast', [
+                'title' => 'تم',
+                'msg' => 'تم إنشاء التكليف بنجاح',
+                'type' => 'success',
+            ]);
     }
 
     public function assignmentReview(Request $request, int $id)
@@ -1727,7 +2231,7 @@ class InstructorController extends Controller
             return redirect('/login');
         }
 
-        $history = \App\Models\WebinarAssignmentHistory::with(['assignment.webinar', 'student', 'messages'])
+        $history = WebinarAssignmentHistory::with(['assignment.webinar', 'student', 'messages'])
             ->findOrFail($id);
 
         $webinar = $history->assignment->webinar ?? null;
@@ -1735,26 +2239,104 @@ class InstructorController extends Controller
             abort(404);
         }
 
-        $messages = $history->messages->pluck('message')->filter()->values()->all();
+        $studentMessages = $history->messages
+            ->where('sender_id', $history->student_id)
+            ->sortBy('id')
+            ->values();
+
+        $answerParagraphs = $studentMessages
+            ->pluck('message')
+            ->filter(fn ($msg) => filled(trim((string) $msg)))
+            ->values()
+            ->all();
+
+        $attachment = $studentMessages->first(fn ($msg) => filled($msg->file_path) || filled($msg->file_title));
+        $attachmentUrl = null;
+        $attachmentSize = null;
+        if ($attachment && filled($attachment->file_path)) {
+            $publicPath = public_path($attachment->file_path);
+            if (is_file($publicPath)) {
+                $attachmentUrl = asset($attachment->file_path);
+                $bytes = filesize($publicPath);
+                if ($bytes !== false) {
+                    $attachmentSize = $bytes >= 1048576
+                        ? round($bytes / 1048576, 1) . ' MB'
+                        : max(1, (int) round($bytes / 1024)) . ' KB';
+                }
+            } else {
+                $attachmentUrl = url($attachment->getDownloadUrl($history->assignment_id));
+            }
+        }
+
+        $description = trim(strip_tags((string) ($history->assignment->description ?? '')));
+        $student = $history->student;
+        $shell = $this->instructorCourseShell(
+            $webinar,
+            $request,
+            $student,
+            (int) ($history->assignment_id ?? 0)
+        );
+        $statusMeta = $this->assignmentHistoryStatusMeta($history->status);
+        $progressMeta = $shell['studentProgressMeta'] ?? [];
 
         return $this->render(
             $request,
             'panel_v1.instructor.pages.assignment-review',
             'تقييم التكليف',
-            [
+            array_merge($shell, [
                 'webinar' => $webinar,
                 'courseSlug' => $webinar->slug,
                 'historyId' => $history->id,
                 'historyStatus' => $history->status,
                 'historyGrade' => $history->grade,
-                'reviewStudentName' => $history->student->full_name ?? '',
-                'studentAnswerParagraphs' => !empty($messages) ? $messages : [],
-                'maxGrade' => $history->assignment->grade ?? 50,
-                'passGrade' => $history->assignment->pass_grade ?? 25,
-                'reviewTitle' => 'تقييم التكليف',
-                'detailsTitle' => 'تفاصيل التكليف',
-                'assignmentId' => $history->assignment->id ?? $id,
-            ]
+                'historyStatusLabel' => $statusMeta['label'],
+                'reviewStudentName' => $student->full_name ?? 'طالب',
+                'studentAnswerParagraphs' => $answerParagraphs,
+                'studentAnswerPoints' => [],
+                'attachmentName' => $attachment->file_title ?? null,
+                'attachmentUrl' => $attachmentUrl,
+                'attachmentSize' => $attachmentSize,
+                'attachmentScan' => $attachmentUrl ? 'تم الفحص' : null,
+                'maxGrade' => (int) ($history->assignment->grade ?? 50),
+                'passGrade' => (int) ($history->assignment->pass_grade ?? 25),
+                'reviewTitle' => 'تقييم تكليف: ' . ($history->assignment->title ?: 'تكليف'),
+                'detailsTitle' => $history->assignment->title ?: 'تفاصيل التكليف',
+                'detailsBody' => $description !== '' ? $description : 'لا يوجد وصف لهذا التكليف.',
+                'pointsTitle' => 'معايير التقييم',
+                'points' => [
+                    'درجة النجاح: ' . ((int) ($history->assignment->pass_grade ?? 0)),
+                    'الدرجة العظمى: ' . ((int) ($history->assignment->grade ?? 0)),
+                    !empty($history->assignment->deadline)
+                        ? 'الموعد النهائي: ' . ((int) $history->assignment->deadline) . ' يوم من الشراء'
+                        : 'الموعد النهائي: غير محدود',
+                    'عدد المحاولات المسموحة: ' . ((int) ($history->assignment->attempts ?? 1)),
+                ],
+                'assignmentId' => $history->assignment->id,
+                'canGrade' => in_array($history->status, [
+                    WebinarAssignmentHistory::$pending,
+                    WebinarAssignmentHistory::$passed,
+                    WebinarAssignmentHistory::$notPassed,
+                ], true),
+                'studentProgressCards' => [
+                    [
+                        'label' => 'نسبة إنجاز الطالب',
+                        'value' => ((int) ($progressMeta['progress'] ?? 0)) . '%',
+                        'tone' => 'primary',
+                    ],
+                    [
+                        'label' => 'المحاضرات المكتملة',
+                        'value' => ((int) ($progressMeta['completed_lessons'] ?? 0))
+                            . ' / '
+                            . ((int) ($progressMeta['total_lessons'] ?? 0)),
+                        'tone' => 'green',
+                    ],
+                    [
+                        'label' => 'حالة التكليف',
+                        'value' => $statusMeta['label'],
+                        'tone' => 'amber',
+                    ],
+                ],
+            ])
         );
     }
 
@@ -1765,7 +2347,7 @@ class InstructorController extends Controller
             return redirect('/login');
         }
 
-        $history = \App\Models\WebinarAssignmentHistory::with(['assignment.webinar'])
+        $history = WebinarAssignmentHistory::with(['assignment.webinar'])
             ->findOrFail($id);
 
         $webinar = $history->assignment->webinar ?? null;
@@ -1783,7 +2365,9 @@ class InstructorController extends Controller
         $passGrade = (int) ($history->assignment->pass_grade ?? 0);
 
         $history->grade = $grade;
-        $history->status = $grade >= $passGrade ? 'passed' : 'not_passed';
+        $history->status = $grade >= $passGrade
+            ? WebinarAssignmentHistory::$passed
+            : WebinarAssignmentHistory::$notPassed;
         $history->save();
 
         return redirect()
@@ -1793,6 +2377,50 @@ class InstructorController extends Controller
                 'msg' => 'تم اعتماد درجة الطالب بنجاح',
                 'type' => 'success',
             ]);
+    }
+
+    private function assignmentHistoryStatusMeta(?string $status): array
+    {
+        return match ($status) {
+            WebinarAssignmentHistory::$passed => [
+                'label' => 'مجتاز',
+                'tone' => 'success',
+            ],
+            WebinarAssignmentHistory::$notPassed => [
+                'label' => 'راسب',
+                'tone' => 'danger',
+            ],
+            WebinarAssignmentHistory::$notSubmitted => [
+                'label' => 'لم يُسلّم',
+                'tone' => 'muted',
+            ],
+            default => [
+                'label' => 'بانتظار التصحيح',
+                'tone' => 'warning',
+            ],
+        };
+    }
+
+    private function formatAssignmentDate($timestamp): string
+    {
+        $ts = (int) $timestamp;
+        if ($ts <= 0) {
+            return '—';
+        }
+
+        return date('Y/m/d', $ts);
+    }
+
+    private function formatAssignmentMonthYear(int $timestamp): string
+    {
+        $months = [
+            1 => 'يناير', 2 => 'فبراير', 3 => 'مارس', 4 => 'أبريل',
+            5 => 'مايو', 6 => 'يونيو', 7 => 'يوليو', 8 => 'أغسطس',
+            9 => 'سبتمبر', 10 => 'أكتوبر', 11 => 'نوفمبر', 12 => 'ديسمبر',
+        ];
+        $month = (int) date('n', $timestamp);
+
+        return ($months[$month] ?? date('F', $timestamp)) . ' ' . date('Y', $timestamp);
     }
 
     public function consultations(Request $request)
@@ -1843,6 +2471,11 @@ class InstructorController extends Controller
                 'link' => $mapped['link'],
                 'detail_url' => $mapped['detail_url'],
                 'join_url' => $mapped['join_url'],
+                'session_url' => $mapped['session_url'],
+                'can_create_session' => $mapped['can_create_session'],
+                'link_raw' => $mapped['link_raw'],
+                'agora_enabled' => $mapped['agora_enabled'],
+                'join_label' => $mapped['join_label'],
             ];
         }
 
@@ -1854,6 +2487,7 @@ class InstructorController extends Controller
                 'attendees' => $rows,
                 'session' => $session,
                 'settingsUrl' => url('/panel/meetings/settings'),
+                'agoraEnabled' => !empty(getFeaturesSettings('agora_for_meeting')),
             ]
         );
     }
@@ -1906,20 +2540,144 @@ class InstructorController extends Controller
             ]);
         }
 
-        $link = $reservation->link;
-        if (empty($link) && !empty($reservation->session) && method_exists($reservation->session, 'getJoinLink')) {
-            $link = $reservation->session->getJoinLink();
-        }
-
-        if (empty($link)) {
+        if (in_array($reservation->status, [
+            \App\Models\ReserveMeeting::$finished,
+            \App\Models\ReserveMeeting::$canceled,
+        ], true)) {
             return back()->with('toast', [
                 'title' => 'تنبيه',
-                'msg' => 'لم يُضف رابط اللقاء بعد',
+                'msg' => 'لا يمكن الانضمام لجلسة منتهية أو ملغاة',
                 'type' => 'error',
             ]);
         }
 
-        return \Illuminate\Support\Facades\Redirect::away($link);
+        // Prefer in-app Agora (Rocket live meeting) whenever enabled.
+        if (!empty(getFeaturesSettings('agora_for_meeting'))) {
+            if (empty($reservation->session) || ($reservation->session->session_api ?? null) !== 'agora') {
+                $this->createConsultationAgoraSession($reservation, $user);
+            }
+
+            $reservation->update([
+                'status' => \App\Models\ReserveMeeting::$open,
+                'link' => null,
+            ]);
+
+            $session = $reservation->fresh(['session'])->session;
+            if ($session) {
+                return redirect(url($session->getJoinLink()));
+            }
+        }
+
+        $target = $this->resolveConsultationJoinTarget($reservation->fresh(['session']));
+
+        if (empty($target)) {
+            return redirect()
+                ->route('panel.v1.instructor.consultations.show', ['id' => $reservation->id])
+                ->with('toast', [
+                    'title' => 'تنبيه',
+                    'msg' => 'تعذّر بدء الجلسة المباشرة — تحقق من إعدادات Agora',
+                    'type' => 'error',
+                ]);
+        }
+
+        return \Illuminate\Support\Facades\Redirect::away($target);
+    }
+
+    public function consultationCreateSession(Request $request, int $id)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $reservation = $this->instructorReserveMeetingOrFail($user, $id);
+
+        if ($reservation->meeting_type === 'in_person') {
+            return back()->with('toast', [
+                'title' => 'تنبيه',
+                'msg' => 'لا يمكن إنشاء رابط لجلسة حضورية',
+                'type' => 'error',
+            ]);
+        }
+
+        if (in_array($reservation->status, [
+            \App\Models\ReserveMeeting::$finished,
+            \App\Models\ReserveMeeting::$canceled,
+        ], true)) {
+            return back()->with('toast', [
+                'title' => 'تنبيه',
+                'msg' => 'لا يمكن تعديل جلسة منتهية أو ملغاة',
+                'type' => 'error',
+            ]);
+        }
+
+        $agoraEnabled = !empty(getFeaturesSettings('agora_for_meeting'));
+        $allowedTypes = $agoraEnabled ? 'agora,external' : 'external';
+
+        $request->validate([
+            'session_type' => 'required|in:' . $allowedTypes,
+            'url' => 'required_if:session_type,external|nullable|url|max:2000',
+            'password' => 'nullable|string|max:100',
+        ], [
+            'required' => 'حقل :attribute مطلوب',
+            'required_if' => 'حقل :attribute مطلوب',
+            'url' => 'أدخل رابط لقاء صالح (Zoom / Google Meet / …)',
+            'in' => 'نوع الجلسة غير صحيح',
+        ], [
+            'session_type' => 'نوع الجلسة',
+            'url' => 'رابط اللقاء',
+            'password' => 'كلمة المرور',
+        ]);
+
+        $sessionType = $request->input('session_type');
+
+        if ($sessionType === 'agora') {
+            $this->createConsultationAgoraSession($reservation, $user);
+            $reservation->update(['status' => \App\Models\ReserveMeeting::$open, 'link' => null]);
+
+            $session = $reservation->fresh()->session;
+            $join = $session && method_exists($session, 'getJoinLink')
+                ? url($session->getJoinLink())
+                : route('panel.v1.instructor.consultations.join', ['id' => $reservation->id]);
+
+            return \Illuminate\Support\Facades\Redirect::away($join);
+        }
+
+        $url = trim((string) $request->input('url'));
+        if (!$this->isUsableMeetingLink($url)) {
+            return back()
+                ->withInput()
+                ->with('toast', [
+                    'title' => 'تنبيه',
+                    'msg' => 'استخدم رابط Zoom أو Google Meet حقيقيًا — روابط example.com غير مقبولة',
+                    'type' => 'error',
+                ]);
+        }
+
+        $reservation->update([
+            'link' => $url,
+            'password' => $request->input('password'),
+            'status' => \App\Models\ReserveMeeting::$open,
+        ]);
+
+        try {
+            sendNotification('new_appointment_link', [
+                '[link]' => $url,
+                '[instructor.name]' => $user->full_name,
+                '[time.date]' => $reservation->day,
+            ], $reservation->user_id);
+        } catch (\Throwable $e) {
+            // notification is optional in local
+        }
+
+        return redirect()
+            ->route('panel.v1.instructor.consultations')
+            ->with('toast', [
+                'title' => 'تم',
+                'msg' => 'تم حفظ رابط اللقاء — يمكنك الانضمام الآن',
+                'type' => 'success',
+            ]);
     }
 
     public function consultationFinish(Request $request, int $id)
@@ -1973,6 +2731,94 @@ class InstructorController extends Controller
             ->firstOrFail();
     }
 
+    private function isUsableMeetingLink(?string $link): bool
+    {
+        $link = trim((string) $link);
+        if ($link === '') {
+            return false;
+        }
+
+        if (!filter_var($link, FILTER_VALIDATE_URL)) {
+            // Relative Agora panel paths are handled separately.
+            return str_starts_with($link, '/panel/sessions/');
+        }
+
+        $host = strtolower((string) parse_url($link, PHP_URL_HOST));
+        if ($host === '' || str_ends_with($host, 'example.com') || $host === 'localhost' || $host === '127.0.0.1') {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function resolveConsultationJoinTarget(\App\Models\ReserveMeeting $reservation): ?string
+    {
+        if (!empty($reservation->session)
+            && ($reservation->session->session_api ?? null) === 'agora'
+            && method_exists($reservation->session, 'getJoinLink')
+        ) {
+            return url($reservation->session->getJoinLink());
+        }
+
+        if (!empty($reservation->session) && method_exists($reservation->session, 'getJoinLink')) {
+            $path = $reservation->session->getJoinLink();
+            if (!empty($path)) {
+                return url($path);
+            }
+        }
+
+        $link = trim((string) ($reservation->link ?? ''));
+        if ($this->isUsableMeetingLink($link)) {
+            return str_starts_with($link, '/') ? url($link) : $link;
+        }
+
+        return null;
+    }
+
+    private function createConsultationAgoraSession(\App\Models\ReserveMeeting $reservation, $user): void
+    {
+        $duration = 60;
+        if (!empty($reservation->start_at) && !empty($reservation->end_at) && $reservation->end_at > $reservation->start_at) {
+            $duration = max(15, (int) (($reservation->end_at - $reservation->start_at) / 60));
+        }
+
+        $session = \App\Models\Session::query()->updateOrCreate([
+            'creator_id' => $user->id,
+            'reserve_meeting_id' => $reservation->id,
+        ], [
+            'date' => time(),
+            'duration' => $duration,
+            'link' => null,
+            'session_api' => 'agora',
+            'agora_settings' => json_encode([
+                'chat' => true,
+                'record' => true,
+                'users_join' => true,
+            ]),
+            'check_previous_parts' => false,
+            'status' => \App\Models\Session::$Active,
+            'created_at' => time(),
+        ]);
+
+        \App\Models\Translation\SessionTranslation::updateOrCreate([
+            'session_id' => $session->id,
+            'locale' => mb_strtolower(app()->getLocale()),
+        ], [
+            'title' => 'جلسة استشارية مباشرة',
+            'description' => 'جلسة مباشرة داخل المنصة',
+        ]);
+
+        try {
+            sendNotification('new_appointment_session', [
+                '[link]' => $session->getJoinLink(),
+                '[instructor.name]' => $user->full_name,
+                '[time.date]' => dateTimeFormat($session->date, 'j M Y H:i'),
+            ], $reservation->user_id);
+        } catch (\Throwable $e) {
+            // optional
+        }
+    }
+
     private function mapConsultationRow(\App\Models\ReserveMeeting $reservation): array
     {
         $dayLabels = [
@@ -2006,17 +2852,16 @@ class InstructorController extends Controller
             $timeLabel = $slot->time ?? '';
         }
 
-        $joinLink = $reservation->link;
-        if (empty($joinLink) && !empty($reservation->session) && method_exists($reservation->session, 'getJoinLink')) {
-            $joinLink = $reservation->session->getJoinLink();
-        }
+        $joinTarget = $this->resolveConsultationJoinTarget($reservation);
+        $agoraEnabled = !empty(getFeaturesSettings('agora_for_meeting'));
+        $canManageLink = $reservation->meeting_type !== 'in_person'
+            && !in_array($reservation->status, [
+                \App\Models\ReserveMeeting::$finished,
+                \App\Models\ReserveMeeting::$canceled,
+            ], true);
 
-        $canJoin = $reservation->meeting_type !== 'in_person'
-            && in_array($reservation->status, [
-                \App\Models\ReserveMeeting::$open,
-                \App\Models\ReserveMeeting::$pending,
-            ], true)
-            && !empty($joinLink);
+        // With Agora on: join always available (creates in-app room on click).
+        $canJoin = $canManageLink && ($agoraEnabled || !empty($joinTarget));
 
         $canFinish = !in_array($reservation->status, [
             \App\Models\ReserveMeeting::$finished,
@@ -2044,47 +2889,348 @@ class InstructorController extends Controller
             'students' => (int) ($reservation->student_count ?? 1),
             'status' => $statusLabel,
             'status_key' => $reservation->status,
-            'link' => $joinLink,
+            'link' => $joinTarget,
+            'link_raw' => $this->isUsableMeetingLink($reservation->link) ? $reservation->link : null,
             'detail_url' => route('panel.v1.instructor.consultations.show', ['id' => $reservation->id]),
             'join_url' => $canJoin
                 ? route('panel.v1.instructor.consultations.join', ['id' => $reservation->id])
+                : null,
+            'session_url' => $canManageLink
+                ? route('panel.v1.instructor.consultations.session', ['id' => $reservation->id])
                 : null,
             'finish_url' => $canFinish
                 ? route('panel.v1.instructor.consultations.finish', ['id' => $reservation->id])
                 : null,
             'can_join' => $canJoin,
+            'can_create_session' => $canManageLink,
             'can_finish' => $canFinish,
+            'agora_enabled' => $agoraEnabled,
+            'join_label' => $agoraEnabled ? 'انضمام للجلسة المباشرة' : 'رابط اللقاء',
+        ];
+    }
+
+    public function calendar(Request $request)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $events = $this->buildInstructorCalendarEvents($user);
+        $now = time();
+
+        $eventDates = collect($events)
+            ->pluck('date')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $selectedTs = (int) $request->get('date', $now);
+        $selectedDate = dateTimeFormat($selectedTs, 'Y-m-d', false);
+        $dayEvents = collect($events)
+            ->where('date', $selectedDate)
+            ->sortBy('timestamp')
+            ->values()
+            ->all();
+
+        $upcoming = collect($events)
+            ->filter(fn ($e) => empty($e['is_past']))
+            ->sortBy('timestamp')
+            ->take(8)
+            ->values()
+            ->all();
+
+        return $this->render($request, 'panel_v1.instructor.pages.calendar', 'تقويم الأحداث', [
+            'calendarEvents' => $events,
+            'calendarEventDates' => $eventDates,
+            'dayEvents' => $dayEvents,
+            'upcomingEvents' => $upcoming,
+            'calendarYear' => (int) dateTimeFormat($selectedTs, 'Y', false),
+            'calendarMonth' => (int) dateTimeFormat($selectedTs, 'n', false),
+            'calendarSelected' => (int) dateTimeFormat($selectedTs, 'j', false),
+            'selectedDate' => $selectedDate,
+            'selectedDateLabel' => dateTimeFormat($selectedTs, 'Y/m/d', false),
+        ]);
+    }
+
+    private function buildInstructorCalendarEvents($user): array
+    {
+        $items = [];
+        $now = time();
+        // Keep today's finished items visible; drop older finished ones.
+        $horizonStart = $now - (12 * 3600);
+
+        $webinarIds = Webinar::query()
+            ->where(function ($q) use ($user) {
+                $q->where('teacher_id', $user->id)->orWhere('creator_id', $user->id);
+            })
+            ->pluck('id')
+            ->all();
+
+        $meetingIds = \App\Models\Meeting::where('creator_id', $user->id)->pluck('id')->all();
+        $timeIds = !empty($meetingIds)
+            ? \App\Models\MeetingTime::whereIn('meeting_id', $meetingIds)->pluck('id')->all()
+            : [];
+
+        $reserves = \App\Models\ReserveMeeting::with(['user', 'meetingTime'])
+            ->where(function ($q) use ($meetingIds, $timeIds) {
+                $q->whereIn('meeting_id', $meetingIds ?: [0])
+                    ->orWhereIn('meeting_time_id', $timeIds ?: [0]);
+            })
+            ->whereIn('status', [
+                \App\Models\ReserveMeeting::$open,
+                \App\Models\ReserveMeeting::$pending,
+            ])
+            ->where(function ($q) use ($horizonStart) {
+                $q->where('end_at', '>=', $horizonStart)
+                    ->orWhere(function ($q2) use ($horizonStart) {
+                        $q2->whereNull('end_at')->where(function ($q3) use ($horizonStart) {
+                            $q3->where('start_at', '>=', $horizonStart)
+                                ->orWhere('date', '>=', $horizonStart);
+                        });
+                    });
+            })
+            ->orderBy('start_at')
+            ->limit(100)
+            ->get();
+
+        foreach ($reserves as $reserve) {
+            $startAt = (int) ($reserve->start_at ?: $reserve->date);
+            if ($startAt <= 0) {
+                continue;
+            }
+            $endsAt = (int) ($reserve->end_at ?: ($startAt + 3600));
+            $isPast = $endsAt < $now;
+            $timeLabel = '';
+            if (!empty($reserve->start_at) && !empty($reserve->end_at)) {
+                $timeLabel = dateTimeFormat((int) $reserve->start_at, 'H:i', false)
+                    . ' - '
+                    . dateTimeFormat((int) $reserve->end_at, 'H:i', false);
+            } elseif (!empty($reserve->meetingTime->time)) {
+                $timeLabel = $reserve->meetingTime->time;
+            }
+
+            $items[] = $this->mapCalendarEventItem([
+                'type' => 'meeting',
+                'type_label' => 'جلسة استشارية',
+                'icon' => 'icon-[tabler--video]',
+                'title' => $reserve->meetingTime->description ?? 'جلسة استشارية',
+                'subtitle' => $reserve->user->full_name ?? 'طالب',
+                'timestamp' => $startAt,
+                'ends_at' => $endsAt,
+                'is_past' => $isPast,
+                'time_label' => $timeLabel,
+                'url' => !$isPast
+                    ? route('panel.v1.instructor.consultations.show', ['id' => $reserve->id])
+                    : null,
+                'calendar_url' => (!$isPast && method_exists($reserve, 'addToCalendarLink'))
+                    ? $reserve->addToCalendarLink()
+                    : null,
+            ]);
+        }
+
+        if (!empty($webinarIds)) {
+            $sessions = \App\Models\Session::query()
+                ->with(['webinar.translations'])
+                ->whereIn('webinar_id', $webinarIds)
+                ->where('status', \App\Models\Session::$Active)
+                ->whereNotNull('date')
+                ->where('date', '>=', $horizonStart - (6 * 3600))
+                ->orderBy('date')
+                ->limit(100)
+                ->get();
+
+            foreach ($sessions as $session) {
+                $startAt = (int) $session->date;
+                $durationMin = max(15, (int) ($session->duration ?: 60));
+                $endsAt = $startAt + ($durationMin * 60);
+                if ($endsAt < $horizonStart) {
+                    continue;
+                }
+                $isPast = $endsAt < $now;
+                $wTr = $session->webinar
+                    ? ($session->webinar->translate('ar') ?: $session->webinar->translate(app()->getLocale()) ?: $session->webinar->translations->first())
+                    : null;
+                $courseTitle = $wTr->title ?? ($session->webinar->title ?? 'دورة');
+                $sessionTitle = $session->title ?: 'جلسة مباشرة';
+
+                $items[] = $this->mapCalendarEventItem([
+                    'type' => 'live_session',
+                    'type_label' => 'جلسة مباشرة',
+                    'icon' => 'icon-[tabler--broadcast]',
+                    'title' => $sessionTitle,
+                    'subtitle' => $courseTitle,
+                    'timestamp' => $startAt,
+                    'ends_at' => $endsAt,
+                    'is_past' => $isPast,
+                    'time_label' => dateTimeFormat($startAt, 'H:i', false) . ' · ' . $durationMin . ' د',
+                    'url' => (!$isPast && !empty($session->webinar->slug))
+                        ? route('panel.v1.instructor.courses.watch', ['slug' => $session->webinar->slug])
+                        : null,
+                    'calendar_url' => null,
+                ]);
+            }
+
+            $liveClasses = Webinar::query()
+                ->with('translations')
+                ->whereIn('id', $webinarIds)
+                ->where('type', Webinar::$webinar)
+                ->whereNotNull('start_date')
+                ->where('start_date', '>=', $horizonStart)
+                ->orderBy('start_date')
+                ->limit(40)
+                ->get();
+
+            foreach ($liveClasses as $webinar) {
+                $startAt = (int) $webinar->start_date;
+                // Live-class start marker: treat as ended 2 hours after start.
+                $endsAt = $startAt + (2 * 3600);
+                $isPast = $endsAt < $now;
+                $tr = $webinar->translate('ar') ?: $webinar->translate(app()->getLocale()) ?: $webinar->translations->first();
+
+                $items[] = $this->mapCalendarEventItem([
+                    'type' => 'live_class',
+                    'type_label' => 'بدء بث مباشر',
+                    'icon' => 'icon-[tabler--player-play]',
+                    'title' => $tr->title ?? ('دورة #' . $webinar->id),
+                    'subtitle' => 'موعد بدء الدورة المباشرة',
+                    'timestamp' => $startAt,
+                    'ends_at' => $endsAt,
+                    'is_past' => $isPast,
+                    'time_label' => dateTimeFormat($startAt, 'H:i', false),
+                    'url' => (!$isPast && !empty($webinar->slug))
+                        ? route('panel.v1.instructor.courses.watch', ['slug' => $webinar->slug])
+                        : null,
+                    'calendar_url' => null,
+                ]);
+            }
+        }
+
+        if (class_exists(\App\Models\Event::class)) {
+            try {
+                $createdEvents = \App\Models\Event::query()
+                    ->where('creator_id', $user->id)
+                    ->whereNotNull('start_date')
+                    ->where('start_date', '>=', $horizonStart)
+                    ->orderBy('start_date')
+                    ->limit(40)
+                    ->get();
+
+                foreach ($createdEvents as $event) {
+                    $startAt = (int) $event->start_date;
+                    $endsAt = $startAt + (2 * 3600);
+                    $isPast = $endsAt < $now;
+                    $items[] = $this->mapCalendarEventItem([
+                        'type' => 'event',
+                        'type_label' => 'فعالية',
+                        'icon' => 'icon-[tabler--ticket]',
+                        'title' => $event->title ?? ('فعالية #' . $event->id),
+                        'subtitle' => 'فعالية من إنشائك',
+                        'timestamp' => $startAt,
+                        'ends_at' => $endsAt,
+                        'is_past' => $isPast,
+                        'time_label' => dateTimeFormat($startAt, 'H:i', false),
+                        'url' => (!$isPast && !empty($event->slug)) ? url('/events/' . $event->slug) : null,
+                        'calendar_url' => null,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                // optional feature
+            }
+        }
+
+        usort($items, fn ($a, $b) => ($a['timestamp'] ?? 0) <=> ($b['timestamp'] ?? 0));
+
+        return array_values($items);
+    }
+
+    private function mapCalendarEventItem(array $item): array
+    {
+        $ts = (int) ($item['timestamp'] ?? 0);
+        $isPast = !empty($item['is_past']);
+
+        return [
+            'type' => $item['type'] ?? 'event',
+            'type_label' => $item['type_label'] ?? 'حدث',
+            'icon' => $item['icon'] ?? 'icon-[tabler--calendar]',
+            'title' => $item['title'] ?? '',
+            'subtitle' => $item['subtitle'] ?? '',
+            'timestamp' => $ts,
+            'ends_at' => (int) ($item['ends_at'] ?? $ts),
+            'date' => dateTimeFormat($ts, 'Y-m-d', false),
+            'time_label' => $item['time_label'] ?? '',
+            'url' => $isPast ? null : ($item['url'] ?? null),
+            'calendar_url' => $isPast ? null : ($item['calendar_url'] ?? null),
+            'is_past' => $isPast,
+            'status_label' => $isPast ? 'انتهت' : 'قادمة',
+            'can_open' => !$isPast && !empty($item['url']),
         ];
     }
 
     public function quizzes(Request $request)
     {
-        $user = $request->user();
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
 
         $webinarIds = $this->teacherWebinars($user)->pluck('id')->all();
 
-        $quizzes = !empty($webinarIds)
-            ? \App\Models\Quiz::with(['webinar'])
+        $quizzes = empty($webinarIds)
+            ? collect()
+            : Quiz::with(['webinar'])
+                ->withCount([
+                    'quizQuestions',
+                    'quizResults',
+                    'quizResults as waiting_count' => function ($q) {
+                        $q->where('status', \App\Models\QuizzesResult::$waiting);
+                    },
+                ])
+                ->withSum('quizQuestions', 'grade')
                 ->whereIn('webinar_id', $webinarIds)
-                ->orderBy('id', 'desc')
-                ->get()
-            : collect();
+                ->orderByDesc('id')
+                ->get();
 
         $quizIds = $quizzes->pluck('id')->all();
 
-        $results = !empty($quizIds)
-            ? \App\Models\QuizzesResult::with(['user', 'quiz.webinar'])
-                ->whereIn('quiz_id', $quizIds)
-                ->orderBy('id', 'desc')
-                ->limit(50)
-                ->get()
-            : collect();
+        $studentsByQuiz = empty($quizIds)
+            ? collect()
+            : \App\Models\QuizzesResult::whereIn('quiz_id', $quizIds)
+                ->selectRaw('quiz_id, COUNT(DISTINCT user_id) as c')
+                ->groupBy('quiz_id')
+                ->pluck('c', 'quiz_id');
 
-        $waiting = $results->where('status', 'waiting')->values();
-        $graded = $results->where('status', '!=', 'waiting')->values();
+        $results = empty($quizIds)
+            ? collect()
+            : \App\Models\QuizzesResult::with(['user', 'quiz.webinar'])
+                ->whereIn('quiz_id', $quizIds)
+                ->orderByDesc('id')
+                ->limit(50)
+                ->get();
+
+        $waitingAll = empty($quizIds)
+            ? collect()
+            : \App\Models\QuizzesResult::with(['user', 'quiz.webinar'])
+                ->whereIn('quiz_id', $quizIds)
+                ->where('status', \App\Models\QuizzesResult::$waiting)
+                ->orderByDesc('id')
+                ->limit(12)
+                ->get();
+
+        $graded = $results->where('status', '!=', \App\Models\QuizzesResult::$waiting);
         $passRate = $graded->isNotEmpty()
-            ? (int) round($graded->where('status', 'passed')->count() / $graded->count() * 100)
+            ? (int) round($graded->where('status', \App\Models\QuizzesResult::$passed)->count() / $graded->count() * 100)
             : 0;
+
+        $attemptCounts = empty($quizIds)
+            ? collect()
+            : \App\Models\QuizzesResult::whereIn('quiz_id', $quizIds)
+                ->selectRaw('quiz_id, user_id, COUNT(*) as c')
+                ->groupBy('quiz_id', 'user_id')
+                ->get()
+                ->keyBy(fn ($row) => $row->quiz_id . ':' . $row->user_id);
 
         return $this->render(
             $request,
@@ -2094,48 +3240,77 @@ class InstructorController extends Controller
                 'quizStats' => [
                     ['value' => $quizzes->count() . ' اختبار', 'label' => 'إجمالي الاختبارات'],
                     ['value' => $passRate . '%', 'label' => 'متوسط نسبة النجاح'],
-                    ['value' => $waiting->count() . ' إجابة', 'label' => 'إجابات بانتظار التصحيح'],
+                    ['value' => $waitingAll->count() . ' إجابة', 'label' => 'إجابات بانتظار التصحيح'],
                 ],
-                'pendingQuizzes' => $waiting->take(6)->map(function ($result) {
+                'pendingQuizzes' => $waitingAll->map(function ($result) {
                     return [
                         'result_id' => $result->id,
-                        'name' => $result->user->full_name ?? '',
+                        'grade_url' => route('panel.v1.instructor.quiz-results.grade', ['resultId' => $result->id]),
+                        'name' => $result->user->full_name ?? 'طالب',
                         'status' => 'بانتظار التصحيح',
-                        'title' => $result->quiz->title ?? '',
+                        'title' => $result->quiz->title ?? 'اختبار',
                         'course' => $result->quiz->webinar->title ?? '',
-                        'date' => date('Y/m/d', (int) $result->created_at),
+                        'date' => $this->formatAssignmentDate($result->created_at),
                     ];
-                })->all(),
-                'quizRows' => $quizzes->map(function ($quiz) {
+                })->values()->all(),
+                'quizRows' => $quizzes->map(function ($quiz) use ($studentsByQuiz) {
+                    $slug = $quiz->webinar->slug ?? null;
+                    $statusActive = ($quiz->status ?? '') === Quiz::ACTIVE;
+
                     return [
                         'id' => $quiz->id,
-                        'title' => $quiz->title,
+                        'title' => $quiz->title ?: 'اختبار',
                         'course' => $quiz->webinar->title ?? '',
-                        'questions' => \App\Models\QuizzesQuestion::where('quiz_id', $quiz->id)->count(),
-                        'duration' => !empty($quiz->time) ? $quiz->time . ' دقيقة' : 'مفتوح',
-                        'fullGrade' => \App\Models\QuizzesQuestion::where('quiz_id', $quiz->id)->sum('grade'),
-                        'passGrade' => $quiz->pass_mark,
-                        'students' => \App\Models\QuizzesResult::where('quiz_id', $quiz->id)->distinct('user_id')->count('user_id'),
-                        'status' => $quiz->status === 'active' ? 'نشط' : 'معطل',
-                        'created_at' => date('Y/m/d', (int) $quiz->created_at),
+                        'slug' => $slug,
+                        'questions' => (int) ($quiz->quiz_questions_count ?? 0),
+                        'duration' => !empty($quiz->time) ? ((int) $quiz->time) . ' دقيقة' : 'مفتوح',
+                        'fullGrade' => (int) ($quiz->quiz_questions_sum_grade ?: $quiz->total_mark ?: 0),
+                        'passGrade' => (int) ($quiz->pass_mark ?? 0),
+                        'students' => (int) ($studentsByQuiz[$quiz->id] ?? 0),
+                        'waiting' => (int) ($quiz->waiting_count ?? 0),
+                        'status' => $statusActive ? 'نشط' : 'معطل',
+                        'status_tone' => $statusActive ? 'success' : 'muted',
+                        'created_at' => $this->formatAssignmentDate($quiz->created_at),
+                        'view_url' => route('panel.v1.instructor.quizzes.view', ['id' => $quiz->id]),
+                        'edit_url' => route('panel.v1.instructor.quizzes.edit', ['id' => $quiz->id]),
+                        'delete_url' => route('panel.v1.instructor.quizzes.delete', ['id' => $quiz->id]),
+                        'course_url' => $slug
+                            ? route('panel.v1.instructor.courses.performance', ['slug' => $slug])
+                            : route('panel.v1.instructor.courses'),
                     ];
-                })->all(),
-                'quizStudentRows' => $results->take(20)->map(function ($result) {
-                    $attempts = \App\Models\QuizzesResult::where('quiz_id', $result->quiz_id)
-                        ->where('user_id', $result->user_id)->count();
+                })->values()->all(),
+                'quizStudentRows' => $results->map(function ($result) use ($attemptCounts) {
+                    $statusMeta = $this->quizResultStatusMeta($result->status);
+                    $attemptsKey = $result->quiz_id . ':' . $result->user_id;
+                    $attemptUsed = (int) ($attemptCounts->get($attemptsKey)->c ?? 1);
+                    $attemptMax = $result->quiz->attempt ?? null;
+                    $totalMark = (int) ($result->quiz->total_mark ?? 0);
+
                     return [
-                        'name' => $result->user->full_name ?? '',
-                        'title' => $result->quiz->title ?? '',
-                        'course' => $result->quiz->webinar->title ?? '',
-                        'grade' => $result->user_grade . ' / ' . $result->quiz->total_mark,
-                        'attempts' => '1 / ' . ($result->quiz->attempt ?? '—'),
-                        'attempted_at' => date('Y/m/d', (int) $result->created_at),
-                        'status' => $result->status === 'passed' ? 'ناجح' : ($result->status === 'waiting' ? 'بانتظار التصحيح' : 'راسب'),
                         'result_id' => $result->id,
+                        'grade_url' => route('panel.v1.instructor.quiz-results.grade', ['resultId' => $result->id]),
+                        'name' => $result->user->full_name ?? 'طالب',
+                        'title' => $result->quiz->title ?? 'اختبار',
+                        'course' => $result->quiz->webinar->title ?? '',
+                        'grade' => ((int) ($result->user_grade ?? 0)) . ' / ' . $totalMark,
+                        'attempts' => $attemptUsed . ' / ' . ($attemptMax ?: '—'),
+                        'attempted_at' => $this->formatAssignmentDate($result->created_at),
+                        'status' => $statusMeta['label'],
+                        'status_tone' => $statusMeta['tone'],
                     ];
-                })->all(),
+                })->values()->all(),
+                'createQuizUrl' => route('panel.v1.instructor.quizzes.create'),
             ]
         );
+    }
+
+    private function quizResultStatusMeta(?string $status): array
+    {
+        return match ($status) {
+            \App\Models\QuizzesResult::$passed => ['label' => 'ناجح', 'tone' => 'success'],
+            \App\Models\QuizzesResult::$waiting => ['label' => 'بانتظار التصحيح', 'tone' => 'warning'],
+            default => ['label' => 'راسب', 'tone' => 'danger'],
+        };
     }
 
     public function quizView(Request $request, int $id)
@@ -2147,28 +3322,54 @@ class InstructorController extends Controller
 
         $quiz = $this->teacherQuizOrFail($guardUser, $id);
         $webinar = $quiz->webinar;
+        $shell = $this->instructorCourseShell($webinar, $request);
 
         $questions = \App\Models\QuizzesQuestion::with(['quizzesQuestionsAnswers'])
             ->where('quiz_id', $quiz->id)
             ->orderBy('order')
             ->orderBy('id')
-            ->get()
-            ->map(function ($question) {
+            ->get();
+
+        $realQuestions = $questions->map(function ($question) {
+            return [
+                'id' => $question->id,
+                'title' => $question->title,
+                'type' => $question->type,
+                'grade' => $question->grade,
+                'model_answer' => $question->type === \App\Models\QuizzesQuestion::$descriptive
+                    ? ($question->correct ?: '—')
+                    : null,
+                'options' => $question->quizzesQuestionsAnswers->map(function ($answer) {
+                    return [
+                        'id' => $answer->id,
+                        'text' => $answer->title,
+                        'correct' => (bool) $answer->correct,
+                    ];
+                })->values()->all(),
+            ];
+        })->values()->all();
+
+        $first = $realQuestions[0] ?? null;
+        $quizView = [
+            'title' => $quiz->title,
+            'subtitle' => ($webinar->title ?? '') . (!empty($webinar->category->title) ? (' • ' . $webinar->category->title) : ''),
+            'questions_count' => count($realQuestions),
+            'current' => 1,
+            'total' => max(1, count($realQuestions)),
+            'question' => $first['title'] ?? 'لا توجد أسئلة بعد — أضف سؤالاً أدناه.',
+            'options' => collect($first['options'] ?? [])->map(function ($option) {
                 return [
-                    'id' => $question->id,
-                    'title' => $question->title,
-                    'type' => $question->type,
-                    'grade' => $question->grade,
-                    'options' => $question->quizzesQuestionsAnswers->map(function ($answer) {
-                        return ['id' => $answer->id, 'text' => $answer->title, 'correct' => (bool) $answer->correct];
-                    })->all(),
+                    'text' => $option['text'],
+                    'correct' => !empty($option['correct']),
+                    'selected' => false,
                 ];
-            })->all();
+            })->all(),
+        ];
 
         $waitingResults = \App\Models\QuizzesResult::with(['user'])
             ->where('quiz_id', $quiz->id)
-            ->where('status', 'waiting')
-            ->orderBy('id', 'desc')
+            ->where('status', \App\Models\QuizzesResult::$waiting)
+            ->orderByDesc('id')
             ->limit(20)
             ->get();
 
@@ -2176,9 +3377,9 @@ class InstructorController extends Controller
             $request,
             'panel_v1.instructor.pages.quiz-view',
             'عرض الاختبار',
-            [
+            array_merge($shell, [
                 'quizId' => $quiz->id,
-                'slug' => $webinar->slug ?? 'demo',
+                'slug' => $webinar->slug ?? '',
                 'webinar' => $webinar,
                 'quizTitle' => $quiz->title,
                 'quizMeta' => [
@@ -2186,10 +3387,12 @@ class InstructorController extends Controller
                     'time' => $quiz->time,
                     'attempt' => $quiz->attempt,
                     'status' => $quiz->status,
+                    'total_mark' => $quiz->total_mark,
                 ],
-                'realQuestions' => $questions,
+                'quizView' => $quizView,
+                'realQuestions' => $realQuestions,
                 'waitingResults' => $waitingResults,
-            ]
+            ])
         );
     }
 
@@ -2263,6 +3466,7 @@ class InstructorController extends Controller
         }
 
         $quiz = $this->teacherQuizOrFail($guardUser, $id);
+        $quiz->load('webinar');
 
         return $this->render(
             $request,
@@ -2334,35 +3538,73 @@ class InstructorController extends Controller
         }
 
         $quiz = $this->teacherQuizOrFail($guardUser, $id);
+        $type = $request->input('type', 'multiple');
 
-        $request->validate([
+        $rules = [
             'title' => 'required|string|max:1000',
             'type' => 'required|in:multiple,descriptive',
-            'grade' => 'required|integer|min:1',
+            'grade' => 'required|integer|min:1|max:1000',
+        ];
+
+        if ($type === 'multiple') {
+            $rules['options'] = 'required|array|min:2';
+            $rules['options.*'] = 'nullable|string|max:1000';
+            $rules['correct_option'] = 'required|integer|min:0|max:10';
+        } else {
+            $rules['correct'] = 'nullable|string|max:5000';
+        }
+
+        $data = $request->validate($rules, [
+            'title.required' => 'اكتب نص السؤال',
+            'grade.required' => 'حدد درجة السؤال',
+            'options.required' => 'أضف خيارين على الأقل',
+            'options.min' => 'أضف خيارين على الأقل',
+            'correct_option.required' => 'اختر الإجابة الصحيحة بالنقر على ○ بجانب الخيار',
         ]);
+
+        $options = [];
+        if ($type === 'multiple') {
+            $options = array_values(array_filter(array_map('trim', (array) $request->input('options', [])), fn ($v) => $v !== ''));
+            if (count($options) < 2) {
+                return back()->withInput()->withErrors([
+                    'options' => 'أضف خيارين مكتوبين على الأقل',
+                ]);
+            }
+            $correctOption = (int) $request->input('correct_option', 0);
+            if ($correctOption < 0 || $correctOption >= count($options)) {
+                return back()->withInput()->withErrors([
+                    'correct_option' => 'اختر الإجابة الصحيحة من الخيارات المكتوبة',
+                ]);
+            }
+        }
+
+        $maxOrder = (int) \App\Models\QuizzesQuestion::where('quiz_id', $quiz->id)->max('order');
 
         $question = new \App\Models\QuizzesQuestion();
         $question->quiz_id = $quiz->id;
         $question->creator_id = $guardUser->id;
-        $question->grade = $request->input('grade');
-        $question->type = $request->input('type');
+        $question->grade = (int) $data['grade'];
+        $question->type = $type;
+        $question->order = $maxOrder + 1;
         $question->created_at = time();
         $question->updated_at = time();
         $question->save();
 
         $translation = $question->translateOrNew('ar');
         $translation->locale = 'ar';
-        $translation->title = $request->input('title');
+        $translation->title = $data['title'];
+        if ($type === 'descriptive') {
+            $translation->correct = $request->input('correct');
+        }
         $translation->save();
 
-        if ($question->type === 'multiple') {
-            $options = array_filter(array_map('trim', (array) $request->input('options', [])));
-            $correctIndex = (int) $request->input('correct_index', 0);
-            foreach (array_values($options) as $index => $optionTitle) {
+        if ($type === 'multiple') {
+            $correctOption = (int) $request->input('correct_option', 0);
+            foreach ($options as $index => $optionTitle) {
                 $answer = new \App\Models\QuizzesQuestionsAnswer();
                 $answer->question_id = $question->id;
                 $answer->creator_id = $guardUser->id;
-                $answer->correct = $index === $correctIndex;
+                $answer->correct = $index === $correctOption ? 1 : 0;
                 $answer->created_at = time();
                 $answer->updated_at = time();
                 $answer->save();
@@ -2374,9 +3616,13 @@ class InstructorController extends Controller
             }
         }
 
+        $quiz->total_mark = (int) \App\Models\QuizzesQuestion::where('quiz_id', $quiz->id)->sum('grade');
+        $quiz->updated_at = time();
+        $quiz->save();
+
         return redirect()
             ->route('panel.v1.instructor.quizzes.view', ['id' => $quiz->id])
-            ->with('toast', ['title' => 'تم', 'msg' => 'تمت إضافة السؤال', 'type' => 'success']);
+            ->with('toast', ['title' => 'تم', 'msg' => 'تمت إضافة السؤال بنجاح', 'type' => 'success']);
     }
 
     public function questionDelete(Request $request, int $id, int $questionId)
@@ -2391,6 +3637,10 @@ class InstructorController extends Controller
         \App\Models\QuizzesQuestion::where('id', $questionId)
             ->where('quiz_id', $quiz->id)
             ->delete();
+
+        $quiz->total_mark = (int) \App\Models\QuizzesQuestion::where('quiz_id', $quiz->id)->sum('grade');
+        $quiz->updated_at = time();
+        $quiz->save();
 
         return redirect()
             ->route('panel.v1.instructor.quizzes.view', ['id' => $quiz->id])
@@ -2410,11 +3660,55 @@ class InstructorController extends Controller
             abort(404);
         }
 
+        $decoded = json_decode($result->results ?? '[]', true) ?: [];
+        $questionIds = array_keys($decoded);
+        $questions = \App\Models\QuizzesQuestion::with(['quizzesQuestionsAnswers'])
+            ->whereIn('id', $questionIds)
+            ->get()
+            ->keyBy('id');
+
+        $reviewItems = [];
+        foreach ($decoded as $questionId => $entry) {
+            $question = $questions->get($questionId);
+            $studentAnswer = '—';
+            $modelAnswer = '—';
+            $isCorrect = null;
+
+            if ($question && $question->type === \App\Models\QuizzesQuestion::$descriptive) {
+                $studentAnswer = $entry['text'] ?? '—';
+                $modelAnswer = $question->correct ?: '—';
+            } elseif (!empty($entry['answer'])) {
+                $answer = \App\Models\QuizzesQuestionsAnswer::find($entry['answer']);
+                $studentAnswer = $answer->title ?? '—';
+                $correct = $question
+                    ? $question->quizzesQuestionsAnswers->firstWhere('correct', 1)
+                    : null;
+                $modelAnswer = $correct->title ?? '—';
+                $isCorrect = !empty($entry['status']);
+            }
+
+            $reviewItems[] = [
+                'question' => $question->title ?? ('سؤال #' . $questionId),
+                'type' => $question->type ?? 'multiple',
+                'student_answer' => $studentAnswer,
+                'model_answer' => $modelAnswer,
+                'is_correct' => $isCorrect,
+                'grade' => (int) ($entry['grade'] ?? ($question->grade ?? 0)),
+            ];
+        }
+
         return $this->render(
             $request,
             'panel_v1.instructor.pages.quiz-result-grade',
             'تصحيح نتيجة',
-            ['quizResult' => $result]
+            [
+                'quizResult' => $result,
+                'reviewItems' => $reviewItems,
+                'quizTitle' => $result->quiz->title ?? 'اختبار',
+                'courseTitle' => $result->quiz->webinar->title ?? '',
+                'studentName' => $result->user->full_name ?? 'طالب',
+                'maxGrade' => (int) ($result->quiz->total_mark ?? 0),
+            ]
         );
     }
 
@@ -2439,7 +3733,7 @@ class InstructorController extends Controller
         $result->save();
 
         return redirect()
-            ->route('panel.v1.instructor.quizzes.view', ['id' => $quiz->id])
+            ->route('panel.v1.instructor.quizzes')
             ->with('toast', ['title' => 'تم', 'msg' => 'تم اعتماد النتيجة', 'type' => 'success']);
     }
 
@@ -2452,6 +3746,208 @@ class InstructorController extends Controller
         }
 
         return $quiz;
+    }
+
+    public function comments(Request $request)
+    {
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $webinarIds = $this->teacherWebinars($user)->pluck('id')->all();
+        $courseId = (int) $request->get('course_id', 0);
+        $q = trim((string) $request->get('q', ''));
+
+        $baseQuery = \App\Models\Comment::query()
+            ->whereIn('webinar_id', $webinarIds ?: [0])
+            ->whereNull('reply_id')
+            ->whereNotNull('webinar_id');
+
+        $totalComments = (clone $baseQuery)->count();
+        $pendingCount = (clone $baseQuery)->where('status', \App\Models\Comment::$pending)->count();
+        $repliedCount = (clone $baseQuery)->whereHas('replies')->count();
+        $commentIds = (clone $baseQuery)->pluck('id');
+        $reportsCount = $commentIds->isEmpty()
+            ? 0
+            : \App\Models\CommentReport::whereIn('comment_id', $commentIds)->count();
+
+        $listQuery = (clone $baseQuery)
+            ->with([
+                'user',
+                'webinar',
+                'replies' => function ($query) {
+                    $query->with('user')->orderBy('id');
+                },
+            ])
+            ->orderByDesc('id');
+
+        if ($courseId > 0 && in_array($courseId, $webinarIds, true)) {
+            $listQuery->where('webinar_id', $courseId);
+        }
+
+        if ($q !== '') {
+            $matchedWebinarIds = Webinar::whereIn('id', $webinarIds ?: [0])
+                ->get()
+                ->filter(fn ($webinar) => mb_stripos((string) $webinar->title, $q) !== false)
+                ->pluck('id')
+                ->all();
+
+            $listQuery->where(function ($query) use ($q, $matchedWebinarIds) {
+                $query->where('comment', 'like', '%' . $q . '%')
+                    ->orWhereHas('user', function ($userQuery) use ($q) {
+                        $userQuery->where('full_name', 'like', '%' . $q . '%');
+                    });
+
+                if (!empty($matchedWebinarIds)) {
+                    $query->orWhereIn('webinar_id', $matchedWebinarIds);
+                }
+            });
+        }
+
+        $comments = $listQuery->limit(40)->get();
+
+        foreach ($comments->whereNull('viewed_at') as $comment) {
+            $comment->update(['viewed_at' => time()]);
+        }
+
+        $courseOptions = $this->teacherWebinars($user)->map(fn ($webinar) => [
+            'id' => $webinar->id,
+            'title' => $webinar->title,
+        ])->values()->all();
+
+        $rows = $comments->map(function ($comment) use ($user) {
+            $statusActive = ($comment->status ?? '') === \App\Models\Comment::$active;
+
+            return [
+                'id' => $comment->id,
+                'name' => $comment->user->full_name ?? 'طالب',
+                'avatar' => method_exists($comment->user, 'getAvatar') ? $comment->user->getAvatar() : null,
+                'course' => $comment->webinar->title ?? '',
+                'slug' => $comment->webinar->slug ?? null,
+                'body' => trim(strip_tags((string) ($comment->comment ?? ''))),
+                'status' => $statusActive ? 'نشط' : 'قيد المراجعة',
+                'status_tone' => $statusActive ? 'success' : 'warning',
+                'date' => $this->formatAssignmentDate($comment->created_at),
+                'time' => !empty($comment->created_at) ? date('H:i', (int) $comment->created_at) : '',
+                'replies' => $comment->replies->map(function ($reply) use ($user) {
+                    $isInstructor = (int) ($reply->user_id ?? 0) === (int) $user->id;
+
+                    return [
+                        'id' => $reply->id,
+                        'name' => $reply->user->full_name ?? 'مستخدم',
+                        'body' => trim(strip_tags((string) ($reply->comment ?? ''))),
+                        'date' => $this->formatAssignmentDate($reply->created_at),
+                        'is_instructor' => $isInstructor,
+                    ];
+                })->values()->all(),
+                'reply_url' => route('panel.v1.instructor.comments.reply', ['id' => $comment->id]),
+                'report_url' => route('panel.v1.instructor.comments.report', ['id' => $comment->id]),
+                'course_url' => !empty($comment->webinar->slug)
+                    ? route('panel.v1.instructor.courses.performance', ['slug' => $comment->webinar->slug])
+                    : route('panel.v1.instructor.courses'),
+            ];
+        })->values()->all();
+
+        return $this->render($request, 'panel_v1.instructor.pages.comments', 'تعليقات الدورات', [
+            'commentStats' => [
+                ['value' => (string) $totalComments, 'label' => 'إجمالي التعليقات'],
+                ['value' => (string) $repliedCount, 'label' => 'تم الرد عليها'],
+                ['value' => (string) $pendingCount, 'label' => 'قيد المراجعة'],
+                ['value' => (string) $reportsCount, 'label' => 'بلاغات'],
+            ],
+            'commentRows' => $rows,
+            'courseOptions' => $courseOptions,
+            'selectedCourseId' => $courseId > 0 ? $courseId : null,
+            'searchQuery' => $q,
+        ]);
+    }
+
+    public function commentReply(Request $request, int $id)
+    {
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $request->validate([
+            'comment' => 'required|string|max:5000',
+        ], [
+            'comment.required' => 'اكتب نص الرد',
+        ]);
+
+        $comment = $this->teacherCourseCommentOrFail($user, $id);
+
+        \App\Models\Comment::create([
+            'user_id' => $user->id,
+            'comment' => $request->input('comment'),
+            'webinar_id' => $comment->webinar_id,
+            'reply_id' => $comment->id,
+            'status' => \App\Models\Comment::$active,
+            'created_at' => time(),
+            'viewed_at' => time(),
+        ]);
+
+        return redirect()
+            ->route('panel.v1.instructor.comments', array_filter([
+                'course_id' => $request->input('course_id'),
+                'q' => $request->input('q'),
+            ]))
+            ->with('toast', [
+                'title' => 'تم',
+                'msg' => 'تم إرسال الرد بنجاح',
+                'type' => 'success',
+            ]);
+    }
+
+    public function commentReport(Request $request, int $id)
+    {
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $request->validate([
+            'message' => 'required|string|max:2000',
+        ], [
+            'message.required' => 'اكتب سبب البلاغ',
+        ]);
+
+        $comment = $this->teacherCourseCommentOrFail($user, $id);
+
+        \App\Models\CommentReport::create([
+            'webinar_id' => $comment->webinar_id,
+            'user_id' => $user->id,
+            'comment_id' => $comment->id,
+            'message' => $request->input('message'),
+            'created_at' => time(),
+        ]);
+
+        return redirect()
+            ->route('panel.v1.instructor.comments')
+            ->with('toast', [
+                'title' => 'تم',
+                'msg' => 'تم إرسال البلاغ للإدارة',
+                'type' => 'success',
+            ]);
+    }
+
+    private function teacherCourseCommentOrFail($user, int $id): \App\Models\Comment
+    {
+        $comment = \App\Models\Comment::with('webinar')->findOrFail($id);
+        $webinar = $comment->webinar;
+
+        if (
+            empty($webinar)
+            || (
+                (int) $webinar->teacher_id !== (int) $user->id
+                && (int) $webinar->creator_id !== (int) $user->id
+            )
+        ) {
+            abort(404);
+        }
+
+        return $comment;
     }
 
     public function certificates(Request $request)

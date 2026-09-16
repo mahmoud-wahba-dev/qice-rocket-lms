@@ -12,11 +12,22 @@
         </a>
         <div class="flex flex-wrap items-center gap-2">
             @if (!empty($d['join_url']))
-                <a href="{{ $d['join_url'] }}" target="_blank" rel="noopener"
+                <a href="{{ $d['join_url'] }}"
                     class="inline-flex items-center gap-2 h-10 px-4 rounded-12px bg-primary text-white font-semibold text-14px hover:opacity-90 transition">
-                    <span class="icon-[tabler--link] size-4"></span>
-                    رابط اللقاء
+                    <span class="icon-[tabler--video] size-4"></span>
+                    {{ $d['join_label'] ?? 'انضمام للجلسة المباشرة' }}
                 </a>
+            @endif
+            @if (!empty($d['session_url']) && empty($d['agora_enabled']))
+                <button type="button"
+                    data-consultation-session-open
+                    data-action="{{ $d['session_url'] }}"
+                    data-student="{{ $d['name'] ?? '' }}"
+                    data-link="{{ $d['link_raw'] ?? '' }}"
+                    class="inline-flex items-center gap-2 h-10 px-4 rounded-12px border border-d9 font-semibold text-14px text-primary hover:bg-fa transition">
+                    <span class="icon-[tabler--link] size-4"></span>
+                    إعداد رابط خارجي
+                </button>
             @endif
             @if (!empty($d['finish_url']))
                 <form method="POST" action="{{ $d['finish_url'] }}" onsubmit="return confirm('إنهاء هذه الجلسة؟');">
@@ -116,5 +127,9 @@
             </div>
         @endif
     </section>
+
+    @include('panel_v1.instructor.components.consultation-session-modal', [
+        'agoraEnabled' => $d['agora_enabled'] ?? !empty(getFeaturesSettings('agora_for_meeting')),
+    ])
 </div>
 @endsection

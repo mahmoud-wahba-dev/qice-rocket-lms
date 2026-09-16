@@ -19,11 +19,6 @@
                 {{ $link['label'] }}
             </a>
         @endforeach
-        <a href="/panel"
-            class="flex items-center gap-3 px-4 py-3 rounded-12px font-semibold text-16px text-primary hover:bg-fa">
-            <span class="icon-[tabler--layout-dashboard] size-5"></span>
-            اللوحة القديمة
-        </a>
         <a href="/logout"
             class="flex items-center gap-3 px-4 py-3 rounded-12px font-semibold text-16px text-[#EF4444] hover:bg-fa">
             <span class="icon-[tabler--logout] size-5"></span>

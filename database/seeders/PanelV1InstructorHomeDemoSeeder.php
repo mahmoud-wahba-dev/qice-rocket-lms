@@ -2,20 +2,30 @@
 
 namespace Database\Seeders;
 
+use App\Models\Comment;
+use App\Models\CommentReport;
 use App\Models\CourseLearning;
 use App\Models\File;
 use App\Models\Quiz;
+use App\Models\QuizzesQuestion;
+use App\Models\QuizzesQuestionsAnswer;
 use App\Models\QuizzesResult;
 use App\Models\Role;
 use App\Models\Sale;
 use App\Models\Session;
+use App\Models\TextLesson;
+use App\Models\TimeSpentOnCourse;
 use App\Models\Translation\FileTranslation;
 use App\Models\Translation\QuizTranslation;
+use App\Models\Translation\QuizzesQuestionTranslation;
+use App\Models\Translation\QuizzesQuestionsAnswerTranslation;
+use App\Models\Translation\TextLessonTranslation;
 use App\Models\Translation\WebinarAssignmentTranslation;
 use App\Models\Translation\WebinarChapterTranslation;
 use App\Models\Webinar;
 use App\Models\WebinarAssignment;
 use App\Models\WebinarAssignmentHistory;
+use App\Models\WebinarAssignmentHistoryMessage;
 use App\Models\WebinarChapter;
 use App\User;
 use Illuminate\Database\Seeder;
@@ -120,6 +130,11 @@ class PanelV1InstructorHomeDemoSeeder extends Seeder
             );
             $quizCount++;
 
+            $seededQuestions = $this->ensureDemoQuizQuestions($quiz, $teacher->id, $locale, $now);
+            $quiz->update([
+                'total_mark' => collect($seededQuestions)->sum(fn ($q) => (int) $q->grade),
+            ]);
+
             $assignmentTitles = [
                 'تسليم خطة تحسين العملية',
                 'تقرير حالة عملي',
@@ -182,9 +197,25 @@ class PanelV1InstructorHomeDemoSeeder extends Seeder
                 if ($history->wasRecentlyCreated || $history->status === WebinarAssignmentHistory::$pending) {
                     $pendingCount++;
                 }
+
+                WebinarAssignmentHistoryMessage::updateOrCreate(
+                    [
+                        'assignment_history_id' => $history->id,
+                        'sender_id' => $buyer->id,
+                    ],
+                    [
+                        'message' => 'هذه إجابة تجريبية للتكليف المسلّم. قمت بإعداد المطلوب وفق معايير الجودة ورفعت المرفقات الداعمة.',
+                        'file_title' => $bIndex === 0 ? 'تسليم-التكليف.pdf' : 'ملاحظات-التسليم.pdf',
+                        'file_path' => $bIndex === 0
+                            ? 'store/panel_v1/demo-handout.pdf'
+                            : 'store/panel_v1/demo-theory.pdf',
+                        'created_at' => $now - ((($index * 2) + $bIndex + 1) * 3600) + 60,
+                    ]
+                );
             }
 
             $file = $this->ensureDemoFile($webinar, $chapter, $teacher->id, $locale, $now);
+            $extraFiles = $this->ensureExtraDemoLessons($webinar, $chapter, $teacher->id, $locale, $now);
 
             // Link buyers with sales + learning progress so course cards show real %
             foreach (array_slice($buyers, 0, 3) as $bIndex => $buyer) {
@@ -207,45 +238,305 @@ class PanelV1InstructorHomeDemoSeeder extends Seeder
                     ]
                 );
 
-                if (!empty($file)) {
-                    CourseLearning::updateOrCreate(
-                        [
-                            'user_id' => $buyer->id,
-                            'file_id' => $file->id,
-                        ],
-                        [
-                            'session_id' => null,
-                            'text_lesson_id' => null,
-                            'created_at' => $now - (($bIndex + 1) * 1800),
-                        ]
-                    );
-                }
+                $this->seedBuyerLearningProgress(
+                    $buyer,
+                    $webinar,
+                    $file,
+                    $extraFiles,
+                    $bIndex,
+                    $now
+                );
 
-                QuizzesResult::updateOrCreate(
-                    [
-                        'quiz_id' => $quiz->id,
-                        'user_id' => $buyer->id,
-                    ],
-                    [
-                        'results' => '[]',
-                        'user_grade' => 70 + ($bIndex * 5),
-                        'status' => 'passed',
-                        'created_at' => $now - (($bIndex + 1) * 2400),
-                    ]
+                $this->seedBuyerQuizResult(
+                    $quiz,
+                    $buyer,
+                    $seededQuestions,
+                    $bIndex,
+                    $now
                 );
             }
         }
 
         $this->refreshUpcomingSessions($teacher->id, $now);
+        $commentsCount = $this->seedCourseComments($teacher, $activeWebinars->take(4)->values(), $buyers, $now);
 
         $this->command?->info(sprintf(
-            'Home demo ready for #%d (%s): quizzes=%d assignments=%d pending≈%d',
+            'Home demo ready for #%d (%s): quizzes=%d assignments=%d pending≈%d comments=%d',
             $teacher->id,
             $teacher->email,
             $quizCount,
             $assignmentCount,
-            $pendingCount
+            $pendingCount,
+            $commentsCount
         ));
+    }
+
+    /**
+     * Seed student course comments (+ one reply + one report) for instructor comments page.
+     */
+    private function seedCourseComments($teacher, $webinars, array $buyers, int $now): int
+    {
+        if ($webinars->isEmpty() || empty($buyers)) {
+            return 0;
+        }
+
+        $bodies = [
+            'شرح الوحدة الأولى واضح جداً، هل يمكن إضافة مثال عملي إضافي؟',
+            'أحتاج توضيحاً حول معيار الامتثال في المحاضرة الثالثة.',
+            'المحتوى ممتاز لكن سرعة العرض سريعة قليلاً في بعض الأجزاء.',
+            'هل يمكن رفع ملف الملخص الخاص بالفصل الثاني؟',
+            'استفدت كثيراً من التكليف، أنتظر ملاحظاتكم على تسليمي.',
+            'هل موعد الجلسة المباشرة القادمة ثابت أم قابل للتغيير؟',
+        ];
+
+        $created = 0;
+        $firstCommentId = null;
+
+        foreach ($webinars as $wIndex => $webinar) {
+            foreach (array_slice($buyers, 0, 3) as $bIndex => $buyer) {
+                $body = $bodies[($wIndex * 3 + $bIndex) % count($bodies)];
+                $status = ($wIndex === 0 && $bIndex === 2)
+                    ? Comment::$pending
+                    : Comment::$active;
+
+                $comment = Comment::query()
+                    ->where('webinar_id', $webinar->id)
+                    ->where('user_id', $buyer->id)
+                    ->whereNull('reply_id')
+                    ->where('comment', $body)
+                    ->first();
+
+                if (empty($comment)) {
+                    $comment = Comment::create([
+                        'user_id' => $buyer->id,
+                        'webinar_id' => $webinar->id,
+                        'comment' => $body,
+                        'reply_id' => null,
+                        'status' => $status,
+                        'created_at' => $now - (($wIndex + 1) * 3600) - (($bIndex + 1) * 900),
+                        'viewed_at' => null,
+                    ]);
+                    $created++;
+                } else {
+                    $comment->update([
+                        'status' => $status,
+                        'created_at' => $now - (($wIndex + 1) * 3600) - (($bIndex + 1) * 900),
+                    ]);
+                }
+
+                if ($firstCommentId === null) {
+                    $firstCommentId = $comment->id;
+                }
+
+                // One instructor reply on the first webinar's first buyer comment
+                if ($wIndex === 0 && $bIndex === 0) {
+                    $replyBody = 'شكراً لملاحظتك، سأضيف مثالاً تطبيقياً في المحاضرة القادمة.';
+                    $existsReply = Comment::query()
+                        ->where('reply_id', $comment->id)
+                        ->where('user_id', $teacher->id)
+                        ->exists();
+
+                    if (!$existsReply) {
+                        Comment::create([
+                            'user_id' => $teacher->id,
+                            'webinar_id' => $webinar->id,
+                            'comment' => $replyBody,
+                            'reply_id' => $comment->id,
+                            'status' => Comment::$active,
+                            'created_at' => $now - 1800,
+                            'viewed_at' => $now - 1800,
+                        ]);
+                        $created++;
+                    }
+                }
+            }
+        }
+
+        if ($firstCommentId) {
+            $existsReport = CommentReport::query()
+                ->where('comment_id', $firstCommentId)
+                ->where('user_id', $teacher->id)
+                ->exists();
+
+            if (!$existsReport) {
+                $parent = Comment::find($firstCommentId);
+                CommentReport::create([
+                    'webinar_id' => $parent?->webinar_id,
+                    'user_id' => $teacher->id,
+                    'comment_id' => $firstCommentId,
+                    'message' => 'تعليق تجريبي للتحقق من شاشة البلاغات.',
+                    'created_at' => $now - 600,
+                ]);
+            }
+        }
+
+        return $created;
+    }
+
+    /**
+     * @return QuizzesQuestion[]
+     */
+    private function ensureDemoQuizQuestions(Quiz $quiz, int $creatorId, string $locale, int $now): array
+    {
+        $defs = [
+            [
+                'type' => QuizzesQuestion::$multiple,
+                'grade' => 25,
+                'order' => 1,
+                'title' => 'أيّ مما يلي يُعد من مؤشرات جودة الخدمة الصحية؟',
+                'correct' => null,
+                'options' => [
+                    ['title' => 'زمن انتظار المريض', 'correct' => true],
+                    ['title' => 'عدد مواقف السيارات فقط', 'correct' => false],
+                    ['title' => 'لون الزي الرسمي', 'correct' => false],
+                    ['title' => 'اسم المبنى', 'correct' => false],
+                ],
+            ],
+            [
+                'type' => QuizzesQuestion::$multiple,
+                'grade' => 25,
+                'order' => 2,
+                'title' => 'الهدف الأساسي من دورة PDCA هو:',
+                'correct' => null,
+                'options' => [
+                    ['title' => 'التحسين المستمر للعمليات', 'correct' => true],
+                    ['title' => 'زيادة عدد الاجتماعات فقط', 'correct' => false],
+                    ['title' => 'إلغاء التوثيق', 'correct' => false],
+                    ['title' => 'تقليل التدريب', 'correct' => false],
+                ],
+            ],
+            [
+                'type' => QuizzesQuestion::$descriptive,
+                'grade' => 50,
+                'order' => 3,
+                'title' => 'هل تتوافق معايير الجودة الصحية الحديثة مع تقليص تكاليف التشغيل؟ وضح ذلك.',
+                'correct' => 'نعم؛ تطبيق المعايير يقلل الأخطاء وإعادة العمل فيعزز الكفاءة ويخفض التكاليف على المدى المتوسط.',
+                'options' => [],
+            ],
+        ];
+
+        $questions = [];
+        foreach ($defs as $def) {
+            $question = QuizzesQuestion::updateOrCreate(
+                [
+                    'quiz_id' => $quiz->id,
+                    'creator_id' => $creatorId,
+                    'order' => $def['order'],
+                    'type' => $def['type'],
+                ],
+                [
+                    'grade' => $def['grade'],
+                    'created_at' => $now,
+                ]
+            );
+
+            QuizzesQuestionTranslation::updateOrCreate(
+                [
+                    'quizzes_question_id' => $question->id,
+                    'locale' => $locale,
+                ],
+                [
+                    'title' => $def['title'],
+                    'correct' => $def['correct'],
+                ]
+            );
+
+            if ($def['type'] === QuizzesQuestion::$multiple) {
+                $existing = QuizzesQuestionsAnswer::where('question_id', $question->id)->orderBy('id')->get();
+                foreach ($def['options'] as $optIndex => $optionDef) {
+                    $answer = $existing->get($optIndex);
+                    if (empty($answer)) {
+                        $answer = QuizzesQuestionsAnswer::create([
+                            'creator_id' => $creatorId,
+                            'question_id' => $question->id,
+                            'correct' => $optionDef['correct'] ? 1 : 0,
+                            'created_at' => $now,
+                        ]);
+                    } else {
+                        $answer->update([
+                            'correct' => $optionDef['correct'] ? 1 : 0,
+                        ]);
+                    }
+
+                    QuizzesQuestionsAnswerTranslation::updateOrCreate(
+                        [
+                            'quizzes_questions_answer_id' => $answer->id,
+                            'locale' => $locale,
+                        ],
+                        ['title' => $optionDef['title']]
+                    );
+                }
+            }
+
+            $questions[] = $question->fresh(['quizzesQuestionsAnswers']);
+        }
+
+        return $questions;
+    }
+
+    /**
+     * @param QuizzesQuestion[] $questions
+     */
+    private function seedBuyerQuizResult(Quiz $quiz, User $buyer, array $questions, int $buyerIndex, int $now): void
+    {
+        $resultsPayload = [];
+        $earned = 0;
+        $hasDescriptive = false;
+
+        foreach ($questions as $qIndex => $question) {
+            $entry = ['grade' => (int) $question->grade, 'status' => false];
+
+            if ($question->type === QuizzesQuestion::$descriptive) {
+                $hasDescriptive = true;
+                $entry['text'] = $buyerIndex === 0
+                    ? 'نعم. تطبيق المعايير يقلل الأخطاء وإعادة العمل، مما يخفض التكاليف التشغيلية مع الزمن.'
+                    : ($buyerIndex === 1
+                        ? 'أعتقد أن المعايير تساعد جزئياً لكنها تحتاج استثماراً أولياً.'
+                        : 'غير متأكد من العلاقة المباشرة بين الجودة والتكلفة.');
+            } else {
+                $answers = $question->quizzesQuestionsAnswers;
+                $correct = $answers->firstWhere('correct', 1) ?: $answers->first();
+                // Buyer 0 always correct MCQ; buyer 1 mixes; buyer 2 often wrong
+                $pickCorrect = $buyerIndex === 0 || ($buyerIndex === 1 && $qIndex === 0);
+                $chosen = $pickCorrect
+                    ? $correct
+                    : ($answers->firstWhere('correct', 0) ?: $answers->last());
+
+                if ($chosen) {
+                    $entry['answer'] = $chosen->id;
+                    if ((int) $chosen->correct === 1) {
+                        $entry['status'] = true;
+                        $earned += (int) $question->grade;
+                    }
+                }
+            }
+
+            $resultsPayload[$question->id] = $entry;
+        }
+
+        // First buyer waits for descriptive grading; others remain waiting too for review cards
+        $status = $hasDescriptive
+            ? QuizzesResult::$waiting
+            : (($earned >= (int) $quiz->pass_mark) ? QuizzesResult::$passed : 'failed');
+
+        if ($buyerIndex >= 2 && $hasDescriptive) {
+            // Keep one graded sample for pass-rate stats
+            $status = QuizzesResult::$passed;
+            $earned = min(100, $earned + 40);
+        }
+
+        QuizzesResult::updateOrCreate(
+            [
+                'quiz_id' => $quiz->id,
+                'user_id' => $buyer->id,
+            ],
+            [
+                'results' => json_encode($resultsPayload, JSON_UNESCAPED_UNICODE),
+                'user_grade' => $earned,
+                'status' => $status,
+                'created_at' => $now - (($buyerIndex + 1) * 2400),
+            ]
+        );
     }
 
     private function ensureChapter(Webinar $webinar, int $creatorId, string $locale, int $now): WebinarChapter
@@ -289,6 +580,7 @@ class PanelV1InstructorHomeDemoSeeder extends Seeder
                 'check_previous_parts' => false,
                 'online_viewer' => false,
                 'status' => File::$Active,
+                'order' => 1,
                 'created_at' => $now,
             ]
         );
@@ -302,6 +594,174 @@ class PanelV1InstructorHomeDemoSeeder extends Seeder
         );
 
         return $file;
+    }
+
+    /**
+     * Extra lectures so instructor can track multi-item student progress (same player design).
+     *
+     * @return array{files: File[], text: ?TextLesson}
+     */
+    private function ensureExtraDemoLessons(Webinar $webinar, WebinarChapter $chapter, int $creatorId, string $locale, int $now): array
+    {
+        $defs = [
+            [
+                'file' => 'store/panel_v1/demo-lecture.mp4',
+                'file_type' => 'video',
+                'storage' => 'upload',
+                'order' => 2,
+                'title' => 'محاضرة — أساسيات التطبيق',
+            ],
+            [
+                'file' => 'store/panel_v1/demo-handout.pdf',
+                'file_type' => 'document',
+                'storage' => 'upload',
+                'order' => 3,
+                'title' => 'ملف — ملخص الوحدة',
+            ],
+        ];
+
+        $files = [];
+        foreach ($defs as $def) {
+            $file = File::updateOrCreate(
+                [
+                    'webinar_id' => $webinar->id,
+                    'chapter_id' => $chapter->id,
+                    'file' => $def['file'],
+                ],
+                [
+                    'creator_id' => $creatorId,
+                    'volume' => '0',
+                    'file_type' => $def['file_type'],
+                    'accessibility' => 'paid',
+                    'storage' => $def['storage'],
+                    'downloadable' => true,
+                    'check_previous_parts' => false,
+                    'online_viewer' => false,
+                    'status' => File::$Active,
+                    'order' => $def['order'],
+                    'created_at' => $now,
+                ]
+            );
+
+            FileTranslation::updateOrCreate(
+                ['file_id' => $file->id, 'locale' => $locale],
+                [
+                    'title' => $def['title'],
+                    'description' => 'درس تجريبي لتتبع تقدم الطالب في لوحة المدرب.',
+                ]
+            );
+
+            $files[] = $file;
+        }
+
+        $text = TextLesson::updateOrCreate(
+            [
+                'webinar_id' => $webinar->id,
+                'chapter_id' => $chapter->id,
+                'order' => 4,
+            ],
+            [
+                'creator_id' => $creatorId,
+                'image' => null,
+                'study_time' => 10,
+                'accessibility' => 'paid',
+                'status' => TextLesson::$Active,
+                'created_at' => $now,
+            ]
+        );
+
+        TextLessonTranslation::updateOrCreate(
+            ['text_lesson_id' => $text->id, 'locale' => $locale],
+            [
+                'title' => 'درس نصي — مراجعة سريعة',
+                'summary' => 'ملخص نصي تجريبي',
+                'content' => 'هذا درس نصي تجريبي لمتابعة تقدم الطالب في نفس تصميم مشغل الدورة.',
+            ]
+        );
+
+        return [
+            'files' => $files,
+            'text' => $text,
+        ];
+    }
+
+    private function seedBuyerLearningProgress(
+        User $buyer,
+        Webinar $webinar,
+        ?File $introFile,
+        array $extraLessons,
+        int $buyerIndex,
+        int $now
+    ): void {
+        $allFiles = collect($extraLessons['files'] ?? []);
+        if (!empty($introFile)) {
+            $allFiles = $allFiles->prepend($introFile);
+        }
+
+        // Buyer 0 ~ high progress, buyer 1 ~ mid, buyer 2 ~ low
+        $fileTake = match ($buyerIndex) {
+            0 => $allFiles->count(),
+            1 => max(1, (int) ceil($allFiles->count() * 0.66)),
+            default => max(1, (int) ceil($allFiles->count() * 0.33)),
+        };
+
+        foreach ($allFiles->take($fileTake) as $i => $file) {
+            CourseLearning::updateOrCreate(
+                [
+                    'user_id' => $buyer->id,
+                    'file_id' => $file->id,
+                ],
+                [
+                    'session_id' => null,
+                    'text_lesson_id' => null,
+                    'created_at' => $now - (($buyerIndex + 1) * 1800) - ($i * 120),
+                ]
+            );
+        }
+
+        $text = $extraLessons['text'] ?? null;
+        if ($text && $buyerIndex <= 1) {
+            CourseLearning::updateOrCreate(
+                [
+                    'user_id' => $buyer->id,
+                    'text_lesson_id' => $text->id,
+                ],
+                [
+                    'file_id' => null,
+                    'session_id' => null,
+                    'created_at' => $now - (($buyerIndex + 1) * 1500),
+                ]
+            );
+        }
+
+        $sessions = Session::where('webinar_id', $webinar->id)->orderBy('id')->get();
+        $sessionTake = $buyerIndex === 0 ? min(2, $sessions->count()) : ($buyerIndex === 1 ? min(1, $sessions->count()) : 0);
+        foreach ($sessions->take($sessionTake) as $i => $session) {
+            CourseLearning::updateOrCreate(
+                [
+                    'user_id' => $buyer->id,
+                    'session_id' => $session->id,
+                ],
+                [
+                    'file_id' => null,
+                    'text_lesson_id' => null,
+                    'created_at' => $now - (($buyerIndex + 1) * 1600) - ($i * 90),
+                ]
+            );
+        }
+
+        TimeSpentOnCourse::updateOrCreate(
+            [
+                'user_id' => $buyer->id,
+                'course_id' => $webinar->id,
+                'page' => 'learning_page',
+            ],
+            [
+                'entry_time' => $now - (7200 - ($buyerIndex * 600)),
+                'exit_time' => $now - 100,
+                'seconds_spent' => 5400 - ($buyerIndex * 1200),
+            ]
+        );
     }
 
     private function refreshUpcomingSessions(int $teacherId, int $now): void

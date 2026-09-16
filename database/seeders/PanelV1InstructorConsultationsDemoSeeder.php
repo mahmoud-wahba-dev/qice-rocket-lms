@@ -128,7 +128,7 @@ class PanelV1InstructorConsultationsDemoSeeder extends Seeder
                     'meeting_type' => $bp['type'],
                     'student_count' => $bp['students'],
                     'discount' => 0,
-                    'link' => $bp['type'] === 'online' ? 'https://meet.example.com/hodinio-' . ($i + 1) : null,
+                    'link' => null,
                     'password' => null,
                     'description' => $slot->description ?? 'جلسة استشارية تجريبية',
                     'status' => $bp['status'],
@@ -149,7 +149,7 @@ class PanelV1InstructorConsultationsDemoSeeder extends Seeder
                     'paid_amount' => $bp['amount'],
                     'meeting_type' => $bp['type'],
                     'student_count' => $bp['students'],
-                    'link' => $bp['type'] === 'online' ? 'https://meet.example.com/hodinio-' . ($i + 1) : null,
+                    'link' => null,
                 ]);
             }
         }
