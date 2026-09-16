@@ -88,7 +88,11 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
             });
 
             Route::get('/instructor', [InstructorController::class, 'home'])->name('instructor.home');
+            Route::get('/instructor/students', [InstructorController::class, 'students'])->name('instructor.students');
             Route::get('/instructor/courses', [InstructorController::class, 'courses'])->name('instructor.courses');
+            Route::post('/instructor/courses/{id}/delete', [InstructorController::class, 'deleteCourse'])
+                ->whereNumber('id')
+                ->name('instructor.courses.delete');
             Route::get('/instructor/courses/create/{step?}', [InstructorController::class, 'createCourse'])
                 ->where('step', '[1-5]')
                 ->name('instructor.courses.create');
@@ -163,6 +167,12 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 ->name('instructor.support');
             Route::post('/instructor/support', [InstructorController::class, 'storeSupport'])
                 ->name('instructor.support.store');
+            Route::get('/instructor/support/conversations/{id?}', [InstructorController::class, 'supportConversations'])
+                ->name('instructor.support.conversations');
+            Route::post('/instructor/support/conversations/{id}', [InstructorController::class, 'storeSupportConversation'])
+                ->name('instructor.support.reply');
+            Route::post('/instructor/support/conversations/{id}/close', [InstructorController::class, 'closeSupport'])
+                ->name('instructor.support.close');
             Route::get('/instructor/notifications', [InstructorController::class, 'notifications'])
                 ->name('instructor.notifications');
             Route::post('/instructor/notifications/mark-all-read', [InstructorController::class, 'markAllNotificationsRead'])

@@ -143,6 +143,36 @@ return [
     |
     */
 
-    'attributes' => [],
+    'attributes' => [
+        'title' => 'عنوان الدورة',
+        'category_id' => 'التصنيف الرئيسي',
+        'course_type' => 'نوع الدورة',
+        'seo_description' => 'الوصف المختصر',
+        'description' => 'الوصف التفصيلي',
+        'video_demo_link' => 'رابط الفيديو الترويجي',
+        'video_demo_file' => 'ملف الفيديو الترويجي',
+        'image_thumbnail' => 'الصورة المصغرة',
+        'image_cover' => 'غلاف الدورة',
+        'tags' => 'الوسوم',
+        'locale' => 'لغة الدورة',
+        'downloadable' => 'السماح بتحميل الملفات',
+        'partner_instructor' => 'مدرب مشارك',
+        'quiz_id' => 'الاختبار',
+        'certificate' => 'الشهادة',
+        'price' => 'السعر',
+        'capacity' => 'سعة الطلاب',
+        'access_duration' => 'مدة الوصول',
+        'access_days' => 'عدد أيام الوصول',
+        'confirm_rights' => 'تأكيد حقوق الملكية',
+        'confirm_terms' => 'الموافقة على الشروط',
+        'draft_id' => 'المسودة',
+        'chapter_id' => 'الوحدة',
+        'topic' => 'عنوان الجلسة',
+        'date' => 'تاريخ الجلسة',
+        'duration' => 'مدة الجلسة',
+        'upload' => 'الملف',
+        'summary' => 'ملخص الدرس',
+        'wizard_step' => 'خطوة المعالج',
+    ],
 
 ];

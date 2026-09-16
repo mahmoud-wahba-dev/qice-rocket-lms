@@ -32,26 +32,37 @@
 @include('components.v1.toast')
 
 @if (!empty($v1FlashToast))
-    @push('scripts')
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                var title = @json($v1FlashToast['title'] ?? 'تنبيه');
-                var msg = @json($v1FlashToast['msg'] ?? '');
-                var type = @json($v1FlashToast['type'] ?? ($v1FlashToast['status'] ?? 'success'));
+    {{-- Inline (not only @push): Vite modules load deferred; retry until showCartToast exists --}}
+    <script>
+        (function () {
+            var title = @json($v1FlashToast['title'] ?? 'تنبيه');
+            var msg = @json($v1FlashToast['msg'] ?? '');
+            var type = @json($v1FlashToast['type'] ?? ($v1FlashToast['status'] ?? 'success'));
+            var tries = 0;
 
+            function showFlashToast() {
                 if (typeof window.showCartToast === 'function') {
                     window.showCartToast(title, msg, type);
                     return;
                 }
-
+                if (++tries < 40) {
+                    setTimeout(showFlashToast, 50);
+                    return;
+                }
                 var el = document.getElementById('v1-flash-toast-fallback');
                 if (el) {
                     el.classList.remove('hidden');
                     setTimeout(function () { el.remove(); }, 5000);
                 }
-            });
-        </script>
-    @endpush
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', showFlashToast);
+            } else {
+                showFlashToast();
+            }
+        })();
+    </script>
 
     <div id="v1-flash-toast-fallback"
         class="hidden fixed bottom-6 start-6 z-[2147483646] max-w-sm rounded-12px px-5 py-4 shadow-lg border {{ in_array(($v1FlashToast['type'] ?? $v1FlashToast['status'] ?? ''), ['error', 'danger'], true) ? 'bg-[#FEF2F2] border-[#FECACA] text-[#B91C1C]' : 'bg-[#ECFDF5] border-[#A7F3D0] text-[#065F46]' }}"
@@ -67,15 +78,24 @@
         @endif
     </div>
 @elseif (!empty($v1FlashErrors))
-    @push('scripts')
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
+    <script>
+        (function () {
+            var msg = @json($v1FlashErrors[0] ?? 'يرجى تصحيح الأخطاء');
+            var tries = 0;
+            function showErr() {
                 if (typeof window.showCartToast === 'function') {
-                    window.showCartToast('خطأ', @json($v1FlashErrors[0] ?? 'يرجى تصحيح الأخطاء'), 'error');
+                    window.showCartToast('خطأ', msg, 'error');
+                    return;
                 }
-            });
-        </script>
-    @endpush
+                if (++tries < 40) setTimeout(showErr, 50);
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', showErr);
+            } else {
+                showErr();
+            }
+        })();
+    </script>
 
     <div class="container mx-auto mt-6">
         <div class="rounded-12px bg-[#FEF2F2] border border-[#FECACA] px-5 py-4">

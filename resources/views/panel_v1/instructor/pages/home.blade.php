@@ -2,11 +2,27 @@
 
 @section('content')
 @php
-$slug = $demoSlug ?? 'demo';
-$reviewId = $demoAssignmentId ?? 1;
+$instructorName = $instructorName ?? ($authUser->full_name ?? 'المدرب');
 @endphp
 
 <div class="space-y-6 pb-8">
+    {{-- Welcome banner --}}
+    <section class="rounded-16px my-0 bg-[#F7F7F2] px-5 sm:px-8 py-6 sm:py-7 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+        <div class="min-w-0 text-start">
+            <h1 class="font-bold text-22px sm:text-26px text-primary leading-snug mb-2">
+                مرحباً بك، {{ $instructorName }}
+            </h1>
+            <p class="font-medium text-14px sm:text-16px text-primary/80 leading-relaxed">
+                إليك ملخص أداء دوراتك، نشاط الطلاب، والأرباح لهذا اليوم.
+            </p>
+        </div>
+        <a href="{{ route('panel.v1.instructor.courses.create') }}"
+            class="inline-flex items-center justify-center gap-2 shrink-0 rounded-12px bg-color2 hover:opacity-95 text-white font-semibold text-15px sm:text-16px h-12 px-5 sm:px-6 transition">
+            <span class="icon-[tabler--plus] size-5" aria-hidden="true"></span>
+            إنشاء دورة جديدة
+        </a>
+    </section>
+
     {{-- Stats row — loop keeps value/label; icons are static SVGs --}}
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         @foreach ($stats ?? [] as $index => $stat)
@@ -70,7 +86,7 @@ $reviewId = $demoAssignmentId ?? 1;
     {{-- Middle: courses (start/right in RTL) + sidebar actions --}}
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 mt-8">
         {{-- دوراتي --}}
-        <section class="lg:col-span-8 space-y-4 mb-0 order-2 lg:order-1 mt-0 bg-white p-5">
+        <section class="lg:col-span-8 space-y-4 mb-0 order-2 lg:order-1 mt-0 bg-white p-5 overflow-visible">
             <div class="flex items-center justify-between gap-3">
                 <h2 class="font-semibold text-20px  text-black">دوراتي</h2>
                 <a href="{{ route('panel.v1.instructor.courses') }}"
@@ -78,9 +94,22 @@ $reviewId = $demoAssignmentId ?? 1;
             </div>
 
             <div class="space-y-3">
-                @foreach ($courses ?? [] as $index => $course)
+                @forelse ($courses ?? [] as $index => $course)
+                @php
+                    $courseSlug = $course['slug'] ?? null;
+                    $courseId = $course['id'] ?? null;
+                    $isDraft = ($course['status'] ?? '') === 'is_draft';
+                    $detailsUrl = !empty($courseSlug)
+                        ? route('panel.v1.instructor.courses.performance', ['slug' => $courseSlug])
+                        : route('panel.v1.instructor.courses');
+                    $editUrl = $isDraft && !empty($courseId)
+                        ? route('panel.v1.instructor.courses.create', ['step' => 1, 'draft' => $courseId])
+                        : (!empty($courseSlug)
+                            ? route('panel.v1.instructor.courses.watch', ['slug' => $courseSlug])
+                            : route('panel.v1.instructor.courses'));
+                @endphp
                 <article
-                    class="rounded-14px border border-d9 bg-f9 p-4 flex gap-3 sm:gap-4 items-start sm:items-center">
+                    class="relative z-0 hover:z-20 rounded-14px border border-d9 bg-f9 p-4 flex gap-3 sm:gap-4 items-start sm:items-center overflow-visible">
                     <div class="size-14 sm:size-16 rounded-12px bg-primary shrink-0"></div>
 
                     <div class="min-w-0 flex-1">
@@ -90,40 +119,51 @@ $reviewId = $demoAssignmentId ?? 1;
                         <p class="font-semibold text-12px text-black mb-1.5">{{ $course['progress'] }}% متوسط معدل
                             التقدم</p>
                         <div class="h-1.5 rounded-full bg-[#EFEFEF] overflow-hidden max-w-[220px]">
-                            <div class="h-full bg-primary rounded-full" style="width: {{ $course['progress'] }}%"></div>
+                            <div class="h-full bg-primary rounded-full" style="width: {{ min(100, max(0, (int) ($course['progress'] ?? 0))) }}%"></div>
                         </div>
                     </div>
 
-                    <div class="flex flex-col items-end justify-between gap-3 shrink-0 self-stretch min-h-[72px]">
-                        <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end]">
+                    <div class="flex flex-col items-end justify-between gap-3 shrink-0 self-stretch min-h-[72px] overflow-visible">
+                        <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end] shrink-0">
                             <button type="button"
-                                class="dropdown-toggle btn btn-square btn-text btn-sm !inline-flex !items-center !justify-center"
+                                class="dropdown-toggle size-9 rounded-full bg-[#F1F5F9] !inline-flex !items-center !justify-center border-0 hover:bg-[#E8ECEA] transition"
                                 aria-label="خيارات الدورة" id="home-course-menu-{{ $index }}">
-                                <span class="icon-[tabler--dots] size-5 text-primary"></span>
+                                <span class="icon-[tabler--dots] size-5 text-gray"></span>
                             </button>
-                            <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-48 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20"
+                            <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-48 py-2 rounded-12px border border-d9 bg-white shadow-xl z-50"
                                 role="menu" aria-labelledby="home-course-menu-{{ $index }}">
                                 <li>
-                                    <a href="{{ route('panel.v1.instructor.courses.performance', ['slug' => $slug]) }}"
-                                        class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary">عرض
-                                        التفاصيل</a>
+                                    <a href="{{ $detailsUrl }}"
+                                        class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary">عرض التفاصيل</a>
                                 </li>
-                                <li><a href="#"
-                                        class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary">تعديل</a>
+                                <li>
+                                    <a href="{{ $editUrl }}"
+                                        class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary">
+                                        {{ $isDraft ? 'متابعة التعديل' : 'صفحة التعلم' }}
+                                    </a>
                                 </li>
-                                <li><a href="#"
-                                        class="dropdown-item px-4 py-2.5 font-medium text-14px text-[#E11D48]">حذف</a>
+                                <li>
+                                    <a href="{{ route('panel.v1.instructor.courses') }}"
+                                        class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary">إدارة الدورات</a>
                                 </li>
                             </ul>
                         </div>
 
-                        <a href="{{ route('panel.v1.instructor.courses.performance', ['slug' => $slug]) }}"
-                            class="inline-flex items-center justify-center rounded-10px bg-primary px-3 sm:px-4 h-9 font-semibold text-10px  text-white hover:opacity-95 transition whitespace-nowrap">
+                        <a href="{{ $detailsUrl }}"
+                            class="inline-flex items-center justify-center rounded-10px bg-primary px-3 sm:px-4 h-9 font-semibold text-10px text-white hover:opacity-95 transition whitespace-nowrap">
                             عرض التفاصيل
                         </a>
                     </div>
                 </article>
-                @endforeach
+                @empty
+                <div class="rounded-14px border border-d9 bg-white px-5 py-10 text-center">
+                    <p class="font-medium text-15px text-gray mb-4">لا توجد دورات بعد.</p>
+                    <a href="{{ route('panel.v1.instructor.courses.create') }}"
+                        class="inline-flex items-center justify-center rounded-12px bg-color2 h-11 px-5 font-semibold text-14px text-white">
+                        إنشاء دورة جديدة
+                    </a>
+                </div>
+                @endforelse
             </div>
         </section>
 
@@ -169,20 +209,22 @@ $reviewId = $demoAssignmentId ?? 1;
             <h2 class="font-bold text-20px  text-primary">التكاليف بانتظار التصحيح</h2>
         </div>
         <div class="space-y-3">
-            @foreach ($pendingGrading ?? [] as $item)
+            @forelse ($pendingGrading ?? [] as $item)
             <article
                 class="rounded-14px border border-d9 bg-f9 px-4 sm:px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div class="min-w-0">
                     <h3 class="font-bold text-20px  text-[#0F172A] mb-1">{{ $item['title'] }}</h3>
                     <p class="font-normal text-18px text-[#64748B]">الطالبة: {{ $item['student'] }} • {{ $item['time'] }}</p>
                 </div>
-                <a href="{{ route('panel.v1.instructor.assignments.review', ['id' => $reviewId]) }}"
+                <a href="{{ route('panel.v1.instructor.assignments.review', ['id' => $item['id'] ?? 0]) }}"
                     class="inline-flex items-center gap-1.5 font-bold text-18px text-[#0D9488] hover:opacity-80 transition shrink-0">
                     تصحيح
                     <span class="icon-[tabler--arrow-left] size-4"></span>
                 </a>
             </article>
-            @endforeach
+            @empty
+            <p class="font-medium text-15px text-gray text-center py-8">لا توجد تكاليف بانتظار التصحيح حالياً.</p>
+            @endforelse
         </div>
     </section>
 </div>

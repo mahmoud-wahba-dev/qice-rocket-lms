@@ -27,6 +27,83 @@ class InstructorController extends Controller
         return $this->render($request, 'panel_v1.instructor.pages.home', 'لوحة المدرب', $this->homeData($user));
     }
 
+    public function students(Request $request)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $webinarIds = $this->teacherWebinars($user)->pluck('id')->all();
+
+        $sales = !empty($webinarIds)
+            ? Sale::with(['buyer', 'webinar'])
+                ->whereIn('webinar_id', $webinarIds)
+                ->where('seller_id', $user->id)
+                ->whereNull('refund_at')
+                ->orderByDesc('id')
+                ->get()
+            : collect();
+
+        $studentsByBuyer = [];
+        foreach ($sales as $sale) {
+            $buyerId = (int) $sale->buyer_id;
+            if ($buyerId < 1 || empty($sale->buyer)) {
+                continue;
+            }
+
+            if (!isset($studentsByBuyer[$buyerId])) {
+                $studentsByBuyer[$buyerId] = [
+                    'id' => $buyerId,
+                    'name' => $sale->buyer->full_name ?? '—',
+                    'email' => $sale->buyer->email ?? '—',
+                    'courses' => [],
+                    'courses_count' => 0,
+                    'last_purchase' => null,
+                    'spent' => 0,
+                ];
+            }
+
+            $courseTitle = $sale->webinar->title ?? 'دورة';
+            if (!in_array($courseTitle, $studentsByBuyer[$buyerId]['courses'], true)) {
+                $studentsByBuyer[$buyerId]['courses'][] = $courseTitle;
+            }
+            $studentsByBuyer[$buyerId]['courses_count'] = count($studentsByBuyer[$buyerId]['courses']);
+            $studentsByBuyer[$buyerId]['spent'] += (float) ($sale->total_amount ?? 0);
+
+            $purchaseAt = (int) ($sale->created_at ?? 0);
+            if (empty($studentsByBuyer[$buyerId]['last_purchase']) || $purchaseAt > (int) $studentsByBuyer[$buyerId]['last_purchase_ts']) {
+                $studentsByBuyer[$buyerId]['last_purchase_ts'] = $purchaseAt;
+                $studentsByBuyer[$buyerId]['last_purchase'] = $purchaseAt > 0 ? date('Y/m/d', $purchaseAt) : '—';
+            }
+
+            if (!empty($sale->webinar?->slug) && empty($studentsByBuyer[$buyerId]['course_slug'])) {
+                $studentsByBuyer[$buyerId]['course_slug'] = $sale->webinar->slug;
+            }
+        }
+
+        $students = collect($studentsByBuyer)
+            ->map(function ($row) {
+                $row['spent_label'] = handlePrice($row['spent']);
+                $row['courses_label'] = implode(' · ', array_slice($row['courses'], 0, 3));
+                unset($row['courses'], $row['last_purchase_ts']);
+                return $row;
+            })
+            ->sortBy('name')
+            ->values()
+            ->all();
+
+        return $this->render($request, 'panel_v1.instructor.pages.students', 'قائمة الطلاب', [
+            'students' => $students,
+            'studentStats' => [
+                ['label' => 'إجمالي الطلاب', 'value' => (string) count($students)],
+                ['label' => 'إجمالي التسجيلات', 'value' => (string) $sales->count()],
+                ['label' => 'الدورات المرتبطة', 'value' => (string) collect($students)->sum('courses_count')],
+            ],
+        ]);
+    }
+
     public function courses(Request $request)
     {
         $user = $this->resolveInstructor($request);
@@ -56,14 +133,43 @@ class InstructorController extends Controller
         ]);
     }
 
+    public function deleteCourse(Request $request, int $id)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $webinar = Webinar::query()
+            ->where('id', $id)
+            ->where(function ($q) use ($user) {
+                $q->where('teacher_id', $user->id)->orWhere('creator_id', $user->id);
+            })
+            ->firstOrFail();
+
+        $webinar->update([
+            'status' => Webinar::$inactive,
+            'updated_at' => time(),
+        ]);
+
+        return redirect()
+            ->route('panel.v1.instructor.courses')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم حذف الدورة بنجاح', 'type' => 'success']);
+    }
+
     public function createCourse(Request $request, ?int $step = 1)
     {
         $user = $request->user();
+        if ($request->filled('step')) {
+            $step = (int) $request->input('step');
+        }
         $step = max(1, min(5, $step ?? 1));
 
         $draft = null;
         if ($request->filled('draft')) {
-            $draft = \App\Models\Webinar::where('id', $request->input('draft'))
+            $draft = \App\Models\Webinar::with(['tags', 'translations'])
+                ->where('id', $request->input('draft'))
                 ->where('teacher_id', optional($user)->id)
                 ->where('status', 'is_draft')
                 ->first();
@@ -82,6 +188,18 @@ class InstructorController extends Controller
             ->map(function ($quiz) {
                 return ['id' => $quiz->id, 'title' => $quiz->title, 'webinar_id' => $quiz->webinar_id];
             })->all();
+
+        $typeReverse = ['course' => 'recorded', 'webinar' => 'live', 'text_lesson' => 'text'];
+        $tagTitles = $draft ? $draft->tags->pluck('title')->filter()->values()->all() : [];
+        $draftLocaleTitle = null;
+        $draftLocaleSeo = null;
+        $draftLocaleDescription = null;
+        if ($draft) {
+            $tr = $draft->translate('ar') ?: $draft->translate(app()->getLocale()) ?: $draft->translations->first();
+            $draftLocaleTitle = $tr->title ?? null;
+            $draftLocaleSeo = $tr->seo_description ?? null;
+            $draftLocaleDescription = $tr->description ?? null;
+        }
 
         return $this->render(
             $request,
@@ -102,16 +220,23 @@ class InstructorController extends Controller
                 ],
                 'wizardStep' => $step,
                 'draftId' => $draft->id ?? null,
-                'draftTitle' => $draft->title ?? 'دورة تدريبية بدون عنوان',
+                'draftTitle' => $draftLocaleTitle ?: 'دورة تدريبية بدون عنوان',
                 'draft' => $draft ? [
-                    'title' => $draft->title,
+                    'title' => $draftLocaleTitle,
                     'category_id' => $draft->category_id,
+                    'course_type' => $typeReverse[$draft->type] ?? 'recorded',
                     'locale' => 'ar',
-                    'seo_description' => $draft->seo_description,
-                    'description' => $draft->description,
+                    'seo_description' => $draftLocaleSeo,
+                    'description' => $draftLocaleDescription,
                     'video_demo_link' => $draft->video_demo_source === 'external_link' ? $draft->video_demo : null,
-                    'tags' => $draft->tags->pluck('title')->implode(','),
+                    'tags' => implode(',', $tagTitles),
+                    'downloadable' => (bool) ($draft->downloadable ?? false),
+                    'partner_instructor' => (bool) ($draft->partner_instructor ?? false),
+                    'access_days' => $draft->access_days,
+                    'thumbnail' => $draft->thumbnail,
+                    'image_cover' => $draft->image_cover,
                 ] : [],
+                'tags' => $tagTitles,
                 'categories' => !empty($categories) ? $categories : [],
                 'languages' => [
                     ['key' => 'ar', 'label' => 'العربية'],
@@ -122,6 +247,7 @@ class InstructorController extends Controller
                 'draftPrice' => $draft->price ?? null,
                 'draftCapacity' => $draft->capacity ?? null,
                 'draftCertificate' => (bool) ($draft->certificate ?? false),
+                'draftAccessDays' => $draft->access_days ?? null,
             ]
         );
     }
@@ -134,6 +260,11 @@ class InstructorController extends Controller
         }
 
         $step = max(1, min(5, (int) $request->input('wizard_step', 1)));
+        $attrs = $this->courseWizardFieldNames();
+        $soft = $request->boolean('autosave')
+            || $request->boolean('save_only')
+            || $request->input('go_next') === 'stay'
+            || ($request->filled('go_next') && is_numeric($request->input('go_next')) && (int) $request->input('go_next') < $step);
 
         $draft = null;
         if ($request->filled('draft_id')) {
@@ -144,30 +275,45 @@ class InstructorController extends Controller
         }
 
         if ($step === 1) {
-            $request->validate([                'title' => 'required|string|max:255',
+            $request->validate([
+                'title' => ($soft ? 'nullable' : 'required') . '|string|max:255',
                 'category_id' => 'nullable|exists:categories,id',
                 'course_type' => 'nullable|in:recorded,live,text',
-                'seo_description' => 'nullable|string|max:160',
+                'seo_description' => ($soft ? 'nullable' : 'required') . '|string|max:160',
                 'description' => 'nullable|string',
                 'video_demo_link' => 'nullable|url|max:2000',
+                'video_demo_file' => 'nullable|file|mimetypes:video/mp4,video/webm,video/quicktime|max:102400',
                 'image_thumbnail' => 'nullable|image|max:5120',
                 'image_cover' => 'nullable|image|max:5120',
                 'tags' => 'nullable|string|max:1000',
-            ]);
+                'locale' => 'nullable|in:ar,en',
+                'downloadable' => 'nullable|boolean',
+                'partner_instructor' => 'nullable|boolean',
+            ], $this->courseWizardMessages(), $attrs);
 
             $typeMap = ['recorded' => 'course', 'live' => 'webinar', 'text' => 'text_lesson'];
+            $title = trim((string) $request->input('title', ''));
+            if ($title === '') {
+                $title = 'دورة تدريبية بدون عنوان';
+            }
 
             if (empty($draft)) {
                 $draft = new \App\Models\Webinar();
                 $draft->teacher_id = $user->id;
                 $draft->creator_id = $user->id;
                 $draft->status = 'is_draft';
-                $draft->slug = \Illuminate\Support\Str::slug($request->input('title')) . '-' . time();
+                $slugBase = \Illuminate\Support\Str::slug($title);
+                if ($slugBase === '') {
+                    $slugBase = 'course';
+                }
+                $draft->slug = $slugBase . '-' . time();
                 $draft->created_at = time();
             }
 
             $draft->type = $typeMap[$request->input('course_type', 'recorded')] ?? 'course';
-            $draft->category_id = $request->input('category_id');
+            $draft->category_id = $request->input('category_id') ?: null;
+            $draft->downloadable = $request->boolean('downloadable');
+            $draft->partner_instructor = $request->boolean('partner_instructor');
             $draft->updated_at = time();
 
             if ($request->hasFile('image_thumbnail')) {
@@ -178,36 +324,45 @@ class InstructorController extends Controller
                 $draft->image_cover = '/storage/' . $request->file('image_cover')->store('webinars', 'public');
             }
 
-            if ($request->filled('video_demo_link')) {
+            if ($request->hasFile('video_demo_file')) {
+                $draft->video_demo = '/storage/' . $request->file('video_demo_file')->store('webinars/videos', 'public');
+                $draft->video_demo_source = 'upload';
+            } elseif ($request->filled('video_demo_link')) {
                 $draft->video_demo = $request->input('video_demo_link');
                 $draft->video_demo_source = 'external_link';
             }
 
             $draft->save();
 
-            $locale = $request->input('locale', 'ar');
-            $translation = $draft->translateOrNew($locale);
-            $translation->webinar_id = $draft->id;
-            $translation->locale = $locale;
-            $translation->title = $request->input('title');
-            $translation->seo_description = $request->input('seo_description');
-            $translation->description = $request->input('description');
-            $translation->save();
+            $locale = $request->input('locale', 'ar') ?: 'ar';
+            $locales = array_values(array_unique(array_filter([$locale, 'ar', app()->getLocale()])));
+            foreach ($locales as $loc) {
+                $translation = $draft->translateOrNew($loc);
+                $translation->webinar_id = $draft->id;
+                $translation->locale = $loc;
+                $translation->title = $title;
+                $translation->seo_description = $request->input('seo_description');
+                $translation->description = $request->input('description');
+                $translation->save();
+            }
 
             $tags = array_filter(array_map('trim', explode(',', (string) $request->input('tags', ''))));
-            if (!empty($tags)) {
-                \App\Models\Tag::where('webinar_id', $draft->id)->delete();
-                foreach (array_slice(array_unique($tags), 0, 10) as $tagTitle) {
-                    \App\Models\Tag::create(['title' => mb_substr($tagTitle, 0, 64), 'webinar_id' => $draft->id]);
-                }
+            \App\Models\Tag::where('webinar_id', $draft->id)->delete();
+            foreach (array_slice(array_unique($tags), 0, 10) as $tagTitle) {
+                \App\Models\Tag::create(['title' => mb_substr($tagTitle, 0, 64), 'webinar_id' => $draft->id]);
             }
+        }
+
+        if ($step === 2 && !empty($draft)) {
+            $draft->updated_at = time();
+            $draft->save();
         }
 
         if (!empty($draft) && $step === 3) {
             $request->validate([
                 'quiz_id' => 'nullable|exists:quizzes,id',
                 'certificate' => 'nullable|boolean',
-            ]);
+            ], $this->courseWizardMessages(), $attrs);
 
             if ($request->filled('quiz_id')) {
                 $quiz = \App\Models\Quiz::where('id', $request->input('quiz_id'))
@@ -218,6 +373,7 @@ class InstructorController extends Controller
             }
 
             $draft->certificate = $request->boolean('certificate');
+            $draft->updated_at = time();
             $draft->save();
         }
 
@@ -225,7 +381,9 @@ class InstructorController extends Controller
             $request->validate([
                 'price' => 'nullable|integer|min:0',
                 'capacity' => 'nullable|integer|min:1',
-            ]);
+                'access_duration' => 'nullable|in:lifetime,limited',
+                'access_days' => 'nullable|integer|min:1|max:3650',
+            ], $this->courseWizardMessages(), $attrs);
 
             if ($request->filled('price') && (int) $request->input('price') > 0) {
                 $draft->price = (int) $request->input('price');
@@ -234,13 +392,65 @@ class InstructorController extends Controller
             }
 
             $draft->capacity = $request->input('capacity') ?: null;
+
+            if ($request->input('access_duration') === 'limited') {
+                $draft->access_days = (int) ($request->input('access_days') ?: 30);
+            } else {
+                $draft->access_days = null;
+            }
+
+            $draft->updated_at = time();
             $draft->save();
         }
 
-        if (!empty($draft) && $step === 5 && $request->input('go_next') === 'done') {
-            $draft->status = 'pending';
-            $draft->save();
+        $goNext = $request->input('go_next');
+        $isDone = !empty($draft) && $step === 5 && $goNext === 'done';
 
+        if ($isDone) {
+            $request->validate([
+                'confirm_rights' => 'accepted',
+                'confirm_terms' => 'accepted',
+            ], array_merge($this->courseWizardMessages(), [
+                'confirm_rights.accepted' => 'يجب تأكيد حقوق الملكية الفكرية قبل الإرسال.',
+                'confirm_terms.accepted' => 'يجب الموافقة على شروط المدربين قبل الإرسال.',
+            ]), $attrs);
+
+            $draft->status = 'pending';
+            $draft->updated_at = time();
+            $draft->save();
+        }
+
+        $nextStep = $step;
+        if ($goNext === 'done') {
+            $nextStep = 5;
+        } elseif ($goNext === 'stay' || $request->boolean('autosave') || $request->boolean('save_only')) {
+            $nextStep = $step;
+        } elseif (is_numeric($goNext)) {
+            $nextStep = max(1, min(5, (int) $goNext));
+        }
+
+        $progressMap = [1 => 20, 2 => 40, 3 => 60, 4 => 80, 5 => 100];
+        $draftTitle = null;
+        if (!empty($draft)) {
+            $tr = $draft->translate('ar') ?: $draft->translate(app()->getLocale()) ?: $draft->translations()->first();
+            $draftTitle = $tr->title ?? null;
+        }
+
+        if ($request->expectsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'ok' => true,
+                'draft_id' => $draft->id ?? null,
+                'draft_title' => $draftTitle ?: 'دورة تدريبية بدون عنوان',
+                'step' => $step,
+                'next_step' => $isDone ? null : $nextStep,
+                'progress' => $progressMap[$isDone ? 5 : $nextStep] ?? 20,
+                'message' => $isDone ? 'تم إرسال الدورة للمراجعة' : 'تم حفظ المسودة',
+                'done' => $isDone,
+                'redirect' => $isDone ? route('panel.v1.instructor.courses') : null,
+            ]);
+        }
+
+        if ($isDone) {
             return redirect()
                 ->route('panel.v1.instructor.courses')
                 ->with('toast', [
@@ -250,13 +460,9 @@ class InstructorController extends Controller
                 ]);
         }
 
-        $params = ['step' => $step];
+        $params = ['step' => $nextStep];
         if (!empty($draft)) {
             $params['draft'] = $draft->id;
-        }
-
-        if ($request->filled('go_next') && $request->input('go_next') !== 'done') {
-            $params['step'] = max(1, min(5, (int) $request->input('go_next')));
         }
 
         return redirect()
@@ -266,6 +472,64 @@ class InstructorController extends Controller
                 'msg' => 'تم حفظ المسودة بنجاح',
                 'type' => 'success',
             ]);
+    }
+
+    private function courseWizardFieldNames(): array
+    {
+        return [
+            'title' => 'عنوان الدورة',
+            'category_id' => 'التصنيف الرئيسي',
+            'course_type' => 'نوع الدورة',
+            'seo_description' => 'الوصف المختصر',
+            'description' => 'الوصف التفصيلي',
+            'video_demo_link' => 'رابط الفيديو الترويجي',
+            'video_demo_file' => 'ملف الفيديو الترويجي',
+            'image_thumbnail' => 'الصورة المصغرة',
+            'image_cover' => 'غلاف الدورة',
+            'tags' => 'الوسوم',
+            'locale' => 'لغة الدورة',
+            'downloadable' => 'السماح بتحميل الملفات',
+            'partner_instructor' => 'مدرب مشارك',
+            'quiz_id' => 'الاختبار',
+            'certificate' => 'الشهادة',
+            'price' => 'السعر',
+            'capacity' => 'سعة الطلاب',
+            'access_duration' => 'مدة الوصول',
+            'access_days' => 'عدد أيام الوصول',
+            'confirm_rights' => 'تأكيد حقوق الملكية',
+            'confirm_terms' => 'الموافقة على الشروط',
+            'draft_id' => 'المسودة',
+            'chapter_id' => 'الوحدة',
+            'topic' => 'عنوان الجلسة',
+            'date' => 'تاريخ الجلسة',
+            'duration' => 'مدة الجلسة',
+            'upload' => 'الملف',
+            'summary' => 'ملخص الدرس',
+        ];
+    }
+
+    private function courseWizardMessages(): array
+    {
+        return [
+            'required' => 'حقل :attribute مطلوب',
+            'required_if' => 'حقل :attribute مطلوب',
+            'accepted' => 'يجب الموافقة على :attribute',
+            'in' => 'قيمة :attribute غير صحيحة',
+            'exists' => ':attribute غير موجود',
+            'integer' => 'حقل :attribute يجب أن يكون رقمًا',
+            'numeric' => 'حقل :attribute يجب أن يكون رقمًا',
+            'min.numeric' => 'حقل :attribute يجب ألا يقل عن :min',
+            'min.integer' => 'حقل :attribute يجب ألا يقل عن :min',
+            'max.string' => 'حقل :attribute يجب ألا يتجاوز :max حرفًا',
+            'max.file' => 'حجم :attribute يجب ألا يتجاوز :max كيلوبايت',
+            'image' => 'حقل :attribute يجب أن يكون صورة',
+            'url' => 'حقل :attribute يجب أن يكون رابطًا صالحًا',
+            'file' => 'حقل :attribute يجب أن يكون ملفًا',
+            'mimetypes' => 'نوع ملف :attribute غير مدعوم',
+            'boolean' => 'قيمة :attribute غير صحيحة',
+            'date' => 'حقل :attribute يجب أن يكون تاريخًا صالحًا',
+            'string' => 'حقل :attribute يجب أن يكون نصًا',
+        ];
     }
 
     private function draftOrFail($user, $draftId)
@@ -286,7 +550,7 @@ class InstructorController extends Controller
         $request->validate([
             'draft_id' => 'required|integer',
             'title' => 'required|string|max:255',
-        ]);
+        ], $this->courseWizardMessages(), $this->courseWizardFieldNames());
 
         $draft = $this->draftOrFail($user, $request->input('draft_id'));
 
@@ -301,8 +565,24 @@ class InstructorController extends Controller
         $translation->locale = 'ar';
         $translation->title = $request->input('title');
         $translation->save();
+        if (app()->getLocale() !== 'ar') {
+            $tEn = $chapter->translateOrNew(app()->getLocale());
+            $tEn->locale = app()->getLocale();
+            $tEn->title = $request->input('title');
+            $tEn->save();
+        }
 
-        return $this->backToDraftStep($request, $draft, 2, 'تمت إضافة الوحدة');
+        return $this->curriculumResponse($request, $draft, 'تمت إضافة الوحدة', [
+            'unit' => [
+                'id' => $chapter->id,
+                'title' => $request->input('title'),
+                'lessons' => [],
+                'delete_url' => route('panel.v1.instructor.curriculum.chapters.delete', ['chapterId' => $chapter->id]),
+                'session_store_url' => route('panel.v1.instructor.curriculum.sessions.store'),
+                'file_store_url' => route('panel.v1.instructor.curriculum.files.store'),
+                'text_store_url' => route('panel.v1.instructor.curriculum.texts.store'),
+            ],
+        ]);
     }
 
     public function chapterDelete(Request $request, int $chapterId)
@@ -312,14 +592,16 @@ class InstructorController extends Controller
             return redirect('/login');
         }
 
-        $request->validate(['draft_id' => 'required|integer']);
+        $request->validate(['draft_id' => 'required|integer'], $this->courseWizardMessages(), $this->courseWizardFieldNames());
         $draft = $this->draftOrFail($user, $request->input('draft_id'));
 
         \App\Models\WebinarChapter::where('id', $chapterId)
             ->where('webinar_id', $draft->id)
             ->delete();
 
-        return $this->backToDraftStep($request, $draft, 2, 'تم حذف الوحدة');
+        return $this->curriculumResponse($request, $draft, 'تم حذف الوحدة', [
+            'deleted' => ['kind' => 'chapter', 'id' => $chapterId],
+        ]);
     }
 
     public function curriculumSessionStore(Request $request)
@@ -335,7 +617,7 @@ class InstructorController extends Controller
             'topic' => 'required|string|max:255',
             'date' => 'required|date',
             'duration' => 'required|integer|min:1',
-        ]);
+        ], $this->courseWizardMessages(), $this->courseWizardFieldNames());
 
         $draft = $this->draftOrFail($user, $request->input('draft_id'));
 
@@ -358,8 +640,23 @@ class InstructorController extends Controller
         $translation->locale = 'ar';
         $translation->title = $request->input('topic');
         $translation->save();
+        if (app()->getLocale() !== 'ar') {
+            $tEn = $session->translateOrNew(app()->getLocale());
+            $tEn->locale = app()->getLocale();
+            $tEn->title = $request->input('topic');
+            $tEn->save();
+        }
 
-        return $this->backToDraftStep($request, $draft, 2, 'تمت إضافة الجلسة');
+        return $this->curriculumResponse($request, $draft, 'تمت إضافة الجلسة', [
+            'chapter_id' => $chapter->id,
+            'lesson' => [
+                'kind' => 'session',
+                'id' => $session->id,
+                'title' => $request->input('topic'),
+                'duration' => ((int) $request->input('duration')) . ' دقيقة',
+                'delete_url' => route('panel.v1.instructor.curriculum.sessions.delete', ['sessionId' => $session->id]),
+            ],
+        ]);
     }
 
     public function curriculumSessionDelete(Request $request, int $sessionId)
@@ -369,14 +666,16 @@ class InstructorController extends Controller
             return redirect('/login');
         }
 
-        $request->validate(['draft_id' => 'required|integer']);
+        $request->validate(['draft_id' => 'required|integer'], $this->courseWizardMessages(), $this->courseWizardFieldNames());
         $draft = $this->draftOrFail($user, $request->input('draft_id'));
 
         \App\Models\Session::where('id', $sessionId)
             ->where('webinar_id', $draft->id)
             ->delete();
 
-        return $this->backToDraftStep($request, $draft, 2, 'تم حذف الجلسة');
+        return $this->curriculumResponse($request, $draft, 'تم حذف الجلسة', [
+            'deleted' => ['kind' => 'session', 'id' => $sessionId],
+        ]);
     }
 
     public function curriculumFileStore(Request $request)
@@ -391,7 +690,7 @@ class InstructorController extends Controller
             'chapter_id' => 'required|integer',
             'title' => 'required|string|max:255',
             'upload' => 'required|file|max:102400',
-        ]);
+        ], $this->courseWizardMessages(), $this->courseWizardFieldNames());
 
         $draft = $this->draftOrFail($user, $request->input('draft_id'));
 
@@ -420,8 +719,23 @@ class InstructorController extends Controller
         $translation->locale = 'ar';
         $translation->title = $request->input('title');
         $translation->save();
+        if (app()->getLocale() !== 'ar') {
+            $tEn = $file->translateOrNew(app()->getLocale());
+            $tEn->locale = app()->getLocale();
+            $tEn->title = $request->input('title');
+            $tEn->save();
+        }
 
-        return $this->backToDraftStep($request, $draft, 2, 'تم رفع الملف');
+        return $this->curriculumResponse($request, $draft, 'تم رفع الملف', [
+            'chapter_id' => $chapter->id,
+            'lesson' => [
+                'kind' => 'file',
+                'id' => $file->id,
+                'title' => $request->input('title'),
+                'duration' => 'ملف',
+                'delete_url' => route('panel.v1.instructor.curriculum.files.delete', ['fileId' => $file->id]),
+            ],
+        ]);
     }
 
     public function curriculumFileDelete(Request $request, int $fileId)
@@ -431,14 +745,16 @@ class InstructorController extends Controller
             return redirect('/login');
         }
 
-        $request->validate(['draft_id' => 'required|integer']);
+        $request->validate(['draft_id' => 'required|integer'], $this->courseWizardMessages(), $this->courseWizardFieldNames());
         $draft = $this->draftOrFail($user, $request->input('draft_id'));
 
         \App\Models\File::where('id', $fileId)
             ->where('webinar_id', $draft->id)
             ->delete();
 
-        return $this->backToDraftStep($request, $draft, 2, 'تم حذف الملف');
+        return $this->curriculumResponse($request, $draft, 'تم حذف الملف', [
+            'deleted' => ['kind' => 'file', 'id' => $fileId],
+        ]);
     }
 
     public function curriculumTextStore(Request $request)
@@ -453,7 +769,7 @@ class InstructorController extends Controller
             'chapter_id' => 'required|integer',
             'title' => 'required|string|max:255',
             'summary' => 'nullable|string',
-        ]);
+        ], $this->courseWizardMessages(), $this->courseWizardFieldNames());
 
         $draft = $this->draftOrFail($user, $request->input('draft_id'));
 
@@ -465,18 +781,33 @@ class InstructorController extends Controller
         $text->creator_id = $user->id;
         $text->webinar_id = $draft->id;
         $text->chapter_id = $chapter->id;
+        $text->accessibility = 'paid';
         $text->status = 'active';
         $text->created_at = time();
         $text->updated_at = time();
         $text->save();
 
-        $translation = $text->translateOrNew('ar');
-        $translation->locale = 'ar';
-        $translation->title = $request->input('title');
-        $translation->summary = $request->input('summary');
-        $translation->save();
+        $summary = (string) $request->input('summary', '');
+        $locales = array_values(array_unique(array_filter(['ar', app()->getLocale()])));
+        foreach ($locales as $loc) {
+            $translation = $text->translateOrNew($loc);
+            $translation->locale = $loc;
+            $translation->title = $request->input('title');
+            $translation->summary = $summary;
+            $translation->content = $summary !== '' ? $summary : $request->input('title');
+            $translation->save();
+        }
 
-        return $this->backToDraftStep($request, $draft, 2, 'تمت إضافة الدرس النصي');
+        return $this->curriculumResponse($request, $draft, 'تمت إضافة الدرس النصي', [
+            'chapter_id' => $chapter->id,
+            'lesson' => [
+                'kind' => 'text',
+                'id' => $text->id,
+                'title' => $request->input('title'),
+                'duration' => 'نصي',
+                'delete_url' => route('panel.v1.instructor.curriculum.texts.delete', ['textId' => $text->id]),
+            ],
+        ]);
     }
 
     public function curriculumTextDelete(Request $request, int $textId)
@@ -486,14 +817,29 @@ class InstructorController extends Controller
             return redirect('/login');
         }
 
-        $request->validate(['draft_id' => 'required|integer']);
+        $request->validate(['draft_id' => 'required|integer'], $this->courseWizardMessages(), $this->courseWizardFieldNames());
         $draft = $this->draftOrFail($user, $request->input('draft_id'));
 
         \App\Models\TextLesson::where('id', $textId)
             ->where('webinar_id', $draft->id)
             ->delete();
 
-        return $this->backToDraftStep($request, $draft, 2, 'تم حذف الدرس');
+        return $this->curriculumResponse($request, $draft, 'تم حذف الدرس', [
+            'deleted' => ['kind' => 'text', 'id' => $textId],
+        ]);
+    }
+
+    private function curriculumResponse(Request $request, $draft, string $message, array $payload = [])
+    {
+        if ($request->expectsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json(array_merge([
+                'ok' => true,
+                'message' => $message,
+                'draft_id' => $draft->id,
+            ], $payload));
+        }
+
+        return $this->backToDraftStep($request, $draft, 2, $message);
     }
 
     private function backToDraftStep(Request $request, $draft, int $step, string $message)
@@ -509,20 +855,29 @@ class InstructorController extends Controller
             return [];
         }
 
-        return \App\Models\WebinarChapter::with(['sessions', 'files', 'textLessons'])
+        $translatedTitle = function ($model) {
+            if (!$model) {
+                return '';
+            }
+            $tr = $model->translate('ar') ?: $model->translate(app()->getLocale()) ?: $model->translations->first();
+            return $tr->title ?? ($model->title ?? '');
+        };
+
+        return \App\Models\WebinarChapter::with(['sessions.translations', 'files.translations', 'textLessons.translations', 'translations'])
             ->where('webinar_id', $draft->id)
             ->orderBy('order')
             ->orderBy('id')
             ->get()
-            ->map(function ($chapter) {
+            ->map(function ($chapter) use ($translatedTitle) {
                 $lessons = [];
 
                 foreach ($chapter->sessions as $session) {
                     $lessons[] = [
                         'kind' => 'session',
                         'id' => $session->id,
-                        'title' => $session->title,
+                        'title' => $translatedTitle($session),
                         'duration' => ($session->duration ?? 0) . ' دقيقة',
+                        'delete_url' => route('panel.v1.instructor.curriculum.sessions.delete', ['sessionId' => $session->id]),
                     ];
                 }
 
@@ -530,8 +885,9 @@ class InstructorController extends Controller
                     $lessons[] = [
                         'kind' => 'file',
                         'id' => $file->id,
-                        'title' => $file->title,
+                        'title' => $translatedTitle($file),
                         'duration' => 'ملف',
+                        'delete_url' => route('panel.v1.instructor.curriculum.files.delete', ['fileId' => $file->id]),
                     ];
                 }
 
@@ -539,15 +895,20 @@ class InstructorController extends Controller
                     $lessons[] = [
                         'kind' => 'text',
                         'id' => $text->id,
-                        'title' => $text->title,
+                        'title' => $translatedTitle($text),
                         'duration' => 'نصي',
+                        'delete_url' => route('panel.v1.instructor.curriculum.texts.delete', ['textId' => $text->id]),
                     ];
                 }
 
                 return [
                     'id' => $chapter->id,
-                    'title' => $chapter->title,
+                    'title' => $translatedTitle($chapter),
                     'lessons' => $lessons,
+                    'delete_url' => route('panel.v1.instructor.curriculum.chapters.delete', ['chapterId' => $chapter->id]),
+                    'session_store_url' => route('panel.v1.instructor.curriculum.sessions.store'),
+                    'file_store_url' => route('panel.v1.instructor.curriculum.files.store'),
+                    'text_store_url' => route('panel.v1.instructor.curriculum.texts.store'),
                 ];
             })->all();
     }
@@ -868,42 +1229,116 @@ class InstructorController extends Controller
 
     public function consultations(Request $request)
     {
-        $user = $request->user();
+        $user = $this->resolveInstructor($request);
 
-        $rows = [];
-        if ($user) {
-            $meetingIds = \App\Models\Meeting::where('creator_id', $user->id)->pluck('id')->all();
-            $timeIds = !empty($meetingIds)
-                ? \App\Models\MeetingTime::whereIn('meeting_id', $meetingIds)->pluck('id')->all()
-                : [];
-            $reservations = !empty($timeIds)
-                ? \App\Models\ReserveMeeting::with(['user'])
-                    ->whereIn('meeting_time_id', $timeIds)
-                    ->orderBy('id', 'desc')
-                    ->limit(50)
-                    ->get()
-                : collect();
-
-            foreach ($reservations as $reservation) {
-                $rows[] = [
-                    'initials' => mb_substr($reservation->user->full_name ?? '?', 0, 2),
-                    'name' => $reservation->user->full_name ?? '',
-                    'email' => $reservation->user->email ?? '',
-                    'joinType' => 'أونلاين',
-                    'day' => $reservation->day ?? '',
-                    'date' => !empty($reservation->reserved_at) ? date('Y/m/d', (int) $reservation->reserved_at) : '',
-                    'time' => !empty($reservation->reserved_at) ? date('H:i', (int) $reservation->reserved_at) : '',
-                    'amount' => handlePrice($reservation->paid_amount),
-                ];
-            }
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
         }
 
-        $upcoming = !empty($meetingIds)
-            ? \App\Models\MeetingTime::whereIn('meeting_id', $meetingIds)
-                ->where('date', '>=', time())
-                ->orderBy('date')
+        $dayLabels = [
+            'saturday' => 'السبت',
+            'sunday' => 'الأحد',
+            'monday' => 'الإثنين',
+            'tuesday' => 'الثلاثاء',
+            'wednesday' => 'الأربعاء',
+            'thursday' => 'الخميس',
+            'friday' => 'الجمعة',
+        ];
+
+        $meeting = \App\Models\Meeting::where('creator_id', $user->id)->first();
+        $meetingIds = $meeting ? [$meeting->id] : [];
+
+        $timeIds = !empty($meetingIds)
+            ? \App\Models\MeetingTime::whereIn('meeting_id', $meetingIds)->pluck('id')->all()
+            : [];
+
+        $reservations = !empty($timeIds)
+            ? \App\Models\ReserveMeeting::with(['user', 'meetingTime'])
+                ->whereIn('meeting_time_id', $timeIds)
+                ->orderByDesc('id')
+                ->limit(50)
+                ->get()
+            : collect();
+
+        $rows = [];
+        foreach ($reservations as $reservation) {
+            $slot = $reservation->meetingTime;
+            $dayKey = $slot->day_label ?? null;
+            $joinType = match ($reservation->meeting_type) {
+                'in_person' => 'وجهاً لوجه',
+                'all' => 'الكل',
+                default => 'أونلاين',
+            };
+            $statusLabel = match ($reservation->status) {
+                \App\Models\ReserveMeeting::$finished => 'منتهية',
+                \App\Models\ReserveMeeting::$canceled => 'ملغاة',
+                \App\Models\ReserveMeeting::$pending => 'قيد الانتظار',
+                default => 'مفتوحة',
+            };
+
+            $ts = (int) ($reservation->date ?: $reservation->start_at ?: $reservation->reserved_at);
+            $timeLabel = $slot->time ?? (!empty($reservation->start_at) ? date('H:i', (int) $reservation->start_at) : '');
+
+            $rows[] = [
+                'initials' => mb_substr($reservation->user->full_name ?? '?', 0, 2),
+                'name' => $reservation->user->full_name ?? '',
+                'email' => $reservation->user->email ?? '',
+                'joinType' => $joinType,
+                'day' => $dayLabels[$dayKey] ?? ($reservation->day ?? '—'),
+                'date' => $ts > 0 ? date('Y/m/d', $ts) : ($reservation->day ?? '—'),
+                'time' => $timeLabel,
+                'amount' => handlePrice($reservation->paid_amount),
+                'students' => (int) ($reservation->student_count ?? 1),
+                'status' => $statusLabel,
+                'link' => $reservation->link,
+            ];
+        }
+
+        $now = time();
+        $upcoming = !empty($timeIds)
+            ? \App\Models\ReserveMeeting::with(['meetingTime', 'user'])
+                ->whereIn('meeting_time_id', $timeIds)
+                ->where(function ($q) use ($now) {
+                    $q->where('date', '>=', $now)
+                        ->orWhere('start_at', '>=', $now);
+                })
+                ->whereIn('status', [
+                    \App\Models\ReserveMeeting::$open,
+                    \App\Models\ReserveMeeting::$pending,
+                ])
+                ->orderByRaw('COALESCE(start_at, date) asc')
                 ->first()
             : null;
+
+        $session = [];
+        if ($upcoming) {
+            $slot = $upcoming->meetingTime;
+            $ts = (int) ($upcoming->date ?: $upcoming->start_at ?: $upcoming->reserved_at);
+            $session = [
+                'title' => $slot->description ?: 'جلسة استشارية',
+                'status' => $upcoming->status === \App\Models\ReserveMeeting::$pending ? 'قيد الانتظار' : 'مجدولة',
+                'price' => handlePrice($upcoming->paid_amount ?: ($meeting->amount ?? 0)),
+                'instructor' => $user->full_name,
+                'instructorInitials' => mb_substr($user->full_name ?? '?', 0, 1),
+                'date' => $ts > 0 ? date('Y/m/d', $ts) : ($upcoming->day ?? ''),
+                'time' => $slot->time ?? ($upcoming->start_at ? date('H:i', (int) $upcoming->start_at) : ''),
+                'linkLabel' => ($upcoming->meeting_type === 'in_person') ? 'لقاء حضوري' : 'لقاء أونلاين',
+                'link' => $upcoming->link,
+            ];
+        } elseif (!empty($meeting) && empty($rows)) {
+            // Show meeting package card when no upcoming reservation yet.
+            $session = [
+                'title' => 'الجلسات الاستشارية',
+                'status' => !empty($meeting->disabled) ? 'متوقفة' : 'متاحة للحجز',
+                'price' => handlePrice($meeting->amount ?? 0),
+                'instructor' => $user->full_name,
+                'instructorInitials' => mb_substr($user->full_name ?? '?', 0, 1),
+                'date' => '—',
+                'time' => 'حدد مواعيدك من إعدادات الجلسات',
+                'linkLabel' => 'لقاء أونلاين',
+                'link' => null,
+            ];
+        }
 
         return $this->render(
             $request,
@@ -911,16 +1346,7 @@ class InstructorController extends Controller
             'الجلسات الاستشارية',
             [
                 'attendees' => $rows,
-                'session' => $upcoming ? [
-                    'title' => $upcoming->title ?? 'جلسة استشارية',
-                    'status' => 'مجدولة',
-                    'price' => handlePrice($upcoming->amount ?? 0),
-                    'instructor' => $user->full_name,
-                    'instructorInitials' => mb_substr($user->full_name ?? '?', 0, 1),
-                    'date' => date('Y/m/d', (int) $upcoming->date),
-                    'time' => date('H:i', (int) $upcoming->date),
-                    'linkLabel' => 'لقاء أونلاين',
-                ] : [],
+                'session' => $session,
             ]
         );
     }
@@ -1438,11 +1864,11 @@ class InstructorController extends Controller
 
         $summaryCards = [
             ['label' => 'إجمالي المبيعات', 'value' => handlePrice($totalSales), 'icon' => 'tabler--shopping-cart'],
-            ['label' => 'صافي الدخل', 'value' => handlePrice($totalNet), 'icon' => 'tabler--coin'],
+            ['label' => 'صافي الدخل', 'value' => handlePrice($totalNet), 'icon' => 'tabler--currency-riyal'],
             ['label' => 'الرصيد المتاح', 'value' => handlePrice($available), 'icon' => 'tabler--wallet'],
             ['label' => 'إجمالي الدخل المحاسبي', 'value' => handlePrice($income), 'icon' => 'tabler--chart-bar'],
-            ['label' => 'إجمالي الخصومات', 'value' => handlePrice($totalDiscount), 'icon' => 'tabler--discount'],
-            ['label' => 'عمولة المنصة', 'value' => handlePrice($totalCommission), 'icon' => 'tabler--percentage'],
+            ['label' => 'إجمالي الخصومات', 'value' => handlePrice($totalDiscount), 'icon' => 'tabler--receipt'],
+            ['label' => 'عمولة المنصة', 'value' => handlePrice($totalCommission), 'icon' => 'tabler--credit-card'],
         ];
 
         return $this->render(
@@ -1781,6 +2207,199 @@ class InstructorController extends Controller
             ]);
     }
 
+    public function supportConversations(Request $request, $id = null)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $webinarIds = $this->instructorSupportWebinarIds($user);
+        $selectSupport = null;
+
+        if (!empty($id) && is_numeric($id)) {
+            $selectSupport = \App\Models\Support::query()
+                ->where('id', $id)
+                ->where(function ($query) use ($user, $webinarIds) {
+                    $query->where('user_id', $user->id)
+                        ->orWhereIn('webinar_id', $webinarIds);
+                })
+                ->with([
+                    'user',
+                    'department',
+                    'webinar.teacher',
+                    'conversations' => function ($query) {
+                        $query->with(['sender', 'supporter'])->orderBy('created_at', 'asc');
+                    },
+                ])
+                ->first();
+
+            if (empty($selectSupport)) {
+                return redirect()
+                    ->route('panel.v1.instructor.support')
+                    ->with('toast', ['title' => 'تنبيه', 'msg' => 'التذكرة غير موجودة أو غير مسموح بها', 'type' => 'error']);
+            }
+        }
+
+        $isTicketMode = !empty($selectSupport) && !empty($selectSupport->department_id);
+
+        $supportsQuery = \App\Models\Support::query()
+            ->with([
+                'user',
+                'department',
+                'webinar.teacher',
+                'conversations' => function ($query) {
+                    $query->orderBy('created_at', 'desc');
+                },
+            ]);
+
+        if ($isTicketMode) {
+            $supportsQuery->whereNotNull('department_id')->where('user_id', $user->id);
+        } else {
+            $supportsQuery->whereNull('department_id')
+                ->where(function ($query) use ($user, $webinarIds) {
+                    $query->where('user_id', $user->id)
+                        ->orWhereIn('webinar_id', $webinarIds);
+                });
+        }
+
+        $supports = $supportsQuery
+            ->orderBy('created_at', 'desc')
+            ->orderBy('status', 'asc')
+            ->get();
+
+        $supportsCount = $supports->count();
+        $openSupportsCount = $supports->where('status', '!=', 'close')->count();
+        $closeSupportsCount = $supports->where('status', 'close')->count();
+
+        return $this->render(
+            $request,
+            'panel_v1.instructor.pages.support-conversations',
+            $isTicketMode ? 'تذاكر الدعم' : 'دعم الصفوف',
+            [
+                'supports' => $supports,
+                'selectSupport' => $selectSupport,
+                'supportsCount' => $supportsCount,
+                'openSupportsCount' => $openSupportsCount,
+                'closeSupportsCount' => $closeSupportsCount,
+                'isTicketMode' => $isTicketMode,
+            ]
+        );
+    }
+
+    public function storeSupportConversation(Request $request, $id)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $request->validate([
+            'message' => 'required|string|min:2|max:5000',
+            'attach' => 'nullable|file|max:10240',
+        ]);
+
+        $support = $this->findInstructorSupportOrFail($user, $id);
+
+        if ($support->status === 'close') {
+            return back()->with('toast', ['title' => 'تنبيه', 'msg' => 'التذكرة مغلقة', 'type' => 'error']);
+        }
+
+        $support->update([
+            'status' => ((int) $support->user_id === (int) $user->id) ? 'open' : 'supporter_replied',
+            'updated_at' => time(),
+        ]);
+
+        $conversation = \App\Models\SupportConversation::create([
+            'support_id' => $support->id,
+            'sender_id' => $user->id,
+            'message' => $request->input('message'),
+            'attach' => null,
+            'created_at' => time(),
+        ]);
+
+        if ($request->hasFile('attach')) {
+            $path = $this->uploadFile(
+                $request->file('attach'),
+                "supports/{$support->id}/conversations",
+                "attach_{$conversation->id}",
+                $user->id
+            );
+            $conversation->update(['attach' => $path]);
+        }
+
+        if (!empty($support->webinar_id)) {
+            $webinar = \App\Models\Webinar::find($support->webinar_id);
+            if ($webinar) {
+                sendNotification('support_message_replied', [
+                    '[c.title]' => $webinar->title,
+                ], ((int) $support->user_id === (int) $user->id) ? $webinar->teacher_id : $support->user_id);
+            }
+        }
+
+        if (!empty($support->department_id)) {
+            sendNotification('support_message_replied_admin', [
+                '[s.t.title]' => $support->title,
+            ], 1);
+        }
+
+        return redirect()
+            ->route('panel.v1.instructor.support.conversations', ['id' => $support->id])
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم إرسال الرد', 'type' => 'success']);
+    }
+
+    public function closeSupport(Request $request, $id)
+    {
+        $user = $this->resolveInstructor($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $support = $this->findInstructorSupportOrFail($user, $id);
+        $support->update([
+            'status' => 'close',
+            'updated_at' => time(),
+        ]);
+
+        return redirect()
+            ->route('panel.v1.instructor.support.conversations', ['id' => $support->id])
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم إغلاق المحادثة', 'type' => 'success']);
+    }
+
+    private function instructorSupportWebinarIds($user): array
+    {
+        return \App\Models\Webinar::query()
+            ->where(function ($query) use ($user) {
+                $query->where('teacher_id', $user->id)
+                    ->orWhere('creator_id', $user->id);
+            })
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    private function findInstructorSupportOrFail($user, $id): \App\Models\Support
+    {
+        $webinarIds = $this->instructorSupportWebinarIds($user);
+
+        $support = \App\Models\Support::query()
+            ->where('id', $id)
+            ->where(function ($query) use ($user, $webinarIds) {
+                $query->where('user_id', $user->id)
+                    ->orWhereIn('webinar_id', $webinarIds);
+            })
+            ->first();
+
+        if (empty($support)) {
+            abort(404);
+        }
+
+        return $support;
+    }
+
     public function notifications(Request $request)
     {
         $user = $this->resolveInstructor($request);
@@ -1964,7 +2583,7 @@ class InstructorController extends Controller
 
         $this->saveProfileAbout($request, $user);
 
-        return redirect()->route('panel.v1.instructor.settings')
+        return redirect()->to(route('panel.v1.instructor.settings') . '#settings-tabs-5')
             ->with('toast', ['title' => 'تم', 'msg' => 'تم حفظ بيانات "حول"', 'type' => 'success']);
     }
 
@@ -1976,11 +2595,19 @@ class InstructorController extends Controller
             return $user;
         }
 
-        if (!$this->storeProfileMeta($user, $request->input('name'), $request->input('value'))) {
+        $meta = $this->storeProfileMeta($user, $request->input('name'), $request->input('value'));
+
+        if (!$meta) {
             return response()->json([], 422);
         }
 
-        return response()->json(['code' => 200], 200);
+        return response()->json([
+            'code' => 200,
+            'id' => $meta->id,
+            'name' => $meta->name,
+            'value' => $meta->value,
+            'delete_url' => route('panel.v1.instructor.metas.delete', ['metaId' => $meta->id]),
+        ], 200);
     }
 
     public function updateMeta(Request $request, $metaId)
@@ -2010,7 +2637,12 @@ class InstructorController extends Controller
             abort(404);
         }
 
-        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم الحذف', 'type' => 'success']);
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json(['code' => 200, 'id' => (int) $metaId], 200);
+        }
+
+        return redirect()->to(route('panel.v1.instructor.settings') . '#settings-tabs-5')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم الحذف بنجاح', 'type' => 'success']);
     }
 
     public function storeAttachment(Request $request)
@@ -2023,7 +2655,7 @@ class InstructorController extends Controller
 
         $this->storeProfileAttachment($request, $user);
 
-        return redirect()->route('panel.v1.instructor.settings')
+        return redirect()->to(route('panel.v1.instructor.settings') . '#settings-tabs-5')
             ->with('toast', ['title' => 'تم', 'msg' => 'تمت إضافة المرفق', 'type' => 'success']);
     }
 
@@ -2039,7 +2671,7 @@ class InstructorController extends Controller
             abort(404);
         }
 
-        return redirect()->route('panel.v1.instructor.settings')
+        return redirect()->to(route('panel.v1.instructor.settings') . '#settings-tabs-5')
             ->with('toast', ['title' => 'تم', 'msg' => 'تم تحديث المرفق', 'type' => 'success']);
     }
 
@@ -2055,7 +2687,8 @@ class InstructorController extends Controller
             abort(404);
         }
 
-        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم حذف المرفق', 'type' => 'success']);
+        return redirect()->to(route('panel.v1.instructor.settings') . '#settings-tabs-5')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم حذف المرفق', 'type' => 'success']);
     }
 
     public function endSession($sessionId)
@@ -2161,6 +2794,7 @@ class InstructorController extends Controller
     {
         return Webinar::with(['category', 'sessions', 'files', 'textLessons'])
             ->where('teacher_id', $user->id)
+            ->orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")
             ->orderBy('id', 'desc')
             ->get();
     }
@@ -2206,20 +2840,36 @@ class InstructorController extends Controller
             : [];
 
         $pendingGrading = !empty($assignmentIds)
-            ? WebinarAssignmentHistory::with(['student'])
+            ? WebinarAssignmentHistory::with(['student', 'assignment'])
                 ->whereIn('assignment_id', $assignmentIds)
                 ->where('status', 'pending')
                 ->orderBy('id', 'desc')
-                ->limit(3)
+                ->limit(5)
                 ->get()
                 ->map(function ($history) {
                     return [
-                        'title' => 'تكليف بانتظار التقييم',
+                        'id' => $history->id,
+                        'title' => $history->assignment->title ?? 'تكليف بانتظار التقييم',
                         'student' => $history->student->full_name ?? '',
                         'time' => date('Y/m/d', (int) $history->created_at),
                     ];
                 })->all()
             : [];
+
+        $homeCourses = $webinars
+            ->sortByDesc(fn ($webinar) => $webinar->status === Webinar::$active ? 1 : 0)
+            ->take(3)
+            ->values()
+            ->map(function ($webinar) {
+                return [
+                    'id' => $webinar->id,
+                    'title' => $webinar->title,
+                    'subtitle' => $webinar->category->title ?? '',
+                    'progress' => $this->webinarFinishedProgress($webinar),
+                    'slug' => $webinar->slug,
+                    'status' => $webinar->status,
+                ];
+            })->all();
 
         return [
             'instructorName' => $user->full_name,
@@ -2231,18 +2881,12 @@ class InstructorController extends Controller
                 ['label' => 'تكليفات وواجبات', 'value' => (string) $pendingGradingCount],
                 ['label' => 'الاختبارات النشطة', 'value' => (string) $activeQuizzes],
             ],
-            'courses' => $webinars->take(3)->map(function ($webinar) {
-                return [
-                    'title' => $webinar->title,
-                    'subtitle' => $webinar->category->title ?? '',
-                    'progress' => $this->webinarFinishedProgress($webinar),
-                ];
-            })->all(),
+            'courses' => $homeCourses,
             'quickActions' => [
                 ['label' => 'انشاء دورة جديدة', 'route' => 'panel.v1.instructor.courses.create'],
                 ['label' => 'انشاء اختبار جديد', 'route' => 'panel.v1.instructor.quizzes.create'],
                 ['label' => 'عرض جميع التكليفات', 'route' => 'panel.v1.instructor.assignments'],
-                ['label' => 'عرض الطلاب', 'route' => 'panel.v1.instructor.home'],
+                ['label' => 'عرض الطلاب', 'route' => 'panel.v1.instructor.students'],
             ],
             'upcomingLectures' => $upcomingLectures,
             'pendingGrading' => $pendingGrading,
@@ -2251,7 +2895,26 @@ class InstructorController extends Controller
 
     private function courseCards($user): array
     {
-        return $this->teacherWebinars($user)->map(function ($webinar) {
+        $webinars = $this->teacherWebinars($user);
+        $webinarIds = $webinars->pluck('id')->all();
+
+        $assignmentCounts = !empty($webinarIds)
+            ? WebinarAssignment::query()
+                ->whereIn('webinar_id', $webinarIds)
+                ->selectRaw('webinar_id, COUNT(*) as aggregate')
+                ->groupBy('webinar_id')
+                ->pluck('aggregate', 'webinar_id')
+            : collect();
+
+        $quizCounts = !empty($webinarIds)
+            ? Quiz::query()
+                ->whereIn('webinar_id', $webinarIds)
+                ->selectRaw('webinar_id, COUNT(*) as aggregate')
+                ->groupBy('webinar_id')
+                ->pluck('aggregate', 'webinar_id')
+            : collect();
+
+        return $webinars->map(function ($webinar) use ($assignmentCounts, $quizCounts) {
             $typeKey = $webinar->type ?: Webinar::$course;
             $typeLabels = [
                 Webinar::$webinar => 'محاضرة مباشرة',
@@ -2271,6 +2934,22 @@ class InstructorController extends Controller
                 $subtitle = trim($subtitle . ($subtitle !== '' ? ' · ' : '') . $statusLabel);
             }
 
+            $sessionsCount = $webinar->sessions->count();
+            $filesCount = $webinar->files->count();
+            $textsCount = $webinar->textLessons->count();
+            $quizCount = (int) ($quizCounts[$webinar->id] ?? 0);
+            $assignmentCount = (int) ($assignmentCounts[$webinar->id] ?? 0);
+            $lectures = $sessionsCount + $filesCount + $textsCount + $quizCount;
+
+            $durationMinutes = (int) ($webinar->duration ?? 0);
+            if ($durationMinutes < 1 && $sessionsCount > 0) {
+                $durationMinutes = (int) $webinar->sessions->sum('duration');
+            }
+
+            $activityHours = $durationMinutes > 0
+                ? rtrim(rtrim(number_format($durationMinutes / 60, 1), '0'), '.') . ' س'
+                : '—';
+
             return [
                 'id' => $webinar->id,
                 'title' => $webinar->title ?: 'دورة بدون عنوان',
@@ -2280,13 +2959,11 @@ class InstructorController extends Controller
                 'type_key' => $typeKey,
                 'status' => $webinar->status,
                 'type' => $typeLabels[$typeKey] ?? 'دورة',
-                'activity' => '—',
-                'duration' => !empty($webinar->duration) ? $webinar->duration . ' دقيقة' : '—',
-                'lectures' => $webinar->sessions->count()
-                    + $webinar->files->count()
-                    + $webinar->textLessons->count(),
-                'assignments' => WebinarAssignment::where('webinar_id', $webinar->id)->count(),
-                'progress' => $this->webinarFinishedProgress($webinar),
+                'activity' => $activityHours,
+                'duration' => $durationMinutes > 0 ? $durationMinutes . ' دقيقة' : '—',
+                'lectures' => $lectures,
+                'assignments' => $assignmentCount,
+                'progress' => $this->webinarAverageProgress($webinar),
             ];
         })->all();
     }
@@ -2327,6 +3004,10 @@ class InstructorController extends Controller
             ? (int) round(collect($students)->avg('progress'))
             : 0;
 
+        if ($avgProgress < 1) {
+            $avgProgress = $this->webinarAverageProgress($webinar);
+        }
+
         return [
             'perfStats' => [
                 ['value' => count($students) . ' طالب', 'label' => 'طلاب الدورة', 'tone' => 'green'],
@@ -2337,18 +3018,81 @@ class InstructorController extends Controller
         ];
     }
 
-    private function webinarFinishedProgress($webinar): int
+    private function webinarAverageProgress($webinar): int
     {
         try {
-            $total = $webinar->sessions->count();
-            if ($total < 1) {
-                return 0;
+            $avg = (int) round((float) $webinar->getAverageLearning());
+            if ($avg > 0) {
+                return min(100, max(0, $avg));
             }
-            $finished = $webinar->sessions->where('status', 'finished')->count();
-            return (int) round($finished / $total * 100);
         } catch (\Throwable $e) {
+            // fall through
+        }
+
+        $buyerIds = Sale::query()
+            ->where('webinar_id', $webinar->id)
+            ->whereNull('refund_at')
+            ->pluck('buyer_id')
+            ->unique()
+            ->filter()
+            ->values();
+
+        if ($buyerIds->isEmpty()) {
             return 0;
         }
+
+        $assignmentIds = WebinarAssignment::query()->where('webinar_id', $webinar->id)->pluck('id');
+        $quizIds = Quiz::query()->where('webinar_id', $webinar->id)->pluck('id');
+        $scores = [];
+
+        foreach ($buyerIds as $buyerId) {
+            $parts = [];
+
+            if ($assignmentIds->isNotEmpty()) {
+                $done = WebinarAssignmentHistory::query()
+                    ->whereIn('assignment_id', $assignmentIds)
+                    ->where('student_id', $buyerId)
+                    ->whereIn('status', ['passed', 'pending', 'not_passed'])
+                    ->count();
+                $parts[] = min(100, ($done / max(1, $assignmentIds->count())) * 100);
+            }
+
+            if ($quizIds->isNotEmpty()) {
+                $done = \App\Models\QuizzesResult::query()
+                    ->whereIn('quiz_id', $quizIds)
+                    ->where('user_id', $buyerId)
+                    ->count();
+                $parts[] = min(100, ($done / max(1, $quizIds->count())) * 100);
+            }
+
+            $sessions = $webinar->relationLoaded('sessions') ? $webinar->sessions : $webinar->sessions()->get();
+            if ($sessions->count() > 0) {
+                $past = $sessions->filter(fn ($session) => (int) $session->date < time())->count();
+                $parts[] = ($past / $sessions->count()) * 100;
+            }
+
+            $learned = \App\Models\CourseLearning::query()
+                ->where('user_id', $buyerId)
+                ->where(function ($q) use ($webinar) {
+                    $q->whereIn('session_id', $webinar->sessions->pluck('id')->filter())
+                        ->orWhereIn('file_id', $webinar->files->pluck('id')->filter())
+                        ->orWhereIn('text_lesson_id', $webinar->textLessons->pluck('id')->filter());
+                })
+                ->count();
+            $contentTotal = $webinar->sessions->count() + $webinar->files->count() + $webinar->textLessons->count();
+            if ($contentTotal > 0) {
+                $parts[] = min(100, ($learned / $contentTotal) * 100);
+            }
+
+            $scores[] = !empty($parts) ? (array_sum($parts) / count($parts)) : 0;
+        }
+
+        return (int) round(array_sum($scores) / max(1, count($scores)));
+    }
+
+    private function webinarFinishedProgress($webinar): int
+    {
+        return $this->webinarAverageProgress($webinar);
     }
 
     private function instructorNotificationsQuery($user)

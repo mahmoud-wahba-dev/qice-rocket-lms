@@ -25,9 +25,15 @@
             class="select select-bordered w-full h-12 sm:h-14 rounded-10px border-d9 font-medium text-15px sm:text-16px text-black focus:outline-none focus:border-primary">
             <option value="">بدون ربط (يمكن الإضافة لاحقًا)</option>
             @foreach ($teacherQuizzes ?? [] as $teacherQuiz)
-                <option value="{{ $teacherQuiz['id'] }}">{{ $teacherQuiz['title'] }}</option>
+                <option value="{{ $teacherQuiz['id'] }}"
+                    {{ (string) old('quiz_id', (!empty($draftId) && (int) ($teacherQuiz['webinar_id'] ?? 0) === (int) $draftId) ? $teacherQuiz['id'] : '') === (string) $teacherQuiz['id'] ? 'selected' : '' }}>
+                    {{ $teacherQuiz['title'] }}
+                </option>
             @endforeach
         </select>
+        @error('quiz_id')
+            <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+        @enderror
         <p class="font-medium text-13px text-gray mt-2">أو <a href="{{ route('panel.v1.instructor.quizzes.create') }}" class="text-primary font-bold">أنشئ اختبارًا جديدًا</a> ثم اربطه هنا.</p>
     </div>
 </section>

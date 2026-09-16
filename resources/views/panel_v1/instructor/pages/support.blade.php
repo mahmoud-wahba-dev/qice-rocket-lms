@@ -164,8 +164,8 @@
                                 </span>
                             </div>
                             <div class="lg:col-span-2 flex items-center justify-start lg:justify-end">
-                                <a href="{{ url('/panel/support/' . $ticket['raw_id'] . '/conversations') }}"
-                                    class="font-semibold text-15px text-primary hover:opacity-80 transition">عرض والرد</a>
+                                <a href="{{ route('panel.v1.instructor.support.conversations', ['id' => $ticket['raw_id']]) }}"
+                                    class="font-semibold text-15px text-primary hover:opacity-80 transition">فتح والرد</a>
                             </div>
                         </div>
                     </article>
@@ -207,8 +207,8 @@
                                 </td>
                                 <td class="px-5 py-5 font-medium text-gray whitespace-nowrap">{{ $row['date'] }}</td>
                                 <td class="px-5 py-5">
-                                    <a href="{{ url('/panel/support/' . $row['id'] . '/conversations') }}"
-                                        class="font-semibold text-15px text-primary hover:opacity-80">عرض</a>
+                                    <a href="{{ route('panel.v1.instructor.support.conversations', ['id' => $row['id']]) }}"
+                                        class="font-semibold text-15px text-primary hover:opacity-80">فتح والرد</a>
                                 </td>
                             </tr>
                         @empty

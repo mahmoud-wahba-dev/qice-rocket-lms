@@ -4,7 +4,6 @@ namespace App\Http\Controllers\PanelV1\Support;
 
 use App\Bitwise\UserLevelOfTraining;
 use App\Http\Controllers\Web\traits\UserFormFieldsTrait;
-use App\Models\Category;
 use App\Models\Region;
 use App\Models\UserBank;
 use App\Models\UserLoginHistory;
@@ -87,9 +86,10 @@ trait ProfileSettingsTrait
         }
 
         return [
-            'countries' => Region::select(DB::raw('*, ST_AsText(geo_center) as geo_center'))
+            'countries' => Region::query()
                 ->where('type', Region::$country)
-                ->get(),
+                ->orderBy('id')
+                ->get(['id', 'type', 'title']),
             'formFieldsHtml' => $this->getFormFieldsByUserType($request, $userType, true, $user),
             'socials' => collect(getSocials())->sortBy('order')->toArray(),
             'userSocials' => $this->profileUserSocials($user),
@@ -193,10 +193,10 @@ trait ProfileSettingsTrait
         }
 
         return [
-            'educations' => $userMetas->where('name', 'education'),
-            'experiences' => $userMetas->where('name', 'experience'),
+            'educations' => $userMetas->where('name', 'education')->values(),
+            'experiences' => $userMetas->where('name', 'experience')->values(),
             'occupations' => $user->occupations->pluck('category_id')->toArray(),
-            'categories' => Category::getCategories(),
+            'categories' => [],
             'attachments' => $user->profileAttachments,
         ];
     }
@@ -333,15 +333,13 @@ trait ProfileSettingsTrait
         }
     }
 
-    public function storeProfileMeta($user, ?string $name, ?string $value): bool
+    public function storeProfileMeta($user, ?string $name, ?string $value): ?UserMeta
     {
         if (empty($name) or empty($value)) {
-            return false;
+            return null;
         }
 
-        UserMeta::create(['user_id' => $user->id, 'name' => $name, 'value' => $value]);
-
-        return true;
+        return UserMeta::create(['user_id' => $user->id, 'name' => $name, 'value' => $value]);
     }
 
     public function updateProfileMeta($user, $metaId, ?string $name, ?string $value): bool

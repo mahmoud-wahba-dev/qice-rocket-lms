@@ -401,108 +401,132 @@
             </div>
 
             <div id="settings-tabs-5" class="hidden" role="tabpanel" aria-labelledby="settings-tabs-item-5">
-                <form method="POST" action="{{ route('panel.v1.instructor.about.update') }}">
-                    @csrf
-                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                        <div class="lg:col-span-7 {{ $card }}">
-                            <h2 class="font-bold text-22px text-primary mb-8">نبذة وتعريف</h2>
-                            <div class="space-y-6">
-                                <div class="relative">
-                                    <label class="{{ $label }}">المسمى الوظيفي</label>
-                                    <input type="text" name="headline" value="{{ old('headline', $authUser->headline ?? '') }}"
-                                        class="{{ $input }}">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    <div class="lg:col-span-7">
+                        <form method="POST" action="{{ route('panel.v1.instructor.about.update') }}" id="instructor-about-form">
+                            @csrf
+                            <div class="{{ $card }}">
+                                <h2 class="font-bold text-22px text-primary mb-8">نبذة وتعريف</h2>
+                                <div class="space-y-6">
+                                    <div class="relative">
+                                        <label class="{{ $label }}">المسمى الوظيفي</label>
+                                        <input type="text" name="headline" value="{{ old('headline', $authUser->headline ?? '') }}"
+                                            class="{{ $input }}">
+                                    </div>
+                                    <div class="relative">
+                                        <label class="{{ $label }}">نبذة قصيرة</label>
+                                        <textarea rows="3" name="bio" class="textarea textarea-bordered w-full rounded-10px font-medium text-16px focus:outline-none focus:border-primary">{{ old('bio', $authUser->bio ?? '') }}</textarea>
+                                    </div>
+                                    <div class="relative">
+                                        <label class="{{ $label }}">من أنا (تفصيلي)</label>
+                                        <textarea rows="6" name="about" class="textarea textarea-bordered w-full rounded-10px font-medium text-16px focus:outline-none focus:border-primary">{{ old('about', $authUser->about ?? '') }}</textarea>
+                                    </div>
                                 </div>
-                                <div class="relative">
-                                    <label class="{{ $label }}">نبذة قصيرة</label>
-                                    <textarea rows="3" name="bio" class="textarea textarea-bordered w-full rounded-10px font-medium text-16px focus:outline-none focus:border-primary">{{ old('bio', $authUser->bio ?? '') }}</textarea>
+                                <div class="mt-8">
+                                    <button type="submit" id="instructor-about-save"
+                                        class="btn btn-primary rounded-10px h-14 px-10 font-bold text-18px">
+                                        حفظ بيانات حول
+                                    </button>
                                 </div>
-                                <div class="relative">
-                                    <label class="{{ $label }}">من أنا (تفصيلي)</label>
-                                    <textarea rows="6" name="about" class="textarea textarea-bordered w-full rounded-10px font-medium text-16px focus:outline-none focus:border-primary">{{ old('about', $authUser->about ?? '') }}</textarea>
-                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="lg:col-span-5 flex flex-col gap-6">
+                        <div class="{{ $card }}">
+                            <h2 class="font-bold text-22px text-primary mb-6">المؤهلات العلمية</h2>
+                            <div id="instructor-education-list" class="space-y-3 mb-6" data-meta-list="education">
+                                @forelse ($educations ?? [] as $education)
+                                    <div class="flex items-center justify-between gap-3 border border-d9 rounded-10px px-4 py-3" data-meta-row="{{ $education->id }}">
+                                        <span class="font-medium text-15px text-primary text-start">{{ $education->value }}</span>
+                                        <button type="button"
+                                            class="font-bold text-14px text-[#EF4444] hover:opacity-80 shrink-0"
+                                            data-confirm-delete
+                                            data-delete-url="{{ route('panel.v1.instructor.metas.delete', ['metaId' => $education->id]) }}"
+                                            data-delete-title="حذف المؤهل العلمي"
+                                            data-delete-message="هل أنت متأكد من حذف هذا المؤهل؟ لا يمكن التراجع بعد الحذف."
+                                            data-delete-item="{{ $education->value }}">
+                                            حذف
+                                        </button>
+                                    </div>
+                                @empty
+                                    <p class="font-medium text-14px text-gray" data-meta-empty>لا توجد مؤهلات مسجلة.</p>
+                                @endforelse
+                            </div>
+                            <div class="flex gap-3">
+                                <input type="text" id="instructor-education-val" placeholder="مؤهل جديد" class="input input-bordered flex-1 h-12 rounded-10px font-medium text-15px focus:outline-none focus:border-primary">
+                                <button type="button" id="instructor-education-add" class="btn btn-primary rounded-10px h-12 px-6 font-bold text-15px shrink-0">إضافة</button>
                             </div>
                         </div>
-                        <div class="lg:col-span-5 flex flex-col gap-6">
-                            <div class="{{ $card }}">
-                                <h2 class="font-bold text-22px text-primary mb-6">المؤهلات العلمية</h2>
-                                <div class="space-y-3 mb-6">
-                                    @forelse ($educations ?? [] as $education)
-                                        <div class="flex items-center justify-between gap-3 border border-d9 rounded-10px px-4 py-3">
-                                            <span class="font-medium text-15px">{{ $education->value }}</span>
-                                            <form method="POST" action="{{ route('panel.v1.instructor.metas.delete', ['metaId' => $education->id]) }}" onsubmit="return confirm('حذف؟');">
-                                                @csrf
-                                                <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف</button>
-                                            </form>
-                                        </div>
-                                    @empty
-                                        <p class="font-medium text-14px text-gray">لا توجد مؤهلات مسجلة.</p>
-                                    @endforelse
-                                </div>
-                                <div class="flex gap-3">
-                                    <input type="text" id="student-education-val" placeholder="مؤهل جديد" class="input input-bordered flex-1 h-12 rounded-10px font-medium text-15px focus:outline-none focus:border-primary">
-                                    <button type="button" id="student-education-add" class="btn btn-primary rounded-10px h-12 px-6 font-bold text-15px shrink-0">إضافة</button>
-                                </div>
+
+                        <div class="{{ $card }}">
+                            <h2 class="font-bold text-22px text-primary mb-6">الخبرات العملية</h2>
+                            <div id="instructor-experience-list" class="space-y-3 mb-6" data-meta-list="experience">
+                                @forelse ($experiences ?? [] as $experience)
+                                    <div class="flex items-center justify-between gap-3 border border-d9 rounded-10px px-4 py-3" data-meta-row="{{ $experience->id }}">
+                                        <span class="font-medium text-15px text-primary text-start">{{ $experience->value }}</span>
+                                        <button type="button"
+                                            class="font-bold text-14px text-[#EF4444] hover:opacity-80 shrink-0"
+                                            data-confirm-delete
+                                            data-delete-url="{{ route('panel.v1.instructor.metas.delete', ['metaId' => $experience->id]) }}"
+                                            data-delete-title="حذف الخبرة العملية"
+                                            data-delete-message="هل أنت متأكد من حذف هذه الخبرة؟ لا يمكن التراجع بعد الحذف."
+                                            data-delete-item="{{ $experience->value }}">
+                                            حذف
+                                        </button>
+                                    </div>
+                                @empty
+                                    <p class="font-medium text-14px text-gray" data-meta-empty>لا توجد خبرات مسجلة.</p>
+                                @endforelse
                             </div>
-                            <div class="{{ $card }}">
-                                <h2 class="font-bold text-22px text-primary mb-6">الخبرات العملية</h2>
-                                <div class="space-y-3 mb-6">
-                                    @forelse ($experiences ?? [] as $experience)
-                                        <div class="flex items-center justify-between gap-3 border border-d9 rounded-10px px-4 py-3">
-                                            <span class="font-medium text-15px">{{ $experience->value }}</span>
-                                            <form method="POST" action="{{ route('panel.v1.instructor.metas.delete', ['metaId' => $experience->id]) }}" onsubmit="return confirm('حذف؟');">
-                                                @csrf
-                                                <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف</button>
-                                            </form>
-                                        </div>
-                                    @empty
-                                        <p class="font-medium text-14px text-gray">لا توجد خبرات مسجلة.</p>
-                                    @endforelse
-                                </div>
-                                <div class="flex gap-3">
-                                    <input type="text" id="student-experience-val" placeholder="خبرة جديدة" class="input input-bordered flex-1 h-12 rounded-10px font-medium text-15px focus:outline-none focus:border-primary">
-                                    <button type="button" id="student-experience-add" class="btn btn-primary rounded-10px h-12 px-6 font-bold text-15px shrink-0">إضافة</button>
-                                </div>
+                            <div class="flex gap-3">
+                                <input type="text" id="instructor-experience-val" placeholder="خبرة جديدة" class="input input-bordered flex-1 h-12 rounded-10px font-medium text-15px focus:outline-none focus:border-primary">
+                                <button type="button" id="instructor-experience-add" class="btn btn-primary rounded-10px h-12 px-6 font-bold text-15px shrink-0">إضافة</button>
                             </div>
-                            <div class="{{ $card }}">
-                                <h2 class="font-bold text-22px text-primary mb-6">الملفات والمرفقات</h2>
-                                <div class="space-y-3 mb-6">
-                                    @forelse ($attachments ?? [] as $attachment)
-                                        <div class="flex items-center justify-between gap-3 border border-d9 rounded-10px px-4 py-3">
-                                            <div class="min-w-0">
-                                                <span class="block font-medium text-15px truncate">{{ $attachment->title }}</span>
-                                                @if (!empty($attachment->description))
-                                                    <span class="block font-medium text-12px text-gray truncate">{{ $attachment->description }}</span>
-                                                @endif
-                                            </div>
-                                            <div class="flex items-center gap-3 shrink-0">
-                                                @if (!empty($attachment->attachment))
-                                                    <a href="{{ $attachment->attachment }}" target="_blank" rel="noopener" class="font-bold text-14px text-primary">تنزيل</a>
-                                                @endif
-                                                <form method="POST" action="{{ route('panel.v1.instructor.attachments.delete', ['attachmentId' => $attachment->id]) }}" onsubmit="return confirm('حذف؟');">
-                                                    @csrf
-                                                    <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف</button>
-                                                </form>
-                                            </div>
+                        </div>
+
+                        <div class="{{ $card }}">
+                            <h2 class="font-bold text-22px text-primary mb-6">الملفات والمرفقات</h2>
+                            <div class="space-y-3 mb-6">
+                                @forelse ($attachments ?? [] as $attachment)
+                                    <div class="flex items-center justify-between gap-3 border border-d9 rounded-10px px-4 py-3">
+                                        <div class="min-w-0 text-start">
+                                            <span class="block font-medium text-15px truncate">{{ $attachment->title }}</span>
+                                            @if (!empty($attachment->description))
+                                                <span class="block font-medium text-12px text-gray truncate">{{ $attachment->description }}</span>
+                                            @endif
                                         </div>
-                                    @empty
-                                        <p class="font-medium text-14px text-gray">لا توجد مرفقات.</p>
-                                    @endforelse
-                                </div>
+                                        <div class="flex items-center gap-3 shrink-0">
+                                            @if (!empty($attachment->attachment))
+                                                <a href="{{ $attachment->attachment }}" target="_blank" rel="noopener" class="font-bold text-14px text-primary">تنزيل</a>
+                                            @endif
+                                            <button type="button"
+                                                class="font-bold text-14px text-[#EF4444] hover:opacity-80"
+                                                data-confirm-delete
+                                                data-delete-url="{{ route('panel.v1.instructor.attachments.delete', ['attachmentId' => $attachment->id]) }}"
+                                                data-delete-title="حذف المرفق"
+                                                data-delete-message="هل أنت متأكد من حذف هذا المرفق؟ لا يمكن التراجع بعد الحذف."
+                                                data-delete-item="{{ $attachment->title }}">
+                                                حذف
+                                            </button>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <p class="font-medium text-14px text-gray">لا توجد مرفقات.</p>
+                                @endforelse
                             </div>
                         </div>
                     </div>
-                    <div class="mt-8">
-                        <button type="submit" class="btn btn-primary rounded-10px h-14 px-10 font-bold text-18px">حفظ بيانات حول</button>
-                    </div>
-                </form>
+                </div>
+
                 <div class="{{ $card }} mt-6">
                     <h2 class="font-bold text-22px text-primary mb-6">رفع مرفق جديد</h2>
                     <form method="POST" action="{{ route('panel.v1.instructor.attachments.store') }}" enctype="multipart/form-data" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         @csrf
                         <input type="text" name="title" required placeholder="عنوان المرفق" class="input input-bordered h-12 rounded-10px font-medium text-15px focus:outline-none focus:border-primary">
                         <select name="file_type" class="select select-bordered h-12 rounded-10px font-medium text-15px focus:outline-none focus:border-primary">
-                            @foreach (['document' => 'مستند', 'image' => 'صورة', 'video' => 'فيديو', 'pdf' => 'PDF', 'archive' => 'مضغوط'] as $value => $label)
-                                <option value="{{ $value }}">{{ $label }}</option>
+                            @foreach (['document' => 'مستند', 'image' => 'صورة', 'video' => 'فيديو', 'pdf' => 'PDF', 'archive' => 'مضغوط'] as $value => $optLabel)
+                                <option value="{{ $value }}">{{ $optLabel }}</option>
                             @endforeach
                         </select>
                         <input type="text" name="description" placeholder="وصف مختصر (اختياري)" class="input input-bordered h-12 rounded-10px font-medium text-15px focus:outline-none focus:border-primary sm:col-span-2">
@@ -574,23 +598,256 @@
     </div>
 </div>
 
+@include('panel_v1.instructor.components.confirm-delete-modal')
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     var token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
-    // Quick add for education/experience metas
-    function postMeta(name, inputId) {
+    var metaCopy = {
+        education: {
+            listId: 'instructor-education-list',
+            emptyText: 'لا توجد مؤهلات مسجلة.',
+            deleteTitle: 'حذف المؤهل العلمي',
+            deleteMessage: 'هل أنت متأكد من حذف هذا المؤهل؟ لا يمكن التراجع بعد الحذف.',
+        },
+        experience: {
+            listId: 'instructor-experience-list',
+            emptyText: 'لا توجد خبرات مسجلة.',
+            deleteTitle: 'حذف الخبرة العملية',
+            deleteMessage: 'هل أنت متأكد من حذف هذه الخبرة؟ لا يمكن التراجع بعد الحذف.',
+        },
+    };
+
+    function escapeHtml(text) {
+        return String(text == null ? '' : text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function bindConfirmDelete(btn) {
+        if (!btn || btn.dataset.confirmBound === '1') return;
+        btn.dataset.confirmBound = '1';
+        btn.addEventListener('click', openConfirmDelete);
+    }
+
+    function openConfirmDelete(e) {
+        var btn = e.currentTarget;
+        if (!deleteForm || !deleteModal) return;
+        pendingDeleteBtn = btn;
+        deleteForm.action = btn.getAttribute('data-delete-url') || '#';
+        if (deleteTitle) deleteTitle.textContent = btn.getAttribute('data-delete-title') || 'تأكيد الحذف';
+        if (deleteMessage) deleteMessage.textContent = btn.getAttribute('data-delete-message') || 'هل أنت متأكد من الحذف؟';
+        if (deleteItem) {
+            var itemText = btn.getAttribute('data-delete-item') || '';
+            if (itemText) {
+                deleteItem.textContent = itemText;
+                deleteItem.classList.remove('hidden');
+            } else {
+                deleteItem.textContent = '';
+                deleteItem.classList.add('hidden');
+            }
+        }
+        if (typeof window.HSOverlay !== 'undefined' && typeof window.HSOverlay.open === 'function') {
+            window.HSOverlay.open(deleteModal);
+        } else {
+            deleteModal.classList.remove('hidden');
+        }
+    }
+
+    function closeConfirmDelete() {
+        if (typeof window.HSOverlay !== 'undefined' && typeof window.HSOverlay.close === 'function' && deleteModal) {
+            window.HSOverlay.close(deleteModal);
+        } else if (deleteModal) {
+            deleteModal.classList.add('hidden');
+        }
+        pendingDeleteBtn = null;
+    }
+
+    function removeMetaRow(row) {
+        if (!row) return;
+        var list = row.closest('[data-meta-list]');
+        row.remove();
+        if (!list || list.querySelector('[data-meta-row]')) return;
+        var name = list.getAttribute('data-meta-list');
+        var cfg = metaCopy[name];
+        var empty = document.createElement('p');
+        empty.className = 'font-medium text-14px text-gray';
+        empty.setAttribute('data-meta-empty', '');
+        empty.textContent = cfg ? cfg.emptyText : 'لا توجد عناصر.';
+        list.appendChild(empty);
+    }
+
+    function appendMetaRow(name, meta) {
+        var cfg = metaCopy[name];
+        if (!cfg || !meta || !meta.id) return;
+        var list = document.getElementById(cfg.listId);
+        if (!list) return;
+
+        var empty = list.querySelector('[data-meta-empty]');
+        if (empty) empty.remove();
+
+        var row = document.createElement('div');
+        row.className = 'flex items-center justify-between gap-3 border border-d9 rounded-10px px-4 py-3';
+        row.setAttribute('data-meta-row', String(meta.id));
+        row.innerHTML =
+            '<span class="font-medium text-15px text-primary text-start">' + escapeHtml(meta.value) + '</span>' +
+            '<button type="button" class="font-bold text-14px text-[#EF4444] hover:opacity-80 shrink-0"' +
+            ' data-confirm-delete' +
+            ' data-delete-url="' + escapeHtml(meta.delete_url) + '"' +
+            ' data-delete-title="' + escapeHtml(cfg.deleteTitle) + '"' +
+            ' data-delete-message="' + escapeHtml(cfg.deleteMessage) + '"' +
+            ' data-delete-item="' + escapeHtml(meta.value) + '">حذف</button>';
+
+        list.appendChild(row);
+        bindConfirmDelete(row.querySelector('[data-confirm-delete]'));
+    }
+
+    function postMeta(name, inputId, btn) {
         var input = document.getElementById(inputId);
         if (!input || !input.value.trim()) return;
+        var value = input.value.trim();
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.add('opacity-70');
+        }
         fetch("{{ route('panel.v1.instructor.metas.store') }}", {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
-            body: JSON.stringify({name: name, value: input.value.trim()}),
-        }).then(function (r) { if (r.ok) window.location.reload(); });
+            body: JSON.stringify({name: name, value: value}),
+        }).then(function (r) {
+            return r.json().then(function (data) {
+                return { ok: r.ok, data: data };
+            }).catch(function () {
+                return { ok: r.ok, data: null };
+            });
+        }).then(function (res) {
+            if (btn) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-70');
+            }
+            if (res.ok && res.data && res.data.id) {
+                appendMetaRow(name, res.data);
+                input.value = '';
+                if (typeof window.showCartToast === 'function') {
+                    window.showCartToast('تم', 'تمت الإضافة بنجاح', 'success');
+                }
+                return;
+            }
+            if (typeof window.showCartToast === 'function') {
+                window.showCartToast('خطأ', 'تعذر إضافة العنصر', 'error');
+            }
+        }).catch(function () {
+            if (btn) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-70');
+            }
+            if (typeof window.showCartToast === 'function') {
+                window.showCartToast('خطأ', 'تعذر إضافة العنصر', 'error');
+            }
+        });
     }
-    document.getElementById('student-education-add')?.addEventListener('click', function () { postMeta('education', 'student-education-val'); });
-    document.getElementById('student-experience-add')?.addEventListener('click', function () { postMeta('experience', 'student-experience-val'); });
+
+    document.getElementById('instructor-education-add')?.addEventListener('click', function () {
+        postMeta('education', 'instructor-education-val', this);
+    });
+    document.getElementById('instructor-experience-add')?.addEventListener('click', function () {
+        postMeta('experience', 'instructor-experience-val', this);
+    });
+
+    ['instructor-education-val', 'instructor-experience-val'].forEach(function (id) {
+        document.getElementById(id)?.addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            if (id === 'instructor-education-val') {
+                document.getElementById('instructor-education-add')?.click();
+            } else {
+                document.getElementById('instructor-experience-add')?.click();
+            }
+        });
+    });
+
+    document.getElementById('instructor-about-form')?.addEventListener('submit', function () {
+        var btn = document.getElementById('instructor-about-save');
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.add('opacity-70');
+            btn.textContent = 'جاري الحفظ...';
+        }
+    });
+
+    // Styled confirm-delete modal
+    var deleteForm = document.getElementById('instructor-confirm-delete-form');
+    var deleteTitle = document.getElementById('instructor-confirm-delete-title');
+    var deleteMessage = document.getElementById('instructor-confirm-delete-message');
+    var deleteItem = document.getElementById('instructor-confirm-delete-item');
+    var deleteModal = document.getElementById('instructor-confirm-delete-modal');
+    var pendingDeleteBtn = null;
+
+    document.querySelectorAll('[data-confirm-delete]').forEach(bindConfirmDelete);
+
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function (e) {
+            var url = deleteForm.getAttribute('action') || '';
+            var isMetaDelete = url.indexOf('/settings/metas/') !== -1;
+            if (!isMetaDelete) return;
+
+            e.preventDefault();
+            var submitBtn = deleteForm.querySelector('[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-70');
+            }
+
+            var body = new FormData(deleteForm);
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': token,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: body,
+            }).then(function (r) {
+                return r.json().then(function (data) {
+                    return { ok: r.ok, data: data };
+                }).catch(function () {
+                    return { ok: r.ok, data: null };
+                });
+            }).then(function (res) {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-70');
+                }
+                if (res.ok) {
+                    var row = pendingDeleteBtn ? pendingDeleteBtn.closest('[data-meta-row]') : null;
+                    removeMetaRow(row);
+                    closeConfirmDelete();
+                    setTimeout(function () {
+                        if (typeof window.showCartToast === 'function') {
+                            window.showCartToast('تم', 'تم الحذف بنجاح', 'success');
+                        }
+                    }, 150);
+                    return;
+                }
+                if (typeof window.showCartToast === 'function') {
+                    window.showCartToast('خطأ', 'تعذر الحذف', 'error');
+                }
+            }).catch(function () {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-70');
+                }
+                if (typeof window.showCartToast === 'function') {
+                    window.showCartToast('خطأ', 'تعذر الحذف', 'error');
+                }
+            });
+        });
+    }
 
     // Chained region selects (GET /regions/* endpoints)
     var regionCountry = document.getElementById('js-region-country');

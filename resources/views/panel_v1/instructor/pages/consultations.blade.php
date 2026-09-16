@@ -55,7 +55,8 @@
                 class="inline-flex items-center justify-center rounded-10px border border-d9 h-11 font-semibold text-14px text-primary bg-[#F8FAFC] hover:bg-fa transition">
                 التفاصيل
             </button>
-            <a href="#"
+            <a href="{{ !empty($session['link']) ? $session['link'] : '#' }}"
+                @if (!empty($session['link'])) target="_blank" rel="noopener" @endif
                 class="inline-flex items-center justify-center gap-2 rounded-10px border border-d9 h-11 font-semibold text-14px text-primary bg-[#F8FAFC] hover:bg-fa transition">
                 <span class="icon-[tabler--link] size-4"></span>
                 رابط اللقاء
@@ -80,7 +81,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach ($attendees ?? [] as $index => $row)
+                @forelse ($attendees ?? [] as $index => $row)
                     <tr class="border-b border-d9 last:border-0">
                         <td class="px-4 py-4">
                             <div class="flex items-center gap-3">
@@ -102,10 +103,10 @@
                             </span>
                         </td>
                         <td class="px-4 py-4 font-semibold">{{ $row['amount'] }}</td>
-                        <td class="px-4 py-4 font-semibold">{{ $row['students'] }}</td>
+                        <td class="px-4 py-4 font-semibold">{{ $row['students'] ?? 1 }}</td>
                         <td class="px-4 py-4">
                             <span class="inline-flex rounded-full bg-[#ECFDF5] px-3 py-1 font-semibold text-13px text-[#059669] whitespace-nowrap">
-                                {{ $row['status'] }}
+                                {{ $row['status'] ?? '—' }}
                             </span>
                         </td>
                         <td class="px-4 py-4">
@@ -121,13 +122,21 @@
                                         <a href="#" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">التفاصيل</a>
                                     </li>
                                     <li>
-                                        <a href="#" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">رابط اللقاء</a>
+                                        <a href="{{ !empty($row['link']) ? $row['link'] : '#' }}"
+                                            @if (!empty($row['link'])) target="_blank" rel="noopener" @endif
+                                            class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">رابط اللقاء</a>
                                     </li>
                                 </ul>
                             </div>
                         </td>
                     </tr>
-                @endforeach
+                @empty
+                    <tr>
+                        <td colspan="9" class="px-4 py-16 text-center font-medium text-16px text-gray">
+                            لا توجد حجوزات جلسات حالياً
+                        </td>
+                    </tr>
+                @endforelse
             </tbody>
         </table>
     </div>

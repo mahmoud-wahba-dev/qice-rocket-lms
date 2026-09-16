@@ -1,9 +1,18 @@
 @php
-    $slug = $course['slug'] ?? ($demoSlug ?? 'demo');
+    $slug = $course['slug'] ?? null;
+    $courseId = $course['id'] ?? null;
+    $status = $course['status'] ?? '';
+    $isDraft = $status === 'is_draft';
     $menuId = $menuId ?? ('course-menu-' . ($index ?? 0));
+    $watchUrl = !empty($slug) ? route('panel.v1.instructor.courses.watch', ['slug' => $slug]) : route('panel.v1.instructor.courses');
+    $performanceUrl = !empty($slug) ? route('panel.v1.instructor.courses.performance', ['slug' => $slug]) : route('panel.v1.instructor.courses');
+    $assignmentsUrl = !empty($slug) ? route('panel.v1.instructor.courses.assignments', ['slug' => $slug]) : route('panel.v1.instructor.assignments');
+    $editUrl = $isDraft && !empty($courseId)
+        ? route('panel.v1.instructor.courses.create', ['step' => 1, 'draft' => $courseId])
+        : $watchUrl;
 @endphp
 
-<article class="rounded-14px border border-d9 bg-white p-4 sm:p-5">
+<article class="relative z-0 hover:z-30 rounded-14px border border-d9 bg-white p-4 sm:p-5 overflow-visible">
     <div class="flex gap-3 sm:gap-4 items-start mb-4">
         <div class="size-14 sm:size-16 rounded-12px bg-primary shrink-0 overflow-hidden">
             @if (!empty($course['thumbnail']))
@@ -11,7 +20,7 @@
             @endif
         </div>
 
-        <div class="min-w-0 flex-1">
+        <div class="min-w-0 flex-1 overflow-visible">
             <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
                     <h2 class="font-semibold text-24px text-primary mb-0.5 leading-snug">{{ $course['title'] }}</h2>
@@ -24,53 +33,59 @@
                         aria-label="خيارات الدورة" id="{{ $menuId }}">
                         <span class="icon-[tabler--dots] size-5 text-gray"></span>
                     </button>
-                    <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-56 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20"
+                    <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-56 py-2 rounded-12px border border-d9 bg-white shadow-xl z-50"
                         role="menu" aria-labelledby="{{ $menuId }}">
-                        @if (($course['status'] ?? '') === 'is_draft')
+                        @if ($isDraft)
                             <li>
-                                <a href="{{ route('panel.v1.instructor.courses.create', ['step' => 1, 'draft' => $course['id'] ?? null]) }}"
+                                <a href="{{ $editUrl }}"
                                     class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary">
-                                    <span class="icon-[tabler--minus] size-3.5 text-gray shrink-0"></span>
+                                    <span class="icon-[tabler--pencil] size-4 text-gray shrink-0"></span>
                                     متابعة التعديل
                                 </a>
                             </li>
                         @else
                             <li>
-                                <a href="{{ route('panel.v1.instructor.courses.watch', ['slug' => $slug]) }}"
+                                <a href="{{ $watchUrl }}"
                                     class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary">
-                                    <span class="icon-[tabler--minus] size-3.5 text-gray shrink-0"></span>
+                                    <span class="icon-[tabler--player-play] size-4 text-gray shrink-0"></span>
                                     صفحة التعلم
                                 </a>
                             </li>
                             <li>
-                                <a href="{{ route('panel.v1.instructor.courses.watch', ['slug' => $slug]) }}"
+                                <a href="{{ $watchUrl }}"
                                     class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary">
-                                    <span class="icon-[tabler--minus] size-3.5 text-gray shrink-0"></span>
+                                    <span class="icon-[tabler--list] size-4 text-gray shrink-0"></span>
                                     محتوى المحاضرات
                                 </a>
                             </li>
                             <li>
-                                <a href="{{ route('panel.v1.instructor.courses.performance', ['slug' => $slug]) }}"
+                                <a href="{{ $performanceUrl }}"
                                     class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary">
-                                    <span class="icon-[tabler--minus] size-3.5 text-gray shrink-0"></span>
+                                    <span class="icon-[tabler--chart-bar] size-4 text-gray shrink-0"></span>
                                     لوحة أداء الدورة
                                 </a>
                             </li>
                             <li>
-                                <a href="{{ route('panel.v1.instructor.courses.assignments', ['slug' => $slug]) }}"
+                                <a href="{{ $assignmentsUrl }}"
                                     class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary">
-                                    <span class="icon-[tabler--minus] size-3.5 text-gray shrink-0"></span>
+                                    <span class="icon-[tabler--clipboard-check] size-4 text-gray shrink-0"></span>
                                     الحضور والغياب
                                 </a>
                             </li>
                         @endif
-                        <li>
-                            <a href="#"
-                                class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-[#E11D48]">
-                                <span class="icon-[tabler--minus] size-3.5 text-[#E11D48] shrink-0"></span>
-                                حذف
-                            </a>
-                        </li>
+                        @if (!empty($courseId))
+                            <li>
+                                <form method="POST" action="{{ route('panel.v1.instructor.courses.delete', ['id' => $courseId]) }}"
+                                    onsubmit="return confirm('تعطيل هذه الدورة؟');">
+                                    @csrf
+                                    <button type="submit"
+                                        class="dropdown-item flex w-full items-center gap-2 px-4 py-2.5 font-medium text-15px text-[#E11D48] text-start">
+                                        <span class="icon-[tabler--trash] size-4 shrink-0"></span>
+                                        حذف
+                                    </button>
+                                </form>
+                            </li>
+                        @endif
                     </ul>
                 </div>
             </div>
@@ -105,7 +120,7 @@
         </div>
     </div>
 
-    <p class="font-semibold text-14px text-primary mb-1.5">{{ $course['progress'] }}% متوسط معدل التقدم</p>
+    <p class="font-semibold text-14px text-primary mb-1.5">{{ (int) ($course['progress'] ?? 0) }}% متوسط معدل التقدم</p>
     <div class="h-2 rounded-full bg-[#EFEFEF] overflow-hidden w-full">
         <div class="h-full bg-primary rounded-full" style="width: {{ min(100, max(0, (int) ($course['progress'] ?? 0))) }}%"></div>
     </div>

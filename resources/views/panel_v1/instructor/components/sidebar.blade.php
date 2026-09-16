@@ -21,7 +21,7 @@
                 ['label' => 'التكليفات', 'icon' => 'tabler--clipboard-list', 'route' => 'panel.v1.instructor.assignments', 'active' => $is('panel.v1.instructor.assignments') || $is('panel.v1.instructor.assignments.review')],
                 ['label' => 'الاختبارات', 'icon' => 'tabler--file-check', 'route' => 'panel.v1.instructor.quizzes', 'active' => $is('panel.v1.instructor.quizzes') || $is('panel.v1.instructor.quizzes.*')],
                 ['label' => 'تعليقات الدورات', 'icon' => 'tabler--message', 'href' => '#', 'active' => false],
-                ['label' => 'قائمة الطلاب', 'icon' => 'tabler--users', 'href' => '#', 'active' => false],
+                ['label' => 'قائمة الطلاب', 'icon' => 'tabler--users', 'route' => 'panel.v1.instructor.students', 'active' => $is('panel.v1.instructor.students')],
                 ['label' => 'الشهادات', 'icon' => 'tabler--certificate', 'route' => 'panel.v1.instructor.certificates', 'active' => $is('panel.v1.instructor.certificates')],
             ],
         ],

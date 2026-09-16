@@ -2,7 +2,6 @@
 
 @section('content')
 @php
-    $demoSlug = $demoSlug ?? 'demo';
     $courseCards = $courseCards ?? [];
     $liveCards = $liveCards ?? [];
     $recordedCards = $recordedCards ?? [];
@@ -46,7 +45,6 @@
                     @include('panel_v1.instructor.components.course-card', [
                         'course' => $course,
                         'index' => 'all-' . $index,
-                        'demoSlug' => $demoSlug,
                     ])
                 @endforeach
             </div>
@@ -62,7 +60,6 @@
                     @include('panel_v1.instructor.components.course-card', [
                         'course' => $course,
                         'index' => 'live-' . $index,
-                        'demoSlug' => $demoSlug,
                     ])
                 @endforeach
             </div>
@@ -78,7 +75,6 @@
                     @include('panel_v1.instructor.components.course-card', [
                         'course' => $course,
                         'index' => 'recorded-' . $index,
-                        'demoSlug' => $demoSlug,
                     ])
                 @endforeach
             </div>
@@ -94,7 +90,6 @@
                     @include('panel_v1.instructor.components.course-card', [
                         'course' => $course,
                         'index' => 'draft-' . $index,
-                        'demoSlug' => $demoSlug,
                     ])
                 @endforeach
             </div>

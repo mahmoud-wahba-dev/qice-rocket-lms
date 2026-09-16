@@ -10,10 +10,10 @@
         </span>
         <div class="text-start min-w-0">
             <h2 class="font-bold text-18px sm:text-20px text-primary mb-1">ملاحظات لفريق المراجعة</h2>
-            <p class="font-medium text-14px text-gray">أي تفاصيل تساعد الفريق على مراجعة الدورة</p>
+            <p class="font-medium text-14px text-gray">أي تفاصيل تساعد الفريق على مراجعة الدورة (اختياري)</p>
         </div>
     </div>
-    <textarea rows="5" class="{{ $textarea }}" placeholder="اكتب ملاحظاتك هنا..."></textarea>
+    <textarea rows="5" name="review_notes" class="{{ $textarea }}" placeholder="اكتب ملاحظاتك هنا...">{{ old('review_notes') }}</textarea>
 </section>
 
 <section class="{{ $card }}">
@@ -27,17 +27,25 @@
         </div>
     </div>
     <div class="space-y-3">
-        <label class="flex items-start gap-3 rounded-12px bg-[#F7F0E6] border border-[#C99C69]/30 px-4 sm:px-5 py-4 cursor-pointer">
-            <input type="checkbox" class="checkbox checkbox-primary mt-0.5 shrink-0">
+        <label class="flex items-start gap-3 rounded-12px bg-[#F7F0E6] border border-[#C99C69]/30 px-4 sm:px-5 py-4 cursor-pointer {{ $errors->has('confirm_rights') ? 'border-[#FECACA]' : '' }}">
+            <input type="checkbox" name="confirm_rights" value="1" class="checkbox checkbox-primary mt-0.5 shrink-0"
+                {{ old('confirm_rights') ? 'checked' : '' }}>
             <span class="font-medium text-14px sm:text-15px text-primary leading-relaxed text-start">
                 أؤكد أنني أملك حقوق الملكية الفكرية الكاملة لهذا المحتوى.
             </span>
         </label>
-        <label class="flex items-start gap-3 rounded-12px bg-[#F7F0E6] border border-[#C99C69]/30 px-4 sm:px-5 py-4 cursor-pointer">
-            <input type="checkbox" class="checkbox checkbox-primary mt-0.5 shrink-0">
+        @error('confirm_rights')
+            <p class="font-medium text-13px text-[#B91C1C] px-1">{{ $message }}</p>
+        @enderror
+        <label class="flex items-start gap-3 rounded-12px bg-[#F7F0E6] border border-[#C99C69]/30 px-4 sm:px-5 py-4 cursor-pointer {{ $errors->has('confirm_terms') ? 'border-[#FECACA]' : '' }}">
+            <input type="checkbox" name="confirm_terms" value="1" class="checkbox checkbox-primary mt-0.5 shrink-0"
+                {{ old('confirm_terms') ? 'checked' : '' }}>
             <span class="font-medium text-14px sm:text-15px text-primary leading-relaxed text-start">
                 أوافق على شروط وإرشادات المدربين في المنصة.
             </span>
         </label>
+        @error('confirm_terms')
+            <p class="font-medium text-13px text-[#B91C1C] px-1">{{ $message }}</p>
+        @enderror
     </div>
 </section>

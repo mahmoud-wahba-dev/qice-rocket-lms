@@ -141,13 +141,28 @@
             @if (!empty($summaryCards))
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                     @foreach ($summaryCards as $card)
+                        @php
+                            // Full static class names so Iconify/Tailwind can scan them at build time.
+                            $iconClass = match ($card['icon'] ?? '') {
+                                'tabler--shopping-cart' => 'icon-[tabler--shopping-cart]',
+                                'tabler--currency-riyal' => 'icon-[tabler--currency-riyal]',
+                                'tabler--wallet' => 'icon-[tabler--wallet]',
+                                'tabler--chart-bar' => 'icon-[tabler--chart-bar]',
+                                'tabler--receipt' => 'icon-[tabler--receipt]',
+                                'tabler--credit-card' => 'icon-[tabler--credit-card]',
+                                'tabler--coin' => 'icon-[tabler--currency-riyal]',
+                                'tabler--discount' => 'icon-[tabler--receipt]',
+                                'tabler--percentage' => 'icon-[tabler--credit-card]',
+                                default => 'icon-[tabler--wallet]',
+                            };
+                        @endphp
                         <div class="rounded-14px border border-d9 bg-white px-5 py-6 flex items-center justify-between gap-4 shadow-sm">
                             <div class="min-w-0">
                                 <p class="font-medium text-14px text-gray mb-2">{{ $card['label'] }}</p>
                                 <p class="font-bold text-22px sm:text-24px text-primary truncate">{{ $card['value'] }}</p>
                             </div>
                             <span class="size-12 rounded-full bg-primary/10 center shrink-0">
-                                <span class="icon-[{{ $card['icon'] }}] size-6 text-primary"></span>
+                                <span class="{{ $iconClass }} size-6 text-primary"></span>
                             </span>
                         </div>
                     @endforeach

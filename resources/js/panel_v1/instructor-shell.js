@@ -202,6 +202,322 @@ function initCreateCourseWizard(root) {
         return;
     }
 
+    const isSpa = wrap.hasAttribute('data-spa-wizard');
+    const form = wrap.querySelector('[data-wizard-form]');
+    const storeUrl = wrap.getAttribute('data-store-url') || form?.action;
+    const createUrl = wrap.getAttribute('data-create-url') || window.location.pathname;
+    const stepsMeta = (() => {
+        try {
+            return JSON.parse(wrap.getAttribute('data-steps') || '[]');
+        } catch (_) {
+            return [];
+        }
+    })();
+    const fieldLabels = {
+        title: 'عنوان الدورة',
+        category_id: 'التصنيف الرئيسي',
+        course_type: 'نوع الدورة',
+        seo_description: 'الوصف المختصر',
+        description: 'الوصف التفصيلي',
+        video_demo_link: 'رابط الفيديو الترويجي',
+        video_demo_file: 'ملف الفيديو الترويجي',
+        image_thumbnail: 'الصورة المصغرة',
+        image_cover: 'غلاف الدورة',
+        tags: 'الوسوم',
+        quiz_id: 'الاختبار',
+        certificate: 'الشهادة',
+        price: 'السعر',
+        capacity: 'سعة الطلاب',
+        access_days: 'عدد أيام الوصول',
+        confirm_rights: 'تأكيد حقوق الملكية',
+        confirm_terms: 'الموافقة على الشروط',
+        draft_id: 'المسودة',
+    };
+
+    let currentStep = Math.max(1, Math.min(5, parseInt(wrap.getAttribute('data-current-step') || '1', 10) || 1));
+    let saving = false;
+    let autosaveTimer = null;
+    let dirty = false;
+
+    const csrf = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+        || wrap.getAttribute('data-csrf')
+        || '';
+
+    const stepInfo = (num) => stepsMeta.find((s) => Number(s.num) === Number(num)) || {
+        num,
+        title: `الخطوة ${num}`,
+        next: num < 5 ? 'التالي' : 'إرسال للمراجعة',
+        progress: num * 20,
+    };
+
+    const syncTagsHidden = () => {
+        const tagRoot = wrap.querySelector('[data-tag-input]');
+        if (!tagRoot) {
+            return;
+        }
+        const list = tagRoot.querySelector('[data-tag-list]');
+        const tagsValue = tagRoot.querySelector('[data-tags-value]');
+        if (!tagsValue) {
+            return;
+        }
+        const texts = [];
+        list?.querySelectorAll('[data-tag]').forEach((chip) => {
+            const text = chip.firstChild?.textContent?.trim?.() ?? '';
+            if (text) {
+                texts.push(text);
+            }
+        });
+        tagsValue.value = texts.join(',');
+    };
+
+    const setDraftId = (id) => {
+        if (!id) {
+            return;
+        }
+        wrap.setAttribute('data-draft-id', String(id));
+        wrap.querySelectorAll('[data-draft-id-input]').forEach((input) => {
+            input.value = String(id);
+        });
+        wrap.querySelector('[data-curriculum-need-draft]')?.classList.add('hidden');
+        wrap.querySelector('[data-curriculum-ready]')?.classList.remove('hidden');
+    };
+
+    const setAutosaveStatus = (text) => {
+        const el = wrap.querySelector('[data-autosave-status]');
+        if (el) {
+            el.textContent = text || '';
+        }
+    };
+
+    const showErrors = (errors) => {
+        const box = wrap.querySelector('[data-wizard-errors]');
+        const list = wrap.querySelector('[data-wizard-errors-list]');
+        if (!box || !list) {
+            return;
+        }
+        list.innerHTML = '';
+        const entries = errors && typeof errors === 'object' ? Object.entries(errors) : [];
+        if (!entries.length) {
+            box.classList.add('hidden');
+            return;
+        }
+        entries.forEach(([field, messages]) => {
+            const msg = Array.isArray(messages) ? messages[0] : String(messages);
+            const li = document.createElement('li');
+            li.className = 'font-medium text-14px text-[#B91C1C]';
+            li.innerHTML = `<span class="font-bold">${escapeHtml(fieldLabels[field] || field)}:</span> ${escapeHtml(msg)}`;
+            list.appendChild(li);
+        });
+        box.classList.remove('hidden');
+        box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
+
+    const clearErrors = () => showErrors(null);
+
+    const updateChrome = (step, progress, title) => {
+        const info = stepInfo(step);
+        const pct = progress ?? info.progress ?? step * 20;
+        wrap.querySelector('[data-wizard-step-label]') && (wrap.querySelector('[data-wizard-step-label]').textContent = `الخطوة ${step} من 5`);
+        wrap.querySelector('[data-wizard-step-title]') && (wrap.querySelector('[data-wizard-step-title]').textContent = info.title || '');
+        wrap.querySelector('[data-wizard-footer-progress]') && (wrap.querySelector('[data-wizard-footer-progress]').textContent = `الخطوة ${step} من 5 — ${pct}% مكتمل`);
+        wrap.querySelector('[data-draft-progress-pct]') && (wrap.querySelector('[data-draft-progress-pct]').textContent = String(pct));
+        const bar = wrap.querySelector('[data-draft-progress-bar]');
+        if (bar) {
+            bar.style.width = `${pct}%`;
+        }
+        if (title) {
+            wrap.querySelectorAll('[data-draft-title]').forEach((el) => {
+                el.textContent = title;
+            });
+        }
+        const nextLabel = wrap.querySelector('[data-wizard-next-label]');
+        if (nextLabel) {
+            nextLabel.textContent = info.next || (step < 5 ? 'التالي' : 'إرسال للمراجعة');
+        }
+        const prevBtn = wrap.querySelector('[data-wizard-prev]');
+        if (prevBtn) {
+            prevBtn.disabled = step <= 1;
+            prevBtn.classList.toggle('opacity-60', step <= 1);
+            prevBtn.classList.toggle('cursor-not-allowed', step <= 1);
+        }
+        wrap.querySelectorAll('[data-wizard-goto]').forEach((btn) => {
+            const num = parseInt(btn.getAttribute('data-wizard-goto') || '0', 10);
+            const active = num === step;
+            const done = num < step;
+            btn.classList.toggle('border-[#C99C69]/50', active);
+            btn.classList.toggle('bg-[#F7F0E6]', active);
+            btn.classList.toggle('border-d9', !active);
+            btn.classList.toggle('bg-white', !active);
+            const badge = btn.querySelector('[data-step-badge]');
+            if (badge) {
+                badge.className = `size-8 sm:size-9 shrink-0 rounded-full center font-bold text-14px sm:text-15px ${active || done ? 'bg-primary text-white' : 'bg-[#EDEDED] text-gray'}`;
+                badge.innerHTML = done
+                    ? '<span class="icon-[tabler--check] size-4 sm:size-5"></span>'
+                    : String(num);
+            }
+            const label = btn.querySelector('[data-step-label]');
+            if (label) {
+                label.classList.toggle('text-primary', active || done);
+                label.classList.toggle('text-gray', !(active || done));
+            }
+        });
+    };
+
+    const showStep = (step, { push = true } = {}) => {
+        currentStep = Math.max(1, Math.min(5, step));
+        wrap.setAttribute('data-current-step', String(currentStep));
+        wrap.querySelectorAll('[data-wizard-panel]').forEach((panel) => {
+            const num = parseInt(panel.getAttribute('data-wizard-panel') || '0', 10);
+            panel.classList.toggle('hidden', num !== currentStep);
+        });
+        const stepInput = wrap.querySelector('[data-wizard-step-input]');
+        if (stepInput) {
+            stepInput.value = String(currentStep);
+        }
+        updateChrome(currentStep);
+        if (push) {
+            const draftId = wrap.getAttribute('data-draft-id') || '';
+            const url = new URL(createUrl, window.location.origin);
+            url.searchParams.set('step', String(currentStep));
+            if (draftId) {
+                url.searchParams.set('draft', draftId);
+            }
+            window.history.pushState({ step: currentStep, draft: draftId }, '', url.toString());
+        }
+        try {
+            localStorage.setItem('panel_v1_course_wizard', JSON.stringify({
+                draft: wrap.getAttribute('data-draft-id') || '',
+                step: currentStep,
+                at: Date.now(),
+            }));
+        } catch (_) {}
+    };
+
+    const buildFormData = ({ goNext, soft }) => {
+        syncTagsHidden();
+        const stepInput = wrap.querySelector('[data-wizard-step-input]');
+        if (stepInput) {
+            stepInput.value = String(currentStep);
+        }
+        const goInput = wrap.querySelector('[data-go-next-input]');
+        if (goInput) {
+            goInput.value = goNext;
+        }
+        const autoInput = wrap.querySelector('[data-autosave-input]');
+        if (autoInput) {
+            autoInput.value = soft ? '1' : '0';
+        }
+        const saveOnly = wrap.querySelector('[data-save-only-input]');
+        if (saveOnly) {
+            saveOnly.value = soft && goNext === 'stay' ? '1' : '0';
+        }
+
+        // Step 2 has no fields in main form — still post draft_id + wizard_step
+        const fd = form ? new FormData(form) : new FormData();
+        if (!form) {
+            fd.append('_token', csrf());
+            fd.append('wizard_step', String(currentStep));
+            fd.append('draft_id', wrap.getAttribute('data-draft-id') || '');
+            fd.append('go_next', goNext);
+            fd.append('autosave', soft ? '1' : '0');
+        }
+        // Ensure current step is what we save
+        fd.set('wizard_step', String(currentStep));
+        fd.set('go_next', goNext);
+        fd.set('autosave', soft ? '1' : '0');
+        if (soft && goNext === 'stay') {
+            fd.set('save_only', '1');
+        } else {
+            fd.set('save_only', '0');
+        }
+        const draftId = wrap.getAttribute('data-draft-id') || '';
+        if (draftId) {
+            fd.set('draft_id', draftId);
+        }
+        return fd;
+    };
+
+    const saveWizard = async ({ goNext = 'stay', soft = true, silent = false } = {}) => {
+        if (saving) {
+            return null;
+        }
+        // Moving into step 2+ without draft requires a real step-1 save
+        if (!soft && currentStep === 1 && (goNext === 2 || goNext === '2')) {
+            soft = false;
+        }
+        saving = true;
+        setAutosaveStatus(silent ? 'جاري الحفظ...' : 'جاري الحفظ...');
+        clearErrors();
+        try {
+            const response = await fetch(storeUrl, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': csrf(),
+                },
+                body: buildFormData({ goNext, soft }),
+            });
+            let data = null;
+            try {
+                data = await response.json();
+            } catch (_) {
+                data = null;
+            }
+            if (!response.ok) {
+                showErrors(data?.errors || null);
+                toast('خطأ في الحقل', firstValidationError(data), 'error');
+                setAutosaveStatus('');
+                return null;
+            }
+            if (data?.draft_id) {
+                setDraftId(data.draft_id);
+            }
+            if (data?.draft_title) {
+                wrap.querySelectorAll('[data-draft-title]').forEach((el) => {
+                    el.textContent = data.draft_title;
+                });
+            }
+            dirty = false;
+            setAutosaveStatus(silent ? 'تم الحفظ تلقائيًا' : '');
+            if (!silent) {
+                toast('تم', data?.message || 'تم حفظ المسودة', 'success');
+            }
+            if (data?.done && data?.redirect) {
+                window.location.href = data.redirect;
+                return data;
+            }
+            return data;
+        } catch (_) {
+            toast('خطأ', 'فشل الاتصال بالخادم', 'error');
+            setAutosaveStatus('');
+            return null;
+        } finally {
+            saving = false;
+        }
+    };
+
+    const goToStep = async (target, { soft = true, validate = false } = {}) => {
+        target = Math.max(1, Math.min(5, target));
+        if (target === currentStep) {
+            return;
+        }
+        // Always persist current step before leaving (keeps refresh-safe history)
+        const goingForward = target > currentStep;
+        const data = await saveWizard({
+            goNext: target,
+            soft: soft || !goingForward || !validate,
+            silent: true,
+        });
+        if (!data) {
+            return;
+        }
+        showStep(target);
+        if (goingForward) {
+            toast('تم', 'تم حفظ التقدم', 'success');
+        }
+    };
+
     // Course type cards
     const typeGroup = wrap.querySelector('[data-course-type-group]');
     const typeValue = wrap.querySelector('[data-course-type-value]');
@@ -227,6 +543,7 @@ function initCreateCourseWizard(root) {
                 btn.classList.remove('border-d9', 'bg-white');
                 btn.querySelector('[data-type-check]')?.classList.remove('hidden');
                 syncTypeValue();
+                dirty = true;
             });
         });
         syncTypeValue();
@@ -263,7 +580,7 @@ function initCreateCourseWizard(root) {
         sync();
     }
 
-    // Tags — serialize chips into hidden input on submit
+    // Tags
     const tagRoot = wrap.querySelector('[data-tag-input]');
     if (tagRoot) {
         const list = tagRoot.querySelector('[data-tag-list]');
@@ -278,11 +595,13 @@ function initCreateCourseWizard(root) {
             chip.setAttribute('data-tag', '');
             chip.innerHTML = `${text}<button type="button" class="hover:opacity-70" data-tag-remove aria-label="حذف وسم"><span class="icon-[tabler--x] size-3.5"></span></button>`;
             list.appendChild(chip);
+            dirty = true;
         };
         list?.addEventListener('click', (e) => {
             const btn = e.target.closest('[data-tag-remove]');
             if (btn) {
                 btn.closest('[data-tag]')?.remove();
+                dirty = true;
             }
         });
         field?.addEventListener('keydown', (e) => {
@@ -292,20 +611,6 @@ function initCreateCourseWizard(root) {
                 field.value = '';
             }
         });
-        const tagsValue = tagRoot.querySelector('[data-tags-value]');
-        const form = tagRoot.closest('form');
-        if (tagsValue && form) {
-            form.addEventListener('submit', () => {
-                const texts = [];
-                list?.querySelectorAll('[data-tag]').forEach((chip) => {
-                    const text = chip.firstChild?.textContent?.trim?.() ?? '';
-                    if (text) {
-                        texts.push(text);
-                    }
-                });
-                tagsValue.value = texts.join(',');
-            });
-        }
     }
 
     // Pricing model cards
@@ -313,14 +618,7 @@ function initCreateCourseWizard(root) {
     if (pricing) {
         const paidFields = pricing.querySelector('[data-paid-fields]');
         const priceInput = wrap.querySelector('#wizard-price-input');
-        const priceHidden = wrap.querySelector('#wizard-price');
-        const syncPrice = () => {
-            if (priceInput && priceHidden) {
-                priceHidden.value = priceInput.value;
-            }
-        };
-        priceInput?.addEventListener('input', syncPrice);
-        syncPrice();
+        const accessDaysWrap = pricing.querySelector('[data-access-days-wrap]');
         pricing.querySelectorAll('[data-price-type]').forEach((btn) => {
             btn.addEventListener('click', () => {
                 pricing.querySelectorAll('[data-price-type]').forEach((el) => {
@@ -333,14 +631,335 @@ function initCreateCourseWizard(root) {
                 if (paidFields) {
                     paidFields.classList.toggle('hidden', isFree);
                 }
-                if (isFree && priceHidden) {
-                    priceHidden.value = '';
-                } else {
-                    syncPrice();
+                if (isFree && priceInput) {
+                    priceInput.value = '';
                 }
+                dirty = true;
+            });
+        });
+        pricing.querySelectorAll('[data-access-duration]').forEach((radio) => {
+            radio.addEventListener('change', () => {
+                if (!accessDaysWrap) {
+                    return;
+                }
+                if (radio.checked && radio.value === 'limited') {
+                    accessDaysWrap.classList.remove('hidden');
+                }
+                if (radio.checked && radio.value === 'lifetime') {
+                    accessDaysWrap.classList.add('hidden');
+                }
+                dirty = true;
             });
         });
     }
+
+    if (isSpa) {
+        // Prevent native form submit — everything goes through fetch
+        form?.addEventListener('submit', (e) => e.preventDefault());
+
+        wrap.querySelectorAll('[data-wizard-next]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                if (currentStep >= 5) {
+                    const data = await saveWizard({ goNext: 'done', soft: false, silent: false });
+                    return data;
+                }
+                await goToStep(currentStep + 1, { validate: true, soft: false });
+            });
+        });
+        wrap.querySelectorAll('[data-wizard-prev]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                if (currentStep <= 1) {
+                    return;
+                }
+                await goToStep(currentStep - 1, { soft: true, validate: false });
+            });
+        });
+        wrap.querySelectorAll('[data-wizard-goto]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const target = parseInt(btn.getAttribute('data-wizard-goto') || '1', 10);
+                await goToStep(target, {
+                    soft: target <= currentStep,
+                    validate: target > currentStep,
+                });
+            });
+        });
+        wrap.querySelectorAll('[data-wizard-save]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                await saveWizard({ goNext: 'stay', soft: true, silent: false });
+            });
+        });
+
+        // Mark dirty + debounced autosave
+        wrap.addEventListener('input', () => {
+            dirty = true;
+            clearTimeout(autosaveTimer);
+            autosaveTimer = setTimeout(async () => {
+                if (!dirty) {
+                    return;
+                }
+                await saveWizard({ goNext: 'stay', soft: true, silent: true });
+            }, 8000);
+        });
+        wrap.addEventListener('change', () => {
+            dirty = true;
+        });
+
+        window.addEventListener('popstate', (e) => {
+            const step = e.state?.step || parseInt(new URL(window.location.href).searchParams.get('step') || String(currentStep), 10);
+            showStep(step, { push: false });
+        });
+
+        // Resume draft step from URL / localStorage hint
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const urlStep = parseInt(params.get('step') || String(currentStep), 10);
+            if (urlStep !== currentStep) {
+                showStep(urlStep, { push: false });
+            } else {
+                updateChrome(currentStep);
+            }
+            if (wrap.getAttribute('data-draft-id')) {
+                setDraftId(wrap.getAttribute('data-draft-id'));
+            }
+        } catch (_) {
+            updateChrome(currentStep);
+        }
+
+        // Soft autosave once shortly after load if there is typed content but no draft yet
+        setTimeout(async () => {
+            const title = form?.querySelector('[name="title"]')?.value?.trim();
+            if (title && !wrap.getAttribute('data-draft-id')) {
+                await saveWizard({ goNext: 'stay', soft: true, silent: true });
+            }
+        }, 1500);
+    }
+
+    initCurriculumAjax(wrap);
+}
+
+function toast(title, msg, type = 'success') {
+    if (typeof window.showCartToast === 'function') {
+        window.showCartToast(title, msg, type);
+    }
+}
+
+function firstValidationError(data) {
+    if (!data || !data.errors) {
+        return data?.message || 'تعذر تنفيذ العملية';
+    }
+    const entries = Object.entries(data.errors);
+    if (!entries.length) {
+        return data.message || 'تعذر تنفيذ العملية';
+    }
+    const [field, messages] = entries[0];
+    const msg = Array.isArray(messages) ? messages[0] : String(messages);
+    // Laravel Arabic already includes the field name via :attribute
+    return msg || `${field}: خطأ`;
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function lessonIcon(kind) {
+    if (kind === 'text') {
+        return 'icon-[tabler--file-text]';
+    }
+    if (kind === 'file') {
+        return 'icon-[tabler--paperclip]';
+    }
+    return 'icon-[tabler--player-play]';
+}
+
+function buildLessonRow(draftId, lesson) {
+    const row = document.createElement('div');
+    row.className = 'flex flex-wrap items-center gap-3 px-4 sm:px-5 py-3.5';
+    row.setAttribute('data-curriculum-lesson', String(lesson.id));
+    row.setAttribute('data-lesson-kind', lesson.kind || 'session');
+    row.innerHTML = `
+        <span class="size-9 rounded-8px bg-primary/10 center shrink-0">
+            <span class="${lessonIcon(lesson.kind)} size-4 text-primary"></span>
+        </span>
+        <div class="min-w-0 flex-1 text-start">
+            <p class="font-semibold text-15px sm:text-16px text-primary truncate">${escapeHtml(lesson.title)}</p>
+            <p class="font-medium text-13px text-gray">${escapeHtml(lesson.duration || '')}</p>
+        </div>
+        <form method="POST" action="${escapeHtml(lesson.delete_url || '#')}" data-curriculum-ajax="delete-lesson" data-confirm="حذف هذا العنصر؟">
+            <input type="hidden" name="_token" value="">
+            <input type="hidden" name="draft_id" value="${escapeHtml(draftId)}">
+            <button type="submit" class="size-8 rounded-8px center text-red-500 hover:bg-red-50" aria-label="حذف">
+                <span class="icon-[tabler--trash] size-4"></span>
+            </button>
+        </form>`;
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const tokenInput = row.querySelector('input[name="_token"]');
+    if (tokenInput) {
+        tokenInput.value = token;
+    }
+    return row;
+}
+
+function syncUnitLessonCount(unitEl) {
+    const count = unitEl.querySelectorAll('[data-curriculum-lesson]').length;
+    const countEl = unitEl.querySelector('[data-unit-lesson-count]');
+    if (countEl) {
+        countEl.textContent = String(count);
+    }
+}
+
+function initCurriculumAjax(wrap) {
+    const root = wrap.querySelector('[data-curriculum-root]');
+    if (!root) {
+        return;
+    }
+
+    const draftId = wrap.getAttribute('data-draft-id') || '';
+    const unitsWrap = root.querySelector('[data-curriculum-units]');
+    const unitTemplate = document.getElementById('curriculum-unit-template');
+
+    const setBusy = (form, busy) => {
+        const btn = form.querySelector('[type="submit"]');
+        if (!btn) {
+            return;
+        }
+        btn.disabled = busy;
+        btn.classList.toggle('opacity-70', busy);
+    };
+
+    const appendUnit = (unit) => {
+        if (!unitsWrap || !unitTemplate) {
+            return;
+        }
+        unitsWrap.querySelector('[data-curriculum-empty]')?.remove();
+        let html = unitTemplate.innerHTML
+            .replaceAll('__ID__', String(unit.id))
+            .replaceAll('__TITLE__', escapeHtml(unit.title))
+            .replaceAll('__DELETE_URL__', unit.delete_url || '#')
+            .replaceAll('__SESSION_STORE__', unit.session_store_url || '#')
+            .replaceAll('__FILE_STORE__', unit.file_store_url || '#')
+            .replaceAll('__TEXT_STORE__', unit.text_store_url || '#')
+            .replaceAll('__DRAFT__', draftId);
+        const holder = document.createElement('div');
+        holder.innerHTML = html.trim();
+        const node = holder.firstElementChild;
+        if (node) {
+            // Fill title text (escaped already in replace for attribute; set textContent for title)
+            const titleEl = node.querySelector('[data-unit-title]');
+            if (titleEl) {
+                titleEl.textContent = unit.title;
+            }
+            unitsWrap.appendChild(node);
+        }
+    };
+
+    const appendLesson = (chapterId, lesson) => {
+        const unitEl = root.querySelector(`[data-curriculum-unit="${chapterId}"]`);
+        if (!unitEl) {
+            return;
+        }
+        const lessons = unitEl.querySelector('[data-curriculum-lessons]');
+        if (!lessons) {
+            return;
+        }
+        lessons.querySelector('[data-lessons-empty]')?.remove();
+        lessons.appendChild(buildLessonRow(draftId, lesson));
+        syncUnitLessonCount(unitEl);
+    };
+
+    root.addEventListener('submit', async (e) => {
+        const form = e.target.closest('form[data-curriculum-ajax]');
+        if (!form || !root.contains(form)) {
+            return;
+        }
+        e.preventDefault();
+
+        const mode = form.getAttribute('data-curriculum-ajax');
+        const confirmMsg = form.getAttribute('data-confirm');
+        if (confirmMsg && !window.confirm(confirmMsg)) {
+            return;
+        }
+
+        setBusy(form, true);
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+                body: new FormData(form),
+            });
+
+            let data = null;
+            try {
+                data = await response.json();
+            } catch (_) {
+                data = null;
+            }
+
+            if (!response.ok) {
+                toast('خطأ في الحقل', firstValidationError(data), 'error');
+                return;
+            }
+
+            if (mode === 'chapter' && data?.unit) {
+                appendUnit(data.unit);
+                form.reset();
+                toast('تم', data.message || 'تمت إضافة الوحدة', 'success');
+                return;
+            }
+
+            if ((mode === 'session' || mode === 'file' || mode === 'text') && data?.lesson) {
+                appendLesson(data.chapter_id, data.lesson);
+                form.reset();
+                const details = form.closest('details');
+                if (details) {
+                    details.open = false;
+                }
+                toast('تم', data.message || 'تمت الإضافة', 'success');
+                return;
+            }
+
+            if (mode === 'delete-chapter' && data?.deleted) {
+                root.querySelector(`[data-curriculum-unit="${data.deleted.id}"]`)?.remove();
+                if (unitsWrap && !unitsWrap.querySelector('[data-curriculum-unit]')) {
+                    unitsWrap.innerHTML = `<div class="rounded-14px border border-dashed border-d9 px-6 py-10 center flex-col text-center" data-curriculum-empty>
+                        <p class="font-semibold text-18px text-gray">لا توجد وحدات بعد</p>
+                        <p class="font-medium text-14px text-gray mt-2">أضف أول وحدة من الأعلى لبدء بناء المنهج.</p>
+                    </div>`;
+                }
+                toast('تم', data.message || 'تم الحذف', 'success');
+                return;
+            }
+
+            if (mode === 'delete-lesson' && data?.deleted) {
+                const lessonEl = root.querySelector(`[data-curriculum-lesson="${data.deleted.id}"]`);
+                const unitEl = lessonEl?.closest('[data-curriculum-unit]');
+                lessonEl?.remove();
+                if (unitEl) {
+                    const lessons = unitEl.querySelector('[data-curriculum-lessons]');
+                    if (lessons && !lessons.querySelector('[data-curriculum-lesson]')) {
+                        lessons.innerHTML = '<p class="font-medium text-14px text-gray px-4 sm:px-5 py-4" data-lessons-empty>لا يوجد محتوى بعد — أضف جلسة أو ملفًا أو درسًا نصيًا.</p>';
+                    }
+                    syncUnitLessonCount(unitEl);
+                }
+                toast('تم', data.message || 'تم الحذف', 'success');
+                return;
+            }
+
+            toast('تم', data?.message || 'تم بنجاح', 'success');
+        } catch (_) {
+            toast('خطأ', 'فشل الاتصال بالخادم', 'error');
+        } finally {
+            setBusy(form, false);
+        }
+    });
 }
 
 function initInstructorSupport(root) {

@@ -3,6 +3,7 @@
     $select = 'select select-bordered w-full h-12 sm:h-14 min-h-12 sm:min-h-14 rounded-10px border-d9 font-medium text-15px sm:text-16px text-black focus:outline-none focus:border-primary';
     $textarea = 'textarea textarea-bordered w-full rounded-10px border-d9 font-medium text-15px sm:text-16px text-black focus:outline-none focus:border-primary min-h-28 resize-y';
     $card = 'border border-d9 rounded-14px bg-white px-5 sm:px-7 py-6 sm:py-8';
+    $selectedType = old('course_type', $draft['course_type'] ?? 'recorded');
 @endphp
 
 {{-- Course type --}}
@@ -14,15 +15,16 @@
         <h2 class="font-bold text-18px sm:text-20px text-primary">نوع الدورة التدريبية</h2>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4" data-course-type-group>
-        <input type="hidden" name="course_type" value="recorded" data-course-type-value>
+        <input type="hidden" name="course_type" value="{{ $selectedType }}" data-course-type-value>
         @foreach ($courseTypes ?? [] as $type)
+            @php $isActive = ($type['key'] ?? '') === $selectedType; @endphp
             <button type="button" data-course-type="{{ $type['key'] }}"
                 class="group relative text-start rounded-14px border p-4 sm:p-5 transition
-                    {{ ($type['key'] ?? '') === 'recorded'
+                    {{ $isActive
                         ? 'border-primary bg-[#F7F0E6]'
                         : 'border-d9 bg-white hover:border-primary/40' }}">
                 <span data-type-check
-                    class="absolute top-3 end-3 size-6 rounded-full bg-primary text-white center {{ ($type['key'] ?? '') === 'recorded' ? '' : 'hidden' }}">
+                    class="absolute top-3 end-3 size-6 rounded-full bg-primary text-white center {{ $isActive ? '' : 'hidden' }}">
                     <span class="icon-[tabler--check] size-3.5"></span>
                 </span>
                 <span class="size-11 rounded-12px bg-primary/10 center mb-3">
@@ -39,6 +41,9 @@
             </button>
         @endforeach
     </div>
+    @error('course_type')
+        <p class="mt-3 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+    @enderror
 </section>
 
 {{-- Basic info --}}
@@ -61,17 +66,25 @@
             </div>
             <div>
                 <label class="block font-semibold text-14px sm:text-15px text-primary mb-2">التصنيف الرئيسي</label>
-                <select name="category_id" class="{{ $select }}">
+                <select name="category_id" class="{{ $select }} {{ $errors->has('category_id') ? 'border-[#FECACA]' : '' }}">
                     <option value="">اختر التصنيف</option>
                     @foreach ($categories ?? [] as $cat)
                         <option value="{{ $cat['id'] }}" {{ (string) old('category_id', $draft['category_id'] ?? '') === (string) $cat['id'] ? 'selected' : '' }}>{{ $cat['title'] }}</option>
                     @endforeach
                 </select>
+                @error('category_id')
+                    <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+                @enderror
             </div>
         </div>
         <div>
             <label class="block font-semibold text-14px sm:text-15px text-primary mb-2">عنوان الدورة <span class="text-red-500">*</span></label>
-            <input type="text" name="title" value="{{ old('title', $draft['title'] ?? '') }}" class="{{ $input }}" placeholder="أدخل عنوان الدورة">
+            <input type="text" name="title" value="{{ old('title', $draft['title'] ?? '') }}"
+                class="{{ $input }} {{ $errors->has('title') ? 'border-[#FECACA]' : '' }}"
+                placeholder="أدخل عنوان الدورة" required>
+            @error('title')
+                <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+            @enderror
         </div>
         <div data-tag-input>
             <label class="block font-semibold text-14px sm:text-15px text-primary mb-2">الوسوم</label>
@@ -94,9 +107,12 @@
         </div>
         <div>
             <label class="block font-semibold text-14px sm:text-15px text-primary mb-2">الوصف المختصر / Meta Description <span class="text-red-500">*</span></label>
-            <textarea rows="3" name="seo_description" class="{{ $textarea }}" data-meta-desc maxlength="160"
-                placeholder="وصف قصير يظهر في نتائج البحث...">{{ old('seo_description', $draft['seo_description'] ?? '') }}</textarea>
+            <textarea rows="3" name="seo_description" class="{{ $textarea }} {{ $errors->has('seo_description') ? 'border-[#FECACA]' : '' }}" data-meta-desc maxlength="160"
+                placeholder="وصف قصير يظهر في نتائج البحث..." required>{{ old('seo_description', $draft['seo_description'] ?? '') }}</textarea>
             <p class="mt-2 text-end font-medium text-13px text-gray"><span data-meta-count>0</span>/160</p>
+            @error('seo_description')
+                <p class="mt-1 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+            @enderror
         </div>
     </div>
 </section>
@@ -110,13 +126,19 @@
         <h2 class="font-bold text-18px sm:text-20px text-primary">الوسائط والصور</h2>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-6">
-        @foreach ([['الصورة المصغرة', 'thumbnail'], ['غلاف الدورة', 'cover']] as [$label, $key])
+        @foreach ([['الصورة المصغرة', 'thumbnail', 'image_thumbnail'], ['غلاف الدورة', 'cover', 'image_cover']] as [$label, $key, $field])
             <label class="flex flex-col items-center justify-center gap-3 min-h-44 rounded-14px border border-dashed border-d9 bg-[#F7F0E6]/40 px-4 py-8 cursor-pointer hover:border-primary/40 transition">
                 <span class="icon-[tabler--cloud-upload] size-8 text-primary"></span>
                 <span class="font-semibold text-15px text-primary">{{ $label }}</span>
+                @if (!empty($draft[$key === 'thumbnail' ? 'thumbnail' : 'image_cover']))
+                    <span class="font-medium text-12px text-gray">ملف محفوظ — اختر ملفًا لاستبداله</span>
+                @endif
                 <span class="inline-flex items-center h-10 px-4 rounded-10px bg-primary text-white font-semibold text-14px">اختر ملفًا</span>
-                <input type="file" name="image_{{ $key }}" class="hidden" accept="image/*" data-upload="{{ $key }}">
+                <input type="file" name="{{ $field }}" class="hidden" accept="image/*" data-upload="{{ $key }}">
             </label>
+            @error($field)
+                <p class="font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+            @enderror
         @endforeach
     </div>
     <div>
@@ -128,14 +150,22 @@
                 class="px-4 py-2.5 font-semibold text-14px text-gray bg-white hover:bg-[#FAFAF4]">رفع ملف فيديو</button>
         </div>
         <div data-promo-panel="link">
-            <input type="url" name="video_demo_link" value="{{ old('video_demo_link', $draft['video_demo_link'] ?? '') }}" class="{{ $input }}" placeholder="https://www.youtube.com/watch?v=...">
+            <input type="url" name="video_demo_link" value="{{ old('video_demo_link', $draft['video_demo_link'] ?? '') }}"
+                class="{{ $input }} {{ $errors->has('video_demo_link') ? 'border-[#FECACA]' : '' }}"
+                placeholder="https://www.youtube.com/watch?v=...">
+            @error('video_demo_link')
+                <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+            @enderror
         </div>
         <div data-promo-panel="file" class="hidden">
             <label class="flex items-center justify-center gap-2 h-14 rounded-10px border border-dashed border-d9 cursor-pointer hover:bg-primary/5 transition font-semibold text-15px text-primary">
                 <span class="icon-[tabler--upload] size-5"></span>
                 اختر ملف فيديو
-                <input type="file" class="hidden" accept="video/*">
+                <input type="file" name="video_demo_file" class="hidden" accept="video/mp4,video/webm,video/quicktime">
             </label>
+            @error('video_demo_file')
+                <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+            @enderror
         </div>
     </div>
 </section>
@@ -149,35 +179,6 @@
         <h2 class="font-bold text-18px sm:text-20px text-primary">الوصف التفصيلي للدورة</h2>
     </div>
     <div class="rounded-12px border border-d9 overflow-hidden">
-        <div class="flex flex-wrap gap-1 border-b border-d9 bg-[#FAFAF4] px-3 py-2">
-            <button type="button" class="size-8 rounded-8px center text-primary hover:bg-white transition" tabindex="-1" aria-label="عريض">
-                <span class="icon-[tabler--bold] size-4"></span>
-            </button>
-            <button type="button" class="size-8 rounded-8px center text-primary hover:bg-white transition" tabindex="-1" aria-label="مائل">
-                <span class="icon-[tabler--italic] size-4"></span>
-            </button>
-            <button type="button" class="size-8 rounded-8px center text-primary hover:bg-white transition" tabindex="-1" aria-label="تسطير">
-                <span class="icon-[tabler--underline] size-4"></span>
-            </button>
-            <button type="button" class="size-8 rounded-8px center text-primary hover:bg-white transition" tabindex="-1" aria-label="رابط">
-                <span class="icon-[tabler--link] size-4"></span>
-            </button>
-            <button type="button" class="size-8 rounded-8px center text-primary hover:bg-white transition" tabindex="-1" aria-label="قائمة">
-                <span class="icon-[tabler--list] size-4"></span>
-            </button>
-            <button type="button" class="size-8 rounded-8px center text-primary hover:bg-white transition" tabindex="-1" aria-label="قائمة مرقمة">
-                <span class="icon-[tabler--list-numbers] size-4"></span>
-            </button>
-            <button type="button" class="size-8 rounded-8px center text-primary hover:bg-white transition" tabindex="-1" aria-label="محاذاة يمين">
-                <span class="icon-[tabler--align-right] size-4"></span>
-            </button>
-            <button type="button" class="size-8 rounded-8px center text-primary hover:bg-white transition" tabindex="-1" aria-label="توسيط">
-                <span class="icon-[tabler--align-center] size-4"></span>
-            </button>
-            <button type="button" class="size-8 rounded-8px center text-primary hover:bg-white transition" tabindex="-1" aria-label="محاذاة يسار">
-                <span class="icon-[tabler--align-left] size-4"></span>
-            </button>
-        </div>
         <textarea rows="10" name="description" class="w-full border-0 focus:outline-none px-4 py-4 font-medium text-15px sm:text-16px text-black min-h-48 resize-y"
             placeholder="اكتب وصف الدورة التفصيلي هنا...">{{ old('description', $draft['description'] ?? '') }}</textarea>
     </div>
@@ -197,14 +198,20 @@
                 <p class="font-semibold text-15px sm:text-16px text-primary mb-1">السماح للطلاب بتحميل الملفات</p>
                 <p class="font-medium text-13px sm:text-14px text-gray">تمكين تنزيل المرفقات والمواد المرتبطة بالدورة</p>
             </div>
-            <input type="checkbox" class="switch switch-primary shrink-0" checked aria-label="السماح بتحميل الملفات">
+            <input type="hidden" name="downloadable" value="0">
+            <input type="checkbox" name="downloadable" value="1" class="switch switch-primary shrink-0"
+                {{ old('downloadable', $draft['downloadable'] ?? true) ? 'checked' : '' }}
+                aria-label="السماح بتحميل الملفات">
         </div>
         <div class="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
             <div class="min-w-0 text-start">
                 <p class="font-semibold text-15px sm:text-16px text-primary mb-1">إضافة مدرب مشارك</p>
                 <p class="font-medium text-13px sm:text-14px text-gray">دعوة مدرب آخر للمساعدة في إدارة الدورة</p>
             </div>
-            <input type="checkbox" class="switch switch-primary shrink-0" aria-label="إضافة مدرب مشارك">
+            <input type="hidden" name="partner_instructor" value="0">
+            <input type="checkbox" name="partner_instructor" value="1" class="switch switch-primary shrink-0"
+                {{ old('partner_instructor', $draft['partner_instructor'] ?? false) ? 'checked' : '' }}
+                aria-label="إضافة مدرب مشارك">
         </div>
     </div>
 </section>
