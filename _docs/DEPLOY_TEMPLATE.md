@@ -7,7 +7,10 @@ These templates are safe to commit. Copy them to the project root as `deploy.bat
 | Placeholder | QIEC value |
 |-------------|------------|
 | `SSH_HOST_ALIAS` | `hostinger-qiec` |
-| `REMOTE_PATH` | `domains/training.qiec.sa/public_html` |
+| `REMOTE_PATH` | `/home/qiec-training/htdocs/training.qiec.sa` |
+| `SSH HostName` | `187.77.83.170` (CloudPanel VPS) |
+| `SSH User` | `root` |
+| `SSH Port` | `22` |
 | `GIT_BRANCH` | `master` |
 | `BUILD_SCRIPT` | `build:landing` |
 
@@ -59,7 +62,7 @@ if %errorlevel% neq 0 (
 )
 
 echo Step 3: Deploying on Hostinger...
-ssh hostinger-qiec "cd domains/training.qiec.sa/public_html && git pull origin master && (test -f vendor/autoload.php && php artisan config:clear && php artisan cache:clear && php artisan view:clear || echo WARNING: vendor missing - run composer install or copy vendor folder)"
+ssh hostinger-qiec "cd /home/qiec-training/htdocs/training.qiec.sa && git pull origin master && (test -f vendor/autoload.php && php8.4 artisan config:clear && php8.4 artisan cache:clear && php8.4 artisan view:clear || echo WARNING: vendor missing)"
 if %errorlevel% neq 0 (
     echo Remote deploy failed. Check SSH and server git setup.
     pause
@@ -117,7 +120,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "Step 3: Connecting to Hostinger via SSH..." -ForegroundColor Cyan
-ssh hostinger-qiec "cd domains/training.qiec.sa/public_html && git pull origin master && (test -f vendor/autoload.php && php artisan config:clear && php artisan cache:clear && php artisan view:clear || echo WARNING: vendor missing - run composer install or copy vendor folder)"
+ssh hostinger-qiec "cd /home/qiec-training/htdocs/training.qiec.sa && git pull origin master && (test -f vendor/autoload.php && php8.4 artisan config:clear && php8.4 artisan cache:clear && php8.4 artisan view:clear || echo WARNING: vendor missing)"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Remote deploy failed. Check SSH config and server path." -ForegroundColor Red
@@ -172,14 +175,14 @@ Runs [`scripts/optimize-production.sh`](../scripts/optimize-production.sh) over 
 ```powershell
 npm run build:landing
 git push origin feat/your-branch
-ssh hostinger-qiec "cd domains/training.qiec.sa/public_html && git pull origin feat/your-branch"
+ssh hostinger-qiec "cd /home/qiec-training/htdocs/training.qiec.sa && git pull origin feat/your-branch"
 npm run optimize:production
 ```
 
 After merging to `master`, switch production to `master` once:
 
 ```bash
-ssh hostinger-qiec "cd domains/training.qiec.sa/public_html && git fetch origin && git checkout master && git pull origin master"
+ssh hostinger-qiec "cd /home/qiec-training/htdocs/training.qiec.sa && git fetch origin && git checkout master && git pull origin master"
 ```
 
 Then use `npm run deploy` for routine updates.

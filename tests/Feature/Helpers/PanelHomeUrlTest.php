@@ -50,10 +50,10 @@ class PanelHomeUrlTest extends TestCase
         $this->assertSame(route('panel.v1.organization.home'), panelV1HomeUrl($user));
     }
 
-    public function test_admin_gets_v1_admin_home(): void
+    public function test_admin_gets_v1_admin_education_home(): void
     {
         $user = $this->makeUser('admin', 2);
 
-        $this->assertSame(route('panel.v1.admin.home'), panelV1HomeUrl($user));
+        $this->assertSame(route('panel.v1.admin.education.home'), panelV1HomeUrl($user));
     }
 }

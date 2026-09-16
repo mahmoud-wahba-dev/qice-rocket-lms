@@ -2679,7 +2679,7 @@ function getAvailableUploadFileSources()
 if (!function_exists('panelV1HomeUrl')) {
     /**
      * Role-based home URL for the redesigned (V1) panels.
-     * Admin keeps the legacy admin URL; organization uses the new org section.
+     * Admin lands on education V1 dashboard; other roles use their V1 homes.
      */
     function panelV1HomeUrl($user = null)
     {
@@ -2692,7 +2692,7 @@ if (!function_exists('panelV1HomeUrl')) {
         }
 
         if ($user->isAdmin()) {
-            return route('panel.v1.admin.home');
+            return route('panel.v1.admin.education.home');
         }
 
         if ($user->isTeacher()) {

@@ -30,7 +30,7 @@ class LoginController extends Controller
      *
      * @var string
      */
-    protected $redirectTo = '/admin';
+    protected $redirectTo = '/v1/admin/education';
 
     /**
      * Create a new controller instance.
@@ -40,8 +40,6 @@ class LoginController extends Controller
     public function __construct()
     {
         $this->middleware('guest')->except('logout');
-
-        $this->redirectTo = getAdminPanelUrl();
     }
 
     public function showLoginForm()
@@ -114,7 +112,7 @@ class LoginController extends Controller
                 $userLoginHistoryMixin->storeUserLoginHistory($user);
             }
 
-            return Redirect::to(getAdminPanelUrl());
+            return Redirect::to(route('panel.v1.admin.education.home'));
         }
 
         return redirect()->back()->withInput($request->only('email', 'remember'))->withErrors([

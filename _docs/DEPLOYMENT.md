@@ -1,43 +1,43 @@
-# QIEC — Hostinger Deployment Guide
+# QIEC — Hostinger CloudPanel Deployment Guide
 
 **Production domain:** https://training.qiec.sa  
 **Git remote:** `git@github.com:mahmoud-wahba-dev/qice-rocket-lms.git`  
-**Deploy method:** Local scripts only (`npm run deploy` → build, git push, SSH pull, post-deploy optimize)
-
-No GitHub Actions or auto-deploy — merging to `master` does not update the server by itself.
+**Deploy methods:**
+- Local: `npm run deploy` → build, git push, VPS pull, upload `public/build`, optimize
+- CI: [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) on push to `master` (needs GitHub secrets `VPS_*`)
 
 ---
 
-## Before You Deploy — Hostinger Verification Checklist
+## Before You Deploy — CloudPanel VPS checklist
 
-Complete this checklist once. Save the answers in a secure note (not in git).
-
-### 1. SSH access (confirmed from hPanel)
+### 1. SSH access (CloudPanel VPS)
 
 | Field | Value |
 |-------|-------|
-| SSH status | **ACTIVE** |
-| IP | `82.197.83.145` |
-| Port | `65002` (not 22 — Hostinger uses custom port) |
-| Username | `u873288737` |
-| Domain path | `domains/training.qiec.sa/public_html` |
+| Hostname | `srv1865953.hstgr.cloud` |
+| IPv4 | `187.77.83.170` |
+| SSH user | `root` |
+| Port | `22` |
+| App path | `/home/qiec-training/htdocs/training.qiec.sa` |
 
-**Direct login command:**
+**Direct login:**
 
 ```powershell
-ssh -p 65002 u873288737@82.197.83.145
+ssh root@187.77.83.170
 ```
 
 **Configured alias** (in `C:\Users\devma\.ssh\config`):
 
 ```
 Host hostinger-qiec
-    HostName 82.197.83.145
-    User u873288737
-    Port 65002
+    HostName 187.77.83.170
+    User root
+    Port 22
     IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
 ```
 
+> Legacy shared hosting (`82.197.83.145` / `u873288737` / `domains/.../public_html`) is retired for this project. Do not deploy there.
 Then use: `ssh hostinger-qiec`
 
 > **Note:** QIEC is on a **different server** than siematplus (`82.197.83.145` vs `153.92.220.73`). Do not reuse the `hostinger` alias from siematplus.

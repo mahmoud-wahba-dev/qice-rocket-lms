@@ -6,7 +6,7 @@ set -euo pipefail
 
 SSH_HOST="${QIEC_SSH_HOST:-hostinger-qiec}"
 SITE_URL="${QIEC_SITE_URL:-https://training.qiec.sa}"
-REMOTE_APP="${QIEC_REMOTE_APP:-domains/training.qiec.sa/public_html}"
+REMOTE_APP="${QIEC_REMOTE_APP:-/home/qiec-training/htdocs/training.qiec.sa}"
 
 echo "=== QIEC production health check ==="
 echo "Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"

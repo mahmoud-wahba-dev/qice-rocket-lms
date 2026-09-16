@@ -5,7 +5,7 @@ $ErrorActionPreference = "Stop"
 
 $SshHost = if ($env:QIEC_SSH_HOST) { $env:QIEC_SSH_HOST } else { "hostinger-qiec" }
 $SiteUrl = if ($env:QIEC_SITE_URL) { $env:QIEC_SITE_URL } else { "https://training.qiec.sa" }
-$RemoteApp = if ($env:QIEC_REMOTE_APP) { $env:QIEC_REMOTE_APP } else { "domains/training.qiec.sa/public_html" }
+$RemoteApp = if ($env:QIEC_REMOTE_APP) { $env:QIEC_REMOTE_APP } else { "/home/qiec-training/htdocs/training.qiec.sa" }
 
 Write-Host "=== QIEC production health check ===" -ForegroundColor Cyan
 Write-Host "Time: $((Get-Date).ToUniversalTime().ToString('yyyy-MM-dd HH:mm:ss')) UTC"
