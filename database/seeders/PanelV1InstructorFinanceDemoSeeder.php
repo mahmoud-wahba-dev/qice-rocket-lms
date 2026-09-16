@@ -3,8 +3,11 @@
 namespace Database\Seeders;
 
 use App\Models\Accounting;
+use App\Models\Payout;
 use App\Models\Role;
 use App\Models\Sale;
+use App\Models\UserBank;
+use App\Models\UserSelectedBank;
 use App\Models\Webinar;
 use App\User;
 use Illuminate\Database\Seeder;
@@ -118,13 +121,72 @@ class PanelV1InstructorFinanceDemoSeeder extends Seeder
             $created++;
         }
 
+        $payoutsCreated = $this->seedDemoPayouts($teacher, $now);
+
         $this->command?->info(sprintf(
-            'Seeded %d finance demo sales for instructor #%d (%s / %s)',
+            'Seeded %d finance demo sales + %d payouts for instructor #%d (%s / %s)',
             $created,
+            $payoutsCreated,
             $teacher->id,
             $teacher->username,
             $teacher->email
         ));
+    }
+
+    private function seedDemoPayouts(User $teacher, int $now): int
+    {
+        $teacher->financial_approval = true;
+        $teacher->save();
+
+        $bank = UserBank::query()->orderBy('id')->first();
+        if (empty($bank)) {
+            $this->command?->warn('No user_banks rows — skipped payout seeding.');
+            return 0;
+        }
+
+        $selectedBank = UserSelectedBank::query()
+            ->where('user_id', $teacher->id)
+            ->first();
+
+        if (empty($selectedBank)) {
+            $selectedBank = UserSelectedBank::create([
+                'user_id' => $teacher->id,
+                'user_bank_id' => $bank->id,
+            ]);
+        }
+
+        // Wipe previous demo payout markers then recreate a rich history for UI/export testing.
+        Payout::query()
+            ->where('user_id', $teacher->id)
+            ->whereIn('amount', [450, 320.5, 180, 275, 510, 640, 125.75, 890, 95, 410])
+            ->delete();
+
+        $defs = [
+            ['amount' => 890, 'status' => Payout::$done, 'days_ago' => 45],
+            ['amount' => 640, 'status' => Payout::$done, 'days_ago' => 38],
+            ['amount' => 510, 'status' => Payout::$done, 'days_ago' => 30],
+            ['amount' => 450, 'status' => Payout::$done, 'days_ago' => 20],
+            ['amount' => 410, 'status' => Payout::$done, 'days_ago' => 16],
+            ['amount' => 320.5, 'status' => Payout::$done, 'days_ago' => 12],
+            ['amount' => 180, 'status' => Payout::$reject, 'days_ago' => 8],
+            ['amount' => 125.75, 'status' => Payout::$reject, 'days_ago' => 5],
+            ['amount' => 95, 'status' => Payout::$done, 'days_ago' => 3],
+            ['amount' => 275, 'status' => Payout::$waiting, 'days_ago' => 1],
+        ];
+
+        $created = 0;
+        foreach ($defs as $i => $def) {
+            Payout::create([
+                'user_id' => $teacher->id,
+                'user_selected_bank_id' => $selectedBank->id,
+                'amount' => $def['amount'],
+                'status' => $def['status'],
+                'created_at' => $now - ((int) $def['days_ago'] * 86400) - ($i * 1800),
+            ]);
+            $created++;
+        }
+
+        return $created;
     }
 
     /**

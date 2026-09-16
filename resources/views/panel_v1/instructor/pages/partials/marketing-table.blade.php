@@ -48,6 +48,9 @@
             <tr>
                 <td colspan="8" class="px-4 py-16 text-center font-medium text-16px text-gray">
                     لا توجد بيانات حالياً
+                    @if (!empty($emptyText))
+                        <span class="block mt-1 text-14px">{{ $emptyText }}</span>
+                    @endif
                 </td>
             </tr>
         @endforelse

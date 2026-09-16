@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Comment;
 use App\Models\CommentReport;
+use App\Models\Certificate;
 use App\Models\CourseLearning;
 use App\Models\File;
 use App\Models\Quiz;
@@ -259,16 +260,86 @@ class PanelV1InstructorHomeDemoSeeder extends Seeder
 
         $this->refreshUpcomingSessions($teacher->id, $now);
         $commentsCount = $this->seedCourseComments($teacher, $activeWebinars->take(4)->values(), $buyers, $now);
+        $certsCount = $this->seedDemoCertificates($teacher, $activeWebinars, $buyers, $now);
 
         $this->command?->info(sprintf(
-            'Home demo ready for #%d (%s): quizzes=%d assignments=%d pending≈%d comments=%d',
+            'Home demo ready for #%d (%s): quizzes=%d assignments=%d pending≈%d comments=%d certs=%d',
             $teacher->id,
             $teacher->email,
             $quizCount,
             $assignmentCount,
             $pendingCount,
-            $commentsCount
+            $commentsCount,
+            $certsCount
         ));
+    }
+
+    /**
+     * Seed issued course/quiz certificates so instructor certificates pages have real rows.
+     */
+    private function seedDemoCertificates($teacher, $webinars, array $buyers, int $now): int
+    {
+        if ($webinars->isEmpty() || empty($buyers)) {
+            return 0;
+        }
+
+        $created = 0;
+        $certCourses = $webinars->take(3)->values();
+
+        foreach ($certCourses as $wIndex => $webinar) {
+            if (!(bool) $webinar->certificate) {
+                $webinar->update(['certificate' => true]);
+            }
+
+            foreach (array_slice($buyers, 0, 2) as $bIndex => $buyer) {
+                $exists = Certificate::query()
+                    ->where('webinar_id', $webinar->id)
+                    ->where('student_id', $buyer->id)
+                    ->where('type', 'course')
+                    ->exists();
+
+                if ($exists) {
+                    continue;
+                }
+
+                Certificate::create([
+                    'webinar_id' => $webinar->id,
+                    'student_id' => $buyer->id,
+                    'type' => 'course',
+                    'created_at' => $now - (($wIndex + 1) * 7200) - (($bIndex + 1) * 600),
+                ]);
+                $created++;
+            }
+        }
+
+        $quiz = Quiz::query()
+            ->where('creator_id', $teacher->id)
+            ->where('certificate', true)
+            ->orderByDesc('id')
+            ->first();
+
+        if ($quiz && !empty($buyers[0])) {
+            $buyer = $buyers[0];
+            $result = QuizzesResult::query()
+                ->where('quiz_id', $quiz->id)
+                ->where('user_id', $buyer->id)
+                ->orderByDesc('id')
+                ->first();
+
+            if ($result && !Certificate::query()->where('quiz_id', $quiz->id)->where('student_id', $buyer->id)->exists()) {
+                Certificate::create([
+                    'quiz_id' => $quiz->id,
+                    'quiz_result_id' => $result->id,
+                    'student_id' => $buyer->id,
+                    'user_grade' => $result->user_grade ?? 80,
+                    'type' => 'quiz',
+                    'created_at' => $now - 900,
+                ]);
+                $created++;
+            }
+        }
+
+        return $created;
     }
 
     /**

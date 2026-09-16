@@ -3952,33 +3952,81 @@ class InstructorController extends Controller
 
     public function certificates(Request $request)
     {
-        $user = $request->user();
-        $webinarIds = $user ? $this->teacherWebinars($user)->pluck('id')->all() : [];
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
 
-        $issued = !empty($webinarIds)
-            ? \App\Models\Certificate::with(['student', 'webinar'])
-                ->whereIn('webinar_id', $webinarIds)
-                ->orderBy('id', 'desc')
-                ->limit(30)
-                ->get()
-            : collect();
+        $issuedQuery = $this->teacherCertificatesQuery($user);
+        $issued = (clone $issuedQuery)
+            ->with(['student', 'webinar', 'quiz', 'bundle'])
+            ->orderByDesc('id')
+            ->limit(30)
+            ->get();
 
-        $completionRows = !empty($webinarIds)
-            ? \App\Models\Webinar::whereIn('id', $webinarIds)
-                ->orderBy('id', 'desc')
-                ->limit(20)
-                ->get()
-                ->map(function ($webinar) {
-                    $generated = \App\Models\Certificate::where('webinar_id', $webinar->id)->count();
-                    $last = \App\Models\Certificate::where('webinar_id', $webinar->id)->orderBy('id', 'desc')->first();
-                    return [
-                        'title' => $webinar->title,
-                        'course' => $webinar->category->title ?? '',
-                        'generated' => $generated,
-                        'last_at' => $last ? date('Y/m/d', (int) $last->created_at) : '—',
-                    ];
-                })->all()
-            : [];
+        $quizSources = \App\Models\Quiz::query()
+            ->where('creator_id', $user->id)
+            ->where('status', \App\Models\Quiz::ACTIVE)
+            ->where('certificate', true)
+            ->with(['webinar'])
+            ->withCount('certificates')
+            ->orderByDesc('id')
+            ->limit(20)
+            ->get();
+
+        $courseSources = \App\Models\Webinar::query()
+            ->where('status', 'active')
+            ->where('certificate', true)
+            ->where(function ($query) use ($user) {
+                $query->where('creator_id', $user->id)->orWhere('teacher_id', $user->id);
+            })
+            ->with('category')
+            ->orderByDesc('id')
+            ->limit(20)
+            ->get();
+
+        $completionRows = $courseSources->map(function ($webinar) {
+            $generated = \App\Models\Certificate::where('webinar_id', $webinar->id)
+                ->where('type', 'course')
+                ->count();
+            $last = \App\Models\Certificate::where('webinar_id', $webinar->id)
+                ->where('type', 'course')
+                ->orderByDesc('id')
+                ->first();
+
+            return [
+                'title' => $webinar->title,
+                'course' => $webinar->category->title ?? '',
+                'generated' => $generated,
+                'last_at' => $last ? date('Y/m/d', (int) $last->created_at) : '—',
+                'view_url' => route('panel.v1.instructor.certificates.details', [
+                    'type' => 'courses',
+                    'id' => $webinar->id,
+                ]),
+            ];
+        })->values()->all();
+
+        $examRows = $quizSources->map(function ($quiz) {
+            $last = \App\Models\Certificate::where('quiz_id', $quiz->id)
+                ->orderByDesc('id')
+                ->first();
+
+            return [
+                'title' => $quiz->title,
+                'course' => $quiz->webinar->title ?? '',
+                'generated' => (int) ($quiz->certificates_count ?? 0),
+                'last_at' => $last ? date('Y/m/d', (int) $last->created_at) : '—',
+                'view_url' => route('panel.v1.instructor.certificates.details', [
+                    'type' => 'quiz',
+                    'id' => $quiz->id,
+                ]),
+            ];
+        })->values()->all();
+
+        $totalGenerated = (clone $issuedQuery)->count();
+        $quizGenerated = (clone $issuedQuery)->where('type', 'quiz')->count();
+        $completionGenerated = (clone $issuedQuery)->whereIn('type', ['course', 'bundle'])->count();
+        $studentsCount = (clone $issuedQuery)->pluck('student_id')->unique()->filter()->count();
 
         return $this->render(
             $request,
@@ -3986,18 +4034,175 @@ class InstructorController extends Controller
             'إدارة الشهادات',
             [
                 'certificateStats' => [
-                    ['value' => (string) $issued->count(), 'label' => 'شهادات مصدرة'],
-                    ['value' => (string) count($webinarIds), 'label' => 'دورات'],
+                    ['value' => (string) $totalGenerated, 'label' => 'شهادات مصدرة'],
+                    ['value' => (string) $completionGenerated, 'label' => 'شهادات إتمام'],
+                    ['value' => (string) $quizGenerated, 'label' => 'شهادات اختبارات'],
+                    ['value' => (string) $studentsCount, 'label' => 'طلاب حاصلون على شهادات'],
                 ],
                 'recentCertificates' => $issued->take(8)->map(function ($certificate) {
+                    $title = $certificate->webinar->title
+                        ?? ($certificate->quiz->title ?? ($certificate->bundle->title ?? 'شهادة'));
+
                     return [
-                        'title' => $certificate->webinar->title ?? '',
+                        'title' => $title,
                         'student' => $certificate->student->full_name ?? '',
+                        'download_url' => route('panel.v1.instructor.certificates.download', [
+                            'id' => $certificate->id,
+                        ]),
                     ];
-                })->all(),
+                })->values()->all(),
                 'completionRows' => $completionRows,
+                'examRows' => $examRows,
+                'allCertificatesUrl' => route('panel.v1.instructor.certificates.students'),
             ]
         );
+    }
+
+    public function certificatesStudents(Request $request, ?string $type = null, ?int $id = null)
+    {
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $filterType = $type ?: $request->get('type');
+        $filterId = $id ?: (int) $request->get('item_id', 0);
+        if ($filterId <= 0) {
+            $filterId = null;
+        }
+
+        $allowedTypes = ['quiz', 'courses', 'bundles'];
+        if (!empty($filterType) && !in_array($filterType, $allowedTypes, true)) {
+            abort(404);
+        }
+
+        $query = $this->teacherCertificatesQuery($user, $filterType, $filterId);
+        $certificates = (clone $query)
+            ->with(['student', 'webinar', 'quiz', 'bundle', 'quizzesResult'])
+            ->orderByDesc('id')
+            ->limit(60)
+            ->get();
+
+        $rows = $certificates->map(function ($certificate) {
+            $title = $certificate->webinar->title
+                ?? ($certificate->quiz->title ?? ($certificate->bundle->title ?? 'شهادة #' . $certificate->id));
+
+            $typeLabel = match ($certificate->type ?? '') {
+                'quiz' => 'اختبار',
+                'bundle' => 'باقة',
+                default => 'إتمام دورة',
+            };
+
+            return [
+                'id' => $certificate->id,
+                'student' => $certificate->student->full_name ?? 'طالب',
+                'email' => $certificate->student->email ?? '',
+                'title' => $title,
+                'type' => $typeLabel,
+                'grade' => $certificate->user_grade ?? null,
+                'date' => !empty($certificate->created_at) ? date('Y/m/d', (int) $certificate->created_at) : '—',
+                'download_url' => route('panel.v1.instructor.certificates.download', ['id' => $certificate->id]),
+                'view_url' => route('panel.v1.instructor.certificates.download', [
+                    'id' => $certificate->id,
+                    'view' => 1,
+                ]),
+            ];
+        })->values()->all();
+
+        $filterLabel = null;
+        if ($filterType === 'quiz' && $filterId) {
+            $filterLabel = \App\Models\Quiz::find($filterId)?->title;
+        } elseif ($filterType === 'courses' && $filterId) {
+            $filterLabel = \App\Models\Webinar::find($filterId)?->title;
+        } elseif ($filterType === 'bundles' && $filterId) {
+            $filterLabel = \App\Models\Bundle::find($filterId)?->title;
+        }
+
+        return $this->render(
+            $request,
+            'panel_v1.instructor.pages.certificates-students',
+            'جميع الشهادات الصادرة',
+            [
+                'certificateRows' => $rows,
+                'filterLabel' => $filterLabel,
+                'filterType' => $filterType,
+                'backUrl' => route('panel.v1.instructor.certificates'),
+                'totalCount' => count($rows),
+            ]
+        );
+    }
+
+    public function downloadCertificate(Request $request, int $id)
+    {
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $certificate = $this->teacherCertificatesQuery($user)->where('id', $id)->first();
+        if (empty($certificate)) {
+            abort(404);
+        }
+
+        $make = new \App\Mixins\Certificate\MakeCertificate();
+        $response = $make->showCertificateByType($certificate, $request->boolean('view'));
+
+        if (empty($response)) {
+            return redirect()
+                ->route('panel.v1.instructor.certificates.students')
+                ->with('toast', [
+                    'title' => 'تعذر التحميل',
+                    'msg' => 'تعذر إنشاء ملف الشهادة حالياً. حاول مرة أخرى.',
+                    'type' => 'error',
+                ]);
+        }
+
+        return $response;
+    }
+
+    private function teacherCertificatesQuery($user, ?string $type = null, ?int $typeItemId = null)
+    {
+        return \App\Models\Certificate::query()
+            ->where(function ($query) use ($user, $type, $typeItemId) {
+                if (empty($type) || $type === 'quiz') {
+                    $query->whereHas('quiz', function ($quizQuery) use ($user, $type, $typeItemId) {
+                        $quizQuery->where('creator_id', $user->id)
+                            ->where('status', \App\Models\Quiz::ACTIVE);
+
+                        if ($type === 'quiz' && $typeItemId) {
+                            $quizQuery->where('id', $typeItemId);
+                        }
+                    });
+                }
+
+                if (empty($type) || $type === 'courses') {
+                    $query->orWhereHas('webinar', function ($webinarQuery) use ($user, $type, $typeItemId) {
+                        $webinarQuery->where('status', 'active')
+                            ->where(function ($owner) use ($user) {
+                                $owner->where('creator_id', $user->id)
+                                    ->orWhere('teacher_id', $user->id);
+                            });
+
+                        if ($type === 'courses' && $typeItemId) {
+                            $webinarQuery->where('id', $typeItemId);
+                        }
+                    });
+                }
+
+                if (empty($type) || $type === 'bundles') {
+                    $query->orWhereHas('bundle', function ($bundleQuery) use ($user, $type, $typeItemId) {
+                        $bundleQuery->where('status', 'active')
+                            ->where(function ($owner) use ($user) {
+                                $owner->where('creator_id', $user->id)
+                                    ->orWhere('teacher_id', $user->id);
+                            });
+
+                        if ($type === 'bundles' && $typeItemId) {
+                            $bundleQuery->where('id', $typeItemId);
+                        }
+                    });
+                }
+            });
     }
 
     public function finance(Request $request)
@@ -4087,9 +4292,9 @@ class InstructorController extends Controller
 
     public function requestPayout(Request $request)
     {
-        $user = $request->user();
-        if (!$user || !$user->isTeacher()) {
-            return redirect('/login');
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
         }
 
         $readyPayout = $user->getPayout();
@@ -4099,7 +4304,7 @@ class InstructorController extends Controller
             return back()->with(['toast' => [
                 'title' => 'تعذر الطلب',
                 'msg' => 'الرصيد أقل من الحد الأدنى للسحب',
-                'status' => 'error',
+                'type' => 'error',
             ]]);
         }
 
@@ -4107,7 +4312,7 @@ class InstructorController extends Controller
             return back()->with(['toast' => [
                 'title' => 'تعذر الطلب',
                 'msg' => 'بياناتك المالية غير معتمدة من الإدارة بعد',
-                'status' => 'error',
+                'type' => 'error',
             ]]);
         }
 
@@ -4115,7 +4320,19 @@ class InstructorController extends Controller
             return back()->with(['toast' => [
                 'title' => 'تعذر الطلب',
                 'msg' => 'حدد حسابك البنكي من الإعدادات أولاً',
-                'status' => 'error',
+                'type' => 'error',
+            ]]);
+        }
+
+        $hasWaiting = \App\Models\Payout::where('user_id', $user->id)
+            ->where('status', \App\Models\Payout::$waiting)
+            ->exists();
+
+        if ($hasWaiting) {
+            return back()->with(['toast' => [
+                'title' => 'تعذر الطلب',
+                'msg' => 'لديك طلب سحب قيد المعالجة بالفعل',
+                'type' => 'error',
             ]]);
         }
 
@@ -4132,177 +4349,537 @@ class InstructorController extends Controller
             ->with('toast', ['title' => 'تم', 'msg' => 'تم تسجيل طلب السحب بنجاح', 'type' => 'success']);
     }
 
-    public function payouts(Request $request)    {
-        $guardUser = $request->user();
-
-        $summary = [
-            'available' => '0.00',
-            'total_income' => '0.00',
-            'next_payout' => '—',
-            'min_withdraw' => '—',
-            'held' => '0.00',
-        ];
-        $payoutRows = [];
-
-        if ($guardUser) {
-            try {
-                $summary['available'] = handlePrice($guardUser->getPayout());
-                $summary['total_income'] = handlePrice($guardUser->getIncome());
-            } catch (\Throwable $e) {
-            }
-
-            $statusLabels = ['waiting' => 'قيد المعالجة', 'done' => 'مكتمل', 'reject' => 'مرفوض'];
-
-            $payoutRows = \App\Models\Payout::where('user_id', $guardUser->id)
-                ->orderBy('id', 'desc')
-                ->limit(20)
-                ->get()
-                ->map(function ($payout) use ($statusLabels) {
-                    return [
-                        'id' => '#' . $payout->id,
-                        'datetime' => date('Y/m/d H:i', (int) $payout->created_at),
-                        'type_line1' => 'طلب سحب أرباح',
-                        'type_line2' => null,
-                        'amount' => handlePrice($payout->amount),
-                        'status' => $statusLabels[$payout->status] ?? $payout->status,
-                    ];
-                })->all();
+    public function payouts(Request $request)
+    {
+        $guardUser = $this->resolveInstructor($request);
+        if ($guardUser instanceof \Illuminate\Http\RedirectResponse) {
+            return $guardUser;
         }
+
+        $financialSettings = getFinancialSettings();
+        $minWithdraw = $financialSettings['minimum_payout'] ?? null;
+
+        $availableRaw = 0.0;
+        $incomeRaw = 0.0;
+        try {
+            $availableRaw = (float) $guardUser->getPayout();
+            $incomeRaw = (float) $guardUser->getIncome();
+        } catch (\Throwable $e) {
+        }
+
+        $heldRaw = (float) \App\Models\Payout::where('user_id', $guardUser->id)
+            ->where('status', \App\Models\Payout::$waiting)
+            ->sum('amount');
+
+        $nextWaiting = \App\Models\Payout::where('user_id', $guardUser->id)
+            ->where('status', \App\Models\Payout::$waiting)
+            ->orderBy('id')
+            ->first();
+
+        $selectedBank = $guardUser->selectedBank;
+        $bankLabel = $selectedBank->bank->title ?? null;
+
+        $query = $this->instructorPayoutsQuery($guardUser, $request);
+        $payouts = (clone $query)
+            ->with(['userSelectedBank.bank'])
+            ->orderByDesc('id')
+            ->limit(100)
+            ->get();
+
+        $statusMeta = [
+            'waiting' => ['label' => 'قيد المعالجة', 'tone' => 'warning'],
+            'done' => ['label' => 'مكتمل', 'tone' => 'success'],
+            'reject' => ['label' => 'مرفوض', 'tone' => 'danger'],
+        ];
+
+        $payoutRows = $payouts->map(function ($payout) use ($statusMeta) {
+            $meta = $statusMeta[$payout->status] ?? ['label' => $payout->status, 'tone' => 'muted'];
+            $bankTitle = $payout->userSelectedBank->bank->title ?? null;
+            $created = (int) ($payout->created_at ?? 0);
+
+            return [
+                'id' => '#' . $payout->id,
+                'raw_id' => $payout->id,
+                'datetime' => $created ? date('Y/m/d H:i', $created) : '—',
+                'date' => $created ? date('Y/m/d', $created) : '—',
+                'time' => $created ? date('H:i', $created) : '',
+                'type_line1' => 'طلب سحب أرباح',
+                'type_line2' => $bankTitle ? ('إلى: ' . $bankTitle) : null,
+                'amount' => handlePrice($payout->amount),
+                'amount_raw' => (float) $payout->amount,
+                'status' => $meta['label'],
+                'status_key' => $payout->status,
+                'status_tone' => $meta['tone'],
+                'bank' => $bankTitle ?? '—',
+                'note' => null,
+            ];
+        })->values()->all();
 
         return $this->render(
             $request,
             'panel_v1.instructor.pages.payouts',
             'ادارة المستحقات والسحب',
             [
-                'payoutSummary' => $summary,
+                'payoutSummary' => [
+                    'available' => handlePrice($availableRaw),
+                    'available_raw' => $availableRaw,
+                    'total_income' => handlePrice($incomeRaw),
+                    'held' => handlePrice($heldRaw),
+                    'next_payout' => $nextWaiting
+                        ? date('Y/m/d', (int) $nextWaiting->created_at)
+                        : 'لا يوجد طلب معلّق',
+                    'min_withdraw' => $minWithdraw !== null ? handlePrice($minWithdraw) : '—',
+                    'bank_label' => $bankLabel,
+                    'can_request' => $availableRaw > 0
+                        && (empty($minWithdraw) || $availableRaw >= (float) $minWithdraw)
+                        && (bool) $guardUser->financial_approval
+                        && !empty($selectedBank)
+                        && $heldRaw <= 0,
+                ],
                 'payoutRows' => $payoutRows,
+                'payoutFilters' => [
+                    'q' => trim((string) $request->get('q', '')),
+                    'status' => (string) $request->get('status', ''),
+                    'from' => (string) $request->get('from', ''),
+                    'to' => (string) $request->get('to', ''),
+                ],
+                'exportUrl' => route('panel.v1.instructor.payouts.export', array_filter([
+                    'q' => $request->get('q'),
+                    'status' => $request->get('status'),
+                    'from' => $request->get('from'),
+                    'to' => $request->get('to'),
+                ], fn ($v) => $v !== null && $v !== '')),
+                'settingsUrl' => route('panel.v1.instructor.settings'),
             ]
         );
     }
 
-    public function marketing(Request $request)
+    public function exportPayouts(Request $request)
     {
-        $user = $request->user();
-
-        $discountRows = [];
-        if ($user) {
-            $codes = \App\Models\Discount::where('creator_id', $user->id)
-                ->orderBy('id', 'desc')
-                ->limit(20)
-                ->get()
-                ->map(function ($discount) {
-                    return [
-                        'name' => $discount->title,
-                        'email' => 'كود: ' . $discount->code,
-                        'course' => 'كوبون خصم ' . $discount->percent . '%',
-                        'course_id' => $discount->id,
-                        'original_price' => '—',
-                        'discount' => $discount->percent . '%',
-                        'total' => '—',
-                        'net' => '—',
-                        'type' => 'كوبون',
-                        'date' => date('Y/m/d', (int) $discount->created_at),
-                        'time' => '',
-                    ];
-                })->all();
-
-            $discountRows = array_merge(
-                $codes,
-                \App\Models\Sale::with(['buyer', 'webinar'])
-                ->where('seller_id', $user->id)
-                ->whereNull('refund_at')
-                ->where(function ($query) {
-                    $query->where('discount', '>', 0)->orWhereNotNull('promotion_id');
-                })
-                ->orderBy('id', 'desc')
-                ->limit(20)
-                ->get()
-                ->map(function ($sale) {
-                    return [
-                        'name' => $sale->buyer->full_name ?? '',
-                        'email' => $sale->buyer->email ?? '',
-                        'course' => $sale->webinar->title ?? $sale->type,
-                        'course_id' => $sale->webinar_id ?? $sale->id,
-                        'original_price' => handlePrice($sale->amount),
-                        'discount' => handlePrice($sale->discount),
-                        'total' => handlePrice($sale->total_amount),
-                        'net' => handlePrice($sale->total_amount - ($sale->commission ?? 0)),
-                        'type' => 'خصم',
-                        'date' => date('Y/m/d', (int) $sale->created_at),
-                        'time' => date('H:i', (int) $sale->created_at),
-                    ];
-                })->all()
-            );
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
         }
 
-        // Real promotions / coupons - if tables exist
-        $couponRows = $discountRows; // coupons are discounts with codes
-        $promoRows = [];
-        try {
-            $promoRows = \App\Models\Promotion::where('creator_id',$user->id)->orderBy('id','desc')->limit(20)->get()->map(fn($p)=>[
-                'name'=>$p->title ?? 'ترويج #'.$p->id,
-                'email'=>'',
-                'course'=> $p->webinar->title ?? '',
-                'course_id'=>$p->webinar_id ?? $p->id,
-                'original_price'=>'—',
-                'discount'=> $p->discount ?? '—',
-                'total'=>'—',
-                'net'=>'—',
-                'type'=>'ترويج',
-                'date'=>date('Y/m/d',(int)$p->created_at),
-                'time'=>'',
-            ])->all();
-        } catch(\Throwable $e) {}
+        $payouts = $this->instructorPayoutsQuery($user, $request)
+            ->with(['userSelectedBank.bank'])
+            ->orderByDesc('id')
+            ->limit(1000)
+            ->get();
+
+        $fileName = 'payouts_' . date('Ymd_His') . '.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\InstructorPayoutExport($payouts),
+            $fileName
+        );
+    }
+
+    private function instructorPayoutsQuery($user, Request $request)
+    {
+        $query = \App\Models\Payout::query()->where('user_id', $user->id);
+
+        $q = trim((string) $request->get('q', ''));
+        if ($q !== '') {
+            $id = (int) ltrim($q, '#');
+
+            if (preg_match('/^#?\d+$/', $q) && $id > 0) {
+                $query->where('id', $id);
+            } else {
+                $matchedBankIds = \App\Models\UserBank::query()
+                    ->get()
+                    ->filter(fn ($bank) => mb_stripos((string) $bank->title, $q) !== false)
+                    ->pluck('id')
+                    ->all();
+
+                $query->where(function ($builder) use ($q, $matchedBankIds) {
+                    $builder->where('amount', 'like', '%' . $q . '%');
+
+                    if (!empty($matchedBankIds)) {
+                        $builder->orWhereHas('userSelectedBank', function ($bankQuery) use ($matchedBankIds) {
+                            $bankQuery->whereIn('user_bank_id', $matchedBankIds);
+                        });
+                    }
+                });
+            }
+        }
+
+        $status = (string) $request->get('status', '');
+        if (in_array($status, [
+            \App\Models\Payout::$waiting,
+            \App\Models\Payout::$done,
+            \App\Models\Payout::$reject,
+        ], true)) {
+            $query->where('status', $status);
+        }
+
+        $from = trim((string) $request->get('from', ''));
+        $to = trim((string) $request->get('to', ''));
+        if ($from !== '' || $to !== '') {
+            fromAndToDateFilter($from ?: null, $to ?: null, $query, 'created_at');
+        }
+
+        return $query;
+    }
+
+    public function marketing(Request $request)
+    {
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $now = time();
+        $courseOptions = $this->teacherWebinars($user)
+            ->filter(fn ($webinar) => ($webinar->status ?? '') === 'active')
+            ->map(fn ($webinar) => [
+                'id' => $webinar->id,
+                'title' => $webinar->title,
+            ])
+            ->values()
+            ->all();
+
+        $webinarIds = collect($courseOptions)->pluck('id')->all();
+
+        $couponRows = \App\Models\Discount::query()
+            ->where('creator_id', $user->id)
+            ->orderByDesc('id')
+            ->limit(40)
+            ->get()
+            ->map(function ($discount) use ($now) {
+                $active = ($discount->status ?? 'active') === 'active'
+                    && (int) ($discount->expired_at ?? 0) > $now;
+
+                return [
+                    'name' => $discount->title ?: ('قسيمة #' . $discount->id),
+                    'email' => 'كود: ' . ($discount->code ?? '—'),
+                    'course' => $discount->source === 'course' ? 'مخصص لدورات' : 'عام',
+                    'course_id' => $discount->id,
+                    'original_price' => '—',
+                    'discount' => ((int) $discount->percent) . '%',
+                    'total' => 'استخدام: ' . (int) ($discount->count ?? 0),
+                    'net' => $active ? 'مفعّلة' : 'منتهية',
+                    'type' => 'قسيمة',
+                    'date' => date('Y/m/d', (int) $discount->created_at),
+                    'time' => 'حتى ' . date('Y/m/d', (int) $discount->expired_at),
+                    'status_tone' => $active ? 'success' : 'muted',
+                ];
+            })
+            ->values()
+            ->all();
+
+        $discountRows = empty($webinarIds)
+            ? []
+            : \App\Models\SpecialOffer::query()
+                ->with('webinar')
+                ->whereIn('webinar_id', $webinarIds)
+                ->orderByDesc('id')
+                ->limit(40)
+                ->get()
+                ->map(function ($offer) use ($now) {
+                    $active = ($offer->status ?? '') === \App\Models\SpecialOffer::$active
+                        && (int) ($offer->to_date ?? 0) >= $now;
+
+                    return [
+                        'name' => $offer->name ?: ('تخفيض #' . $offer->id),
+                        'email' => $active ? 'نشط الآن' : 'غير نشط',
+                        'course' => $offer->webinar->title ?? 'دورة',
+                        'course_id' => $offer->webinar_id ?? $offer->id,
+                        'original_price' => '—',
+                        'discount' => ((float) $offer->percent) . '%',
+                        'total' => date('Y/m/d', (int) $offer->from_date) . ' → ' . date('Y/m/d', (int) $offer->to_date),
+                        'net' => $active ? 'ساري' : 'منتهٍ',
+                        'type' => 'تخفيض دورة',
+                        'date' => date('Y/m/d', (int) $offer->created_at),
+                        'time' => '',
+                        'status_tone' => $active ? 'success' : 'muted',
+                    ];
+                })
+                ->values()
+                ->all();
+
+        $promoSales = \App\Models\Sale::query()
+            ->with(['webinar', 'promotion'])
+            ->where('buyer_id', $user->id)
+            ->where('type', \App\Models\Sale::$promotion)
+            ->whereNull('refund_at')
+            ->orderByDesc('id')
+            ->limit(40)
+            ->get();
+
+        $promoRows = $promoSales->map(function ($sale) {
+            $promo = $sale->promotion;
+
+            return [
+                'name' => $promo->title ?? ('خطة ترويج #' . $sale->id),
+                'email' => ($promo->days ?? 0) ? ((int) $promo->days . ' يوم') : '',
+                'course' => $sale->webinar->title ?? '—',
+                'course_id' => $sale->webinar_id ?? $sale->id,
+                'original_price' => handlePrice($sale->amount),
+                'discount' => '—',
+                'total' => handlePrice($sale->total_amount),
+                'net' => 'مفعّلة',
+                'type' => 'ترويج',
+                'date' => date('Y/m/d', (int) $sale->created_at),
+                'time' => date('H:i', (int) $sale->created_at),
+                'status_tone' => 'success',
+            ];
+        })->values()->all();
+
+        // If instructor has no purchased promos yet, show available catalog plans for clarity.
+        if (empty($promoRows)) {
+            $promoRows = \App\Models\Promotion::query()
+                ->orderByDesc('is_popular')
+                ->orderBy('price')
+                ->limit(20)
+                ->get()
+                ->map(function ($promo) {
+                    return [
+                        'name' => $promo->title ?: ('خطة #' . $promo->id),
+                        'email' => ((int) ($promo->days ?? 0)) . ' يوم',
+                        'course' => 'متاحة للشراء/الطلب',
+                        'course_id' => $promo->id,
+                        'original_price' => handlePrice($promo->price),
+                        'discount' => !empty($promo->is_popular) ? 'الأكثر طلباً' : '—',
+                        'total' => handlePrice($promo->price),
+                        'net' => 'متاحة',
+                        'type' => 'خطة ترويج',
+                        'date' => date('Y/m/d', (int) ($promo->created_at ?? time())),
+                        'time' => '',
+                        'status_tone' => 'warning',
+                    ];
+                })
+                ->values()
+                ->all();
+        }
+
+        $promotionPlans = \App\Models\Promotion::query()
+            ->orderByDesc('is_popular')
+            ->orderBy('price')
+            ->get()
+            ->map(fn ($promo) => [
+                'id' => $promo->id,
+                'title' => $promo->title,
+                'price' => handlePrice($promo->price),
+                'days' => (int) ($promo->days ?? 0),
+            ])
+            ->values()
+            ->all();
+
+        $marketingDept = \App\Models\SupportDepartment::query()
+            ->get()
+            ->first(fn ($dept) => mb_stripos((string) $dept->title, 'market') !== false
+                || mb_stripos((string) $dept->title, 'تسويق') !== false);
 
         return $this->render(
             $request,
             'panel_v1.instructor.pages.marketing',
             'إدارة التسويق والعروض',
             [
-                'marketingActions' => [
-                    ['title' => 'إنشاء قسيمة خصم جديدة', 'subtitle' => 'إنشاء كوبون لطلابك', 'href' => '#'],
-                    ['title' => 'إنشاء تخفيض لدورتك', 'subtitle' => 'تخفيض مباشر على الدورة', 'href' => '#'],
-                    ['title' => 'إنشاء خطط ترويجية', 'subtitle' => 'حملة تسويقية', 'href' => '#'],
-                ],
+                'couponRows' => $couponRows,
                 'discountRows' => $discountRows,
                 'promoRows' => $promoRows,
-                'couponRows' => $couponRows,
+                'courseOptions' => $courseOptions,
+                'promotionPlans' => $promotionPlans,
+                'marketingDepartmentId' => $marketingDept->id ?? null,
+                'couponCount' => count($couponRows),
+                'offerCount' => count($discountRows),
+                'promoCount' => count($promoRows),
             ]
         );
     }
 
     public function discountStore(Request $request)
     {
-        $user = $request->user();
-        if (!$user || !$user->isTeacher()) {
-            return redirect('/login');
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
         }
 
         $request->validate([
             'title' => 'required|string|max:255',
             'percent' => 'required|integer|min:1|max:100',
+            'webinar_id' => 'nullable|integer',
+            'count' => 'nullable|integer|min:1|max:10000',
+            'days' => 'nullable|integer|min:1|max:365',
+        ], [
+            'title.required' => 'أدخل عنوان القسيمة',
+            'percent.required' => 'أدخل نسبة الخصم',
         ]);
+
+        $webinarId = (int) $request->input('webinar_id', 0);
+        if ($webinarId > 0) {
+            $this->teacherOwnedWebinarOrFail($user, $webinarId);
+        }
 
         do {
             $code = strtoupper(\Illuminate\Support\Str::random(8));
         } while (\App\Models\Discount::where('code', $code)->exists());
 
-        \App\Models\Discount::create([
+        $days = max(1, (int) $request->input('days', 30));
+        $source = $webinarId > 0 ? \App\Models\Discount::$discountSourceCourse : \App\Models\Discount::$discountSourceAll;
+
+        $discount = \App\Models\Discount::create([
             'creator_id' => $user->id,
             'title' => $request->input('title'),
-            'discount_type' => 'percentage',
-            'source' => 'all',
+            'discount_type' => \App\Models\Discount::$discountTypePercentage,
+            'source' => $source,
             'code' => $code,
             'percent' => (int) $request->input('percent'),
-            'count' => 100,
+            'count' => max(1, (int) $request->input('count', 100)),
             'user_type' => 'all_users',
-            'expired_at' => time() + 30 * 86400,
+            'status' => 'active',
+            'expired_at' => time() + ($days * 86400),
+            'created_at' => time(),
+        ]);
+
+        if ($webinarId > 0) {
+            \App\Models\DiscountCourse::create([
+                'discount_id' => $discount->id,
+                'course_id' => $webinarId,
+            ]);
+        }
+
+        return redirect()
+            ->route('panel.v1.instructor.marketing', ['tab' => 'coupons'])
+            ->with('toast', [
+                'title' => 'تم',
+                'msg' => 'تم إنشاء قسيمة الخصم: ' . $code,
+                'type' => 'success',
+            ]);
+    }
+
+    public function specialOfferStore(Request $request)
+    {
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'webinar_id' => 'required|integer',
+            'percent' => 'required|numeric|min:1|max:100',
+            'from_date' => 'required|date',
+            'to_date' => 'required|date|after_or_equal:from_date',
+        ], [
+            'title.required' => 'أدخل عنوان التخفيض',
+            'webinar_id.required' => 'اختر الدورة',
+            'percent.required' => 'أدخل نسبة التخفيض',
+            'to_date.after_or_equal' => 'تاريخ النهاية يجب أن يكون بعد البداية',
+        ]);
+
+        $webinarId = (int) $request->input('webinar_id');
+        $this->teacherOwnedWebinarOrFail($user, $webinarId);
+
+        $hasActive = \App\Models\SpecialOffer::query()
+            ->where('webinar_id', $webinarId)
+            ->where('status', \App\Models\SpecialOffer::$active)
+            ->where('to_date', '>=', time())
+            ->exists();
+
+        if ($hasActive) {
+            return back()->with('toast', [
+                'title' => 'تعذر الإنشاء',
+                'msg' => 'هذه الدورة لديها تخفيض نشط بالفعل',
+                'type' => 'error',
+            ]);
+        }
+
+        $from = strtotime($request->input('from_date') . ' 00:00:00');
+        $to = strtotime($request->input('to_date') . ' 23:59:59');
+
+        \App\Models\SpecialOffer::create([
+            'creator_id' => $user->id,
+            'name' => $request->input('title'),
+            'webinar_id' => $webinarId,
+            'percent' => (float) $request->input('percent'),
+            'status' => \App\Models\SpecialOffer::$active,
+            'created_at' => time(),
+            'from_date' => $from,
+            'to_date' => $to,
+        ]);
+
+        return redirect()
+            ->route('panel.v1.instructor.marketing', ['tab' => 'offers'])
+            ->with('toast', [
+                'title' => 'تم',
+                'msg' => 'تم إنشاء تخفيض الدورة بنجاح',
+                'type' => 'success',
+            ]);
+    }
+
+    public function promotionRequestStore(Request $request)
+    {
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $request->validate([
+            'promotion_id' => 'required|integer|exists:promotions,id',
+            'webinar_id' => 'required|integer',
+            'message' => 'nullable|string|max:2000',
+        ], [
+            'promotion_id.required' => 'اختر الخطة الترويجية',
+            'webinar_id.required' => 'اختر الدورة',
+        ]);
+
+        $webinarId = (int) $request->input('webinar_id');
+        $webinar = $this->teacherOwnedWebinarOrFail($user, $webinarId);
+        $promotion = \App\Models\Promotion::findOrFail((int) $request->input('promotion_id'));
+
+        $department = \App\Models\SupportDepartment::query()
+            ->get()
+            ->first(fn ($dept) => mb_stripos((string) $dept->title, 'market') !== false
+                || mb_stripos((string) $dept->title, 'تسويق') !== false);
+
+        if (empty($department)) {
+            $department = \App\Models\SupportDepartment::query()->orderBy('id')->first();
+        }
+
+        if (empty($department)) {
+            return back()->with('toast', [
+                'title' => 'تعذر الإرسال',
+                'msg' => 'لا يوجد قسم دعم لاستقبال الطلب',
+                'type' => 'error',
+            ]);
+        }
+
+        $title = 'طلب خطة ترويجية: ' . ($promotion->title ?: ('#' . $promotion->id));
+        $body = trim(implode("\n", array_filter([
+            'خطة: ' . ($promotion->title ?: ('#' . $promotion->id)),
+            'المدة: ' . ((int) ($promotion->days ?? 0)) . ' يوم',
+            'السعر: ' . handlePrice($promotion->price),
+            'الدورة: ' . ($webinar->title ?? ('#' . $webinarId)),
+            'معرّف الدورة: ' . $webinarId,
+            $request->input('message') ? ('ملاحظة: ' . $request->input('message')) : null,
+        ])));
+
+        $support = \App\Models\Support::create([
+            'user_id' => $user->id,
+            'department_id' => $department->id,
+            'title' => $title,
+            'status' => 'open',
+            'created_at' => time(),
+            'updated_at' => time(),
+        ]);
+
+        \App\Models\SupportConversation::create([
+            'support_id' => $support->id,
+            'sender_id' => $user->id,
+            'message' => $body,
+            'attach' => null,
             'created_at' => time(),
         ]);
 
         return redirect()
-            ->route('panel.v1.instructor.marketing')
-            ->with('toast', ['title' => 'تم', 'msg' => 'تم إنشاء كود الخصم: ' . $code, 'type' => 'success']);
+            ->route('panel.v1.instructor.support.conversations', ['id' => $support->id])
+            ->with('toast', [
+                'title' => 'تم',
+                'msg' => 'تم فتح طلب للفريق المختص بنجاح',
+                'type' => 'success',
+            ]);
     }
 
     public function support(Request $request)
@@ -4971,10 +5548,24 @@ class InstructorController extends Controller
             ->with('toast', ['title' => 'تم', 'msg' => 'تم حفظ الإعدادات بنجاح', 'type' => 'success']);
     }
 
+    private function teacherOwnedWebinarOrFail($user, int $webinarId): Webinar
+    {
+        return Webinar::query()
+            ->where('id', $webinarId)
+            ->where(function ($query) use ($user) {
+                $query->where('teacher_id', $user->id)
+                    ->orWhere('creator_id', $user->id);
+            })
+            ->firstOrFail();
+    }
+
     private function teacherWebinarOrFail($user, string $slug)
     {
         return Webinar::where('slug', $slug)
-            ->where('teacher_id', $user->id)
+            ->where(function ($query) use ($user) {
+                $query->where('teacher_id', $user->id)
+                    ->orWhere('creator_id', $user->id);
+            })
             ->firstOrFail();
     }
 
@@ -4995,7 +5586,10 @@ class InstructorController extends Controller
     private function teacherWebinars($user)
     {
         return Webinar::with(['category', 'sessions', 'files', 'textLessons'])
-            ->where('teacher_id', $user->id)
+            ->where(function ($query) use ($user) {
+                $query->where('teacher_id', $user->id)
+                    ->orWhere('creator_id', $user->id);
+            })
             ->orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")
             ->orderBy('id', 'desc')
             ->get();

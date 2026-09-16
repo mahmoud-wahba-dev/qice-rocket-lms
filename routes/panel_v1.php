@@ -202,16 +202,31 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 ->name('instructor.comments.report');
             Route::get('/instructor/certificates', [InstructorController::class, 'certificates'])
                 ->name('instructor.certificates');
+            Route::get('/instructor/certificates/students', [InstructorController::class, 'certificatesStudents'])
+                ->name('instructor.certificates.students');
+            Route::get('/instructor/certificates/students/{id}/download', [InstructorController::class, 'downloadCertificate'])
+                ->whereNumber('id')
+                ->name('instructor.certificates.download');
+            Route::get('/instructor/certificates/{type}/{id}', [InstructorController::class, 'certificatesStudents'])
+                ->where('type', 'quiz|courses|bundles')
+                ->whereNumber('id')
+                ->name('instructor.certificates.details');
             Route::get('/instructor/finance', [InstructorController::class, 'finance'])
                 ->name('instructor.finance');
             Route::get('/instructor/payouts', [InstructorController::class, 'payouts'])
                 ->name('instructor.payouts');
             Route::post('/instructor/payouts/request', [InstructorController::class, 'requestPayout'])
                 ->name('instructor.payouts.request');
+            Route::get('/instructor/payouts/export', [InstructorController::class, 'exportPayouts'])
+                ->name('instructor.payouts.export');
             Route::get('/instructor/marketing', [InstructorController::class, 'marketing'])
                 ->name('instructor.marketing');
             Route::post('/instructor/discounts', [InstructorController::class, 'discountStore'])
                 ->name('instructor.discounts.store');
+            Route::post('/instructor/special-offers', [InstructorController::class, 'specialOfferStore'])
+                ->name('instructor.special-offers.store');
+            Route::post('/instructor/promotions/request', [InstructorController::class, 'promotionRequestStore'])
+                ->name('instructor.promotions.request');
             Route::get('/instructor/support', [InstructorController::class, 'support'])
                 ->name('instructor.support');
             Route::post('/instructor/support', [InstructorController::class, 'storeSupport'])
