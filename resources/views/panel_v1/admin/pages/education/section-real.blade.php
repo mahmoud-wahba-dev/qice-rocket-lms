@@ -55,7 +55,16 @@
                         <tr class="border-b border-d9 last:border-0">
                             <td class="px-4 py-3 font-bold text-primary">{{ $c->title }}</td>
                             <td class="px-4 py-3 text-center">{{ $c->category->title ?? '' }}</td>
-                            <td class="px-4 py-3 text-center"><span @class(['inline-flex rounded-full px-2.5 py-1 font-semibold text-11px','bg-[#D1FAE5] text-[#059669]'=>$c->status=='active','bg-[#FEF3C7] text-[#D97706]'=>$c->status=='pending','bg-[#FEE2E2] text-[#DC2626]'=>$c->status=='inactive','bg-[#EFF6FF] text-[#2563EB]'=>!in_array($c->status,['active','pending','inactive'],'')])>{{ $c->status }}</span></td>
+                            @php
+                                $courseStatusLabel = match ($c->status) {
+                                    'active' => 'نشط',
+                                    'pending' => 'بانتظار المراجعة',
+                                    'is_draft' => 'مسودة',
+                                    'inactive' => 'مرفوض',
+                                    default => $c->status ?: '—',
+                                };
+                            @endphp
+                            <td class="px-4 py-3 text-center"><span @class(['inline-flex rounded-full px-2.5 py-1 font-semibold text-11px','bg-[#D1FAE5] text-[#059669]'=>$c->status=='active','bg-[#FEF3C7] text-[#D97706]'=>$c->status=='pending','bg-[#FEE2E2] text-[#DC2626]'=>$c->status=='inactive','bg-[#EFF6FF] text-[#2563EB]'=>$c->status=='is_draft' || !in_array($c->status,['active','pending','inactive','is_draft'], true)])>{{ $courseStatusLabel }}</span></td>
                             <td class="px-4 py-3 text-center">{{ $c->price ? handlePrice($c->price) : 'مجانية' }}</td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center justify-center gap-1.5 flex-wrap">

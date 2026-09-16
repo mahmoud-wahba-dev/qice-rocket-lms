@@ -3,7 +3,6 @@
     $userName = $authUser->full_name ?? ($authUser->name ?? 'علا محمد');
     $current = $adminCurrentDashboard ?? ['label' => 'لوحة الإدارة', 'icon' => 'icon-[tabler--layout-dashboard]'];
     $dashboards = $adminDashboards ?? [];
-    $cta = $adminCta ?? null;
 @endphp
 
 <nav class="navbar min-h-14 py-0 px-2 sm:px-4 bg-white items-center gap-2">
@@ -46,35 +45,6 @@
     </div>
 
     <div class="navbar-end gap-0.5 sm:gap-1 !flex !items-center">
-        @if (!empty($cta))
-            <a href="{{ $cta['href'] }}"
-                class="hidden sm:inline-flex items-center justify-center h-11 px-4 rounded-12px bg-color2 text-white font-semibold text-14px hover:opacity-95 transition">
-                {{ $cta['label'] }}
-            </a>
-        @endif
-
-        <div class="relative inline-flex shrink-0" data-admin-menu>
-            <button type="button" data-admin-menu-toggle
-                class="btn btn-text btn-square btn-sm text-primary !inline-flex !items-center !justify-center"
-                aria-haspopup="menu" aria-expanded="false" aria-label="اللغة">
-                <span class="icon-[tabler--world] size-5"></span>
-            </button>
-            <div data-admin-menu-panel hidden
-                class="absolute top-[calc(100%+8px)] end-0 min-w-44 py-2 rounded-12px border border-d9 bg-white shadow-xl z-[80]"
-                role="menu">
-                <form method="POST" action="{{ route('appLocaleRoute') }}">
-                    @csrf
-                    <input type="hidden" name="previous_url" value="{{ url()->current() }}">
-                    @foreach (($generalSettings['user_languages'] ?? [app()->getLocale()]) as $locale)
-                        <button type="submit" name="locale" value="{{ $locale }}"
-                            class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary w-full text-start hover:bg-[#FAFAF4] {{ mb_strtolower($locale) === mb_strtolower(app()->getLocale()) ? 'bg-primary/5 font-bold' : '' }}">
-                            {{ mb_strtoupper($locale) }}
-                        </button>
-                    @endforeach
-                </form>
-            </div>
-        </div>
-
         @php
             $navbarNotifications = collect($unReadNotifications ?? []);
             $unreadCount = $navbarNotifications->count();

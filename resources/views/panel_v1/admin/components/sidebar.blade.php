@@ -1,7 +1,8 @@
 @php
+    // Match instructor sidebar typography (text-16px links + section titles)
     $navLink = 'admin-nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-10px text-e8 font-medium text-16px hover:bg-white/10 transition-colors';
     $navActive = 'bg-[#03B5A14A]';
-    $navTitle = 'admin-nav-section px-3 pt-3 pb-1.5 text-color2 text-13px font-semibold tracking-widest whitespace-nowrap overflow-hidden transition-all duration-300';
+    $navTitle = 'admin-nav-section px-3 pt-4 first:pt-1 pb-2 text-color2 text-16px font-medium whitespace-nowrap overflow-hidden transition-all duration-300';
     $activeKey = $adminActive ?? 'home';
     $groups = $adminNav ?? [];
 @endphp
@@ -66,7 +67,7 @@
                                     <a href="{{ $href }}"
                                         data-tooltip="{{ $item['label'] }}"
                                         aria-label="{{ $item['label'] }}"
-                                        class="{{ $navLink }} {{ $isActive ? $navActive : '' }} !py-2 !text-14px">
+                                        class="{{ $navLink }} {{ $isActive ? $navActive : '' }}">
                                         <span class="{{ $item['icon'] ?? 'icon-[tabler--circle]' }} size-5 shrink-0 text-white"></span>
                                         <span class="admin-nav-label whitespace-nowrap overflow-hidden transition-all duration-300" data-sidebar-label>{{ $item['label'] }}</span>
                                     </a>
@@ -76,19 +77,13 @@
                     </div>
                 @endforeach
 
-                {{-- عام — ثابت بدون أكورديون --}}
+                {{-- عام — ثابت بدون أكورديون (بدون اللوحة القديمة) --}}
                 <div class="mt-4 pt-4 border-t border-white/10">
                     <p class="{{ $navTitle }}" data-sidebar-section>عام</p>
-                    <ul class="flex flex-col gap-1 mt-1">
+                    <ul class="flex flex-col gap-1 mt-1 mb-8">
                         <li>
-                            <a href="/panel" data-tooltip="اللوحة القديمة" aria-label="اللوحة القديمة" class="{{ $navLink }} !py-2 !text-14px">
-                                <span class="icon-[tabler--layout-dashboard] size-5 shrink-0 text-white"></span>
-                                <span class="admin-nav-label" data-sidebar-label>اللوحة القديمة</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="/logout" data-tooltip="تسجيل الخروج" aria-label="تسجيل الخروج" class="{{ $navLink }} !py-2 !text-14px text-[#FCA5A5] hover:text-white">
-                                <span class="icon-[tabler--logout] size-5 shrink-0 text-[#FCA5A5]"></span>
+                            <a href="/logout" data-tooltip="تسجيل الخروج" aria-label="تسجيل الخروج" class="{{ $navLink }} text-[#F87171]">
+                                <span class="icon-[tabler--logout] size-5 shrink-0 text-[#EF4444]"></span>
                                 <span class="admin-nav-label" data-sidebar-label>تسجيل الخروج</span>
                             </a>
                         </li>

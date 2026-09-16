@@ -12,39 +12,101 @@ class EducationController extends AdminController
 {
     public function home(Request $request)
     {
+        $activeCount = (int) \App\Models\Webinar::where('status', 'active')->count();
+        $pendingCount = (int) \App\Models\Webinar::where('status', 'pending')->count();
+        $draftCount = (int) \App\Models\Webinar::where('status', 'is_draft')->count();
+        $inactiveCount = (int) \App\Models\Webinar::where('status', 'inactive')->count();
+
         $stats = [
-            ['label'=>'إجمالي الدورات','value'=>(string)\App\Models\Webinar::count()],
-            ['label'=>'نشطة','value'=>(string)\App\Models\Webinar::where('status','active')->count()],
-            ['label'=>'بانتظار المراجعة','value'=>(string)\App\Models\Webinar::where('status','pending')->count()],
-            ['label'=>'مسودات','value'=>(string)\App\Models\Webinar::where('status','is_draft')->count()],
-            ['label'=>'الباقات','value'=>(string)\App\Models\Bundle::count()],
-            ['label'=>'الجلسات المباشرة','value'=>(string)\App\Models\Session::count()],
+            ['label' => 'إجمالي الدورات', 'value' => (string) \App\Models\Webinar::count()],
+            ['label' => 'نشطة', 'value' => (string) $activeCount],
+            ['label' => 'بانتظار المراجعة', 'value' => (string) $pendingCount],
+            ['label' => 'مسودات', 'value' => (string) $draftCount],
+            ['label' => 'الباقات', 'value' => (string) \App\Models\Bundle::count()],
+            ['label' => 'الجلسات المباشرة', 'value' => (string) \App\Models\Session::count()],
         ];
-        $latestCourses = \App\Models\Webinar::with(['category'])->orderBy('id','desc')->limit(5)->get()->map(fn($w)=>[
-            'title'=>$w->title,
-            'category'=>$w->category->title ?? '',
-            'status'=>$w->status,
-            'statusTone'=> $w->status==='active' ? 'success' : 'danger',
-            'type'=> $w->type ?? $w->category->title ?? 'دورة',
-            'price'=> $w->price ? handlePrice($w->price) : 'مجانية',
-        ])->all();
+
+        $latestCourses = \App\Models\Webinar::with(['category'])->orderBy('id', 'desc')->limit(5)->get()->map(function ($w) {
+            $statusMeta = $this->webinarStatusMeta($w->status);
+
+            return [
+                'title' => $w->title,
+                'category' => $w->category->title ?? '',
+                'status' => $statusMeta['label'],
+                'statusTone' => $statusMeta['tone'],
+                'type' => $w->type ?? $w->category->title ?? 'دورة',
+                'price' => $w->price ? handlePrice($w->price) : 'مجانية',
+            ];
+        })->all();
+
+        $activityChart = $this->buildAcademicActivityChart();
 
         return $this->renderAdmin(
             $request,
             'panel_v1.admin.pages.education.home',
             'لوحة التعليم والأكاديميات',
-            array_merge(AdminMockData::shell('education','home'), [
-                'welcomeTitle'=>'مرحباً بك في لوحة التعليم',
-                'welcomeSubtitle'=>'نظرة عامة على الأكاديميات والدورات',
-                'stats'=>$stats,
-                'statsCards'=>$stats,
-                'latestCourses'=>$latestCourses,
-                'chartMetrics'=>[
-                    ['label'=>'نشطة','value'=>\App\Models\Webinar::where('status','active')->count()],
-                    ['label'=>'قيد المراجعة','value'=>\App\Models\Webinar::where('status','pending')->count()],
+            array_merge(AdminMockData::shell('education', 'home'), [
+                'welcomeTitle' => 'مرحباً بك في لوحة التعليم',
+                'welcomeSubtitle' => 'نظرة عامة على الأكاديميات والدورات',
+                'stats' => $stats,
+                'statsCards' => $stats,
+                'latestCourses' => $latestCourses,
+                'activityChart' => $activityChart,
+                'chartMetrics' => [
+                    ['label' => 'نشطة', 'value' => $activeCount],
+                    ['label' => 'قيد المراجعة', 'value' => $pendingCount],
+                    ['label' => 'مسودات', 'value' => $draftCount],
+                    ['label' => 'مرفوضة', 'value' => $inactiveCount],
                 ],
             ])
         );
+    }
+
+    /** @return array{label: string, tone: string} */
+    private function webinarStatusMeta(?string $status): array
+    {
+        return match ($status) {
+            'active' => ['label' => 'نشط', 'tone' => 'success'],
+            'pending' => ['label' => 'بانتظار المراجعة', 'tone' => 'warning'],
+            'is_draft' => ['label' => 'مسودة', 'tone' => 'info'],
+            'inactive' => ['label' => 'مرفوض', 'tone' => 'danger'],
+            default => ['label' => $status ?: '—', 'tone' => 'info'],
+        };
+    }
+
+    /** Last 7 days enrollments + new courses for ApexCharts (unix timestamps). */
+    private function buildAcademicActivityChart(): array
+    {
+        $dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        $labels = [];
+        $enrollments = [];
+        $newCourses = [];
+
+        $todayStart = strtotime('today');
+
+        for ($i = 6; $i >= 0; $i--) {
+            $start = $todayStart - ($i * 86400);
+            $end = $start + 86399;
+            $labels[] = $dayNames[(int) date('w', $start)];
+
+            $enrollments[] = (int) \App\Models\Sale::query()
+                ->whereNotNull('webinar_id')
+                ->whereNull('refund_at')
+                ->whereBetween('created_at', [$start, $end])
+                ->count();
+
+            $newCourses[] = (int) \App\Models\Webinar::query()
+                ->whereBetween('created_at', [$start, $end])
+                ->count();
+        }
+
+        return [
+            'labels' => $labels,
+            'series' => [
+                ['name' => 'التسجيلات', 'data' => $enrollments],
+                ['name' => 'دورات جديدة', 'data' => $newCourses],
+            ],
+        ];
     }
 
     public function section(Request $request, string $section)

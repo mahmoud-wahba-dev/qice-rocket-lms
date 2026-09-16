@@ -60,6 +60,7 @@
 
         {{-- ---------- SIDEBAR ---------- --}}
         @include('panel_v1.admin.components.sidebar')
+        @include('panel_v1.admin.components.icon-safelist')
         <div id="admin-sidebar-backdrop"
             class="fixed inset-0 z-[55] bg-black/40 opacity-0 pointer-events-none transition-opacity duration-300 ease-out lg:hidden"
             data-admin-sidebar-close

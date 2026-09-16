@@ -4,8 +4,8 @@
 <section class="pt-10 pb-16">
     <div class="container">
         <div class="mb-14">
-            <h1 class="font-extrabold text-36px text-primary mb-3">لوحة الإدارة</h1>
-            <p class="font-semibold text-20px text-gray">نظرة عامة على المنصة — الإدارة التفصيلية في <a href="{{ getAdminPanelUrl('/') }}" class="text-primary font-bold">اللوحة القديمة</a></p>
+            <h1 class="font-semibold text-24px text-black mb-1">لوحة الإدارة</h1>
+            <p class="font-medium text-16px text-gray">نظرة عامة على المنصة</p>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">

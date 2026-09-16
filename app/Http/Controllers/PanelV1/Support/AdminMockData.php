@@ -45,9 +45,7 @@ class AdminMockData
             'adminCurrentDashboard' => $current,
             'adminNav' => self::nav($dashboard),
             'adminActive' => $active ?? 'home',
-            'adminCta' => $dashboard === 'education'
-                ? ['label' => '+ إنشاء دورة جديدة', 'href' => route('panel.v1.admin.education.section', ['section' => 'courses'])]
-                : null,
+            'adminCta' => null,
         ];
     }
 
