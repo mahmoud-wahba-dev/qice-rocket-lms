@@ -20,19 +20,20 @@ jobs:
       # 1. Checkout source code
       # --------------------------------------------------
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # --------------------------------------------------
       # 2. Build frontend assets on GitHub
       # --------------------------------------------------
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
 
       - name: Install frontend dependencies
         run: npm ci
+        # Requires package-lock.json in sync with package.json (missing deps break CI)
 
       - name: Build landing assets
         run: npm run build:landing
