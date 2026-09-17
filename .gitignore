@@ -9,6 +9,14 @@
 *.sql
 app/logs/*.log
 
+# Temporary GitHub Actions API dumps (local debug only)
+/_jobs.json
+/_runs.json
+/_j*.json
+/jobs*.json
+/runs.json
+/runs-*.json
+
 # === Deploy scripts (contain server paths) ===
 /deploy.ps1
 /deploy.bat
