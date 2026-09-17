@@ -24,13 +24,15 @@ ssh "${SSH_HOST}" "
   \${PHP_BIN} -v 2>/dev/null | head -1 || true
 
   if [ -f vendor/unisharp/laravel-filemanager/public/js/stand-alone-button.js ]; then
+    rm -rf public/vendor/laravel-filemanager
     mkdir -p public/vendor/laravel-filemanager
-    cp -r vendor/unisharp/laravel-filemanager/public/* public/vendor/laravel-filemanager/
+    cp -a vendor/unisharp/laravel-filemanager/public/. public/vendor/laravel-filemanager/
     echo 'Synced laravel-filemanager public assets'
   fi
   if [ -d vendor/stijnvanouplines/blade-country-flags/resources/svg ]; then
+    rm -rf public/vendor/blade-country-flags
     mkdir -p public/vendor/blade-country-flags
-    cp -r vendor/stijnvanouplines/blade-country-flags/resources/svg/* public/vendor/blade-country-flags/
+    cp -a vendor/stijnvanouplines/blade-country-flags/resources/svg/. public/vendor/blade-country-flags/
     echo 'Synced blade-country-flags SVG assets'
   fi
 
