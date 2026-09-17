@@ -90,6 +90,7 @@ jobs:
           set -Eeuo pipefail
 
           APP_DIR="/home/qiec-training/htdocs/training.qiec.sa"
+          export COMPOSER_ALLOW_SUPERUSER=1
 
           git config --global --add safe.directory "$APP_DIR" 2>/dev/null || true
 
@@ -151,7 +152,7 @@ jobs:
           test ! -f public/hot
 
           echo "Frontend assets installed."
-          ls -lah public/build | head -20
+          ls -lah public/build | head -20 || true
 
           # ----------------------------------------------
           # Sync Laravel Filemanager public assets
@@ -200,13 +201,20 @@ jobs:
           php8.4 artisan optimize:clear
 
           echo "Caching views..."
-          php8.4 artisan view:cache
+          php8.4 artisan view:cache || echo "WARNING: view:cache failed (non-fatal)"
 
           # ----------------------------------------------
           # Storage links
           # ----------------------------------------------
           echo "Checking storage links..."
           php8.4 artisan storage:link || true
+
+          # CloudPanel site user ownership
+          if id qiec-training >/dev/null 2>&1; then
+            chown -R qiec-training:qiec-training \
+              app bootstrap config database public resources routes storage \
+              artisan composer.json composer.lock 2>/dev/null || true
+          fi
 
           # ----------------------------------------------
           # Bring application online
@@ -226,16 +234,19 @@ jobs:
           HTTP_CODE=$(curl -k -s -o /dev/null \
             -w "%{http_code}" \
             --resolve training.qiec.sa:443:127.0.0.1 \
-            https://training.qiec.sa)
+            https://training.qiec.sa || echo "000")
 
           echo "HTTP status: $HTTP_CODE"
 
-          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 400 ]; then
-            echo "Health check failed."
-            exit 1
-          fi
-
-          echo "Health check passed."
+          case "$HTTP_CODE" in
+            2??|3??)
+              echo "Health check passed."
+              ;;
+            *)
+              echo "Health check failed."
+              exit 1
+              ;;
+          esac
 
           echo "================================="
           echo "Deployment completed successfully."
