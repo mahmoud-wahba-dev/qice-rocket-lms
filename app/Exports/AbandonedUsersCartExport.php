@@ -5,11 +5,15 @@ namespace App\Exports;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use App\Exports\Concerns\QiceExportStyling;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class AbandonedUsersCartExport implements FromCollection, WithHeadings, WithMapping
-{
-    protected $carts;
+class AbandonedUsersCartExport implements FromCollection, WithHeadings, WithMapping, WithStyles, ShouldAutoSize {
+    use QiceExportStyling;
+
+protected $carts;
 
     public function __construct($carts)
     {

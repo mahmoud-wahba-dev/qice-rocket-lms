@@ -101,6 +101,7 @@ class AdminMockData
                 'items' => [
                     ['key' => 'filters', 'label' => 'الفلاتر', 'icon' => 'icon-[tabler--filter]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'filters']],
                     ['key' => 'trends', 'label' => 'التصنيفات الرائجة', 'icon' => 'icon-[tabler--trending-up]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'trends']],
+                    ['key' => 'trends-create', 'label' => 'إنشاء فصول الرائجة', 'icon' => 'icon-[tabler--plus]', 'route' => 'panel.v1.admin.education.trends.create'],
                     ['key' => 'enrollment', 'label' => 'التسجيل', 'icon' => 'icon-[tabler--user-plus]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'enrollment']],
                     ['key' => 'upcoming', 'label' => 'الدورات القادمة', 'icon' => 'icon-[tabler--calendar-time]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'upcoming']],
                     ['key' => 'waitlists', 'label' => 'قوائم الانتظار', 'icon' => 'icon-[tabler--hourglass]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'waitlists']],

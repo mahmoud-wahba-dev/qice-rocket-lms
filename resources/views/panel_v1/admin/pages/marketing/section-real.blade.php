@@ -250,7 +250,120 @@
         </div>
     @endisset
 
-    @if (!isset($discounts) && !isset($affiliates) && !isset($cashbacks) && !isset($points) && !isset($gifts) && !isset($bonuses) && !isset($products) && !isset($blogs) && !isset($pages) && !isset($specialOffers) && !isset($tools) && !isset($forms) && !isset($banners) && !isset($floatingBars) && !isset($purchaseNotifications) && !isset($cartDiscounts) && !isset($abandonedCarts) && !isset($newsletters) && !isset($productBadges) && !isset($advertisingModal) && !isset($rules) && empty($stats))
+    @isset($abandonedUsersCarts)
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4]"><h2 class="font-bold text-16px text-primary">سلال المستخدمين المتروكة — {{ $abandonedUsersCarts->total() }}</h2></div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">المستخدم</th><th class="px-4 py-3 text-start">العنصر</th><th class="px-4 py-3 text-center">التاريخ</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead><tbody>
+                @forelse($abandonedUsersCarts as $c)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $c->creator->full_name ?? 'مستخدم #'.$c->creator_id }}</td><td class="px-4 py-3 font-medium text-primary truncate max-w-[16rem]">{{ $c->webinar->title ?? $c->bundle->title ?? $c->product->title ?? '—' }}</td><td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d',(int)$c->created_at) }}</td><td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.marketing.abandoned.delete',['id'=>$c->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td></tr>@empty<tr><td colspan="4" class="px-4 py-14 text-center font-medium text-gray">لا توجد سلال متروكة</td></tr>@endforelse
+            </tbody></table></div>
+        </div>
+    @endisset
+
+    @isset($cashbackTransactions)
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex flex-wrap items-center justify-between gap-3"><h2 class="font-bold text-16px text-primary">معاملات الكاش باك — {{ $cashbackTransactions->total() }}</h2><a href="{{ route('panel.v1.admin.marketing.cashback.transactions.export', request()->query()) }}" class="inline-flex items-center gap-2 h-10 px-4 rounded-12px border border-d9 bg-white font-semibold text-13px text-primary hover:bg-[#FAFAF4] transition"><span class="icon-[tabler--file-spreadsheet] size-4"></span> تصدير Excel</a></div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">المستخدم</th><th class="px-4 py-3 text-center">المبلغ</th><th class="px-4 py-3 text-center">الوصف</th><th class="px-4 py-3 text-center">التاريخ</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead><tbody>
+                @forelse($cashbackTransactions as $t)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $t->user->full_name ?? 'مستخدم #'.$t->user_id }}</td><td class="px-4 py-3 text-center font-semibold text-primary">{{ handlePrice($t->amount ?? 0) }}</td><td class="px-4 py-3 text-center font-medium text-gray truncate max-w-[14rem]">{{ $t->description ?? '—' }}</td><td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d',(int)$t->created_at) }}</td><td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.marketing.cashback.refund',['id'=>$t->id]) }}" onsubmit="return confirm('استرجاع؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px bg-[#FEE2E2] center" title="استرجاع"><span class="icon-[tabler--repeat] size-4 text-[#DC2626]"></span></button></form></td></tr>@empty<tr><td colspan="5" class="px-4 py-14 text-center font-medium text-gray">لا توجد معاملات</td></tr>@endforelse
+            </tbody></table></div>
+        </div>
+    @endisset
+
+    @isset($cashbackHistory)
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex flex-wrap items-center justify-between gap-3"><h2 class="font-bold text-16px text-primary">سجل الكاش باك — {{ $cashbackHistory->total() }}</h2><a href="{{ route('panel.v1.admin.marketing.cashback.history.export', request()->query()) }}" class="inline-flex items-center gap-2 h-10 px-4 rounded-12px border border-d9 bg-white font-semibold text-13px text-primary hover:bg-[#FAFAF4] transition"><span class="icon-[tabler--file-spreadsheet] size-4"></span> تصدير Excel</a></div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">المستخدم</th><th class="px-4 py-3 text-center">إجمالي الكاش باك</th><th class="px-4 py-3 text-center">آخر كاش باك</th></tr></thead><tbody>
+                @forelse($cashbackHistory as $h)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">مستخدم #{{ $h->user_id }}</td><td class="px-4 py-3 text-center font-semibold text-primary">{{ handlePrice($h->total_cashback ?? 0) }}</td><td class="px-4 py-3 text-center font-medium text-gray">{{ !empty($h->last_cashback) ? date('Y/m/d',(int)$h->last_cashback) : '—' }}</td></tr>@empty<tr><td colspan="3" class="px-4 py-14 text-center font-medium text-gray">لا يوجد سجل</td></tr>@endforelse
+            </tbody></table></div>
+        </div>
+    @endisset
+
+    @isset($formFields)
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex items-center justify-between"><h2 class="font-bold text-16px text-primary">حقول النموذج: {{ $formM->title ?? '' }} — {{ $formFields->total() }}</h2><a href="{{ route('panel.v1.admin.marketing.form-fields.create',['formId'=>$formM->id ?? 0]) }}" class="h-10 px-4 rounded-12px bg-primary text-white font-bold text-13px center">+ حقل جديد</a></div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">العنوان</th><th class="px-4 py-3 text-center">النوع</th><th class="px-4 py-3 text-center">إجباري</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead><tbody>
+                @forelse($formFields as $f)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $f->title ?? 'حقل #'.$f->id }}</td><td class="px-4 py-3 text-center font-medium text-gray">{{ $f->type }}</td><td class="px-4 py-3 text-center"><span class="inline-flex rounded-full px-3 py-1 font-semibold text-11px {{ $f->required ? 'bg-[#D1FAE5] text-[#059669]' : 'bg-gray-100 text-gray-500' }}">{{ $f->required ? 'نعم' : 'لا' }}</span></td><td class="px-4 py-3 text-center"><div class="flex items-center justify-center gap-1.5"><a href="{{ route('panel.v1.admin.marketing.form-fields.edit',['formId'=>$formM->id ?? 0,'fieldId'=>$f->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a><form method="POST" action="{{ route('panel.v1.admin.marketing.form-fields.delete',['formId'=>$formM->id ?? 0,'fieldId'=>$f->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></div></td></tr>@empty<tr><td colspan="4" class="px-4 py-14 text-center font-medium text-gray">لا توجد حقول — أنشئ أول حقل</td></tr>@endforelse
+            </tbody></table></div>
+        </div>
+    @endisset
+
+    @isset($submissions)
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4]"><h2 class="font-bold text-16px text-primary">إرساليات: {{ $formM->title ?? '' }} — {{ $submissions->total() }}</h2></div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">المستخدم</th><th class="px-4 py-3 text-center">التاريخ</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead><tbody>
+                @forelse($submissions as $s)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $s->user->full_name ?? 'مستخدم #'.$s->user_id }}</td><td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d',(int)$s->created_at) }}</td><td class="px-4 py-3 text-center"><div class="flex items-center justify-center gap-1.5"><a href="{{ route('panel.v1.admin.marketing.form-submissions.show',['formId'=>$formM->id ?? 0,'submissionId'=>$s->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="عرض"><span class="icon-[tabler--eye] size-4 text-primary"></span></a><form method="POST" action="{{ route('panel.v1.admin.marketing.form-submissions.delete',['formId'=>$formM->id ?? 0,'submissionId'=>$s->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></div></td></tr>@empty<tr><td colspan="3" class="px-4 py-14 text-center font-medium text-gray">لا توجد إرساليات</td></tr>@endforelse
+            </tbody></table></div>
+        </div>
+    @endisset
+
+    @isset($submission)
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4]"><h2 class="font-bold text-16px text-primary">تفاصيل الإرسالية #{{ $submission->id }} — {{ $formM->title ?? '' }}</h2></div>
+            <form method="POST" action="{{ route('panel.v1.admin.marketing.form-submissions.update',['formId'=>$formM->id ?? 0,'submissionId'=>$submission->id]) }}" class="p-4 sm:p-6 space-y-3">
+                @csrf
+                @forelse($submission->items ?? [] as $it)
+                    <div class="rounded-12px border border-d9 p-4 bg-[#FAFAF4]">
+                        <label class="font-bold text-13px text-primary mb-2 block">{{ $it->field->title ?? 'حقل #'.$it->form_field_id }}</label>
+                        <input type="text" name="items[{{ $it->id }}]" value="{{ old('items.'.$it->id, $it->value) }}" class="input input-bordered w-full h-12 rounded-12px border-d9 text-14px bg-white">
+                    </div>
+                @empty
+                    <p class="font-medium text-14px text-gray text-center py-8">لا توجد عناصر لهذه الإرسالية.</p>
+                @endforelse
+                @if(($submission->items ?? collect())->count())
+                    <div class="flex items-center gap-3 pt-2">
+                        <button type="submit" class="inline-flex items-center justify-center h-12 px-8 rounded-12px bg-primary text-white font-bold text-14px hover:opacity-95 transition">حفظ التعديلات</button>
+                        <a href="{{ route('panel.v1.admin.marketing.form-submissions',['formId'=>$formM->id ?? 0]) }}" class="inline-flex items-center justify-center h-12 px-6 rounded-12px border border-d9 bg-white font-semibold text-14px text-primary hover:bg-[#FAFAF4] transition">عودة</a>
+                    </div>
+                @endif
+            </form>
+        </div>
+    @endisset
+
+    @isset($blogCategories)
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex items-center justify-between"><h2 class="font-bold text-16px text-primary">تصنيفات المدونة — {{ $blogCategories->total() }}</h2><a href="{{ route('panel.v1.admin.marketing.blog-categories.create') }}" class="h-10 px-4 rounded-12px bg-primary text-white font-bold text-13px center">+ تصنيف جديد</a></div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">العنوان</th><th class="px-4 py-3 text-center">الرابط</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead><tbody>
+                @forelse($blogCategories as $c)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $c->title ?? 'تصنيف #'.$c->id }}</td><td class="px-4 py-3 text-center font-mono text-12px text-gray" dir="ltr">{{ $c->slug ?? '—' }}</td><td class="px-4 py-3 text-center"><div class="flex items-center justify-center gap-1.5"><a href="{{ route('panel.v1.admin.marketing.blog-categories.edit',['id'=>$c->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a><form method="POST" action="{{ route('panel.v1.admin.marketing.blog-categories.delete',['id'=>$c->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></div></td></tr>@empty<tr><td colspan="3" class="px-4 py-14 text-center font-medium text-gray">لا توجد تصنيفات</td></tr>@endforelse
+            </tbody></table></div>
+        </div>
+    @endisset
+
+    @isset($newsletterHistories)
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4]"><h2 class="font-bold text-16px text-primary">سجل النشرات — {{ $newsletterHistories->total() }}</h2></div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">العنوان</th><th class="px-4 py-3 text-center">طريقة الإرسال</th><th class="px-4 py-3 text-center">عدد الإيميلات</th><th class="px-4 py-3 text-center">التاريخ</th></tr></thead><tbody>
+                @forelse($newsletterHistories as $h)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary truncate max-w-[16rem]">{{ $h->title }}</td><td class="px-4 py-3 text-center font-medium text-gray">{{ $h->send_method ?? '—' }}</td><td class="px-4 py-3 text-center font-semibold text-primary">{{ $h->email_count ?? 0 }}</td><td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d',(int)$h->created_at) }}</td></tr>@empty<tr><td colspan="4" class="px-4 py-14 text-center font-medium text-gray">لا يوجد سجل</td></tr>@endforelse
+            </tbody></table></div>
+        </div>
+    @endisset
+
+    @isset($testimonials)
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex items-center justify-between"><h2 class="font-bold text-16px text-primary">الشهادات والآراء — {{ $testimonials->total() }}</h2><a href="{{ route('panel.v1.admin.marketing.testimonials.create') }}" class="h-10 px-4 rounded-12px bg-primary text-white font-bold text-13px center">+ رأي جديد</a></div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">المستخدم</th><th class="px-4 py-3 text-center">التقييم</th><th class="px-4 py-3 text-start">التعليق</th><th class="px-4 py-3 text-center">الحالة</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead><tbody>
+                @forelse($testimonials as $t)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $t->user_name ?? '—' }}</td><td class="px-4 py-3 text-center font-bold text-primary">{{ $t->rate ?? '—' }}/5</td><td class="px-4 py-3 font-medium text-gray truncate max-w-[16rem]">{{ \Illuminate\Support\Str::limit(strip_tags($t->comment ?? ''),60) }}</td><td class="px-4 py-3 text-center"><span class="inline-flex rounded-full px-3 py-1 font-semibold text-11px {{ ($t->status ?? '')=='active' ? 'bg-[#D1FAE5] text-[#059669]' : 'bg-[#FEE2E2] text-[#DC2626]' }}">{{ $t->status ?? '—' }}</span></td><td class="px-4 py-3 text-center"><div class="flex items-center justify-center gap-1.5"><a href="{{ route('panel.v1.admin.marketing.testimonials.edit',['id'=>$t->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a><form method="POST" action="{{ route('panel.v1.admin.marketing.testimonials.delete',['id'=>$t->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></div></td></tr>@empty<tr><td colspan="5" class="px-4 py-14 text-center font-medium text-gray">لا توجد آراء — أنشئ أول رأي</td></tr>@endforelse
+            </tbody></table></div>
+        </div>
+    @endisset
+
+    @isset($promotionSales)
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4]"><h2 class="font-bold text-16px text-primary">مبيعات الترقيات — {{ $promotionSales->total() }}</h2></div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الترقية</th><th class="px-4 py-3 text-start">المشتري</th><th class="px-4 py-3 text-start">الدورة</th><th class="px-4 py-3 text-center">التاريخ</th></tr></thead><tbody>
+                @forelse($promotionSales as $s)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $s->promotion->title ?? 'ترقية #'.$s->promotion_id }}</td><td class="px-4 py-3 font-medium text-primary">{{ $s->buyer->full_name ?? '—' }}</td><td class="px-4 py-3 font-medium text-primary truncate max-w-[14rem]">{{ $s->webinar->title ?? '—' }}</td><td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d',(int)$s->created_at) }}</td></tr>@empty<tr><td colspan="4" class="px-4 py-14 text-center font-medium text-gray">لا توجد مبيعات ترقيات</td></tr>@endforelse
+            </tbody></table></div>
+        </div>
+    @endisset
+
+    @isset($users)
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4]"><h2 class="font-bold text-16px text-primary">سجل مكافأة التسجيل — {{ $users->total() }}</h2></div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">المستخدم</th><th class="px-4 py-3 text-center">الدور</th><th class="px-4 py-3 text-center">المكافأة</th><th class="px-4 py-3 text-center">المحالون</th><th class="px-4 py-3 text-center">التسجيل</th><th class="px-4 py-3 text-center">الحالة</th></tr></thead><tbody>
+                @forelse($users as $b)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $b->full_name }}</td><td class="px-4 py-3 text-center font-medium text-gray">{{ $b->role->caption ?? $b->role_name }}</td><td class="px-4 py-3 text-center font-semibold text-primary">{{ handlePrice($b->registration_bonus_amount ?? 0) }}</td><td class="px-4 py-3 text-center font-medium text-primary">{{ $b->affiliates_count ?? 0 }}</td><td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d',(int)$b->created_at) }}</td><td class="px-4 py-3 text-center"><span class="inline-flex rounded-full px-3 py-1 font-semibold text-11px {{ ($b->bonus_status ?? '')==trans('update.unlock') ? 'bg-[#D1FAE5] text-[#059669]' : 'bg-[#FEF3C7] text-[#D97706]' }}">{{ $b->bonus_status ?? '—' }}</span></td></tr>@empty<tr><td colspan="6" class="px-4 py-14 text-center font-medium text-gray">لا يوجد مستحقون</td></tr>@endforelse
+            </tbody></table></div>
+        </div>
+    @endisset
+
+    @if (!isset($discounts) && !isset($affiliates) && !isset($cashbacks) && !isset($points) && !isset($gifts) && !isset($bonuses) && !isset($products) && !isset($blogs) && !isset($pages) && !isset($specialOffers) && !isset($tools) && !isset($forms) && !isset($banners) && !isset($floatingBars) && !isset($purchaseNotifications) && !isset($cartDiscounts) && !isset($abandonedCarts) && !isset($newsletters) && !isset($productBadges) && !isset($advertisingModal) && !isset($rules) && !isset($abandonedUsersCarts) && !isset($cashbackTransactions) && !isset($cashbackHistory) && !isset($formFields) && !isset($submissions) && !isset($submission) && !isset($blogCategories) && !isset($newsletterHistories) && !isset($testimonials) && !isset($promotionSales) && !isset($users) && empty($stats))
         @include('panel_v1.admin.components.empty-stub', ['title' => $stubTitle ?? 'لا توجد بيانات', 'subtitle' => $stubSubtitle ?? 'لم يتم العثور على سجلات لهذا القسم.'])
     @endif
 

@@ -203,7 +203,87 @@
         </div>
     @endif
 
-    @if (empty($payouts) && empty($budget) && empty($offlinePayments) && empty($subscriptions) && empty($installments) && empty($packages) && empty($meetings) && empty($documents))
+    @if (!empty($paymentChannels) && $paymentChannels->count())
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex items-center justify-between">
+                <h2 class="font-bold text-16px text-primary">قنوات الدفع — {{ $paymentChannels->total() }}</h2>
+                <span class="font-medium text-12px text-gray">منطق Admin\PaymentChannelController</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table w-full text-14px">
+                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">العنوان</th><th class="px-4 py-3 text-center">الحالة</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead>
+                    <tbody>
+                    @foreach ($paymentChannels as $ch)
+                        <tr class="border-b border-d9 last:border-0">
+                            <td class="px-4 py-3 font-bold text-primary">{{ $ch->title }}</td>
+                            <td class="px-4 py-3 text-center"><span class="inline-flex rounded-full px-3 py-1 font-semibold text-11px {{ ($ch->status ?? '')=='active' ? 'bg-[#D1FAE5] text-[#059669]' : 'bg-[#FEE2E2] text-[#DC2626]' }}">{{ $ch->status ?? '—' }}</span></td>
+                            <td class="px-4 py-3 text-center"><div class="flex items-center justify-center gap-1.5"><a href="{{ route('panel.v1.admin.sales.payment-channels.edit',['id'=>$ch->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a><form method="POST" action="{{ route('panel.v1.admin.sales.payment-channels.toggle',['id'=>$ch->id]) }}" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تفعيل/تعطيل"><span class="icon-[tabler--repeat] size-4 text-primary"></span></button></form></div></td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
+    @if (!empty($soldStats))
+        @include('panel_v1.admin.components.stats-cards', ['stats' => $soldStats])
+    @endif
+
+    @if (!empty($meetingPackagesSold) && $meetingPackagesSold->count())
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex items-center justify-between">
+                <h2 class="font-bold text-16px text-primary">باقات الاجتماعات المباعة — {{ $meetingPackagesSold->total() }}</h2>
+                <div class="flex flex-wrap items-center gap-2"><form method="GET" action="{{ url()->current() }}" class="flex items-center gap-2">@foreach(request()->except(['status','page']) as $k=>$v) @if(!is_array($v))<input type="hidden" name="{{ $k }}" value="{{ $v }}">@endif @endforeach<select name="status" onchange="this.form.submit()" class="select select-bordered h-10 rounded-10px border-d9 text-13px bg-white"><option value="">كل الحالات</option><option value="open" @selected(request('status')=='open')>مفتوحة</option><option value="finished" @selected(request('status')=='finished')>منتهية</option></select></form><span class="font-medium text-12px text-gray">منطق Admin\MeetingPackagesSoldController</span></div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table w-full text-14px">
+                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الطالب</th><th class="px-4 py-3 text-start">المدرب</th><th class="px-4 py-3 text-center">الباقة</th><th class="px-4 py-3 text-center">المدفوع</th><th class="px-4 py-3 text-center">الجلسات (كلي/منتهي/مجدول)</th><th class="px-4 py-3 text-center">الشراء</th><th class="px-4 py-3 text-center">الحالة</th></tr></thead>
+                    <tbody>
+                    @foreach ($meetingPackagesSold as $row)
+                        <tr class="border-b border-d9 last:border-0">
+                            <td class="px-4 py-3 font-medium text-primary">{{ $row->user->full_name ?? '—' }}</td>
+                            <td class="px-4 py-3 font-medium text-primary">{{ $row->meetingPackage->creator->full_name ?? '—' }}</td>
+                            <td class="px-4 py-3 text-center font-medium text-primary">{{ $row->meetingPackage->title ?? '—' }}</td>
+                            <td class="px-4 py-3 text-center font-semibold text-primary">{{ handlePrice($row->paid_amount ?? 0) }}</td>
+                            <td class="px-4 py-3 text-center font-medium text-gray">{{ $row->sessions_count ?? $row->sessions->count() }} / {{ $row->ended ?? '—' }} / {{ $row->scheduled ?? '—' }}</td>
+                            <td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d',(int)($row->paid_at ?? $row->created_at)) }}</td>
+                            <td class="px-4 py-3 text-center"><span class="inline-flex rounded-full px-3 py-1 font-semibold text-11px {{ ($row->status ?? '')=='finished' ? 'bg-[#D1FAE5] text-[#059669]' : 'bg-[#FEF3C7] text-[#D97706]' }}">{{ $row->status ?? '—' }}</span></td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
+    @if (!empty($eventSoldTickets) && $eventSoldTickets->count())
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex items-center justify-between">
+                <h2 class="font-bold text-16px text-primary">تذاكر الفعاليات المباعة — {{ $eventSoldTickets->total() }}</h2>
+                <div class="flex flex-wrap items-center gap-2"><form method="GET" action="{{ url()->current() }}" class="flex flex-wrap items-center gap-2">@foreach(request()->except(['ticket_id','page']) as $k=>$v) @if(!is_array($v))<input type="hidden" name="{{ $k }}" value="{{ $v }}">@endif @endforeach<select name="ticket_id" onchange="this.form.submit()" class="select select-bordered h-10 rounded-10px border-d9 text-13px bg-white min-w-[10rem]"><option value="">كل التذاكر</option>@foreach($allTickets ?? [] as $tk)<option value="{{ $tk->id }}" @selected((string)request('ticket_id')===(string)$tk->id)>{{ $tk->title ?? 'تذكرة #'.$tk->id }}</option>@endforeach</select>@if(request('ticket_id'))<a href="{{ url()->current() }}" class="h-10 px-3 rounded-10px border border-d9 bg-white text-12px font-semibold text-primary center">مسح</a>@endif</form><a href="{{ route('panel.v1.admin.sales.event-tickets.export', request()->query()) }}" class="inline-flex items-center gap-2 h-10 px-4 rounded-12px border border-d9 bg-white font-semibold text-13px text-primary hover:bg-[#FAFAF4] transition"><span class="icon-[tabler--file-spreadsheet] size-4"></span> تصدير Excel</a></div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table w-full text-14px">
+                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الفعالية</th><th class="px-4 py-3 text-start">المشارك</th><th class="px-4 py-3 text-center">نوع التذكرة</th><th class="px-4 py-3 text-center">المدفوع</th><th class="px-4 py-3 text-center">الكود</th><th class="px-4 py-3 text-center">التاريخ</th></tr></thead>
+                    <tbody>
+                    @foreach ($eventSoldTickets as $t)
+                        <tr class="border-b border-d9 last:border-0">
+                            <td class="px-4 py-3 font-bold text-primary">{{ $t->eventTicket->event->title ?? '—' }}</td>
+                            <td class="px-4 py-3 font-medium text-primary">{{ $t->user->full_name ?? '—' }}</td>
+                            <td class="px-4 py-3 text-center font-medium text-gray">{{ $t->eventTicket->title ?? '—' }}</td>
+                            <td class="px-4 py-3 text-center font-semibold text-primary">{{ handlePrice($t->paid_amount ?? 0) }}</td>
+                            <td class="px-4 py-3 text-center font-mono text-12px text-gray">{{ $t->code ?? '—' }}</td>
+                            <td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d',(int)($t->paid_at ?? $t->created_at)) }}</td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
+    @if (empty($payouts) && empty($budget) && empty($offlinePayments) && empty($subscriptions) && empty($installments) && empty($packages) && empty($meetings) && empty($documents) && empty($paymentChannels) && empty($meetingPackagesSold) && empty($eventSoldTickets))
         @include('panel_v1.admin.components.empty-stub', ['title' => $stubTitle ?? 'لا توجد بيانات', 'subtitle' => $stubSubtitle ?? 'لم يتم العثور على سجلات لهذا القسم.'])
     @endif
 
