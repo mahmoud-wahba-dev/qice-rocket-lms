@@ -394,6 +394,123 @@
         </div>
     @endif
 
+    @if (!empty($supportDepartments) && $supportDepartments->count())
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex items-center justify-between"><h2 class="font-bold text-16px text-primary">أقسام الدعم — {{ $supportDepartments->total() }}</h2><a href="{{ route('panel.v1.admin.system.support-departments.create') }}" class="h-10 px-4 rounded-12px bg-primary text-white font-bold text-13px center">+ قسم جديد</a></div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">العنوان</th><th class="px-4 py-3 text-center">الأيقونة</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead><tbody>
+                @foreach($supportDepartments as $d)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $d->title ?? 'قسم #'.$d->id }}</td><td class="px-4 py-3 text-center"><span class="{{ $d->icon ?? 'icon-[tabler--headset]' }} size-5 text-primary inline-block"></span></td><td class="px-4 py-3 text-center"><div class="flex items-center justify-center gap-1.5"><a href="{{ route('panel.v1.admin.system.support-departments.edit',['id'=>$d->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a><form method="POST" action="{{ route('panel.v1.admin.system.support-departments.delete',['id'=>$d->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></div></td></tr>@endforeach
+            </tbody></table></div>
+        </div>
+    @endif
+
+    @if (!empty($notificationTemplates) && $notificationTemplates->count())
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex items-center justify-between"><h2 class="font-bold text-16px text-primary">قوالب الإشعارات — {{ $notificationTemplates->total() }}</h2><a href="{{ route('panel.v1.admin.system.notification-templates.create') }}" class="h-10 px-4 rounded-12px bg-primary text-white font-bold text-13px center">+ قالب جديد</a></div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">العنوان</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead><tbody>
+                @foreach($notificationTemplates as $t)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary truncate max-w-[24rem]">{{ $t->title }}</td><td class="px-4 py-3 text-center"><div class="flex items-center justify-center gap-1.5"><a href="{{ route('panel.v1.admin.system.notification-templates.edit',['id'=>$t->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a><form method="POST" action="{{ route('panel.v1.admin.system.notification-templates.delete',['id'=>$t->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></div></td></tr>@endforeach
+            </tbody></table></div>
+        </div>
+    @endif
+
+    @if (!empty($regions) && $regions->count())
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex items-center justify-between"><h2 class="font-bold text-16px text-primary">المناطق — {{ $regions->total() }}</h2><a href="{{ route('panel.v1.admin.system.regions.create') }}" class="h-10 px-4 rounded-12px bg-primary text-white font-bold text-13px center">+ منطقة جديدة</a></div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الاسم</th><th class="px-4 py-3 text-center">النوع</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead><tbody>
+                @foreach($regions as $r)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $r->title ?? 'منطقة #'.$r->id }}</td><td class="px-4 py-3 text-center font-medium text-gray">{{ $r->type ?? '—' }}</td><td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.system.regions.delete',['id'=>$r->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td></tr>@endforeach
+            </tbody></table></div>
+        </div>
+    @endif
+
+    @if (!empty($loginHistories) && $loginHistories->count())
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex flex-wrap items-center justify-between gap-3"><h2 class="font-bold text-16px text-primary">سجل الدخول — {{ $loginHistories->total() }}</h2><a href="{{ route('panel.v1.admin.system.login-history.export', request()->query()) }}" class="inline-flex items-center gap-2 h-10 px-4 rounded-12px border border-d9 bg-white font-semibold text-13px text-primary hover:bg-[#FAFAF4] transition"><span class="icon-[tabler--file-spreadsheet] size-4"></span> تصدير Excel</a></div>
+            <div class="px-4 sm:px-6 py-3 bg-white border-b border-d9">
+                <form method="GET" action="{{ url()->current() }}" class="flex flex-wrap gap-2 w-full">
+                    @foreach(request()->except(['from','to','session_status','page']) as $k=>$v) @if(!is_array($v))<input type="hidden" name="{{ $k }}" value="{{ $v }}">@endif @endforeach
+                    <input type="date" name="from" value="{{ request('from') }}" class="input input-bordered h-9 rounded-10px border-d9 text-12px bg-white">
+                    <input type="date" name="to" value="{{ request('to') }}" class="input input-bordered h-9 rounded-10px border-d9 text-12px bg-white">
+                    <select name="session_status" onchange="this.form.submit()" class="select select-bordered h-9 rounded-10px border-d9 text-12px bg-white"><option value="">كل الجلسات</option><option value="open" @selected(request('session_status')=='open')>مفتوحة</option><option value="ended" @selected(request('session_status')=='ended')>منتهية</option></select>
+                    @if(request('from')||request('to')||request('session_status'))<a href="{{ url()->current() }}" class="h-9 px-3 rounded-10px border border-d9 bg-white text-12px font-semibold text-primary center">مسح</a>@endif
+                </form>
+            </div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">المستخدم</th><th class="px-4 py-3 text-center">بداية الجلسة</th><th class="px-4 py-3 text-center">نهايتها</th><th class="px-4 py-3 text-center">الحالة</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead><tbody>
+                @foreach($loginHistories as $h)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $h->user->full_name ?? 'مستخدم #'.$h->user_id }}</td><td class="px-4 py-3 text-center font-medium text-gray">{{ !empty($h->session_start_at) ? date('Y/m/d H:i',(int)$h->session_start_at) : '—' }}</td><td class="px-4 py-3 text-center font-medium text-gray">{{ !empty($h->session_end_at) ? date('Y/m/d H:i',(int)$h->session_end_at) : '—' }}</td><td class="px-4 py-3 text-center"><span class="inline-flex rounded-full px-3 py-1 font-semibold text-11px {{ empty($h->session_end_at) ? 'bg-[#D1FAE5] text-[#059669]' : 'bg-gray-100 text-gray-500' }}">{{ empty($h->session_end_at) ? 'مفتوحة' : 'منتهية' }}</span></td><td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.system.login-history.delete',['id'=>$h->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td></tr>@endforeach
+            </tbody></table></div>
+        </div>
+    @endif
+
+    @if (!empty($notAccess) && $notAccess->count())
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4]"><h2 class="font-bold text-16px text-primary">بلا وصول — {{ $notAccess->total() }}</h2><p class="font-medium text-12px text-gray mt-1">مشتريات محظورة الوصول (access_to_purchased_item)</p></div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">المشتري</th><th class="px-4 py-3 text-start">الدورة</th><th class="px-4 py-3 text-center">المبلغ</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead><tbody>
+                @foreach($notAccess as $s)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $s->buyer->full_name ?? '—' }}</td><td class="px-4 py-3 font-medium text-primary truncate max-w-[16rem]">{{ $s->webinar->title ?? '—' }}</td><td class="px-4 py-3 text-center font-semibold text-primary">{{ handlePrice($s->total_amount ?? 0) }}</td><td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.system.not-access.enable',['id'=>$s->id]) }}" class="inline">@csrf<button type="submit" class="h-8 px-3 rounded-8px bg-[#D1FAE5] font-semibold text-12px text-[#059669] hover:opacity-90" title="تفعيل الوصول">تفعيل</button></form></td></tr>@endforeach
+            </tbody></table></div>
+        </div>
+    @endif
+
+    @if (!empty($aiContents) && $aiContents->count())
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4]"><h2 class="font-bold text-16px text-primary">محتوى الذكاء الاصطناعي — {{ $aiContents->total() }}</h2></div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">العنوان</th><th class="px-4 py-3 text-center">التاريخ</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead><tbody>
+                @foreach($aiContents as $a)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary truncate max-w-[20rem]">{{ $a->title ?? $a->name ?? 'عنصر #'.$a->id }}</td><td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d',(int)$a->created_at) }}</td><td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.system.ai-contents.delete',['id'=>$a->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td></tr>@endforeach
+            </tbody></table></div>
+        </div>
+    @endif
+
+    @if (!empty($agoraHistory) && $agoraHistory->count())
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex flex-wrap items-center justify-between gap-3"><h2 class="font-bold text-16px text-primary">سجل Agora — {{ $agoraHistory->total() }}</h2><a href="{{ route('panel.v1.admin.system.agora-history.export', request()->query()) }}" class="inline-flex items-center gap-2 h-10 px-4 rounded-12px border border-d9 bg-white font-semibold text-13px text-primary hover:bg-[#FAFAF4] transition"><span class="icon-[tabler--file-spreadsheet] size-4"></span> تصدير Excel</a></div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">#</th><th class="px-4 py-3 text-start">العنوان</th><th class="px-4 py-3 text-center">التاريخ</th></tr></thead><tbody>
+                @foreach($agoraHistory as $g)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">#{{ $g->id }}</td><td class="px-4 py-3 font-medium text-primary truncate max-w-[20rem]">{{ $g->title ?? $g->name ?? 'جلسة #'.$g->id }}</td><td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d',(int)$g->created_at) }}</td></tr>@endforeach
+            </tbody></table></div>
+        </div>
+    @endif
+
+    @if (!empty($forumTopics) && $forumTopics->count())
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4]"><h2 class="font-bold text-16px text-primary">مواضيع المنتدى — {{ $forumTopics->total() }}</h2></div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الموضوع</th><th class="px-4 py-3 text-center">المنتدى</th><th class="px-4 py-3 text-center">الكاتب</th><th class="px-4 py-3 text-center">التاريخ</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead><tbody>
+                @foreach($forumTopics as $t)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary truncate max-w-[16rem]">{{ $t->title }}</td><td class="px-4 py-3 text-center font-medium text-gray">{{ $t->forum->title ?? '—' }}</td><td class="px-4 py-3 text-center font-medium text-gray">{{ $t->creator->full_name ?? '—' }}</td><td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d',(int)$t->created_at) }}</td><td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.system.forum-topics.delete',['id'=>$t->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td></tr>@endforeach
+            </tbody></table></div>
+        </div>
+    @endif
+
+    @if (!empty($forumReports) && $forumReports->count())
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4]"><h2 class="font-bold text-16px text-primary">بلاغات المنتدى — {{ $forumReports->total() }}</h2></div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">#</th><th class="px-4 py-3 text-start">المُبلغ</th><th class="px-4 py-3 text-center">التاريخ</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead><tbody>
+                @foreach($forumReports as $r)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">#{{ $r->id }}</td><td class="px-4 py-3 font-medium text-primary">{{ $r->user->full_name ?? 'مستخدم #'.$r->user_id }}</td><td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d',(int)$r->created_at) }}</td><td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.system.forum-reports.delete',['id'=>$r->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td></tr>@endforeach
+            </tbody></table></div>
+        </div>
+    @endif
+
+    @if (!empty($forumSettings) && $forumSettings->count())
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4]"><h2 class="font-bold text-16px text-primary">إعدادات المنتدى — {{ $forumSettings->count() }}</h2><p class="font-medium text-12px text-gray mt-1">حفظ مباشر عبر إعدادات النظام</p></div>
+            <div class="p-4 sm:p-6 space-y-4">
+                @foreach($forumSettings as $s)
+                    <form method="POST" action="{{ route('panel.v1.admin.system.settings.save',['id'=>$s->id]) }}" class="flex flex-col sm:flex-row gap-3 sm:items-end border border-d9 rounded-12px p-4 bg-[#FAFAF4]">
+                        @csrf
+                        <div class="flex-1">
+                            <label class="font-semibold text-13px text-primary mb-2 block font-mono" dir="ltr">{{ $s->name }}</label>
+                            <input type="text" name="value" value="{{ old('value', $s->value) }}" class="input input-bordered w-full h-12 rounded-12px border-d9 text-14px bg-white">
+                        </div>
+                        <button type="submit" class="h-12 px-6 rounded-12px bg-primary text-white font-bold text-13px hover:opacity-95 transition shrink-0">حفظ</button>
+                    </form>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    @if (!empty($themes) && $themes->count())
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4]"><h2 class="font-bold text-16px text-primary">الثيمات — {{ $themes->total() }}</h2><p class="font-medium text-12px text-gray mt-1">عرض فقط — إدارة الثيمات الكاملة من اللوحة القديمة</p></div>
+            <div class="overflow-x-auto"><table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الثيم</th><th class="px-4 py-3 text-center">افتراضي</th><th class="px-4 py-3 text-center">التاريخ</th></tr></thead><tbody>
+                @foreach($themes as $th)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $th->title ?? $th->name ?? 'ثيم #'.$th->id }}</td><td class="px-4 py-3 text-center"><span class="inline-flex rounded-full px-3 py-1 font-semibold text-11px {{ !empty($th->is_default) ? 'bg-[#D1FAE5] text-[#059669]' : 'bg-gray-100 text-gray-500' }}">{{ !empty($th->is_default) ? 'افتراضي' : '—' }}</span></td><td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d',(int)$th->created_at) }}</td></tr>@endforeach
+            </tbody></table></div>
+        </div>
+    @endif
+
     @if (
         (empty($settings) || $settings->count()===0) &&
         (empty($roles) || $roles->count()===0) &&
@@ -409,7 +526,18 @@
         (empty($consultations) || $consultations->count()===0) &&
         (empty($forums) || $forums->count()===0) &&
         (empty($notifications) || $notifications->count()===0) &&
-        (empty($imports) || $imports->count()===0)
+        (empty($imports) || $imports->count()===0) &&
+        (empty($supportDepartments) || $supportDepartments->count()===0) &&
+        (empty($notificationTemplates) || $notificationTemplates->count()===0) &&
+        (empty($regions) || $regions->count()===0) &&
+        (empty($loginHistories) || $loginHistories->count()===0) &&
+        (empty($notAccess) || $notAccess->count()===0) &&
+        (empty($aiContents) || $aiContents->count()===0) &&
+        (empty($agoraHistory) || $agoraHistory->count()===0) &&
+        (empty($forumTopics) || $forumTopics->count()===0) &&
+        (empty($forumReports) || $forumReports->count()===0) &&
+        (empty($forumSettings) || $forumSettings->count()===0) &&
+        (empty($themes) || $themes->count()===0)
     )
         @include('panel_v1.admin.components.empty-stub', ['title' => $stubTitle ?? 'لا توجد بيانات', 'subtitle' => $stubSubtitle ?? 'لم يتم العثور على سجلات لهذا القسم.'])
     @endif

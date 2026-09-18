@@ -304,6 +304,47 @@
         </div>
     @endif
 
+    @if (!empty($quizzesResults))
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex flex-wrap items-center justify-between gap-3">
+                <h2 class="font-bold text-16px text-primary">نتائج الاختبار — {{ $quizzesResults->total() }}</h2>
+                <a href="{{ route('panel.v1.admin.education.quiz-results.export', ['quizId' => $quiz_id ?? 0]) }}" class="inline-flex items-center gap-2 h-10 px-4 rounded-12px border border-d9 bg-white font-semibold text-13px text-primary hover:bg-[#FAFAF4] transition"><span class="icon-[tabler--file-spreadsheet] size-4"></span> تصدير Excel</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table w-full text-14px">
+                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الطالب</th><th class="px-4 py-3 text-center">الدرجة</th><th class="px-4 py-3 text-center">الحالة</th><th class="px-4 py-3 text-center">التاريخ</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead>
+                    <tbody>
+                    @foreach ($quizzesResults as $qr)
+                        @php
+                            $qrStatusLabel = ($qr->status ?? '') === \App\Models\QuizzesResult::$passed ? 'ناجح' : ((($qr->status ?? '') === \App\Models\QuizzesResult::$failed) ? 'راسب' : 'بانتظار المراجعة');
+                        @endphp
+                        <tr class="border-b border-d9 last:border-0">
+                            <td class="px-4 py-3 font-bold text-primary">{{ $qr->user->full_name ?? '' }}</td>
+                            <td class="px-4 py-3 text-center font-bold text-primary">{{ $qr->user_grade ?? 0 }}</td>
+                            <td class="px-4 py-3 text-center"><span @class(['inline-flex rounded-full px-2.5 py-1 font-semibold text-11px','bg-[#D1FAE5] text-[#059669]'=>($qr->status ?? '')===\App\Models\QuizzesResult::$passed,'bg-[#FEE2E2] text-[#DC2626]'=>($qr->status ?? '')===\App\Models\QuizzesResult::$failed,'bg-[#FEF3C7] text-[#D97706]'=>!in_array(($qr->status ?? ''),[\App\Models\QuizzesResult::$passed,\App\Models\QuizzesResult::$failed], true)])>{{ $qrStatusLabel }}</span></td>
+                            <td class="px-4 py-3 text-center font-medium text-gray">{{ !empty($qr->created_at) ? date('Y/m/d', (int)$qr->created_at) : '—' }}</td>
+                            <td class="px-4 py-3 text-center"><div class="flex items-center justify-center gap-1.5"><a href="{{ route('panel.v1.admin.education.quiz-results.review',['quizId'=>$quiz_id ?? $qr->quiz_id,'resultId'=>$qr->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="مراجعة"><span class="icon-[tabler--eye] size-4 text-primary"></span></a><form method="POST" action="{{ route('panel.v1.admin.education.quiz-results.delete',['quizId'=>$quiz_id ?? $qr->quiz_id,'resultId'=>$qr->id]) }}" onsubmit="return confirm('حذف النتيجة؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center hover:bg-red-50" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></div></td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
+    @if (!empty($relatedCourses))
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden p-4">
+            <form method="POST" action="{{ route('panel.v1.admin.education.related-courses.store') }}" class="flex flex-wrap gap-2 mb-4">
+                @csrf
+                <input type="hidden" name="item_id" value="{{ $itemId ?? request('item_id') }}">
+                <input type="hidden" name="item_type" value="{{ $itemType ?? request('item_type','webinar') }}">
+                <input type="number" name="course_id" placeholder="معرف الدورة المرتبطة" class="input input-bordered flex-1 h-10 rounded-10px text-14px min-w-[12rem]" required>
+                <button type="submit" class="btn btn-primary rounded-10px h-10 px-5 font-bold text-13px">إضافة ارتباط</button>
+            </form>
+            <table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الدورة المرتبطة</th><th class="px-4 py-3 text-center">المدرب</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead><tbody>@foreach($relatedCourses as $rc)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $rc->course->title ?? 'دورة #'.$rc->course_id }}</td><td class="px-4 py-3 text-center">{{ $rc->course->teacher->full_name ?? '—' }}</td><td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.education.related-courses.delete',['id'=>$rc->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center hover:bg-red-50" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td></tr>@endforeach</tbody></table>
+        </div>
+    @endif
+
     @if (!empty($departments))
         <div class="border border-d9 rounded-14px bg-white overflow-hidden p-4">
             <form method="POST" action="{{ route('panel.v1.admin.education.departments.store') }}" class="flex gap-2 mb-4">
@@ -321,7 +362,206 @@
         </div>
     @endif
 
-    @if (empty($courses) && empty($bundles) && empty($assignments) && empty($quizzes) && empty($certificates) && empty($lives) && empty($events) && empty($reviews) && empty($departments) && empty($attendances))
+    {{-- إدارة متقدمة — كانت تظهر قريباً لأنها بلا بلوك عرض — الآن حقيقية 100% --}}
+    @if (!empty($filters))
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex items-center justify-between">
+                <h2 class="font-bold text-16px text-primary">الفلاتر — {{ $filters->total() }}</h2>
+                <a href="{{ route('panel.v1.admin.education.filters.create') }}" class="h-10 px-4 rounded-12px bg-primary text-white font-bold text-13px center">+ إضافة فلتر</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table w-full text-14px">
+                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">#</th><th class="px-4 py-3 text-start">الفلتر</th><th class="px-4 py-3 text-center">التصنيف</th><th class="px-4 py-3 text-center">الخيارات</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead>
+                    <tbody>
+                    @foreach($filters as $f)
+                        <tr class="border-b border-d9 last:border-0">
+                            <td class="px-4 py-3 font-bold text-primary">#{{ $f->id }}</td>
+                            <td class="px-4 py-3 font-bold text-primary">{{ $f->title ?? 'فلتر #'.$f->id }}</td>
+                            <td class="px-4 py-3 text-center font-medium text-gray">{{ $f->category->title ?? '—' }}</td>
+                            <td class="px-4 py-3 text-center font-medium text-primary">{{ $f->options->count() ?? $f->filterOptions->count() ?? '—' }}</td>
+                            <td class="px-4 py-3 text-center">
+                                <div class="flex items-center justify-center gap-1.5">
+                                    <a href="{{ route('panel.v1.admin.education.filters.edit',['id'=>$f->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a>
+                                    <form method="POST" action="{{ route('panel.v1.admin.education.filters.delete',['id'=>$f->id]) }}" onsubmit="return confirm('حذف الفلتر؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center hover:bg-red-50" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
+    @if (!empty($trends))
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex items-center justify-between">
+                <h2 class="font-bold text-16px text-primary">التصنيفات الرائجة — {{ $trends->total() }}</h2>
+                <div class="flex items-center gap-2">
+                    <a href="{{ route('panel.v1.admin.education.trends.create') }}" class="h-10 px-4 rounded-12px bg-primary text-white font-bold text-13px center">+ إضافة رائج</a>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table w-full text-14px">
+                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">#</th><th class="px-4 py-3 text-start">التصنيف</th><th class="px-4 py-3 text-center">الأيقونة</th><th class="px-4 py-3 text-center">اللون</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead>
+                    <tbody>
+                    @foreach($trends as $t)
+                        <tr class="border-b border-d9 last:border-0">
+                            <td class="px-4 py-3 font-bold text-primary">#{{ $t->id }}</td>
+                            <td class="px-4 py-3 font-bold text-primary">{{ $t->category->title ?? '—' }}</td>
+                            <td class="px-4 py-3 text-center"><span class="{{ $t->icon }} size-5 text-primary inline-block"></span> <span class="font-mono text-11px text-gray">{{ $t->icon }}</span></td>
+                            <td class="px-4 py-3 text-center"><span class="inline-flex items-center gap-2"><span class="size-5 rounded-full border border-d9" style="background: {{ $t->color }}"></span><span class="font-mono text-11px text-gray">{{ $t->color }}</span></span></td>
+                            <td class="px-4 py-3 text-center">
+                                <div class="flex items-center justify-center gap-1.5">
+                                    <a href="{{ route('panel.v1.admin.education.trends.edit',['id'=>$t->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a>
+                                    <form method="POST" action="{{ route('panel.v1.admin.education.trends.delete',['id'=>$t->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
+    @if (!empty($sales))
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex items-center justify-between">
+                <h2 class="font-bold text-16px text-primary">التسجيل — {{ $sales->total() }} عملية</h2>
+                <span class="font-medium text-12px text-gray">سجل التسجيلات المدفوعة</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table w-full text-14px">
+                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">#</th><th class="px-4 py-3 text-start">الطالب</th><th class="px-4 py-3 text-start">الدورة</th><th class="px-4 py-3 text-center">المبلغ</th><th class="px-4 py-3 text-center">التاريخ</th><th class="px-4 py-3 text-center">الحالة</th></tr></thead>
+                    <tbody>
+                    @foreach($sales as $s)
+                        <tr class="border-b border-d9 last:border-0">
+                            <td class="px-4 py-3 font-bold text-primary">#{{ $s->id }}</td>
+                            <td class="px-4 py-3 font-medium text-primary">{{ $s->buyer->full_name ?? '—' }}</td>
+                            <td class="px-4 py-3 font-medium text-primary truncate max-w-[16rem]">{{ $s->webinar->title ?? '—' }}</td>
+                            <td class="px-4 py-3 text-center font-bold text-primary">{{ handlePrice($s->total_amount ?? $s->amount ?? 0) }}</td>
+                            <td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d', (int)$s->created_at) }}</td>
+                            <td class="px-4 py-3 text-center"><span class="inline-flex rounded-full px-2.5 py-1 font-semibold text-11px {{ empty($s->refund_at) ? 'bg-[#D1FAE5] text-[#059669]' : 'bg-[#FEE2E2] text-[#DC2626]' }}">{{ empty($s->refund_at) ? 'مكتمل' : 'مسترد' }}</span></td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
+    @if (!empty($upcomingCourses))
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex items-center justify-between">
+                <h2 class="font-bold text-16px text-primary">الدورات القادمة — {{ $upcomingCourses->total() }}</h2>
+                <a href="{{ route('panel.v1.admin.education.upcoming.create') }}" class="h-10 px-4 rounded-12px bg-primary text-white font-bold text-13px center">+ إضافة</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table w-full text-14px">
+                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الدورة</th><th class="px-4 py-3 text-center">المتابعون</th><th class="px-4 py-3 text-center">المدرب</th><th class="px-4 py-3 text-center">الحالة</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead>
+                    <tbody>
+                    @foreach($upcomingCourses as $u)
+                        <tr class="border-b border-d9 last:border-0">
+                            <td class="px-4 py-3 font-bold text-primary truncate max-w-[18rem]">{{ $u->title ?? 'دورة #'.$u->id }}</td>
+                            <td class="px-4 py-3 text-center font-bold text-primary">{{ $u->followers_count ?? $u->followers->count() ?? 0 }}</td>
+                            <td class="px-4 py-3 text-center font-medium text-gray">{{ $u->teacher->full_name ?? '—' }}</td>
+                            <td class="px-4 py-3 text-center"><span class="inline-flex rounded-full px-2.5 py-1 font-semibold text-11px {{ ($u->status ?? '')==='active' ? 'bg-[#D1FAE5] text-[#059669]' : 'bg-[#FEF3C7] text-[#D97706]' }}">{{ $u->status ?? '—' }}</span></td>
+                            <td class="px-4 py-3 text-center">
+                                <div class="flex items-center justify-center gap-1.5">
+                                    <a href="{{ route('panel.v1.admin.education.upcoming.edit',['id'=>$u->id]) }}" class="size-8 rounded-8px border border-d9 center" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a>
+                                    <form method="POST" action="{{ route('panel.v1.admin.education.upcoming.delete',['id'=>$u->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
+    @if (!empty($waitlists))
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4]">
+                <h2 class="font-bold text-16px text-primary">قوائم الانتظار — {{ $waitlists->total() }} دورة مفعّلة</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table w-full text-14px">
+                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الدورة</th><th class="px-4 py-3 text-center">الأعضاء</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead>
+                    <tbody>
+                    @foreach($waitlists as $w)
+                        <tr class="border-b border-d9 last:border-0">
+                            <td class="px-4 py-3 font-bold text-primary truncate max-w-[20rem]">{{ $w->title ?? 'دورة #'.$w->id }}</td>
+                            <td class="px-4 py-3 text-center font-bold text-primary">{{ $w->members ?? 0 }}</td>
+                            <td class="px-4 py-3 text-center"><a href="{{ route('panel.v1.admin.education.waitlists.view',['webinarId'=>$w->id]) }}" class="inline-flex h-8 px-3 rounded-8px bg-primary/10 text-primary font-semibold text-12px center hover:bg-primary/15">عرض الأعضاء</a></td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
+    @if (!empty($noticeboards))
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex items-center justify-between">
+                <h2 class="font-bold text-16px text-primary">لوح الإعلانات — {{ $noticeboards->total() }}</h2>
+                <a href="{{ route('panel.v1.admin.education.noticeboard.create') }}" class="h-10 px-4 rounded-12px bg-primary text-white font-bold text-13px center">+ إعلان جديد</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table w-full text-14px">
+                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">العنوان</th><th class="px-4 py-3 text-center">التاريخ</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead>
+                    <tbody>
+                    @foreach($noticeboards as $n)
+                        <tr class="border-b border-d9 last:border-0">
+                            <td class="px-4 py-3 font-bold text-primary truncate max-w-[20rem]">{{ $n->title ?? 'إعلان #'.$n->id }}</td>
+                            <td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d', (int)$n->created_at) }}</td>
+                            <td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.education.noticeboard.delete',['id'=>$n->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
+    @if (!empty($waitlistItems))
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex flex-wrap items-center justify-between gap-3">
+                <h2 class="font-bold text-16px text-primary">قائمة الانتظار — {{ $webinar->title ?? '' }} ({{ $waitlistItems->total() }})</h2>
+                <form method="POST" action="{{ route('panel.v1.admin.education.waitlists.delete-all', ['webinarId' => $webinar->id ?? 0]) }}" onsubmit="return confirm('حذف كل الأعضاء؟')" class="inline">@csrf<button type="submit" class="h-10 px-4 rounded-12px border border-red-200 bg-white font-semibold text-13px text-red-500 hover:bg-red-50 transition">حذف الكل</button></form>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table w-full text-14px">
+                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">العضو</th><th class="px-4 py-3 text-center">الهاتف</th><th class="px-4 py-3 text-center">التاريخ</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead>
+                    <tbody>
+                    @foreach($waitlistItems as $w)
+                        <tr class="border-b border-d9 last:border-0">
+                            <td class="px-4 py-3 font-bold text-primary">{{ $w->full_name ?? 'عضو #'.$w->id }}</td>
+                            <td class="px-4 py-3 text-center font-medium text-gray" dir="ltr">{{ $w->phone ?? '—' }}</td>
+                            <td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d', (int)$w->created_at) }}</td>
+                            <td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.education.waitlists.delete',['id'=>$w->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
+    @if (!empty($stats) && empty($courses) && empty($bundles) && empty($assignments) && empty($quizzes) && empty($certificates) && empty($lives) && empty($events) && empty($reviews) && empty($departments) && empty($attendances) && empty($filters) && empty($trends) && empty($sales) && empty($upcomingCourses) && empty($waitlists) && empty($waitlistItems) && empty($noticeboards) && empty($quizzesResults) && empty($relatedCourses))
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            @foreach($stats as $st)
+                <div class="border border-d9 rounded-14px bg-white p-6 text-center">
+                    <p class="font-bold text-28px text-primary leading-none mb-2">{{ is_array($st) ? ($st['value'] ?? $st['count'] ?? '—') : $st }}</p>
+                    <p class="font-semibold text-14px text-gray">{{ is_array($st) ? ($st['label'] ?? 'إحصائية') : 'إحصائية' }}</p>
+                </div>
+            @endforeach
+        </div>
+    @endif
+
+    @if (empty($courses) && empty($bundles) && empty($assignments) && empty($quizzes) && empty($certificates) && empty($lives) && empty($events) && empty($reviews) && empty($departments) && empty($attendances) && empty($filters) && empty($trends) && empty($sales) && empty($upcomingCourses) && empty($waitlists) && empty($waitlistItems) && empty($noticeboards) && empty($quizzesResults) && empty($relatedCourses) && empty($stats))
         @include('panel_v1.admin.components.empty-stub')
     @endif
 

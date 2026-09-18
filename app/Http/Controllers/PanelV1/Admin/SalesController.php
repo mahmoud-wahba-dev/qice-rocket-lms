@@ -245,18 +245,30 @@ class SalesController extends AdminController
                 break;
             case 'meeting_packages_sold':
                 $title='باقات الاجتماعات المباعة';
-                $q=\App\Models\MeetingPackageSold::with(['user','meetingPackage.creator'])->orderBy('id','desc');
-                if($search !== '') $q->where('id',$search);
-                $from=$request->get('from'); $to=$request->get('to'); $q=fromAndToDateFilter($from,$to,$q,'created_at');
+                $q=\App\Models\MeetingPackageSold::with(['user','meetingPackage.creator','sessions'])->withCount(['sessions']);
+                if($search !== '') $q->whereHas('meetingPackage',fn($qq)=>$qq->whereTranslationLike('title',"%{$search}%"));
+                if($creatorIds=$request->get('creator_ids')) $q->whereHas('meetingPackage',fn($qq)=>$qq->whereIn('creator_id',(array)$creatorIds));
+                if($studentIds=$request->get('student_ids')) $q->whereIn('user_id',(array)$studentIds);
+                $from=$request->get('from'); $to=$request->get('to'); $q=fromAndToDateFilter($from,$to,$q,'paid_at');
+                if(($sort=$request->get('sort'))==='amount_desc') $q->orderBy('paid_amount','desc'); elseif($sort==='amount_asc') $q->orderBy('paid_amount','asc'); else $q->orderBy('paid_at','desc');
                 $real['meetingPackagesSold']=$q->paginate(15)->withQueryString();
+                foreach($real['meetingPackagesSold'] as $sold){ try{ $sold->handleExtraData(); }catch(\Throwable $e){} }
+                if(($st=$request->get('status'))==='finished') $real['meetingPackagesSold']->setCollection($real['meetingPackagesSold']->getCollection()->filter(fn($s)=>(($s->status ?? '')==='finished'))->values());
+                elseif($st==='open') $real['meetingPackagesSold']->setCollection($real['meetingPackagesSold']->getCollection()->filter(fn($s)=>(($s->status ?? '')!=='finished'))->values());
                 $real['paginator']=$real['meetingPackagesSold'];
+                $statOpen=0; $statFinished=0; $statAmount=0;
+                foreach(\App\Models\MeetingPackageSold::cursor() as $soldRow){ try{ $soldRow->handleExtraData(); }catch(\Throwable $e){} if((($soldRow->status ?? '')==='finished')) $statFinished++; else $statOpen++; $statAmount+=(float)($soldRow->paid_amount ?? 0); }
+                $real['soldStats']=[['label'=>'إجمالي الباقات المباعة','value'=>(string)($statOpen+$statFinished),'icon'=>'icon-[tabler--packages]'],['label'=>'إجمالي المبيعات','value'=>handlePrice($statAmount),'icon'=>'icon-[tabler--cash]'],['label'=>'مفتوحة','value'=>(string)$statOpen,'icon'=>'icon-[tabler--hourglass]'],['label'=>'منتهية','value'=>(string)$statFinished,'icon'=>'icon-[tabler--check]']];
                 break;
             case 'event_sold_tickets':
                 $title='تذاكر الفعاليات المباعة';
-                $q=\App\Models\EventSoldTicket::with(['event','user','ticket'])->orderBy('id','desc');
-                if($search !== '') $q->where('id',$search);
+                $q=\App\Models\EventTicketSold::with(['sale','eventTicket.event','user'])->whereHas('sale',fn($sq)=>$sq->whereNull('refund_at'))->orderBy('paid_at','desc');
+                if($search !== '') $q->where('code','like',"%{$search}%");
+                if($ticketId=$request->get('ticket_id')) $q->where('event_ticket_id',$ticketId);
+                $from=$request->get('from'); $to=$request->get('to'); $q=fromAndToDateFilter($from,$to,$q,'paid_at');
                 $real['eventSoldTickets']=$q->paginate(15)->withQueryString();
                 $real['paginator']=$real['eventSoldTickets'];
+                $real['allTickets']=\App\Models\EventTicket::orderBy('id','desc')->limit(100)->get();
                 break;
             default:
                 $meta=AdminMockData::stubMeta('sales', $section);
@@ -388,6 +400,13 @@ class SalesController extends AdminController
         $op=\App\Models\OfflinePayment::with(['order.orderItems'=>fn($q)=>$q->with(['webinar','product','bundle','subscribe','promotion','registrationPackage'])])->findOrFail($id);
         if(!$op->order) return back();
         return view('admin.financial.offline_payments.cart_items',['pageTitle'=>trans('update.cart_items'),'offlinePayment'=>$op,'order'=>$op->order,'orderItems'=>$op->order->orderItems]);
+    }
+    public function exportEventTickets(Request $request){
+        $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
+        $q=\App\Models\EventTicketSold::with(['sale','eventTicket.event','user'])->whereHas('sale',fn($sq)=>$sq->whereNull('refund_at'))->orderBy('paid_at','desc');
+        if($s=trim((string)$request->input('search',''))) $q->where('code','like',"%{$s}%");
+        if($ticketId=$request->get('ticket_id')) $q->where('event_ticket_id',$ticketId);
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\EventSoldTicketsExport($q->get(),null),'event_sold_tickets.xlsx');
     }
     public function exportOffline(Request $request){
         $pageType=$request->get('page_type','requests');

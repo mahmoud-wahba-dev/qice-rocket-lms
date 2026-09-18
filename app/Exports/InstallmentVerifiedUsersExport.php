@@ -5,11 +5,15 @@ namespace App\Exports;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use App\Exports\Concerns\QiceExportStyling;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class InstallmentVerifiedUsersExport implements FromCollection, WithHeadings, WithMapping
-{
-    protected $users;
+class InstallmentVerifiedUsersExport implements FromCollection, WithHeadings, WithMapping, WithStyles, ShouldAutoSize {
+    use QiceExportStyling;
+
+protected $users;
 
     public function __construct($users)
     {

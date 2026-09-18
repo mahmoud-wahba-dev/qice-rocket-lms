@@ -1,57 +1,39 @@
 @extends('panel_v1.admin.layouts.app')
 
 @section('content')
-<div class="space-y-6 sm:space-y-8 pb-8">
+<div class="space-y-6 pb-8">
+    {{-- طبق الأصل للصورة — نفس العنوان والوصف والشبكة 4 أعمدة بألوانك الحالية --}}
     @include('panel_v1.admin.components.page-header', [
-        'title' => $pageTitleText ?? 'إدارة المحتوى والمظهر',
-        'subtitle' => $pageSubtitle ?? '',
+        'title' => $pageTitleText ?? $pageTitle ?? 'إدارة أدوات التسويق',
+        'subtitle' => $pageSubtitle ?? 'مركز التحكم بإعدادات الحملات الترويجية وتفعيل أدوات الخصم والتسويق لزيادة المبيعات.',
     ])
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-5">
+    {{-- شبكة 9 كروت — 4 في الصف (lg) كما في الصورة — نفس الألوان الحالية --}}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         @foreach ($contentCards ?? [] as $card)
             @php
-                $section = $card['section'] ?? $card['route'] ?? 'products';
-                $href = isset($card['route']) && str_contains($card['route'], '.') ? route($card['route'], $card['params'] ?? []) : route('panel.v1.admin.marketing.section', ['section' => $section]);
+                $section = $card['section'] ?? 'discounts';
+                $href = isset($card['route']) && str_contains($card['route'], '.')
+                    ? route($card['route'], $card['params'] ?? [])
+                    : route('panel.v1.admin.marketing.section', ['section' => $section]);
             @endphp
-            <article class="rounded-14px border border-primary/10 bg-[#E8F5F1] px-4 py-6 flex flex-col items-center text-center min-h-44 hover:shadow-md hover:border-primary/20 transition">
-                <span class="size-12 rounded-12px bg-white/70 center mb-4">
-                    <span class="{{ $card['icon'] }} size-6 text-primary"></span>
-                </span>
-                <h3 class="font-bold text-16px text-primary mb-auto leading-snug">{{ $card['title'] }}</h3>
-                <a href="{{ $href }}"
-                    class="inline-flex items-center gap-1.5 mt-5 font-semibold text-14px text-primary hover:opacity-80 transition">
+            <a href="{{ $href }}"
+               class="group flex flex-col items-center justify-center text-center rounded-[12px] border border-[#0F3D36]/10 bg-[#EEF6F1] px-6 py-8 min-h-[172px] shadow-[0_1px_2px_rgba(15,61,54,0.04)] hover:border-[#0F3D36]/15 hover:shadow-[0_8px_24px_rgba(15,61,54,0.08)] hover:bg-[#E6F2EC] transition-all duration-200">
+                {{-- أيقونة علوية — تبقى كاملة بدون قص — وزن خفيف كما في الصورة --}}
+                <span class="{{ $card['icon'] }} size-9 text-[#0F3D36] mb-3.5 shrink-0 leading-none block transition-transform duration-200 group-hover:scale-[1.03]" aria-hidden="true"></span>
+
+                {{-- عنوان الكرت — سطرين كحد أقصى كما في الصورة --}}
+                <h3 class="font-bold text-[16px] leading-[1.5] tracking-[-0.01em] text-[#0F3D36] line-clamp-2 min-h-[48px] flex items-center justify-center px-1">
+                    {{ $card['title'] }}
+                </h3>
+
+                {{-- رابط التفاصيل — أسفل الكرت --}}
+                <span class="inline-flex items-center gap-1.5 mt-4 font-semibold text-[13px] text-[#0F3D36]/80 group-hover:text-[#0F3D36] group-hover:gap-2 transition-all">
                     عرض التفاصيل
-                    <span class="icon-[tabler--arrow-narrow-left] size-4"></span>
-                </a>
-            </article>
+                    <span class="icon-[tabler--arrow-narrow-left] size-[16px] shrink-0" aria-hidden="true"></span>
+                </span>
+            </a>
         @endforeach
     </div>
-
-    @include('panel_v1.admin.components.stats-cards', ['stats' => $stats ?? []])
-
-    @if (!empty($discounts))
-        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
-            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex items-center justify-between">
-                <h2 class="font-bold text-16px text-primary">أحدث القسائم</h2>
-                <a href="{{ route('panel.v1.admin.marketing.section',['section'=>'discounts']) }}" class="font-semibold text-13px text-primary hover:underline">عرض الكل</a>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="table w-full text-14px">
-                    <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الكود</th><th class="px-4 py-3 text-start">العنوان</th><th class="px-4 py-3 text-center">النسبة</th><th class="px-4 py-3 text-center">العدد</th><th class="px-4 py-3 text-center">الحالة</th></tr></thead>
-                    <tbody>
-                    @foreach ($discounts as $d)
-                        <tr class="border-b border-d9 last:border-0">
-                            <td class="px-4 py-3 font-bold text-primary">{{ $d['code'] ?? $d->code ?? '—' }}</td>
-                            <td class="px-4 py-3 font-medium text-primary">{{ $d['title'] ?? $d->title ?? '—' }}</td>
-                            <td class="px-4 py-3 text-center font-semibold text-primary">{{ $d['percent'] ?? $d->percent ?? '—' }}%</td>
-                            <td class="px-4 py-3 text-center font-medium text-gray">{{ $d['count'] ?? '—' }}</td>
-                            <td class="px-4 py-3 text-center"><span class="inline-flex rounded-full bg-[#D1FAE5] text-[#059669] px-3 py-1 font-semibold text-11px">{{ $d['status'] ?? 'نشط' }}</span></td>
-                        </tr>
-                    @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    @endif
 </div>
 @endsection

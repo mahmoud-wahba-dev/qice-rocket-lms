@@ -90,4 +90,11 @@
     <span class="icon-[tabler--file-spreadsheet]"></span>
     <span class="icon-[tabler--database]"></span>
     <span class="icon-[tabler--repeat]"></span>
+    {{-- أدوات التسويق — 9 كروت الصورة --}}
+    <span class="icon-[tabler--shopping-cart-x]"></span>
+    <span class="icon-[tabler--stack-2]"></span>
+    <span class="icon-[tabler--arrow-left]"></span>
+    <span class="icon-[tabler--arrow-narrow-left]"></span>
+    <span class="icon-[tabler--discount-2]"></span>
+    <span class="icon-[tabler--stack]"></span>
 </div>

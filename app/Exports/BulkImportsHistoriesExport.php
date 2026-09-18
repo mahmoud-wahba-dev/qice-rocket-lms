@@ -5,11 +5,15 @@ namespace App\Exports;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use App\Exports\Concerns\QiceExportStyling;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class BulkImportsHistoriesExport implements FromCollection, WithHeadings, WithMapping
-{
-    protected $imports;
+class BulkImportsHistoriesExport implements FromCollection, WithHeadings, WithMapping, WithStyles, ShouldAutoSize {
+    use QiceExportStyling;
+
+protected $imports;
 
     public function __construct($imports)
     {
