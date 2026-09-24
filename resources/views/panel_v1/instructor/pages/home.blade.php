@@ -27,8 +27,8 @@ $instructorName = $instructorName ?? ($authUser->full_name ?? 'المدرب');
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         @foreach ($stats ?? [] as $index => $stat)
         <div
-            class="rounded-14px bg-primary text-white px-3 py-5 sm:py-6 text-center flex flex-col items-center justify-center min-h-[120px]">
-            <span class="mb-3 inline-flex items-center justify-center" aria-hidden="true">
+            class="rounded-14px bg-primary h-[150px] px-3 text-center flex flex-col items-center justify-center gap-2.5 shadow-sm">
+            <span class="inline-flex items-center justify-center" aria-hidden="true">
                 @switch($index)
                 @case(0)
                 {{-- إجمالي الأرباح --}}
@@ -77,8 +77,8 @@ $instructorName = $instructorName ?? ($authUser->full_name ?? 'المدرب');
                 @break
                 @endswitch
             </span>
-            <p class="font-semibold text-30px leading-none mb-2">{{ $stat['value'] }}</p>
-            <p class="font-semibold text-14px text-white leading-snug">{{ $stat['label'] }}</p>
+            <p class="font-bold text-22px sm:text-26px leading-none text-[#F5E6C8]">{{ $stat['value'] }}</p>
+            <p class="font-medium text-13px sm:text-14px text-white leading-snug">{{ $stat['label'] }}</p>
         </div>
         @endforeach
     </div>

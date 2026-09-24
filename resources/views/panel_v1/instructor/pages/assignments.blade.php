@@ -32,12 +32,10 @@
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
         @foreach ($assignmentStats ?? [] as $stat)
-            <div class="rounded-14px bg-primary text-white px-5 py-5 flex items-center gap-4 min-h-[110px]">
-                <span class="icon-[tabler--school] size-8 text-color2 shrink-0"></span>
-                <div>
-                    <p class="font-semibold text-28px sm:text-30px leading-none mb-1.5">{{ $stat['value'] }}</p>
-                    <p class="font-semibold text-15px sm:text-16px text-white/90 leading-snug">{{ $stat['label'] }}</p>
-                </div>
+            <div class="rounded-14px bg-primary h-[150px] px-4 flex flex-col items-center justify-center text-center gap-2.5 shadow-sm">
+                <span class="{{ $stat['icon'] ?? 'icon-[tabler--school]' }} size-6 text-color2 shrink-0"></span>
+                <p class="font-bold text-22px sm:text-26px leading-none text-[#F5E6C8]">{{ $stat['value'] }}</p>
+                <p class="font-medium text-13px sm:text-14px text-white leading-snug">{{ $stat['label'] }}</p>
             </div>
         @endforeach
     </div>

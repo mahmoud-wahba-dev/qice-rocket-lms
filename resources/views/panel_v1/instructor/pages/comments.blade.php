@@ -19,12 +19,10 @@
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         @foreach ($commentStats ?? [] as $stat)
-            <div class="rounded-14px bg-primary text-white px-5 py-5 flex items-center gap-4 min-h-[100px]">
-                <span class="icon-[tabler--message] size-7 text-color2 shrink-0"></span>
-                <div>
-                    <p class="font-semibold text-26px sm:text-28px leading-none mb-1.5">{{ $stat['value'] }}</p>
-                    <p class="font-semibold text-14px sm:text-15px text-white/90 leading-snug">{{ $stat['label'] }}</p>
-                </div>
+            <div class="rounded-14px bg-primary h-[150px] px-4 flex flex-col items-center justify-center text-center gap-2.5 shadow-sm">
+                <span class="{{ $stat['icon'] ?? 'icon-[tabler--message]' }} size-6 text-color2 shrink-0"></span>
+                <p class="font-bold text-22px sm:text-26px leading-none text-[#F5E6C8]">{{ $stat['value'] }}</p>
+                <p class="font-medium text-13px sm:text-14px text-white leading-snug">{{ $stat['label'] }}</p>
             </div>
         @endforeach
     </div>
