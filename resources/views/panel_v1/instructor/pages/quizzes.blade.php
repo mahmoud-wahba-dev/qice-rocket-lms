@@ -131,26 +131,21 @@
                                 </td>
                                 <td class="px-4 py-4 font-medium whitespace-nowrap">{{ $row['created_at'] }}</td>
                                 <td class="px-4 py-4">
-                                    <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end]">
-                                        <button type="button"
-                                            class="dropdown-toggle size-9 rounded-full bg-[#F1F5F9] !inline-flex !items-center !justify-center border-0 hover:bg-[#E8ECEA] transition"
-                                            aria-label="الاجراء" id="quiz-row-menu-{{ $index }}">
-                                            <span class="icon-[tabler--dots-vertical] size-5 text-gray"></span>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-48 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20"
-                                            role="menu" aria-labelledby="quiz-row-menu-{{ $index }}">
-                                            <li><a href="{{ $row['view_url'] }}" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض الاختبار</a></li>
-                                            <li><a href="{{ $row['edit_url'] }}" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">تعديل</a></li>
-                                            <li>
-                                                <form method="POST" action="{{ $row['delete_url'] }}" onsubmit="return confirm('حذف الاختبار؟');">
-                                                    @csrf
-                                                    <button type="submit" class="dropdown-item px-4 py-2.5 font-medium text-15px text-[#EF4444] w-full text-start">حذف</button>
-                                                </form>
-                                            </li>
-                                            <li><a href="{{ $row['view_url'] }}#waiting-results" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض النتائج</a></li>
-                                            <li><a href="{{ $row['course_url'] }}" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض الدورة</a></li>
-                                        </ul>
-                                    </div>
+                                    @include('panel_v1.components.actions-dropdown', [
+                                        'id' => 'quiz-row-menu-' . $index,
+                                        'items' => [
+                                            ['label' => 'عرض الاختبار', 'url' => $row['view_url']],
+                                            ['label' => 'تعديل', 'url' => $row['edit_url']],
+                                            [
+                                                'label' => 'حذف',
+                                                'action' => $row['delete_url'],
+                                                'confirm' => 'حذف الاختبار؟',
+                                                'tone' => 'danger',
+                                            ],
+                                            ['label' => 'عرض النتائج', 'url' => $row['view_url'] . '#waiting-results'],
+                                            ['label' => 'عرض الدورة', 'url' => $row['course_url']],
+                                        ],
+                                    ])
                                 </td>
                             </tr>
                         @empty

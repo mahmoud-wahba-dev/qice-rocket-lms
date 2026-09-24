@@ -130,31 +130,19 @@
                             <td class="px-4 py-4 font-semibold text-15px text-black">{{ $student['assignments'] }}</td>
                             <td class="px-4 py-4 font-semibold text-15px text-black">{{ $student['certificates'] }}</td>
                             <td class="px-4 py-4">
-                                <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end]">
-                                    <button type="button"
-                                        class="dropdown-toggle size-9 rounded-full bg-[#F1F5F9] !inline-flex !items-center !justify-center border-0 hover:bg-[#E8ECEA] transition"
-                                        aria-label="الإجراء والتقييم" id="perf-student-menu-{{ $index }}">
-                                        <span class="icon-[tabler--dots-vertical] size-5 text-gray"></span>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-48 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20"
-                                        role="menu" aria-labelledby="perf-student-menu-{{ $index }}">
-                                        <li>
-                                            <a href="{{ $student['review_url'] }}"
-                                                class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">
-                                                {{ !empty($student['has_pending']) ? 'تصحيح التكليف' : 'عرض التكليفات' }}
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <form method="POST" action="{{ $student['remind_url'] }}">
-                                                @csrf
-                                                <button type="submit"
-                                                    class="dropdown-item w-full text-start px-4 py-2.5 font-medium text-15px text-primary">
-                                                    ارسال تذكير
-                                                </button>
-                                            </form>
-                                        </li>
-                                    </ul>
-                                </div>
+                                @include('panel_v1.components.actions-dropdown', [
+                                    'id' => 'perf-student-menu-' . $index,
+                                    'items' => [
+                                        [
+                                            'label' => !empty($student['has_pending']) ? 'تصحيح التكليف' : 'عرض التكليفات',
+                                            'url' => $student['review_url'],
+                                        ],
+                                        [
+                                            'label' => 'ارسال تذكير',
+                                            'action' => $student['remind_url'],
+                                        ],
+                                    ],
+                                ])
                             </td>
                         </tr>
                     @empty

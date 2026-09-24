@@ -594,6 +594,7 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 Route::get('/users/{id}/edit', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'editUser'])->name('users.edit');
                 Route::post('/users/{id}/update', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'updateUser'])->name('users.update');
                 Route::post('/users/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'deleteUser'])->name('users.delete');
+                Route::get('/users/{id}/impersonate', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'impersonateUser'])->name('users.impersonate');
                 Route::get('/users/export', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'exportUsers'])->name('users.export');
                 Route::get('/groups/create', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'createGroup'])->name('groups.create');
                 Route::post('/groups', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'storeGroup'])->name('groups.store');
@@ -611,7 +612,9 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 Route::post('/forums', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'storeForum'])->name('forums.store');
                 Route::get('/forums/{id}/edit', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'editForum'])->name('forums.edit');
                 Route::post('/forums/{id}/update', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'updateForum'])->name('forums.update');
-                Route::post('/settings/{id}/save', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'saveSetting'])->name('settings.save');
+                Route::post('/settings/{id}/save', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'saveSetting'])->name('settings.save')->whereNumber('id');
+                Route::get('/settings/{group}', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'settingsGroup'])->name('settings.group')
+                    ->where('group', 'general|financial|personalization|notifications|seo|mobile-app|update-app');
                 Route::post('/groups/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'deleteGroup'])->name('groups.delete');
                 Route::get('/badges/create', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'createBadge'])->name('badges.create');
                 Route::post('/badges', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'storeBadge'])->name('badges.store');

@@ -41,56 +41,31 @@
                 </div>
             </div>
 
-            <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end] shrink-0">
-                <button type="button"
-                    class="dropdown-toggle size-9 rounded-8px bg-fa !inline-flex !items-center !justify-center border border-d9 hover:bg-[#F1F5F9] transition"
-                    aria-label="خيارات الحزمة" id="{{ $menuId }}">
-                    <span class="icon-[tabler--dots] size-5 text-gray"></span>
-                </button>
-                <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-52 py-2 rounded-12px border border-d9 bg-white shadow-xl z-50"
-                    role="menu" aria-labelledby="{{ $menuId }}">
-                    @if (!empty($bundle['edit_url']))
-                        <li>
-                            <a href="{{ $bundle['edit_url'] }}"
-                                class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary">
-                                <span class="icon-[tabler--pencil] size-4 text-gray shrink-0"></span>
-                                تعديل الحزمة
-                            </a>
-                        </li>
-                    @endif
-                    @if (!empty($bundle['courses_url']))
-                        <li>
-                            <a href="{{ $bundle['courses_url'] }}"
-                                class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary">
-                                <span class="icon-[tabler--books] size-4 text-gray shrink-0"></span>
-                                دورات الحزمة
-                            </a>
-                        </li>
-                    @endif
-                    @if (!empty($bundle['preview_url']))
-                        <li>
-                            <a href="{{ $bundle['preview_url'] }}"
-                                class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary">
-                                <span class="icon-[tabler--external-link] size-4 text-gray shrink-0"></span>
-                                عرض عام
-                            </a>
-                        </li>
-                    @endif
-                    @if ($status !== 'inactive')
-                        <li>
-                            <form method="POST" action="{{ route('panel.v1.instructor.bundles.delete', ['id' => $bundle['id']]) }}"
-                                onsubmit="return confirm('تعطيل هذه الحزمة؟');">
-                                @csrf
-                                <button type="submit"
-                                    class="dropdown-item flex w-full items-center gap-2 px-4 py-2.5 font-medium text-15px text-[#E11D48] text-start">
-                                    <span class="icon-[tabler--trash] size-4 shrink-0"></span>
-                                    تعطيل
-                                </button>
-                            </form>
-                        </li>
-                    @endif
-                </ul>
-            </div>
+            @php
+                $bundleMenuItems = [];
+                if (!empty($bundle['edit_url'])) {
+                    $bundleMenuItems[] = ['label' => 'تعديل الحزمة', 'url' => $bundle['edit_url']];
+                }
+                if (!empty($bundle['courses_url'])) {
+                    $bundleMenuItems[] = ['label' => 'دورات الحزمة', 'url' => $bundle['courses_url']];
+                }
+                if (!empty($bundle['preview_url'])) {
+                    $bundleMenuItems[] = ['label' => 'عرض عام', 'url' => $bundle['preview_url']];
+                }
+                if ($status !== 'inactive') {
+                    $bundleMenuItems[] = [
+                        'label' => 'تعطيل',
+                        'action' => route('panel.v1.instructor.bundles.delete', ['id' => $bundle['id']]),
+                        'confirm' => 'تعطيل هذه الحزمة؟',
+                        'tone' => 'danger',
+                    ];
+                }
+            @endphp
+            @include('panel_v1.components.actions-dropdown', [
+                'id' => $menuId,
+                'items' => $bundleMenuItems,
+                'class' => 'shrink-0',
+            ])
         </div>
 
         <div class="grid grid-cols-2 gap-3 p-3 sm:p-4 mb-4 rounded-10px border border-d9 bg-[#FAFAF4]">

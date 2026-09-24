@@ -145,24 +145,22 @@
                         <td class="px-4 py-4">
                             <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end]">
                                 <button type="button"
-                                    class="dropdown-toggle size-9 rounded-full bg-[#F1F5F9] !inline-flex !items-center !justify-center border-0 hover:bg-[#E8ECEA] transition"
+                                    class="dropdown-toggle size-9 rounded-10px border border-d9 bg-white center hover:bg-[#FAFAF4] transition"
                                     aria-label="إجراءات" id="consult-row-menu-{{ $row['id'] ?? $index }}">
-                                    <span class="icon-[tabler--dots-vertical] size-5 text-gray"></span>
+                                    <span class="icon-[tabler--dots] size-4 text-gray"></span>
                                 </button>
-                                <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-48 py-2 rounded-12px border border-d9 bg-white shadow-xl z-30"
+                                <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-[13rem] py-1.5 rounded-12px border border-d9 bg-white shadow-xl z-40 text-start"
                                     role="menu" aria-labelledby="consult-row-menu-{{ $row['id'] ?? $index }}">
                                     <li>
                                         <a href="{{ $row['detail_url'] }}"
-                                            class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary">
-                                            <span class="icon-[tabler--info-circle] size-4 text-gray shrink-0"></span>
+                                            class="dropdown-item px-4 py-2.5 font-medium text-14px text-gray hover:bg-[#FAFAF4]">
                                             التفاصيل
                                         </a>
                                     </li>
                                     @if (!empty($row['join_url']))
                                         <li>
                                             <a href="{{ $row['join_url'] }}"
-                                                class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary">
-                                                <span class="icon-[tabler--video] size-4 text-gray shrink-0"></span>
+                                                class="dropdown-item px-4 py-2.5 font-medium text-14px text-gray hover:bg-[#FAFAF4]">
                                                 {{ $row['join_label'] ?? 'انضمام للجلسة المباشرة' }}
                                             </a>
                                         </li>
@@ -174,8 +172,7 @@
                                                 data-action="{{ $row['session_url'] }}"
                                                 data-student="{{ $row['name'] }}"
                                                 data-link="{{ $row['link_raw'] ?? '' }}"
-                                                class="dropdown-item flex w-full items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary text-start">
-                                                <span class="icon-[tabler--link] size-4 text-gray shrink-0"></span>
+                                                class="dropdown-item w-full text-start px-4 py-2.5 font-medium text-14px text-gray hover:bg-[#FAFAF4]">
                                                 إعداد رابط خارجي
                                             </button>
                                         </li>
@@ -186,8 +183,7 @@
                                                 onsubmit="return confirm('إنهاء هذه الجلسة؟');">
                                                 @csrf
                                                 <button type="submit"
-                                                    class="dropdown-item flex w-full items-center gap-2 px-4 py-2.5 font-medium text-15px text-[#E11D48] text-start">
-                                                    <span class="icon-[tabler--circle-check] size-4 shrink-0"></span>
+                                                    class="dropdown-item w-full text-start px-4 py-2.5 font-semibold text-14px text-[#16A34A] hover:bg-[#F0FDF4]">
                                                     إنهاء الجلسة
                                                 </button>
                                             </form>

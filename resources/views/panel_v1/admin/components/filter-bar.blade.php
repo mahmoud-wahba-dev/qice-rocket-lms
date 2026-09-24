@@ -17,7 +17,11 @@
         بحث
     </button>
     @if(request('search'))
-        <a href="{{ url()->current() }}" class="inline-flex items-center gap-2 h-12 px-4 rounded-12px border border-d9 bg-white font-medium text-14px text-primary hover:bg-[#FAFAF4] transition">
+        @php
+            $clearQuery = request()->except(['search', 'page']);
+            $clearUrl = url()->current() . (count($clearQuery) ? '?' . http_build_query($clearQuery) : '');
+        @endphp
+        <a href="{{ $clearUrl }}" class="inline-flex items-center gap-2 h-12 px-4 rounded-12px border border-d9 bg-white font-medium text-14px text-primary hover:bg-[#FAFAF4] transition">
             مسح
         </a>
     @endif

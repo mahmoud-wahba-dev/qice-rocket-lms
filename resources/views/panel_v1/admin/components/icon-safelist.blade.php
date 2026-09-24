@@ -8,7 +8,14 @@
     <span class="icon-[tabler--award]"></span>
     <span class="icon-[tabler--badge]"></span>
     <span class="icon-[tabler--ban]"></span>
-    <span class="icon-[tabler--bell]"></span>
+    <span class="icon-[tabler--adjustments-horizontal]"></span>
+    <span class="icon-[tabler--calculator]"></span>
+    <span class="icon-[tabler--paint]"></span>
+    <span class="icon-[tabler--world-search]"></span>
+    <span class="icon-[tabler--device-mobile]"></span>
+    <span class="icon-[tabler--refresh]"></span>
+    <span class="icon-[tabler--device-floppy]"></span>
+    <span class="icon-[tabler--chevron-left]"></span>
     <span class="icon-[tabler--bell-ringing]"></span>
     <span class="icon-[tabler--book]"></span>
     <span class="icon-[tabler--bookmark]"></span>

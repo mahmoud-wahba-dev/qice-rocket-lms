@@ -75,8 +75,11 @@ class AdminV1ComprehensiveTest extends TestCase
         $admin=$this->admin();
         $c=new \App\Http\Controllers\PanelV1\Admin\EducationController();
         $v=$c->section($this->req($admin,'/v1/admin/education/courses'), 'courses');
-        $this->assertEquals('panel_v1.admin.pages.education.section-real', $v->getName());
+        $this->assertEquals('panel_v1.admin.pages.education.courses-list', $v->getName());
         $html=$v->render();
+        $this->assertStringContainsString('جميع الدورات المسجلة', $html);
+        $this->assertStringContainsString('إرسال إخطار للمتدربين', $html);
+        $this->assertStringContainsString('قائمة المتدربين', $html);
         $first=\App\Models\Webinar::orderBy('id','desc')->first();
         if($first) $this->assertStringContainsString(e($first->title), $html);
     }

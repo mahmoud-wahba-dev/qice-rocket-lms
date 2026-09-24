@@ -22,7 +22,7 @@
 
 <div class="flex flex-wrap items-center justify-between gap-3 pt-4">
     <p class="font-medium text-14px text-gray">
-        عرض النتائج {{ $from }} إلى {{ $to }} من أصل {{ $total }}.
+        عرض النتائج من {{ $from }} إلى {{ $to }} من أصل {{ $total }}
     </p>
     @if($hasPaginator && $paginator->hasPages())
         <div class="flex items-center gap-1.5">

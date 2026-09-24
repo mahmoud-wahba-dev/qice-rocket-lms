@@ -12,50 +12,145 @@ class SystemController extends AdminController
 {
     public function home(Request $request)
     {
-        $search = trim((string)$request->input('search',''));
-        $q = \App\User::orderBy('id','desc');
-        if($search !== ''){
-            $q->where(function($qq) use ($search){
-                $qq->where('id', $search);
-                $qq->orWhere('full_name','like',"%{$search}%");
-                $qq->orWhere('email','like',"%{$search}%");
+        $tab = $this->resolveUsersTab($request->input('tab'));
+        $search = trim((string) $request->input('search', ''));
+
+        $q = \App\User::query()->with(['role'])->orderBy('id', 'desc');
+        $this->applyUsersTabFilter($q, $tab);
+        if ($search !== '') {
+            $q->where(function ($qq) use ($search) {
+                $qq->where('id', $search)
+                    ->orWhere('full_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('mobile', 'like', "%{$search}%");
             });
         }
+
         $paginator = $q->paginate(15)->withQueryString();
-        $userRows=collect($paginator->items())->map(function($u){
-            $groupTitle = 'عام';
-            try { $g = $u->getUserGroup(); if(!empty($g) && !empty($g->name)) $groupTitle = $g->name; } catch(\Throwable $e) {}
-            return [
-                'id'=>$u->id,
-                'name'=>$u->full_name,
-                'email'=>$u->email,
-                'role'=>$u->role_name,
-                'balance'=> handlePrice($u->balance ?? 0),
-                'income'=> handlePrice($u->income ?? 0),
-                'group'=> $groupTitle,
-                'registered_at'=> date('Y/m/d',(int)$u->created_at),
-                'status'=>$u->status,
-            ];
-        })->all();
-        $counts=[
-            ['label'=>'المتدربون','value'=>(string)\App\User::where('role_name','user')->count()],
-            ['label'=>'المدربون','value'=>(string)\App\User::where('role_name','teacher')->count()],
-            ['label'=>'المنظمات','value'=>(string)\App\User::where('role_name','organization')->count()],
+        $userRows = collect($paginator->items())->map(fn ($u) => $this->mapUserRow($u))->all();
+
+        $staffRoleIds = \App\Models\Role::where('is_admin', true)->pluck('id')->all();
+        $tabDefs = [
+            'all' => ['label' => 'الكل', 'count' => (int) \App\User::count()],
+            'students' => ['label' => 'الطلاب', 'count' => (int) \App\User::where('role_name', \App\Models\Role::$user)->count()],
+            'teachers' => ['label' => 'المدربون', 'count' => (int) \App\User::where('role_name', \App\Models\Role::$teacher)->count()],
+            'organizations' => ['label' => 'المنظمات', 'count' => (int) \App\User::where('role_name', \App\Models\Role::$organization)->count()],
+            'staff' => ['label' => 'المشرفون', 'count' => empty($staffRoleIds) ? 0 : (int) \App\User::whereIn('role_id', $staffRoleIds)->count()],
         ];
+
+        $counts = [
+            ['label' => 'المتدربون', 'value' => (string) $tabDefs['students']['count']],
+            ['label' => 'المدربون', 'value' => (string) $tabDefs['teachers']['count']],
+            ['label' => 'المنظمات', 'value' => (string) $tabDefs['organizations']['count']],
+            ['label' => 'المشرفون', 'value' => (string) $tabDefs['staff']['count']],
+        ];
+
         return $this->renderAdmin(
             $request,
             'panel_v1.admin.pages.system.users',
             'المستخدمين',
-            array_merge(AdminMockData::shell('system','home'), [
-                'users'=>$userRows,
-                'userRows'=>$userRows,
-                'userTabs'=>['الكل','الطلاب','المدربون','المنظمات','المشرفون'],
-                'paginator'=>$paginator,
-                'pagination'=>['from'=>$paginator->firstItem() ?? 0,'to'=>$paginator->lastItem() ?? 0,'total'=>$paginator->total()],
-                'stats'=>$counts,
-                'pageTitleText'=>'المستخدمين'
+            array_merge(AdminMockData::shell('system', 'home'), [
+                'users' => $userRows,
+                'userRows' => $userRows,
+                'userTabs' => $tabDefs,
+                'activeUsersTab' => $tab,
+                'paginator' => $paginator,
+                'pagination' => [
+                    'from' => $paginator->firstItem() ?? 0,
+                    'to' => $paginator->lastItem() ?? 0,
+                    'total' => $paginator->total(),
+                ],
+                'stats' => $counts,
+                'pageTitleText' => 'المستخدمين',
             ])
         );
+    }
+
+    private function resolveUsersTab(?string $tab): string
+    {
+        $allowed = ['all', 'students', 'teachers', 'organizations', 'staff'];
+        $tab = strtolower(trim((string) $tab));
+
+        return in_array($tab, $allowed, true) ? $tab : 'all';
+    }
+
+    private function applyUsersTabFilter($query, string $tab): void
+    {
+        switch ($tab) {
+            case 'students':
+                $query->where('role_name', \App\Models\Role::$user);
+                break;
+            case 'teachers':
+                $query->where('role_name', \App\Models\Role::$teacher);
+                break;
+            case 'organizations':
+                $query->where('role_name', \App\Models\Role::$organization);
+                break;
+            case 'staff':
+                $staffRoleIds = \App\Models\Role::where('is_admin', true)->pluck('id')->all();
+                if (empty($staffRoleIds)) {
+                    $query->whereRaw('1 = 0');
+                } else {
+                    $query->whereIn('role_id', $staffRoleIds);
+                }
+                break;
+            default:
+                // all users
+                break;
+        }
+    }
+
+    private function mapUserRow(\App\User $u): array
+    {
+        $groupTitle = 'عام';
+        try {
+            $g = $u->getUserGroup();
+            if (!empty($g) && !empty($g->name)) {
+                $groupTitle = $g->name;
+            }
+        } catch (\Throwable $e) {
+        }
+
+        $username = trim((string) ($u->username ?? ''));
+        $status = (string) ($u->status ?? 'active');
+        $statusMeta = match ($status) {
+            'active' => ['label' => 'نشط', 'class' => 'bg-[#D1FAE5] text-[#059669]'],
+            'pending' => ['label' => 'قيد الانتظار', 'class' => 'bg-[#FEF3C7] text-[#D97706]'],
+            'inactive' => ['label' => 'غير نشط', 'class' => 'bg-[#FEE2E2] text-[#DC2626]'],
+            default => ['label' => $status, 'class' => 'bg-gray-100 text-gray-600'],
+        };
+
+        $roleCaption = $u->role->caption ?? null;
+        $roleFallback = match ((string) $u->role_name) {
+            'user' => 'طالب',
+            'teacher' => 'مدرب',
+            'organization' => 'منظمة',
+            'admin' => 'مشرف',
+            default => (string) $u->role_name,
+        };
+
+        return [
+            'id' => $u->id,
+            'name' => $u->full_name,
+            'email' => $u->email ?: ($u->mobile ?: '—'),
+            'avatar' => method_exists($u, 'getAvatar') ? $u->getAvatar(40) : null,
+            'role' => $roleCaption ?: $roleFallback,
+            'role_name' => (string) $u->role_name,
+            'balance' => handlePrice($u->balance ?? 0),
+            'income' => handlePrice($u->income ?? 0),
+            'group' => $groupTitle,
+            'registered_at' => date('Y/m/d', (int) $u->created_at),
+            'status' => $statusMeta['label'],
+            'status_class' => $statusMeta['class'],
+            'profile_url' => $username !== '' ? $u->getProfileUrl() : null,
+            'is_admin' => $u->isAdmin(),
+            // Login-as (impersonate) for students, instructors, organizations
+            'can_impersonate' => !$u->isAdmin() && in_array((string) $u->role_name, [
+                \App\Models\Role::$user,
+                \App\Models\Role::$teacher,
+                \App\Models\Role::$organization,
+            ], true),
+        ];
     }
 
     public function section(Request $request, string $section)
@@ -67,12 +162,7 @@ class SystemController extends AdminController
             case 'users':
                 return $this->home($request);
             case 'settings':
-                $title='الإعدادات';
-                $q=\App\Models\Setting::orderBy('id','desc');
-                if($search!=='') $q->where('id',$search)->orWhere('name','like',"%{$search}%");
-                $real['settings']=$q->paginate(15)->withQueryString();
-                $real['paginator']=$real['settings'];
-                break;
+                return $this->settingsHub($request);
             case 'roles':
                 $title='الأدوار';
                 $q=\App\Models\Role::orderBy('id','desc');
@@ -225,8 +315,14 @@ class SystemController extends AdminController
     {
         $user = $this->resolveAdmin($request);
         if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
-        $q = \App\User::orderBy('id','desc');
-        if($s=$request->input('search')) $q->where(function($qq)use($s){$qq->where('id',$s)->orWhere('full_name','like',"%{$s}%")->orWhere('email','like',"%{$s}%");});
+        $tab = $this->resolveUsersTab($request->input('tab'));
+        $q = \App\User::orderBy('id', 'desc');
+        $this->applyUsersTabFilter($q, $tab);
+        if ($s = $request->input('search')) {
+            $q->where(function ($qq) use ($s) {
+                $qq->where('id', $s)->orWhere('full_name', 'like', "%{$s}%")->orWhere('email', 'like', "%{$s}%");
+            });
+        }
         $users = $q->limit(1000)->get();
         return Excel::download(new UsersExport($users), 'users-'.date('Y-m-d').'.xlsx');
     }
@@ -342,6 +438,45 @@ class SystemController extends AdminController
         $del->delete();
         return back()->with('toast',['title'=>'تم','msg'=>'تم حذف المستخدم','type'=>'success']);
     }
+
+    /**
+     * Login-as user (impersonate) — same session flag as legacy admin,
+     * then land on the matching panel_v1 home (student / instructor / organization).
+     */
+    public function impersonateUser(Request $request, int $id)
+    {
+        $admin = $this->resolveAdmin($request);
+        if ($admin instanceof \Illuminate\Http\RedirectResponse) {
+            return $admin;
+        }
+
+        $target = \App\User::findOrFail($id);
+        if ($target->isAdmin()) {
+            return back()->with('toast', [
+                'title' => 'غير مسموح',
+                'msg' => 'لا يمكن تسجيل الدخول كحساب مشرف',
+                'type' => 'error',
+            ]);
+        }
+
+        $allowed = [
+            \App\Models\Role::$user,
+            \App\Models\Role::$teacher,
+            \App\Models\Role::$organization,
+        ];
+        if (!in_array((string) $target->role_name, $allowed, true)) {
+            return back()->with('toast', [
+                'title' => 'غير مسموح',
+                'msg' => 'تسجيل الدخول متاح للطلاب والمدربين والمنظمات فقط',
+                'type' => 'error',
+            ]);
+        }
+
+        session()->put(['impersonated' => $target->id]);
+
+        return redirect(panelV1HomeUrl($target));
+    }
+
     public function approveInstructorRequest(Request $request, int $id)
     {
         $user = $this->resolveAdmin($request);
@@ -665,10 +800,148 @@ class SystemController extends AdminController
     {
         $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
         $setting=\App\Models\Setting::findOrFail($id);
-        $request->validate(['value'=>'nullable|string|max:2000']);
+        $request->validate(['value'=>'nullable|string|max:200000']);
         $setting->update(['value'=>$request->input('value'),'updated_at'=>time()]);
         return back()->with('toast',['title'=>'تم','msg'=>'تم حفظ الإعداد','type'=>'success']);
     }
+
+    /**
+     * Settings hub — same card grid structure as legacy admin/settings/index.
+     */
+    public function settingsHub(Request $request)
+    {
+        $user = $this->resolveAdmin($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        return $this->renderAdmin(
+            $request,
+            'panel_v1.admin.pages.system.settings-hub',
+            'الإعدادات',
+            array_merge(AdminMockData::shell('system', 'settings'), [
+                'pageTitleText' => 'الإعدادات',
+                'settingsCards' => $this->settingsHubCards(),
+            ])
+        );
+    }
+
+    public function settingsGroup(Request $request, string $group)
+    {
+        $user = $this->resolveAdmin($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $cards = collect($this->settingsHubCards())->keyBy('key');
+        $card = $cards->get($group);
+        if (!$card) {
+            abort(404);
+        }
+
+        if ($group === 'update-app') {
+            return redirect()->route('panel.v1.admin.system.update');
+        }
+
+        $names = $card['setting_names'] ?? [];
+        $settings = empty($names)
+            ? collect()
+            : \App\Models\Setting::whereIn('name', $names)->orderBy('name')->get();
+
+        return $this->renderAdmin(
+            $request,
+            'panel_v1.admin.pages.system.settings-group',
+            $card['title'],
+            array_merge(AdminMockData::shell('system', 'settings'), [
+                'pageTitleText' => $card['title'],
+                'settingsCard' => $card,
+                'settingsItems' => $settings,
+                'hubUrl' => route('panel.v1.admin.system.section', ['section' => 'settings']),
+            ])
+        );
+    }
+
+    private function settingsHubCards(): array
+    {
+        return [
+            [
+                'key' => 'general',
+                'title' => trans('admin/main.general_card_title'),
+                'hint' => trans('admin/main.general_card_hint'),
+                'icon' => 'icon-[tabler--adjustments-horizontal]',
+                'url' => route('panel.v1.admin.system.settings.group', ['group' => 'general']),
+                'setting_names' => [
+                    'general', 'general_options', 'socials', 'custom_css_js', 'security',
+                    'sms_channels', 'cookie_settings', '404', '500', '419', '403',
+                    'contact_us', 'footer', 'navbar_links', 'report_reasons',
+                ],
+            ],
+            [
+                'key' => 'financial',
+                'title' => trans('admin/main.financial_card_title'),
+                'hint' => trans('admin/main.financial_card_hint'),
+                'icon' => 'icon-[tabler--calculator]',
+                'url' => route('panel.v1.admin.system.settings.group', ['group' => 'financial']),
+                'setting_names' => [
+                    'financial', 'commission_settings', 'currency_settings', 'offline_banks',
+                    'offline_banks_credits', 'site_bank_accounts', 'installments_settings',
+                    'installments_terms_settings', 'registration_packages_general',
+                    'registration_packages_instructors', 'registration_packages_organizations',
+                    'gifts_general_settings', 'registration_bonus_settings',
+                    'registration_bonus_terms_settings', 'referral', 'referral_how_work',
+                    'reward_program', 'rewards_settings',
+                ],
+            ],
+            [
+                'key' => 'personalization',
+                'title' => trans('admin/main.personalization_card_title'),
+                'hint' => trans('admin/main.personalization_card_hint'),
+                'icon' => 'icon-[tabler--paint]',
+                'url' => route('panel.v1.admin.system.settings.group', ['group' => 'personalization']),
+                'setting_names' => [
+                    'panel_sidebar', 'page_background', 'home_hero', 'home_hero2', 'home_sections',
+                    'home_video_or_image_box', 'theme_colors', 'theme_fonts', 'others_personalization',
+                    'features', 'find_instructors', 'become_instructor_section', 'advertising_modal',
+                    'maintenance_settings', 'restriction_settings', 'statistics',
+                    'user_dashboard_data', 'content_review_information', 'instructor_finder_settings',
+                    'store_settings', 'store_featured_products_settings', 'forums_section',
+                ],
+            ],
+            [
+                'key' => 'notifications',
+                'title' => trans('admin/main.notifications_card_title'),
+                'hint' => trans('admin/main.notifications_card_hint'),
+                'icon' => 'icon-[tabler--bell]',
+                'url' => route('panel.v1.admin.system.settings.group', ['group' => 'notifications']),
+                'setting_names' => ['notifications', 'reminders'],
+            ],
+            [
+                'key' => 'seo',
+                'title' => trans('admin/main.seo_card_title'),
+                'hint' => trans('admin/main.seo_card_hint'),
+                'icon' => 'icon-[tabler--world-search]',
+                'url' => route('panel.v1.admin.system.settings.group', ['group' => 'seo']),
+                'setting_names' => ['seo_metas'],
+            ],
+            [
+                'key' => 'mobile-app',
+                'title' => trans('update.mobile_app_configuration'),
+                'hint' => trans('update.mobile_app_configuration_hint'),
+                'icon' => 'icon-[tabler--device-mobile]',
+                'url' => route('panel.v1.admin.system.settings.group', ['group' => 'mobile-app']),
+                'setting_names' => ['mobile_app', 'mobile_app_general_settings'],
+            ],
+            [
+                'key' => 'update-app',
+                'title' => trans('update.update_app_card_title'),
+                'hint' => trans('update.update_app_card_hint'),
+                'icon' => 'icon-[tabler--refresh]',
+                'url' => route('panel.v1.admin.system.settings.group', ['group' => 'update-app']),
+                'setting_names' => [],
+            ],
+        ];
+    }
+
     public function markAllNotificationsRead(Request $request)
     {
         $user = $this->resolveAdmin($request);

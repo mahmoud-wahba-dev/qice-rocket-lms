@@ -125,36 +125,24 @@ $instructorName = $instructorName ?? ($authUser->full_name ?? 'المدرب');
                     </div>
 
                     <div class="flex flex-col items-end justify-between gap-3 shrink-0 self-stretch min-h-[72px] overflow-visible">
-                        <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end] shrink-0">
-                            <button type="button"
-                                class="dropdown-toggle size-9 rounded-full bg-[#F1F5F9] !inline-flex !items-center !justify-center border-0 hover:bg-[#E8ECEA] transition"
-                                aria-label="خيارات الدورة" id="home-course-menu-{{ $index }}">
-                                <span class="icon-[tabler--dots] size-5 text-gray"></span>
-                            </button>
-                            <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-48 py-2 rounded-12px border border-d9 bg-white shadow-xl z-50"
-                                role="menu" aria-labelledby="home-course-menu-{{ $index }}">
-                                <li>
-                                    <a href="{{ $detailsUrl }}"
-                                        class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary">عرض التفاصيل</a>
-                                </li>
-                                <li>
-                                    <a href="{{ $editUrl }}"
-                                        class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary">
-                                        {{ $isDraft ? 'متابعة التعديل' : 'تعديل' }}
-                                    </a>
-                                </li>
-                                @if (!$isDraft)
-                                <li>
-                                    <a href="{{ $watchUrl }}"
-                                        class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary">صفحة التعلم</a>
-                                </li>
-                                @endif
-                                <li>
-                                    <a href="{{ route('panel.v1.instructor.courses') }}"
-                                        class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary">إدارة الدورات</a>
-                                </li>
-                            </ul>
-                        </div>
+                        @php
+                            $homeCourseMenuItems = [
+                                ['label' => 'عرض التفاصيل', 'url' => $detailsUrl],
+                                ['label' => $isDraft ? 'متابعة التعديل' : 'تعديل', 'url' => $editUrl],
+                            ];
+                            if (!$isDraft) {
+                                $homeCourseMenuItems[] = ['label' => 'صفحة التعلم', 'url' => $watchUrl];
+                            }
+                            $homeCourseMenuItems[] = [
+                                'label' => 'إدارة الدورات',
+                                'url' => route('panel.v1.instructor.courses'),
+                            ];
+                        @endphp
+                        @include('panel_v1.components.actions-dropdown', [
+                            'id' => 'home-course-menu-' . $index,
+                            'items' => $homeCourseMenuItems,
+                            'class' => 'shrink-0',
+                        ])
 
                         <a href="{{ $editUrl }}"
                             class="inline-flex items-center justify-center gap-1.5 rounded-10px bg-primary px-3 sm:px-4 h-9 font-semibold text-10px text-white hover:opacity-95 transition whitespace-nowrap">

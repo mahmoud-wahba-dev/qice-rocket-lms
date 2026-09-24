@@ -234,7 +234,18 @@ class User extends Authenticatable
 
     public function getProfileUrl()
     {
-        return '/users/' . $this->getUsername() . '/profile';
+        $username = $this->getUsername();
+        if (empty($username)) {
+            return null;
+        }
+
+        // Teachers → landing_v1 public profile (canonical v1)
+        if ($this->role_name === Role::$teacher) {
+            return route('landing.v1.instructor-details', ['username' => $username], false);
+        }
+
+        // Students / orgs / others → legacy public profile until a landing_v1 page exists
+        return '/users/' . $username . '/profile';
     }
 
     public function getMeetingReservationUrl()

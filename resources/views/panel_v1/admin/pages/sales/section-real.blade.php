@@ -44,10 +44,13 @@
                             </td>
                             <td class="px-4 py-3 text-center font-medium text-gray">{{ $p['date'] ?? date('Y/m/d',(int)($p->created_at ?? time())) }}</td>
                             <td class="px-4 py-3 text-center">
-                                <div class="flex items-center justify-center gap-1">
-                                    <form method="POST" action="{{ route('panel.v1.admin.sales.payouts.approve',['id'=> trim($p['id']??'',' #')]) }}" class="inline">@csrf<button type="submit" class="size-7 rounded-8px bg-[#D1FAE5] center" title="موافقة"><span class="icon-[tabler--check] size-3 text-[#059669]"></span></button></form>
-                                    <form method="POST" action="{{ route('panel.v1.admin.sales.payouts.reject',['id'=> trim($p['id']??'',' #')]) }}" class="inline">@csrf<button type="submit" class="size-7 rounded-8px bg-[#FEE2E2] center" title="رفض"><span class="icon-[tabler--x] size-3 text-[#DC2626]"></span></button></form>
-                                </div>
+                                @include('panel_v1.components.actions-dropdown', [
+                                    'id' => 'sales-payout-'.trim($p['id']??'',' #'),
+                                    'items' => [
+                                        ['label' => 'موافقة', 'action' => route('panel.v1.admin.sales.payouts.approve',['id'=> trim($p['id']??'',' #')]), 'tone' => 'success'],
+                                        ['label' => 'رفض', 'action' => route('panel.v1.admin.sales.payouts.reject',['id'=> trim($p['id']??'',' #')]), 'tone' => 'danger'],
+                                    ],
+                                ])
                             </td>
                         </tr>
                     @endforeach
@@ -73,7 +76,7 @@
                             <td class="px-4 py-3 text-center font-semibold text-primary">{{ handlePrice($op->amount ?? $op->total_amount ?? 0) }}</td>
                             <td class="px-4 py-3 text-center"><span class="inline-flex rounded-full bg-[#EFF6FF] text-[#2563EB] px-3 py-1 font-semibold text-11px">{{ $op->status ?? '—' }}</span></td>
                             <td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d',(int)($op->created_at ?? time())) }}</td>
-                            <td class="px-4 py-3 text-center"><div class="flex items-center justify-center gap-1.5"><form method="POST" action="{{ route('panel.v1.admin.sales.offline.approve',['id'=>$op->id]) }}" class="inline">@csrf<button type="submit" class="size-8 rounded-8px bg-[#D1FAE5] center hover:opacity-90" title="تأكيد"><span class="icon-[tabler--check] size-4 text-[#059669]"></span></button></form><form method="POST" action="{{ route('panel.v1.admin.sales.offline.reject',['id'=>$op->id]) }}" class="inline">@csrf<button type="submit" class="size-8 rounded-8px bg-[#FEE2E2] center hover:opacity-90" title="رفض"><span class="icon-[tabler--x] size-4 text-[#DC2626]"></span></button></form><form method="POST" action="{{ route('panel.v1.admin.sales.offline.delete',['id'=>$op->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></div></td>
+                            <td class="px-4 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'sales-offline-'.$op->id, 'items' => [['label' => 'تأكيد', 'action' => route('panel.v1.admin.sales.offline.approve',['id'=>$op->id]), 'tone' => 'success'], ['label' => 'رفض', 'action' => route('panel.v1.admin.sales.offline.reject',['id'=>$op->id]), 'tone' => 'danger'], ['label' => 'حذف', 'action' => route('panel.v1.admin.sales.offline.delete',['id'=>$op->id]), 'confirm' => 'حذف؟', 'tone' => 'danger']]])</td>
                         </tr>
                     @endforeach
                     </tbody>
@@ -97,7 +100,7 @@
                             <td class="px-4 py-3 text-center font-semibold text-primary">{{ handlePrice($s->price ?? 0) }}</td>
                             <td class="px-4 py-3 text-center font-medium text-gray">{{ $s->days ?? '—' }} يوم</td>
                             <td class="px-4 py-3 text-center"><span class="inline-flex rounded-full bg-[#D1FAE5] text-[#059669] px-3 py-1 font-semibold text-11px">{{ $s->status ?? 'نشط' }}</span></td>
-                            <td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.sales.subscriptions.delete',['id'=>$s->id]) }}" onsubmit="return confirm('حذف؟')">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td>
+                            <td class="px-4 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'sales-sub-'.$s->id, 'items' => [['label' => 'حذف', 'action' => route('panel.v1.admin.sales.subscriptions.delete',['id'=>$s->id]), 'confirm' => 'حذف؟', 'tone' => 'danger']]])</td>
                         </tr>
                     @endforeach
                     </tbody>
@@ -168,7 +171,7 @@
                             <td class="px-4 py-3 font-bold text-primary">{{ $m->title ?? $m->name ?? 'اجتماع #'.$m->id }}</td>
                             <td class="px-4 py-3 text-center font-semibold text-primary">{{ handlePrice($m->price ?? $m->amount ?? 0) }}</td>
                             <td class="px-4 py-3 text-center"><span class="inline-flex rounded-full px-3 py-1 font-semibold text-11px {{ ($m->enable ?? false) ? 'bg-[#D1FAE5] text-[#059669]' : 'bg-[#FEE2E2] text-[#DC2626]' }}">{{ ($m->enable ?? false) ? 'مفعّل' : 'معطل' }}</span></td>
-                            <td class="px-4 py-3 text-center"><div class="flex items-center justify-center gap-1.5"><a href="{{ route('panel.v1.admin.sales.meeting-packages.edit',['id'=>$m->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a><form method="POST" action="{{ route('panel.v1.admin.sales.meeting-packages.delete',['id'=>$m->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></div></td>
+                            <td class="px-4 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'sales-meeting-'.$m->id, 'items' => [['label' => 'تعديل', 'url' => route('panel.v1.admin.sales.meeting-packages.edit',['id'=>$m->id]), 'tone' => 'gray'], ['label' => 'حذف', 'action' => route('panel.v1.admin.sales.meeting-packages.delete',['id'=>$m->id]), 'confirm' => 'حذف؟', 'tone' => 'danger']]])</td>
                         </tr>
                     @empty
                         <tr><td colspan="5" class="px-4 py-14 text-center font-medium text-gray">لا توجد باقات اجتماعات — أنشئ أول باقة</td></tr>
@@ -217,7 +220,7 @@
                         <tr class="border-b border-d9 last:border-0">
                             <td class="px-4 py-3 font-bold text-primary">{{ $ch->title }}</td>
                             <td class="px-4 py-3 text-center"><span class="inline-flex rounded-full px-3 py-1 font-semibold text-11px {{ ($ch->status ?? '')=='active' ? 'bg-[#D1FAE5] text-[#059669]' : 'bg-[#FEE2E2] text-[#DC2626]' }}">{{ $ch->status ?? '—' }}</span></td>
-                            <td class="px-4 py-3 text-center"><div class="flex items-center justify-center gap-1.5"><a href="{{ route('panel.v1.admin.sales.payment-channels.edit',['id'=>$ch->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a><form method="POST" action="{{ route('panel.v1.admin.sales.payment-channels.toggle',['id'=>$ch->id]) }}" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تفعيل/تعطيل"><span class="icon-[tabler--repeat] size-4 text-primary"></span></button></form></div></td>
+                            <td class="px-4 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'sales-channel-'.$ch->id, 'items' => [['label' => 'تعديل', 'url' => route('panel.v1.admin.sales.payment-channels.edit',['id'=>$ch->id]), 'tone' => 'gray'], ['label' => 'تفعيل/تعطيل', 'action' => route('panel.v1.admin.sales.payment-channels.toggle',['id'=>$ch->id]), 'tone' => 'gray']]])</td>
                         </tr>
                     @endforeach
                     </tbody>

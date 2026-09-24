@@ -119,21 +119,56 @@ class EducationController extends AdminController
         $search = trim((string)$request->input('search',''));
         switch($section){
             case 'courses':
-                $title='إدارة الدورات';
-                $q = \App\Models\Webinar::with(['category','teacher'])->orderBy('id','desc');
-                if($search !== ''){
-                    $q->where(function($qq) use ($search){
+                $title = 'جميع الدورات المسجلة';
+                $q = \App\Models\Webinar::query()
+                    ->with(['category', 'teacher'])
+                    ->withCount([
+                        'sales as sales_count' => fn ($sq) => $sq->whereNull('refund_at'),
+                    ])
+                    ->withSum([
+                        'sales as sales_amount' => fn ($sq) => $sq->whereNull('refund_at'),
+                    ], 'total_amount')
+                    ->orderBy('id', 'desc');
+                if ($search !== '') {
+                    $q->where(function ($qq) use ($search) {
                         $qq->where('id', $search);
-                        $qq->orWhereHas('translations', fn($t)=>$t->where('title','like',"%{$search}%"));
+                        $qq->orWhereHas('translations', fn ($t) => $t->where('title', 'like', "%{$search}%"));
+                        $qq->orWhereHas('teacher', fn ($t) => $t->where('full_name', 'like', "%{$search}%"));
                     });
                 }
-                if($cat=$request->input('category_id')) $q->where('category_id',$cat);
-                if($st=$request->input('status')) $q->where('status',$st);
-                $real['courses'] = $q->paginate(15)->withQueryString();
+                if ($cat = $request->input('category_id')) {
+                    $q->where('category_id', $cat);
+                }
+                if ($st = $request->input('status')) {
+                    $q->where('status', $st);
+                }
+                $real['courses'] = $q->paginate(10)->withQueryString();
                 $real['paginator'] = $real['courses'];
-                // بيانات الفلاتر
-                $real['filterCategories'] = \App\Models\Category::whereNull('parent_id')->orderBy('order')->get()->map(fn($c)=>['id'=>$c->id,'title'=>$c->title])->all();
-                $real['stubTitle']=$title;
+                $real['filterCategories'] = \App\Models\Category::whereNull('parent_id')->orderBy('order')->get()->map(fn ($c) => ['id' => $c->id, 'title' => $c->title])->all();
+                $real['courseListStats'] = [
+                    [
+                        'label' => 'الدورات النشطة',
+                        'value' => (string) \App\Models\Webinar::where('status', 'active')->count(),
+                        'icon' => 'icon-[tabler--book]',
+                    ],
+                    [
+                        'label' => 'الطلاب المسجلين',
+                        'value' => (string) \App\Models\Sale::whereNotNull('webinar_id')->whereNull('refund_at')->distinct('buyer_id')->count('buyer_id'),
+                        'icon' => 'icon-[tabler--school]',
+                    ],
+                    [
+                        'label' => 'جميع الإختبارات',
+                        'value' => (string) \App\Models\Quiz::count(),
+                        'icon' => 'icon-[tabler--message-question]',
+                    ],
+                    [
+                        'label' => 'الشهادات الصادرة',
+                        'value' => (string) \App\Models\Certificate::count(),
+                        'icon' => 'icon-[tabler--certificate]',
+                    ],
+                ];
+                $real['stubTitle'] = $title;
+                $real['stubSubtitle'] = 'دورات فيديو مُعدّة مسبقاً يمكن للطلاب مشاهدتها في أي وقت — تعلّم مرن حسب جدولك.';
                 break;
             case 'bundles':
                 $title='حزم الدورات';
@@ -144,20 +179,122 @@ class EducationController extends AdminController
                 $real['stubTitle']=$title;
                 break;
             case 'assignments':
-                $title='التكليفات';
-                $q = \App\Models\WebinarAssignment::with(['webinar'])->orderBy('id','desc');
-                if($search !== '') $q->where('id',$search)->orWhere('title','like',"%{$search}%");
-                $real['assignments'] = $q->paginate(15)->withQueryString();
+                $title = 'جميع التكليفات والواجبات';
+                $q = \App\Models\WebinarAssignment::query()
+                    ->with(['webinar', 'translations'])
+                    ->withCount('instructorAssignmentHistories as submissions_count')
+                    ->withCount([
+                        'instructorAssignmentHistories as pending_count' => fn ($hq) => $hq->where('status', \App\Models\WebinarAssignmentHistory::$pending),
+                    ])
+                    ->withCount([
+                        'instructorAssignmentHistories as graded_count' => fn ($hq) => $hq->whereIn('status', [
+                            \App\Models\WebinarAssignmentHistory::$passed,
+                            \App\Models\WebinarAssignmentHistory::$notPassed,
+                        ]),
+                    ])
+                    ->withAvg('instructorAssignmentHistories as avg_grade', 'grade')
+                    ->orderBy('id', 'desc');
+
+                if ($search !== '') {
+                    $q->where(function ($qq) use ($search) {
+                        $qq->where('webinar_assignments.id', $search)
+                            ->orWhereTranslationLike('title', "%{$search}%")
+                            ->orWhereHas('webinar.translations', fn ($t) => $t->where('title', 'like', "%{$search}%"));
+                    });
+                }
+                if ($st = $request->input('status')) {
+                    $q->where('status', $st);
+                }
+
+                $real['assignments'] = $q->paginate(10)->withQueryString();
                 $real['paginator'] = $real['assignments'];
-                $real['stubTitle']=$title;
+
+                // Enrolled students per webinar for ratio (batch)
+                $webinarIds = $real['assignments']->getCollection()->pluck('webinar_id')->filter()->unique()->values()->all();
+                $enrolledByWebinar = [];
+                if (!empty($webinarIds)) {
+                    $enrolledByWebinar = \App\Models\Sale::query()
+                        ->whereIn('webinar_id', $webinarIds)
+                        ->whereNull('refund_at')
+                        ->selectRaw('webinar_id, count(distinct buyer_id) as cnt')
+                        ->groupBy('webinar_id')
+                        ->pluck('cnt', 'webinar_id')
+                        ->all();
+                }
+                $real['assignmentEnrolledByWebinar'] = $enrolledByWebinar;
+
+                $pendingAll = (int) \App\Models\WebinarAssignmentHistory::where('status', \App\Models\WebinarAssignmentHistory::$pending)->count();
+                $gradedAll = (int) \App\Models\WebinarAssignmentHistory::whereIn('status', [
+                    \App\Models\WebinarAssignmentHistory::$passed,
+                    \App\Models\WebinarAssignmentHistory::$notPassed,
+                ])->count();
+                $avgAll = \App\Models\WebinarAssignmentHistory::whereNotNull('grade')->avg('grade');
+                $avgPct = $avgAll !== null ? (int) round((float) $avgAll) : 0;
+
+                $real['assignmentListStats'] = [
+                    ['label' => 'جميع التكليفات', 'value' => ((int) \App\Models\WebinarAssignment::count()) . ' تكليف', 'icon' => 'icon-[tabler--school]'],
+                    ['label' => 'بانتظار التصحيح', 'value' => $pendingAll . ' تسليمات', 'icon' => 'icon-[tabler--school]'],
+                    ['label' => 'تم تصحيحها', 'value' => $gradedAll . ' تسليم', 'icon' => 'icon-[tabler--school]'],
+                    ['label' => 'متوسط الدرجات', 'value' => $avgPct . '%', 'icon' => 'icon-[tabler--school]'],
+                ];
+                $real['stubTitle'] = $title;
+                $real['stubSubtitle'] = 'متابعة وتقييم المهام الدراسية للطلاب';
                 break;
             case 'quizzes':
-                $title='الاختبارات';
-                $q = \App\Models\Quiz::with(['webinar'])->orderBy('id','desc');
-                if($search !== '') $q->where('id',$search)->orWhere('title','like',"%{$search}%");
-                $real['quizzes'] = $q->paginate(15)->withQueryString();
+                $title = 'جميع الاختبارات';
+                $q = \App\Models\Quiz::query()
+                    ->with(['webinar.teacher', 'teacher', 'translations'])
+                    ->withCount('quizQuestions as questions_count')
+                    ->withCount([
+                        'quizResults as passed_count' => fn ($rq) => $rq->where('status', \App\Models\QuizzesResult::$passed),
+                    ])
+                    ->withAvg('quizResults as avg_grade', 'user_grade')
+                    ->addSelect([
+                        'students_count' => \App\Models\QuizzesResult::selectRaw('count(distinct user_id)')
+                            ->whereColumn('quiz_id', 'quizzes.id'),
+                    ])
+                    ->orderBy('id', 'desc');
+
+                if ($search !== '') {
+                    $q->where(function ($qq) use ($search) {
+                        $qq->where('quizzes.id', $search)
+                            ->orWhereTranslationLike('title', "%{$search}%")
+                            ->orWhereHas('webinar.translations', fn ($t) => $t->where('title', 'like', "%{$search}%"))
+                            ->orWhereHas('teacher', fn ($t) => $t->where('full_name', 'like', "%{$search}%"));
+                    });
+                }
+                if ($st = $request->input('status')) {
+                    $q->where('status', $st);
+                }
+                if ($from = $request->input('from')) {
+                    $ts = strtotime($from . ' 00:00:00');
+                    if ($ts) {
+                        $q->where('created_at', '>=', $ts);
+                    }
+                }
+                if ($to = $request->input('to')) {
+                    $ts = strtotime($to . ' 23:59:59');
+                    if ($ts) {
+                        $q->where('created_at', '<=', $ts);
+                    }
+                }
+
+                $real['quizzes'] = $q->paginate(10)->withQueryString();
                 $real['paginator'] = $real['quizzes'];
-                $real['stubTitle']=$title;
+
+                $totalQuizzes = (int) \App\Models\Quiz::count();
+                $activeQuizzes = (int) \App\Models\Quiz::where('status', 'active')->count();
+                $allStudents = (int) \App\Models\QuizzesResult::distinct('user_id')->count('user_id');
+                $passedStudents = (int) \App\Models\QuizzesResult::where('status', \App\Models\QuizzesResult::$passed)->distinct('user_id')->count('user_id');
+
+                $real['quizListStats'] = [
+                    ['label' => 'كل الاختبارات', 'value' => $totalQuizzes . ' اختبار', 'icon' => 'icon-[tabler--school]'],
+                    ['label' => 'الاختبارات النشطة', 'value' => $activeQuizzes . ' اختبارات', 'icon' => 'icon-[tabler--school]'],
+                    ['label' => 'جميع الطلاب', 'value' => $allStudents . ' طالب', 'icon' => 'icon-[tabler--school]'],
+                    ['label' => 'الطلاب الناجحين', 'value' => $passedStudents . ' طالب', 'icon' => 'icon-[tabler--school]'],
+                ];
+                $real['stubTitle'] = $title;
+                $real['stubSubtitle'] = 'إعداد وإدارة التقييمات الأكاديمية والامتحانات الإلكترونية';
                 break;
             case 'certificates':
                 $title='الشهادات والاعتمادات';
@@ -254,7 +391,15 @@ class EducationController extends AdminController
                 break;
         }
         $data = array_merge($shell, $real, ['stubTitle'=>$title]);
-        $view = in_array($section,['courses','bundles','departments','events','quizzes','assignments','certificates','reviews','live','attendance','filters','trends','enrollment','upcoming','waitlists','statistics','noticeboard']) ? 'panel_v1.admin.pages.education.section-real' : 'panel_v1.admin.pages.education.stub';
+        if ($section === 'courses') {
+            $view = 'panel_v1.admin.pages.education.courses-list';
+        } elseif ($section === 'quizzes') {
+            $view = 'panel_v1.admin.pages.education.quizzes-list';
+        } elseif ($section === 'assignments') {
+            $view = 'panel_v1.admin.pages.education.assignments-list';
+        } else {
+            $view = in_array($section,['courses','bundles','departments','events','quizzes','assignments','certificates','reviews','live','attendance','filters','trends','enrollment','upcoming','waitlists','statistics','noticeboard']) ? 'panel_v1.admin.pages.education.section-real' : 'panel_v1.admin.pages.education.stub';
+        }
 
         // fallback to stub if real view not exists
         if(!view()->exists($view)) $view='panel_v1.admin.pages.education.stub';

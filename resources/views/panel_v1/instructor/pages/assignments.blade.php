@@ -72,25 +72,15 @@
                                     </p>
                                 </div>
                             </div>
-                            <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end] shrink-0">
-                                <button type="button"
-                                    class="dropdown-toggle size-9 rounded-full bg-[#F1F5F9] !inline-flex !items-center !justify-center border-0 hover:bg-[#E8ECEA] transition"
-                                    aria-label="خيارات" id="assign-card-menu-{{ $index }}">
-                                    <span class="icon-[tabler--dots-vertical] size-5 text-gray"></span>
-                                </button>
-                                <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-44 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20"
-                                    role="menu" aria-labelledby="assign-card-menu-{{ $index }}">
-                                    <li>
-                                        <a href="{{ $item['review_url'] }}" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض التسليمات</a>
-                                    </li>
-                                    <li>
-                                        <a href="{{ $item['course_assignments_url'] }}" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">جميع التسليمات</a>
-                                    </li>
-                                    <li>
-                                        <a href="{{ $item['edit_url'] }}" class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض الدورة</a>
-                                    </li>
-                                </ul>
-                            </div>
+                            @include('panel_v1.components.actions-dropdown', [
+                                'id' => 'assign-card-menu-' . $index,
+                                'items' => [
+                                    ['label' => 'عرض التسليمات', 'url' => $item['review_url']],
+                                    ['label' => 'جميع التسليمات', 'url' => $item['course_assignments_url']],
+                                    ['label' => 'عرض الدورة', 'url' => $item['edit_url']],
+                                ],
+                                'class' => 'shrink-0',
+                            ])
                         </div>
 
                         <div class="grid grid-cols-3 gap-2 mb-4">
@@ -196,32 +186,15 @@
                                     </span>
                                 </td>
                                 <td class="px-4 py-4">
-                                    <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end]">
-                                        <button type="button"
-                                            class="dropdown-toggle size-9 rounded-full bg-[#F1F5F9] !inline-flex !items-center !justify-center border-0 hover:bg-[#E8ECEA] transition"
-                                            aria-label="الإجراء" id="assign-row-menu-{{ $index }}">
-                                            <span class="icon-[tabler--dots-vertical] size-5 text-gray"></span>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-56 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20"
-                                            role="menu" aria-labelledby="assign-row-menu-{{ $index }}">
-                                            <li>
-                                                <a href="{{ $row['pending_url'] }}"
-                                                    class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">التسليمات بانتظار المراجعة</a>
-                                            </li>
-                                            <li>
-                                                <a href="{{ $row['course_assignments_url'] }}"
-                                                    class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">جميع التسليمات</a>
-                                            </li>
-                                            <li>
-                                                <a href="{{ $row['edit_url'] }}"
-                                                    class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض الدورة</a>
-                                            </li>
-                                            <li>
-                                                <a href="{{ $row['course_url'] }}"
-                                                    class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">أداء الدورة</a>
-                                            </li>
-                                        </ul>
-                                    </div>
+                                    @include('panel_v1.components.actions-dropdown', [
+                                        'id' => 'assign-row-menu-' . $index,
+                                        'items' => [
+                                            ['label' => 'التسليمات بانتظار المراجعة', 'url' => $row['pending_url']],
+                                            ['label' => 'جميع التسليمات', 'url' => $row['course_assignments_url']],
+                                            ['label' => 'عرض الدورة', 'url' => $row['edit_url']],
+                                            ['label' => 'أداء الدورة', 'url' => $row['course_url']],
+                                        ],
+                                    ])
                                 </td>
                             </tr>
                         @empty
@@ -290,20 +263,12 @@
                                     </span>
                                 </td>
                                 <td class="px-4 py-4">
-                                    <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end]">
-                                        <button type="button"
-                                            class="dropdown-toggle size-9 rounded-full bg-[#F1F5F9] !inline-flex !items-center !justify-center border-0 hover:bg-[#E8ECEA] transition"
-                                            aria-label="الاجراء" id="student-result-menu-{{ $index }}">
-                                            <span class="icon-[tabler--dots-vertical] size-5 text-gray"></span>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-44 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20"
-                                            role="menu" aria-labelledby="student-result-menu-{{ $index }}">
-                                            <li>
-                                                <a href="{{ $row['review_url'] }}"
-                                                    class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض التكليف</a>
-                                            </li>
-                                        </ul>
-                                    </div>
+                                    @include('panel_v1.components.actions-dropdown', [
+                                        'id' => 'student-result-menu-' . $index,
+                                        'items' => [
+                                            ['label' => 'عرض التكليف', 'url' => $row['review_url']],
+                                        ],
+                                    ])
                                 </td>
                             </tr>
                         @empty

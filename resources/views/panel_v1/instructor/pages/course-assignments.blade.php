@@ -83,20 +83,12 @@
                                 </span>
                             </td>
                             <td class="px-4 py-4">
-                                <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end]">
-                                    <button type="button"
-                                        class="dropdown-toggle size-9 rounded-full bg-[#F1F5F9] !inline-flex !items-center !justify-center border-0 hover:bg-[#E8ECEA] transition"
-                                        aria-label="الاجراء" id="course-assign-menu-{{ $index }}">
-                                        <span class="icon-[tabler--dots-vertical] size-5 text-gray"></span>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-44 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20"
-                                        role="menu" aria-labelledby="course-assign-menu-{{ $index }}">
-                                        <li>
-                                            <a href="{{ $row['review_url'] }}"
-                                                class="dropdown-item px-4 py-2.5 font-medium text-15px text-primary">عرض التكليف</a>
-                                        </li>
-                                    </ul>
-                                </div>
+                                @include('panel_v1.components.actions-dropdown', [
+                                    'id' => 'course-assign-menu-' . $index,
+                                    'items' => [
+                                        ['label' => 'عرض التكليف', 'url' => $row['review_url']],
+                                    ],
+                                ])
                             </td>
                         </tr>
                     @empty

@@ -66,19 +66,25 @@
                             @endphp
                             <td class="px-4 py-3 text-center"><span @class(['inline-flex rounded-full px-2.5 py-1 font-semibold text-11px','bg-[#D1FAE5] text-[#059669]'=>$c->status=='active','bg-[#FEF3C7] text-[#D97706]'=>$c->status=='pending','bg-[#FEE2E2] text-[#DC2626]'=>$c->status=='inactive','bg-[#EFF6FF] text-[#2563EB]'=>$c->status=='is_draft' || !in_array($c->status,['active','pending','inactive','is_draft'], true)])>{{ $courseStatusLabel }}</span></td>
                             <td class="px-4 py-3 text-center">{{ $c->price ? handlePrice($c->price) : 'مجانية' }}</td>
-                            <td class="px-4 py-3">
-                                <div class="flex items-center justify-center gap-1.5 flex-wrap">
-                                    <a href="{{ route('panel.v1.admin.education.courses.edit',['id'=>$c->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a>
-                                    <a href="{{ route('panel.v1.admin.education.courses.curriculum',['id'=>$c->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="المنهج"><span class="icon-[tabler--list-check] size-4 text-primary"></span></a>
-                                    <a href="{{ route('panel.v1.admin.education.courses.notify',['id'=>$c->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="إشعار الطلاب"><span class="icon-[tabler--bell] size-4 text-primary"></span></a>
-                                    @if($c->status!=='active')
-                                        <form method="POST" action="{{ route('panel.v1.admin.education.courses.approve',['id'=>$c->id]) }}" class="inline">@csrf<button type="submit" class="size-8 rounded-8px bg-[#D1FAE5] center hover:opacity-90" title="موافقة"><span class="icon-[tabler--check] size-4 text-[#059669]"></span></button></form>
-                                    @endif
-                                    @if($c->status!=='inactive')
-                                        <form method="POST" action="{{ route('panel.v1.admin.education.courses.reject',['id'=>$c->id]) }}" class="inline">@csrf<button type="submit" class="size-8 rounded-8px bg-[#FEE2E2] center hover:opacity-90" title="رفض"><span class="icon-[tabler--x] size-4 text-[#DC2626]"></span></button></form>
-                                    @endif
-                                    <form method="POST" action="{{ route('panel.v1.admin.education.courses.delete',['id'=>$c->id]) }}" onsubmit="return confirm('حذف الدورة؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center hover:bg-red-50" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form>
-                                </div>
+                            <td class="px-4 py-3 text-center">
+                                @php
+                                    $courseActionItems = [
+                                        ['label' => 'تعديل', 'url' => route('panel.v1.admin.education.courses.edit',['id'=>$c->id]), 'tone' => 'gray'],
+                                        ['label' => 'المنهج', 'url' => route('panel.v1.admin.education.courses.curriculum',['id'=>$c->id]), 'tone' => 'gray'],
+                                        ['label' => 'إشعار الطلاب', 'url' => route('panel.v1.admin.education.courses.notify',['id'=>$c->id]), 'tone' => 'gray'],
+                                    ];
+                                    if ($c->status !== 'active') {
+                                        $courseActionItems[] = ['label' => 'موافقة', 'action' => route('panel.v1.admin.education.courses.approve',['id'=>$c->id]), 'tone' => 'success'];
+                                    }
+                                    if ($c->status !== 'inactive') {
+                                        $courseActionItems[] = ['label' => 'رفض', 'action' => route('panel.v1.admin.education.courses.reject',['id'=>$c->id]), 'tone' => 'danger'];
+                                    }
+                                    $courseActionItems[] = ['label' => 'حذف', 'action' => route('panel.v1.admin.education.courses.delete',['id'=>$c->id]), 'confirm' => 'حذف الدورة؟', 'tone' => 'danger'];
+                                @endphp
+                                @include('panel_v1.components.actions-dropdown', [
+                                    'id' => 'edu-course-'.$c->id,
+                                    'items' => $courseActionItems,
+                                ])
                             </td>
                         </tr>
                     @endforeach
@@ -98,7 +104,7 @@
                 <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الحزمة</th><th class="px-4 py-3">الحالة</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead>
                 <tbody>
                 @foreach ($bundles as $b)
-                    <tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $b->title ?? 'حزمة #'.$b->id }}</td><td class="px-4 py-3 text-center">{{ $b->status ?? '—' }}</td><td class="px-4 py-3 text-center"><div class="flex items-center justify-center gap-1.5"><a href="{{ route('panel.v1.admin.education.bundles.edit',['id'=>$b->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a><form method="POST" action="{{ route('panel.v1.admin.education.bundles.delete',['id'=>$b->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center hover:bg-red-50" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></div></td></tr>
+                    <tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $b->title ?? 'حزمة #'.$b->id }}</td><td class="px-4 py-3 text-center">{{ $b->status ?? '—' }}</td><td class="px-4 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'edu-bundle-'.$b->id, 'items' => [['label' => 'تعديل', 'url' => route('panel.v1.admin.education.bundles.edit',['id'=>$b->id]), 'tone' => 'gray'], ['label' => 'حذف', 'action' => route('panel.v1.admin.education.bundles.delete',['id'=>$b->id]), 'confirm' => 'حذف؟', 'tone' => 'danger']]])</td></tr>
                 @endforeach
                 </tbody>
             </table>
@@ -115,7 +121,7 @@
                 <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">التكليف</th><th class="px-4 py-3">الدورة</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead>
                 <tbody>
                 @foreach ($assignments as $a)
-                    <tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $a->title ?? 'تكليف #'.$a->id }}</td><td class="px-4 py-3 text-center">{{ $a->webinar->title ?? '' }}</td><td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.education.assignments.delete',['id'=>$a->id]) }}" onsubmit="return confirm('حذف؟')">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td></tr>
+                    <tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $a->title ?? 'تكليف #'.$a->id }}</td><td class="px-4 py-3 text-center">{{ $a->webinar->title ?? '' }}</td><td class="px-4 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'edu-assign-'.$a->id, 'items' => [['label' => 'حذف', 'action' => route('panel.v1.admin.education.assignments.delete',['id'=>$a->id]), 'confirm' => 'حذف؟', 'tone' => 'danger']]])</td></tr>
                 @endforeach
                 </tbody>
             </table>
@@ -132,7 +138,7 @@
                 <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الاختبار</th><th class="px-4 py-3">الدورة</th><th class="px-4 py-3">الحالة</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead>
                 <tbody>
                 @foreach ($quizzes as $q)
-                    <tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $q->title }}</td><td class="px-4 py-3 text-center">{{ $q->webinar->title ?? '' }}</td><td class="px-4 py-3 text-center">{{ $q->status }}</td><td class="px-4 py-3 text-center"><div class="flex items-center justify-center gap-1.5"><a href="{{ route('panel.v1.admin.education.quizzes.questions',['id'=>$q->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="الأسئلة"><span class="icon-[tabler--list-check] size-4 text-primary"></span></a><form method="POST" action="{{ route('panel.v1.admin.education.quizzes.delete',['id'=>$q->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></div></td></tr>
+                    <tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $q->title }}</td><td class="px-4 py-3 text-center">{{ $q->webinar->title ?? '' }}</td><td class="px-4 py-3 text-center">{{ $q->status }}</td><td class="px-4 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'edu-quiz-'.$q->id, 'items' => [['label' => 'الأسئلة', 'url' => route('panel.v1.admin.education.quizzes.questions',['id'=>$q->id]), 'tone' => 'gray'], ['label' => 'حذف', 'action' => route('panel.v1.admin.education.quizzes.delete',['id'=>$q->id]), 'confirm' => 'حذف؟', 'tone' => 'danger']]])</td></tr>
                 @endforeach
                 </tbody>
             </table>
@@ -169,9 +175,8 @@
                                 <p class="font-bold text-13px text-primary truncate">{{ $tmpl->title ?? 'قالب #' . $tmpl->id }}</p>
                                 <p class="font-medium text-11px text-gray">{{ $tmpl->type ?? '' }} — {{ $tmpl->status ?? '' }}</p>
                             </div>
-                            <div class="flex items-center gap-1 shrink-0">
-                                <a href="{{ route('panel.v1.admin.education.certificates.templates.edit',['id'=>$tmpl->id]) }}" class="size-7 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-3.5 text-primary"></span></a>
-                                <form method="POST" action="{{ route('panel.v1.admin.education.certificates.templates.delete',['id'=>$tmpl->id]) }}" onsubmit="return confirm('حذف القالب؟')" class="inline">@csrf<button type="submit" class="size-7 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-3.5 text-red-500"></span></button></form>
+                            <div class="shrink-0">
+                                @include('panel_v1.components.actions-dropdown', ['id' => 'edu-cert-tmpl-'.$tmpl->id, 'items' => [['label' => 'تعديل', 'url' => route('panel.v1.admin.education.certificates.templates.edit',['id'=>$tmpl->id]), 'tone' => 'gray'], ['label' => 'حذف', 'action' => route('panel.v1.admin.education.certificates.templates.delete',['id'=>$tmpl->id]), 'confirm' => 'حذف القالب؟', 'tone' => 'danger']]])
                             </div>
                         </div>
                     @endforeach
@@ -197,7 +202,7 @@
                         <td class="px-3 py-3 text-center truncate max-w-[14rem]">{{ $cTitle }}</td>
                         <td class="px-3 py-3 text-center whitespace-nowrap">{{ date('Y/m/d', (int)$c->created_at) }}</td>
                         <td class="px-3 py-3 text-center"><a href="{{ $validUrl }}" target="_blank" class="inline-flex items-center gap-1 font-bold text-11px text-primary hover:underline"><span class="icon-[tabler--qrcode] size-3.5"></span> تحقق</a></td>
-                        <td class="px-3 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.education.certificates.delete',['id'=>$c->id]) }}" onsubmit="return confirm('حذف الشهادة #{{ $c->id }}؟')">@csrf<button type="submit" class="size-7 rounded-8px border border-red-200 center hover:bg-red-50" title="حذف"><span class="icon-[tabler--trash] size-3.5 text-red-500"></span></button></form></td>
+                        <td class="px-3 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'edu-cert-'.$c->id, 'items' => [['label' => 'حذف', 'action' => route('panel.v1.admin.education.certificates.delete',['id'=>$c->id]), 'confirm' => 'حذف الشهادة #'.$c->id.'؟', 'tone' => 'danger']]])</td>
                     </tr>
                 @endforeach
                 </tbody>
@@ -211,7 +216,7 @@
                 <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الجلسة</th><th class="px-4 py-3">الدورة</th><th class="px-4 py-3">التاريخ</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead>
                 <tbody>
                 @foreach ($lives as $l)
-                    <tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $l->title ?? 'جلسة #'.$l->id }}</td><td class="px-4 py-3 text-center">{{ $l->webinar->title ?? '' }}</td><td class="px-4 py-3 text-center">{{ date('Y/m/d H:i',(int)$l->date) }}</td><td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.education.live.delete',['id'=>$l->id]) }}" onsubmit="return confirm('حذف؟')">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td></tr>
+                    <tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $l->title ?? 'جلسة #'.$l->id }}</td><td class="px-4 py-3 text-center">{{ $l->webinar->title ?? '' }}</td><td class="px-4 py-3 text-center">{{ date('Y/m/d H:i',(int)$l->date) }}</td><td class="px-4 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'edu-live-'.$l->id, 'items' => [['label' => 'حذف', 'action' => route('panel.v1.admin.education.live.delete',['id'=>$l->id]), 'confirm' => 'حذف؟', 'tone' => 'danger']]])</td></tr>
                 @endforeach
                 </tbody>
             </table>
@@ -274,14 +279,20 @@
                             <td class="px-4 py-3 text-center">{{ ($e->type ?? '') === 'in_person' ? 'حضوري' : 'عن بُعد' }}</td>
                             <td class="px-4 py-3 text-center"><span @class(['inline-flex rounded-full px-2.5 py-1 font-semibold text-11px','bg-[#D1FAE5] text-[#059669]'=>in_array($e->status,['publish','active']),'bg-[#FEF3C7] text-[#D97706]'=>in_array($e->status,['draft','pending']),'bg-[#FEE2E2] text-[#DC2626]'=>in_array($e->status,['rejected','canceled','inactive'])])>{{ $e->status ?? '—' }}</span></td>
                             <td class="px-4 py-3 text-center">{{ !empty($e->start_date) ? date('Y/m/d',(int)$e->start_date) : '—' }}</td>
-                            <td class="px-4 py-3">
-                                <div class="flex items-center justify-center gap-1.5 flex-wrap">
-                                    <a href="{{ route('panel.v1.admin.education.events.edit',['id'=>$e->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a>
-                                    @if(!in_array($e->status,['publish']))
-                                        <form method="POST" action="{{ route('panel.v1.admin.education.events.status',['id'=>$e->id,'status'=>'publish']) }}" class="inline">@csrf<button type="submit" class="size-8 rounded-8px bg-[#D1FAE5] center hover:opacity-90" title="نشر"><span class="icon-[tabler--check] size-4 text-[#059669]"></span></button></form>
-                                    @endif
-                                    <form method="POST" action="{{ route('panel.v1.admin.education.events.delete',['id'=>$e->id]) }}" onsubmit="return confirm('حذف الفعالية؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center hover:bg-red-50" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form>
-                                </div>
+                            <td class="px-4 py-3 text-center">
+                                @php
+                                    $eventActionItems = [
+                                        ['label' => 'تعديل', 'url' => route('panel.v1.admin.education.events.edit',['id'=>$e->id]), 'tone' => 'gray'],
+                                    ];
+                                    if (!in_array($e->status, ['publish'])) {
+                                        $eventActionItems[] = ['label' => 'نشر', 'action' => route('panel.v1.admin.education.events.status',['id'=>$e->id,'status'=>'publish']), 'tone' => 'success'];
+                                    }
+                                    $eventActionItems[] = ['label' => 'حذف', 'action' => route('panel.v1.admin.education.events.delete',['id'=>$e->id]), 'confirm' => 'حذف الفعالية؟', 'tone' => 'danger'];
+                                @endphp
+                                @include('panel_v1.components.actions-dropdown', [
+                                    'id' => 'edu-event-'.$e->id,
+                                    'items' => $eventActionItems,
+                                ])
                             </td>
                         </tr>
                     @endforeach
@@ -297,7 +308,7 @@
                 <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">التعليق</th><th class="px-4 py-3">المستخدم</th><th class="px-4 py-3">الدورة</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead>
                 <tbody>
                 @foreach ($reviews as $r)
-                    <tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ \Illuminate\Support\Str::limit(strip_tags($r->comment ?? ''),50) }}</td><td class="px-4 py-3 text-center">{{ $r->user->full_name ?? '' }}</td><td class="px-4 py-3 text-center">{{ $r->webinar->title ?? '' }}</td><td class="px-4 py-3 text-center"><div class="flex items-center justify-center gap-1.5"><form method="POST" action="{{ route('panel.v1.admin.education.reviews.approve',['id'=>$r->id]) }}" class="inline">@csrf<button type="submit" class="size-8 rounded-8px bg-[#D1FAE5] center hover:opacity-90" title="اعتماد"><span class="icon-[tabler--check] size-4 text-[#059669]"></span></button></form><form method="POST" action="{{ route('panel.v1.admin.education.reviews.reject',['id'=>$r->id]) }}" class="inline">@csrf<button type="submit" class="size-8 rounded-8px bg-[#FEF3C7] center hover:opacity-90" title="إرجاع للانتظار"><span class="icon-[tabler--x] size-4 text-[#D97706]"></span></button></form><form method="POST" action="{{ route('panel.v1.admin.education.reviews.delete',['id'=>$r->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></div></td></tr>
+                    <tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ \Illuminate\Support\Str::limit(strip_tags($r->comment ?? ''),50) }}</td><td class="px-4 py-3 text-center">{{ $r->user->full_name ?? '' }}</td><td class="px-4 py-3 text-center">{{ $r->webinar->title ?? '' }}</td><td class="px-4 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'edu-review-'.$r->id, 'items' => [['label' => 'اعتماد', 'action' => route('panel.v1.admin.education.reviews.approve',['id'=>$r->id]), 'tone' => 'success'], ['label' => 'إرجاع للانتظار', 'action' => route('panel.v1.admin.education.reviews.reject',['id'=>$r->id]), 'tone' => 'gray'], ['label' => 'حذف', 'action' => route('panel.v1.admin.education.reviews.delete',['id'=>$r->id]), 'confirm' => 'حذف؟', 'tone' => 'danger']]])</td></tr>
                 @endforeach
                 </tbody>
             </table>
@@ -323,7 +334,7 @@
                             <td class="px-4 py-3 text-center font-bold text-primary">{{ $qr->user_grade ?? 0 }}</td>
                             <td class="px-4 py-3 text-center"><span @class(['inline-flex rounded-full px-2.5 py-1 font-semibold text-11px','bg-[#D1FAE5] text-[#059669]'=>($qr->status ?? '')===\App\Models\QuizzesResult::$passed,'bg-[#FEE2E2] text-[#DC2626]'=>($qr->status ?? '')===\App\Models\QuizzesResult::$failed,'bg-[#FEF3C7] text-[#D97706]'=>!in_array(($qr->status ?? ''),[\App\Models\QuizzesResult::$passed,\App\Models\QuizzesResult::$failed], true)])>{{ $qrStatusLabel }}</span></td>
                             <td class="px-4 py-3 text-center font-medium text-gray">{{ !empty($qr->created_at) ? date('Y/m/d', (int)$qr->created_at) : '—' }}</td>
-                            <td class="px-4 py-3 text-center"><div class="flex items-center justify-center gap-1.5"><a href="{{ route('panel.v1.admin.education.quiz-results.review',['quizId'=>$quiz_id ?? $qr->quiz_id,'resultId'=>$qr->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="مراجعة"><span class="icon-[tabler--eye] size-4 text-primary"></span></a><form method="POST" action="{{ route('panel.v1.admin.education.quiz-results.delete',['quizId'=>$quiz_id ?? $qr->quiz_id,'resultId'=>$qr->id]) }}" onsubmit="return confirm('حذف النتيجة؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center hover:bg-red-50" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></div></td>
+                            <td class="px-4 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'edu-qr-'.$qr->id, 'items' => [['label' => 'مراجعة', 'url' => route('panel.v1.admin.education.quiz-results.review',['quizId'=>$quiz_id ?? $qr->quiz_id,'resultId'=>$qr->id]), 'tone' => 'gray'], ['label' => 'حذف', 'action' => route('panel.v1.admin.education.quiz-results.delete',['quizId'=>$quiz_id ?? $qr->quiz_id,'resultId'=>$qr->id]), 'confirm' => 'حذف النتيجة؟', 'tone' => 'danger']]])</td>
                         </tr>
                     @endforeach
                     </tbody>
@@ -341,7 +352,7 @@
                 <input type="number" name="course_id" placeholder="معرف الدورة المرتبطة" class="input input-bordered flex-1 h-10 rounded-10px text-14px min-w-[12rem]" required>
                 <button type="submit" class="btn btn-primary rounded-10px h-10 px-5 font-bold text-13px">إضافة ارتباط</button>
             </form>
-            <table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الدورة المرتبطة</th><th class="px-4 py-3 text-center">المدرب</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead><tbody>@foreach($relatedCourses as $rc)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $rc->course->title ?? 'دورة #'.$rc->course_id }}</td><td class="px-4 py-3 text-center">{{ $rc->course->teacher->full_name ?? '—' }}</td><td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.education.related-courses.delete',['id'=>$rc->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center hover:bg-red-50" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td></tr>@endforeach</tbody></table>
+            <table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الدورة المرتبطة</th><th class="px-4 py-3 text-center">المدرب</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead><tbody>@foreach($relatedCourses as $rc)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $rc->course->title ?? 'دورة #'.$rc->course_id }}</td><td class="px-4 py-3 text-center">{{ $rc->course->teacher->full_name ?? '—' }}</td><td class="px-4 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'edu-rc-'.$rc->id, 'items' => [['label' => 'حذف', 'action' => route('panel.v1.admin.education.related-courses.delete',['id'=>$rc->id]), 'confirm' => 'حذف؟', 'tone' => 'danger']]])</td></tr>@endforeach</tbody></table>
         </div>
     @endif
 
@@ -352,13 +363,13 @@
                 <input type="text" name="title" placeholder="اسم القسم الجديد" class="input input-bordered flex-1 h-10 rounded-10px text-14px" required>
                 <button type="submit" class="btn btn-primary rounded-10px h-10 px-5 font-bold text-13px">إضافة</button>
             </form>
-            <table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">القسم</th><th class="px-4 py-3">الترتيب</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead><tbody>@foreach($departments as $d)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $d->title }}</td><td class="px-4 py-3 text-center">{{ $d->order ?? '—' }}</td><td class="px-4 py-3 text-center"><div class="flex items-center justify-center gap-1.5"><a href="{{ route('panel.v1.admin.education.departments.edit',['id'=>$d->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a><form method="POST" action="{{ route('panel.v1.admin.education.departments.delete',['id'=>$d->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center hover:bg-red-50" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></div></td></tr>@endforeach</tbody></table>
+            <table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">القسم</th><th class="px-4 py-3">الترتيب</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead><tbody>@foreach($departments as $d)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $d->title }}</td><td class="px-4 py-3 text-center">{{ $d->order ?? '—' }}</td><td class="px-4 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'edu-dept-'.$d->id, 'items' => [['label' => 'تعديل', 'url' => route('panel.v1.admin.education.departments.edit',['id'=>$d->id]), 'tone' => 'gray'], ['label' => 'حذف', 'action' => route('panel.v1.admin.education.departments.delete',['id'=>$d->id]), 'confirm' => 'حذف؟', 'tone' => 'danger']]])</td></tr>@endforeach</tbody></table>
         </div>
     @endif
 
     @if (!empty($attendances))
         <div class="border border-d9 rounded-14px bg-white overflow-hidden">
-            <table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الجلسة</th><th class="px-4 py-3">الطالب</th><th class="px-4 py-3">الحالة</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead><tbody>@foreach($attendances as $a)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $a->session->title ?? 'جلسة #'.$a->session_id }}</td><td class="px-4 py-3 text-center">{{ $a->student->full_name ?? '' }}</td><td class="px-4 py-3 text-center">{{ $a->status }}</td><td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.education.attendances.delete',['id'=>$a->id]) }}" onsubmit="return confirm('حذف؟')">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td></tr>@endforeach</tbody></table>
+            <table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الجلسة</th><th class="px-4 py-3">الطالب</th><th class="px-4 py-3">الحالة</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead><tbody>@foreach($attendances as $a)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $a->session->title ?? 'جلسة #'.$a->session_id }}</td><td class="px-4 py-3 text-center">{{ $a->student->full_name ?? '' }}</td><td class="px-4 py-3 text-center">{{ $a->status }}</td><td class="px-4 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'edu-att-'.$a->id, 'items' => [['label' => 'حذف', 'action' => route('panel.v1.admin.education.attendances.delete',['id'=>$a->id]), 'confirm' => 'حذف؟', 'tone' => 'danger']]])</td></tr>@endforeach</tbody></table>
         </div>
     @endif
 
@@ -380,10 +391,7 @@
                             <td class="px-4 py-3 text-center font-medium text-gray">{{ $f->category->title ?? '—' }}</td>
                             <td class="px-4 py-3 text-center font-medium text-primary">{{ $f->options->count() ?? $f->filterOptions->count() ?? '—' }}</td>
                             <td class="px-4 py-3 text-center">
-                                <div class="flex items-center justify-center gap-1.5">
-                                    <a href="{{ route('panel.v1.admin.education.filters.edit',['id'=>$f->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a>
-                                    <form method="POST" action="{{ route('panel.v1.admin.education.filters.delete',['id'=>$f->id]) }}" onsubmit="return confirm('حذف الفلتر؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center hover:bg-red-50" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form>
-                                </div>
+                                @include('panel_v1.components.actions-dropdown', ['id' => 'edu-filter-'.$f->id, 'items' => [['label' => 'تعديل', 'url' => route('panel.v1.admin.education.filters.edit',['id'=>$f->id]), 'tone' => 'gray'], ['label' => 'حذف', 'action' => route('panel.v1.admin.education.filters.delete',['id'=>$f->id]), 'confirm' => 'حذف الفلتر؟', 'tone' => 'danger']]])
                             </td>
                         </tr>
                     @endforeach
@@ -412,10 +420,7 @@
                             <td class="px-4 py-3 text-center"><span class="{{ $t->icon }} size-5 text-primary inline-block"></span> <span class="font-mono text-11px text-gray">{{ $t->icon }}</span></td>
                             <td class="px-4 py-3 text-center"><span class="inline-flex items-center gap-2"><span class="size-5 rounded-full border border-d9" style="background: {{ $t->color }}"></span><span class="font-mono text-11px text-gray">{{ $t->color }}</span></span></td>
                             <td class="px-4 py-3 text-center">
-                                <div class="flex items-center justify-center gap-1.5">
-                                    <a href="{{ route('panel.v1.admin.education.trends.edit',['id'=>$t->id]) }}" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a>
-                                    <form method="POST" action="{{ route('panel.v1.admin.education.trends.delete',['id'=>$t->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form>
-                                </div>
+                                @include('panel_v1.components.actions-dropdown', ['id' => 'edu-trend-'.$t->id, 'items' => [['label' => 'تعديل', 'url' => route('panel.v1.admin.education.trends.edit',['id'=>$t->id]), 'tone' => 'gray'], ['label' => 'حذف', 'action' => route('panel.v1.admin.education.trends.delete',['id'=>$t->id]), 'confirm' => 'حذف؟', 'tone' => 'danger']]])
                             </td>
                         </tr>
                     @endforeach
@@ -468,10 +473,7 @@
                             <td class="px-4 py-3 text-center font-medium text-gray">{{ $u->teacher->full_name ?? '—' }}</td>
                             <td class="px-4 py-3 text-center"><span class="inline-flex rounded-full px-2.5 py-1 font-semibold text-11px {{ ($u->status ?? '')==='active' ? 'bg-[#D1FAE5] text-[#059669]' : 'bg-[#FEF3C7] text-[#D97706]' }}">{{ $u->status ?? '—' }}</span></td>
                             <td class="px-4 py-3 text-center">
-                                <div class="flex items-center justify-center gap-1.5">
-                                    <a href="{{ route('panel.v1.admin.education.upcoming.edit',['id'=>$u->id]) }}" class="size-8 rounded-8px border border-d9 center" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></a>
-                                    <form method="POST" action="{{ route('panel.v1.admin.education.upcoming.delete',['id'=>$u->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form>
-                                </div>
+                                @include('panel_v1.components.actions-dropdown', ['id' => 'edu-upcoming-'.$u->id, 'items' => [['label' => 'تعديل', 'url' => route('panel.v1.admin.education.upcoming.edit',['id'=>$u->id]), 'tone' => 'gray'], ['label' => 'حذف', 'action' => route('panel.v1.admin.education.upcoming.delete',['id'=>$u->id]), 'confirm' => 'حذف؟', 'tone' => 'danger']]])
                             </td>
                         </tr>
                     @endforeach
@@ -517,7 +519,7 @@
                         <tr class="border-b border-d9 last:border-0">
                             <td class="px-4 py-3 font-bold text-primary truncate max-w-[20rem]">{{ $n->title ?? 'إعلان #'.$n->id }}</td>
                             <td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d', (int)$n->created_at) }}</td>
-                            <td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.education.noticeboard.delete',['id'=>$n->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td>
+                            <td class="px-4 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'edu-notice-'.$n->id, 'items' => [['label' => 'حذف', 'action' => route('panel.v1.admin.education.noticeboard.delete',['id'=>$n->id]), 'confirm' => 'حذف؟', 'tone' => 'danger']]])</td>
                         </tr>
                     @endforeach
                     </tbody>
@@ -541,7 +543,7 @@
                             <td class="px-4 py-3 font-bold text-primary">{{ $w->full_name ?? 'عضو #'.$w->id }}</td>
                             <td class="px-4 py-3 text-center font-medium text-gray" dir="ltr">{{ $w->phone ?? '—' }}</td>
                             <td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d', (int)$w->created_at) }}</td>
-                            <td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.education.waitlists.delete',['id'=>$w->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td>
+                            <td class="px-4 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'edu-wl-item-'.$w->id, 'items' => [['label' => 'حذف', 'action' => route('panel.v1.admin.education.waitlists.delete',['id'=>$w->id]), 'confirm' => 'حذف؟', 'tone' => 'danger']]])</td>
                         </tr>
                     @endforeach
                     </tbody>

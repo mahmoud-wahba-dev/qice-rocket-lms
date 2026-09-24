@@ -63,17 +63,14 @@
                                     {{ $row['status'] }}
                                 </span>
                             </td>
-                            <td class="px-3 py-4">
-                                <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end]">
-                                    <button type="button" class="dropdown-toggle size-9 rounded-10px border border-d9 center hover:bg-[#FAFAF4]"
-                                        aria-label="إجراءات">
-                                        <span class="icon-[tabler--dots] size-4 text-primary"></span>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-40 py-2 rounded-12px border border-d9 bg-white shadow-xl z-20">
-                                        <li><a href="{{ route('panel.v1.admin.sales.sales.invoice', ['id' => $row['id']]) }}" class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary">عرض الفاتورة</a></li>
-                                        <li><form method="POST" action="{{ route('panel.v1.admin.sales.sales.refund', ['id' => $row['id']]) }}" onsubmit="return confirm('تنفيذ الاسترداد؟')">@csrf<button type="submit" class="dropdown-item px-4 py-2.5 font-medium text-14px text-red-500 w-full text-start">استرداد</button></form></li>
-                                    </ul>
-                                </div>
+                            <td class="px-3 py-4 text-center">
+                                @include('panel_v1.components.actions-dropdown', [
+                                    'id' => 'sales-row-'.$row['id'],
+                                    'items' => [
+                                        ['label' => 'عرض الفاتورة', 'url' => route('panel.v1.admin.sales.sales.invoice', ['id' => $row['id']]), 'tone' => 'gray'],
+                                        ['label' => 'استرداد', 'action' => route('panel.v1.admin.sales.sales.refund', ['id' => $row['id']]), 'confirm' => 'تنفيذ الاسترداد؟', 'tone' => 'danger'],
+                                    ],
+                                ])
                             </td>
                         </tr>
                     @endforeach
