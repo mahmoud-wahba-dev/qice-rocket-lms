@@ -197,3 +197,32 @@ body:has(.panel-v1-instructor)::-webkit-scrollbar-thumb:hover {
     opacity: 1;
     transform: translateY(0) scale(1);
 }
+
+/* Course description WYSIWYG */
+.rich-editor-content:empty:before {
+    content: attr(data-placeholder);
+    color: #9ca3af;
+    pointer-events: none;
+}
+
+.rich-editor-content p {
+    margin-bottom: 0.75rem;
+}
+
+.rich-editor-content h2,
+.rich-editor-content h3 {
+    font-weight: 700;
+    color: #0f4c45;
+    margin: 0.75rem 0 0.5rem;
+}
+
+.rich-editor-content ul,
+.rich-editor-content ol {
+    padding-inline-start: 1.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.rich-editor-content a {
+    color: #0f4c45;
+    text-decoration: underline;
+}

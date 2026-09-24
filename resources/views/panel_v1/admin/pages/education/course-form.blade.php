@@ -93,7 +93,12 @@
 
                 <div class="sm:col-span-2">
                     <label class="font-semibold text-14px text-primary mb-2 block">الوصف التفصيلي</label>
-                    <textarea name="description" rows="4" class="textarea textarea-bordered w-full rounded-12px border-d9 text-14px p-3" placeholder="وصف كامل للدورة">{{ old('description', $course->description ?? '') }}</textarea>
+                    @include('panel_v1.components.rich-editor', [
+                        'name' => 'description',
+                        'value' => old('description', $course->description ?? ''),
+                        'placeholder' => 'وصف كامل للدورة',
+                        'id' => 'admin-course-description',
+                    ])
                 </div>
 
                 <div class="sm:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-3">

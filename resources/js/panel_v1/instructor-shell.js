@@ -395,6 +395,7 @@ export function initCreateCourseWizard(root) {
 
     const buildFormData = ({ goNext, soft }) => {
         syncTagsHidden();
+        syncRichEditors(wrap);
         const stepInput = wrap.querySelector('[data-wizard-step-input]');
         if (stepInput) {
             stepInput.value = String(currentStep);
@@ -734,7 +735,98 @@ export function initCreateCourseWizard(root) {
         }, 1500);
     }
 
+    initRichEditors(wrap);
     initCurriculumAjax(wrap);
+}
+
+/**
+ * Sync contenteditable HTML into the hidden textarea before FormData submit.
+ */
+export function syncRichEditors(root = document) {
+    root.querySelectorAll('[data-rich-editor]').forEach((editor) => {
+        const content = editor.querySelector('[data-rich-content]');
+        const source = editor.querySelector('[data-rich-source]');
+        if (!content || !source) {
+            return;
+        }
+        if (source.classList.contains('hidden')) {
+            source.value = content.innerHTML.trim();
+        } else {
+            content.innerHTML = source.value;
+        }
+    });
+}
+
+/**
+ * WYSIWYG for HTML fields (course description) — no jQuery dependency.
+ */
+export function initRichEditors(root = document) {
+    root.querySelectorAll('[data-rich-editor]').forEach((editor) => {
+        if (editor.dataset.richReady === '1') {
+            return;
+        }
+        editor.dataset.richReady = '1';
+
+        const content = editor.querySelector('[data-rich-content]');
+        const source = editor.querySelector('[data-rich-source]');
+        const toolbar = editor.querySelector('[data-rich-toolbar]');
+        if (!content || !source) {
+            return;
+        }
+
+        // Seed editor from textarea if contenteditable is empty
+        if (!content.innerHTML.trim() && source.value.trim()) {
+            content.innerHTML = source.value;
+        }
+
+        const syncToSource = () => {
+            source.value = content.innerHTML.trim();
+        };
+
+        content.addEventListener('input', syncToSource);
+        content.addEventListener('blur', syncToSource);
+
+        toolbar?.querySelectorAll('[data-rich-cmd]').forEach((btn) => {
+            btn.addEventListener('mousedown', (e) => e.preventDefault());
+            btn.addEventListener('click', () => {
+                const cmd = btn.getAttribute('data-rich-cmd');
+                const val = btn.getAttribute('data-rich-value');
+                content.focus();
+                if (cmd === 'createLink') {
+                    const url = window.prompt('أدخل الرابط:', 'https://');
+                    if (url) {
+                        document.execCommand('createLink', false, url);
+                    }
+                } else if (cmd === 'formatBlock' && val) {
+                    document.execCommand('formatBlock', false, val);
+                } else if (cmd) {
+                    document.execCommand(cmd, false, val || null);
+                }
+                syncToSource();
+            });
+        });
+
+        toolbar?.querySelector('[data-rich-toggle-source]')?.addEventListener('click', () => {
+            const showingSource = !source.classList.contains('hidden');
+            if (showingSource) {
+                content.innerHTML = source.value;
+                source.classList.add('hidden');
+                content.classList.remove('hidden');
+            } else {
+                source.value = content.innerHTML.trim();
+                content.classList.add('hidden');
+                source.classList.remove('hidden');
+                source.focus();
+            }
+        });
+
+        source.addEventListener('input', () => {
+            // Keep contenteditable in sync when editing HTML source
+            if (!source.classList.contains('hidden')) {
+                content.innerHTML = source.value;
+            }
+        });
+    });
 }
 
 function toast(title, msg, type = 'success') {

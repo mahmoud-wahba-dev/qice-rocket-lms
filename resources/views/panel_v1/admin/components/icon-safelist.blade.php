@@ -104,4 +104,15 @@
     <span class="icon-[tabler--arrow-narrow-left]"></span>
     <span class="icon-[tabler--discount-2]"></span>
     <span class="icon-[tabler--stack]"></span>
+    {{-- Rich editor toolbar --}}
+    <span class="icon-[tabler--bold]"></span>
+    <span class="icon-[tabler--italic]"></span>
+    <span class="icon-[tabler--underline]"></span>
+    <span class="icon-[tabler--list]"></span>
+    <span class="icon-[tabler--list-numbers]"></span>
+    <span class="icon-[tabler--h-3]"></span>
+    <span class="icon-[tabler--pilcrow]"></span>
+    <span class="icon-[tabler--link]"></span>
+    <span class="icon-[tabler--clear-formatting]"></span>
+    <span class="icon-[tabler--code]"></span>
 </div>

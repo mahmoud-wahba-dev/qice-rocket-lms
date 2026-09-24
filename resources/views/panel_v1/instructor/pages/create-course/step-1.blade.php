@@ -178,10 +178,12 @@
         </span>
         <h2 class="font-bold text-18px sm:text-20px text-primary">الوصف التفصيلي للدورة</h2>
     </div>
-    <div class="rounded-12px border border-d9 overflow-hidden">
-        <textarea rows="10" name="description" class="w-full border-0 focus:outline-none px-4 py-4 font-medium text-15px sm:text-16px text-black min-h-48 resize-y"
-            placeholder="اكتب وصف الدورة التفصيلي هنا...">{{ old('description', $draft['description'] ?? '') }}</textarea>
-    </div>
+        @include('panel_v1.components.rich-editor', [
+            'name' => 'description',
+            'value' => old('description', $draft['description'] ?? ''),
+            'placeholder' => 'اكتب وصف الدورة التفصيلي هنا...',
+            'id' => 'course-description-editor',
+        ])
 </section>
 
 {{-- Extra settings --}}
