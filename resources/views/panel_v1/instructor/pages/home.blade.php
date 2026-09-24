@@ -102,11 +102,12 @@ $instructorName = $instructorName ?? ($authUser->full_name ?? 'المدرب');
                     $detailsUrl = !empty($courseSlug)
                         ? route('panel.v1.instructor.courses.performance', ['slug' => $courseSlug])
                         : route('panel.v1.instructor.courses');
-                    $editUrl = $isDraft && !empty($courseId)
+                    $editUrl = !empty($courseId)
                         ? route('panel.v1.instructor.courses.create', ['step' => 1, 'draft' => $courseId])
-                        : (!empty($courseSlug)
-                            ? route('panel.v1.instructor.courses.watch', ['slug' => $courseSlug])
-                            : route('panel.v1.instructor.courses'));
+                        : route('panel.v1.instructor.courses');
+                    $watchUrl = !empty($courseSlug)
+                        ? route('panel.v1.instructor.courses.watch', ['slug' => $courseSlug])
+                        : route('panel.v1.instructor.courses');
                 @endphp
                 <article
                     class="relative z-0 hover:z-20 rounded-14px border border-d9 bg-f9 p-4 flex gap-3 sm:gap-4 items-start sm:items-center overflow-visible">
@@ -139,9 +140,15 @@ $instructorName = $instructorName ?? ($authUser->full_name ?? 'المدرب');
                                 <li>
                                     <a href="{{ $editUrl }}"
                                         class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary">
-                                        {{ $isDraft ? 'متابعة التعديل' : 'صفحة التعلم' }}
+                                        {{ $isDraft ? 'متابعة التعديل' : 'تعديل' }}
                                     </a>
                                 </li>
+                                @if (!$isDraft)
+                                <li>
+                                    <a href="{{ $watchUrl }}"
+                                        class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary">صفحة التعلم</a>
+                                </li>
+                                @endif
                                 <li>
                                     <a href="{{ route('panel.v1.instructor.courses') }}"
                                         class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary">إدارة الدورات</a>
@@ -149,9 +156,10 @@ $instructorName = $instructorName ?? ($authUser->full_name ?? 'المدرب');
                             </ul>
                         </div>
 
-                        <a href="{{ $detailsUrl }}"
-                            class="inline-flex items-center justify-center rounded-10px bg-primary px-3 sm:px-4 h-9 font-semibold text-10px text-white hover:opacity-95 transition whitespace-nowrap">
-                            عرض التفاصيل
+                        <a href="{{ $editUrl }}"
+                            class="inline-flex items-center justify-center gap-1.5 rounded-10px bg-primary px-3 sm:px-4 h-9 font-semibold text-10px text-white hover:opacity-95 transition whitespace-nowrap">
+                            <span class="icon-[tabler--pencil] size-3.5 shrink-0"></span>
+                            {{ $isDraft ? 'متابعة التعديل' : 'تعديل' }}
                         </a>
                     </div>
                 </article>

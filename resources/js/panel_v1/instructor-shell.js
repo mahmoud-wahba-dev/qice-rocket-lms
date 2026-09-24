@@ -196,7 +196,7 @@ function initCollapsedTooltips(root, sidebar, isDesktop) {
     window.addEventListener('scroll', hide, true);
 }
 
-function initCreateCourseWizard(root) {
+export function initCreateCourseWizard(root) {
     const wrap = root.querySelector('[data-create-course]');
     if (!wrap) {
         return;

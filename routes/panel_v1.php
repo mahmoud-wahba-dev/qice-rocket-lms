@@ -329,7 +329,8 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 Route::get('/courses/create', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'createCourse'])->name('courses.create');
                 Route::post('/courses', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'storeCourse'])->name('courses.store');
                 Route::get('/courses/export', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'exportCourses'])->name('courses.export');
-                Route::get('/courses/{id}/edit', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'editCourse'])->name('courses.edit');
+                Route::get('/courses/{id}/edit/{step?}', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'editCourse'])->name('courses.edit');
+                Route::post('/courses/{id}/wizard', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'storeCourseWizard'])->name('courses.wizard.store');
                 Route::post('/courses/{id}/update', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'updateCourse'])->name('courses.update');
                 Route::post('/courses/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'deleteCourse'])->name('courses.delete');
                 Route::post('/courses/{id}/approve', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'approveCourse'])->name('courses.approve');

@@ -25,6 +25,8 @@ use Illuminate\Validation\ValidationException;
 class InstructorController extends Controller
 {
     use \App\Http\Controllers\PanelV1\Support\ProfileSettingsTrait;
+    use \App\Http\Controllers\PanelV1\Support\CourseWizardTrait;
+
     public function home(Request $request)
     {
         $user = $this->resolveInstructor($request);
@@ -748,84 +750,16 @@ class InstructorController extends Controller
             $draft = \App\Models\Webinar::with(['tags', 'translations'])
                 ->where('id', $request->input('draft'))
                 ->where('teacher_id', optional($user)->id)
-                ->where('status', 'is_draft')
                 ->first();
         }
 
-        $categories = \App\Models\Category::whereNull('parent_id')
-            ->orderBy('order')
-            ->get()
-            ->map(function ($category) {
-                return ['id' => $category->id, 'title' => $category->title];
-            })->all();
-
-        $teacherQuizzes = \App\Models\Quiz::where('creator_id', optional($user)->id)
-            ->orderBy('id', 'desc')
-            ->get()
-            ->map(function ($quiz) {
-                return ['id' => $quiz->id, 'title' => $quiz->title, 'webinar_id' => $quiz->webinar_id];
-            })->all();
-
-        $typeReverse = ['course' => 'recorded', 'webinar' => 'live', 'text_lesson' => 'text'];
-        $tagTitles = $draft ? $draft->tags->pluck('title')->filter()->values()->all() : [];
-        $draftLocaleTitle = null;
-        $draftLocaleSeo = null;
-        $draftLocaleDescription = null;
-        if ($draft) {
-            $tr = $draft->translate('ar') ?: $draft->translate(app()->getLocale()) ?: $draft->translations->first();
-            $draftLocaleTitle = $tr->title ?? null;
-            $draftLocaleSeo = $tr->seo_description ?? null;
-            $draftLocaleDescription = $tr->description ?? null;
-        }
+        $pageTitle = $draft ? 'تعديل دورة' : 'إنشاء دورة جديدة';
 
         return $this->render(
             $request,
             'panel_v1.instructor.pages.create-course',
-            'إنشاء دورة جديدة',
-            [
-                'wizardSteps' => [
-                    1=>['label'=>'البيانات الأساسية','title'=>'البيانات الأساسية والتصنيف','next'=>'التالي: المنهج والمحتوى','progress'=>20],
-                    2=>['label'=>'المنهج والمحتوى','title'=>'المنهج والمحتوى التعليمي','next'=>'التالي: الاختبارات والشهادات','prev'=>'السابق','progress'=>40],
-                    3=>['label'=>'الاختبارات والشهادات','title'=>'الاختبارات والشهادات','next'=>'التالي: التسعير والسعة','prev'=>'السابق','progress'=>60],
-                    4=>['label'=>'التسعير والسعة','title'=>'التسعير والسعة','next'=>'التالي: النشر والمراجعة','prev'=>'السابق','progress'=>80],
-                    5=>['label'=>'النشر والمراجعة','title'=>'النشر والمراجعة','next'=>'إرسال للمراجعة','prev'=>'السابق','progress'=>100],
-                ],
-                'courseTypes' => [
-                    ['key'=>'recorded','label'=>'دورة فيديو مسجلة','hint'=>'محتوى مسجل يشاهده الطالب في أي وقت'],
-                    ['key'=>'live','label'=>'دورة تفاعلية مباشرة','hint'=>'جلسات مباشرة عبر Zoom أو Teams'],
-                    ['key'=>'text','label'=>'دورة نصية','hint'=>'محتوى مقروء ومواد مكتوبة'],
-                ],
-                'wizardStep' => $step,
-                'draftId' => $draft->id ?? null,
-                'draftTitle' => $draftLocaleTitle ?: 'دورة تدريبية بدون عنوان',
-                'draft' => $draft ? [
-                    'title' => $draftLocaleTitle,
-                    'category_id' => $draft->category_id,
-                    'course_type' => $typeReverse[$draft->type] ?? 'recorded',
-                    'locale' => 'ar',
-                    'seo_description' => $draftLocaleSeo,
-                    'description' => $draftLocaleDescription,
-                    'video_demo_link' => $draft->video_demo_source === 'external_link' ? $draft->video_demo : null,
-                    'tags' => implode(',', $tagTitles),
-                    'downloadable' => (bool) ($draft->downloadable ?? false),
-                    'partner_instructor' => (bool) ($draft->partner_instructor ?? false),
-                    'access_days' => $draft->access_days,
-                    'thumbnail' => $draft->thumbnail,
-                    'image_cover' => $draft->image_cover,
-                ] : [],
-                'tags' => $tagTitles,
-                'categories' => !empty($categories) ? $categories : [],
-                'languages' => [
-                    ['key' => 'ar', 'label' => 'العربية'],
-                    ['key' => 'en', 'label' => 'English'],
-                ],
-                'curriculumUnits' => $this->curriculumUnits($draft),
-                'teacherQuizzes' => $teacherQuizzes,
-                'draftPrice' => $draft->price ?? null,
-                'draftCapacity' => $draft->capacity ?? null,
-                'draftCertificate' => (bool) ($draft->certificate ?? false),
-                'draftAccessDays' => $draft->access_days ?? null,
-            ]
+            $pageTitle,
+            $this->buildCourseWizardViewData($request, $draft, $step, $user)
         );
     }
 
@@ -836,182 +770,20 @@ class InstructorController extends Controller
             return redirect('/login');
         }
 
-        $step = max(1, min(5, (int) $request->input('wizard_step', 1)));
-        $attrs = $this->courseWizardFieldNames();
-        $soft = $request->boolean('autosave')
-            || $request->boolean('save_only')
-            || $request->input('go_next') === 'stay'
-            || ($request->filled('go_next') && is_numeric($request->input('go_next')) && (int) $request->input('go_next') < $step);
-
         $draft = null;
         if ($request->filled('draft_id')) {
-            $draft = \App\Models\Webinar::where('id', $request->input('draft_id'))
-                ->where('teacher_id', $user->id)
-                ->where('status', 'is_draft')
-                ->firstOrFail();
+            $draft = $this->wizardWebinarOrFail($user, $request->input('draft_id'));
         }
 
-        if ($step === 1) {
-            $request->validate([
-                'title' => ($soft ? 'nullable' : 'required') . '|string|max:255',
-                'category_id' => 'nullable|exists:categories,id',
-                'course_type' => 'nullable|in:recorded,live,text',
-                'seo_description' => ($soft ? 'nullable' : 'required') . '|string|max:160',
-                'description' => 'nullable|string',
-                'video_demo_link' => 'nullable|url|max:2000',
-                'video_demo_file' => 'nullable|file|mimetypes:video/mp4,video/webm,video/quicktime|max:102400',
-                'image_thumbnail' => 'nullable|image|max:5120',
-                'image_cover' => 'nullable|image|max:5120',
-                'tags' => 'nullable|string|max:1000',
-                'locale' => 'nullable|in:ar,en',
-                'downloadable' => 'nullable|boolean',
-                'partner_instructor' => 'nullable|boolean',
-            ], $this->courseWizardMessages(), $attrs);
-
-            $typeMap = ['recorded' => 'course', 'live' => 'webinar', 'text' => 'text_lesson'];
-            $title = trim((string) $request->input('title', ''));
-            if ($title === '') {
-                $title = 'دورة تدريبية بدون عنوان';
-            }
-
-            if (empty($draft)) {
-                $draft = new \App\Models\Webinar();
-                $draft->teacher_id = $user->id;
-                $draft->creator_id = $user->id;
-                $draft->status = 'is_draft';
-                $slugBase = \Illuminate\Support\Str::slug($title);
-                if ($slugBase === '') {
-                    $slugBase = 'course';
-                }
-                $draft->slug = $slugBase . '-' . time();
-                $draft->created_at = time();
-            }
-
-            $draft->type = $typeMap[$request->input('course_type', 'recorded')] ?? 'course';
-            $draft->category_id = $request->input('category_id') ?: null;
-            $draft->downloadable = $request->boolean('downloadable');
-            $draft->partner_instructor = $request->boolean('partner_instructor');
-            $draft->updated_at = time();
-
-            if ($request->hasFile('image_thumbnail')) {
-                $draft->thumbnail = '/storage/' . $request->file('image_thumbnail')->store('webinars', 'public');
-            }
-
-            if ($request->hasFile('image_cover')) {
-                $draft->image_cover = '/storage/' . $request->file('image_cover')->store('webinars', 'public');
-            }
-
-            if ($request->hasFile('video_demo_file')) {
-                $draft->video_demo = '/storage/' . $request->file('video_demo_file')->store('webinars/videos', 'public');
-                $draft->video_demo_source = 'upload';
-            } elseif ($request->filled('video_demo_link')) {
-                $draft->video_demo = $request->input('video_demo_link');
-                $draft->video_demo_source = 'external_link';
-            }
-
-            $draft->save();
-
-            $locale = $request->input('locale', 'ar') ?: 'ar';
-            $locales = array_values(array_unique(array_filter([$locale, 'ar', app()->getLocale()])));
-            foreach ($locales as $loc) {
-                $translation = $draft->translateOrNew($loc);
-                $translation->webinar_id = $draft->id;
-                $translation->locale = $loc;
-                $translation->title = $title;
-                $translation->seo_description = $request->input('seo_description');
-                $translation->description = $request->input('description');
-                $translation->save();
-            }
-
-            $tags = array_filter(array_map('trim', explode(',', (string) $request->input('tags', ''))));
-            \App\Models\Tag::where('webinar_id', $draft->id)->delete();
-            foreach (array_slice(array_unique($tags), 0, 10) as $tagTitle) {
-                \App\Models\Tag::create(['title' => mb_substr($tagTitle, 0, 64), 'webinar_id' => $draft->id]);
-            }
-        }
-
-        if ($step === 2 && !empty($draft)) {
-            $draft->updated_at = time();
-            $draft->save();
-        }
-
-        if (!empty($draft) && $step === 3) {
-            $request->validate([
-                'quiz_id' => 'nullable|exists:quizzes,id',
-                'certificate' => 'nullable|boolean',
-            ], $this->courseWizardMessages(), $attrs);
-
-            if ($request->filled('quiz_id')) {
-                $quiz = \App\Models\Quiz::where('id', $request->input('quiz_id'))
-                    ->where('creator_id', $user->id)
-                    ->firstOrFail();
-                $quiz->webinar_id = $draft->id;
-                $quiz->save();
-            }
-
-            $draft->certificate = $request->boolean('certificate');
-            $draft->updated_at = time();
-            $draft->save();
-        }
-
-        if (!empty($draft) && $step === 4) {
-            $request->validate([
-                'price' => 'nullable|integer|min:0',
-                'capacity' => 'nullable|integer|min:1',
-                'access_duration' => 'nullable|in:lifetime,limited',
-                'access_days' => 'nullable|integer|min:1|max:3650',
-            ], $this->courseWizardMessages(), $attrs);
-
-            if ($request->filled('price') && (int) $request->input('price') > 0) {
-                $draft->price = (int) $request->input('price');
-            } else {
-                $draft->price = null;
-            }
-
-            $draft->capacity = $request->input('capacity') ?: null;
-
-            if ($request->input('access_duration') === 'limited') {
-                $draft->access_days = (int) ($request->input('access_days') ?: 30);
-            } else {
-                $draft->access_days = null;
-            }
-
-            $draft->updated_at = time();
-            $draft->save();
-        }
-
-        $goNext = $request->input('go_next');
-        $isDone = !empty($draft) && $step === 5 && $goNext === 'done';
-
-        if ($isDone) {
-            $request->validate([
-                'confirm_rights' => 'accepted',
-                'confirm_terms' => 'accepted',
-            ], array_merge($this->courseWizardMessages(), [
-                'confirm_rights.accepted' => 'يجب تأكيد حقوق الملكية الفكرية قبل الإرسال.',
-                'confirm_terms.accepted' => 'يجب الموافقة على شروط المدربين قبل الإرسال.',
-            ]), $attrs);
-
-            $draft->status = 'pending';
-            $draft->updated_at = time();
-            $draft->save();
-        }
-
-        $nextStep = $step;
-        if ($goNext === 'done') {
-            $nextStep = 5;
-        } elseif ($goNext === 'stay' || $request->boolean('autosave') || $request->boolean('save_only')) {
-            $nextStep = $step;
-        } elseif (is_numeric($goNext)) {
-            $nextStep = max(1, min(5, (int) $goNext));
-        }
+        $result = $this->persistCourseWizardStep($request, $user, $draft, ['allowCreate' => true]);
+        $draft = $result['draft'];
+        $isDone = $result['isDone'];
+        $nextStep = $result['nextStep'];
+        $draftTitle = $result['draftTitle'];
+        $doneMessage = $result['doneMessage'];
+        $step = $result['step'];
 
         $progressMap = [1 => 20, 2 => 40, 3 => 60, 4 => 80, 5 => 100];
-        $draftTitle = null;
-        if (!empty($draft)) {
-            $tr = $draft->translate('ar') ?: $draft->translate(app()->getLocale()) ?: $draft->translations()->first();
-            $draftTitle = $tr->title ?? null;
-        }
 
         if ($request->expectsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
             return response()->json([
@@ -1021,7 +793,7 @@ class InstructorController extends Controller
                 'step' => $step,
                 'next_step' => $isDone ? null : $nextStep,
                 'progress' => $progressMap[$isDone ? 5 : $nextStep] ?? 20,
-                'message' => $isDone ? 'تم إرسال الدورة للمراجعة' : 'تم حفظ المسودة',
+                'message' => $isDone ? $doneMessage : 'تم حفظ المسودة',
                 'done' => $isDone,
                 'redirect' => $isDone ? route('panel.v1.instructor.courses') : null,
             ]);
@@ -1032,7 +804,7 @@ class InstructorController extends Controller
                 ->route('panel.v1.instructor.courses')
                 ->with('toast', [
                     'title' => 'تم',
-                    'msg' => 'تم إرسال الدورة للمراجعة',
+                    'msg' => $doneMessage,
                     'type' => 'success',
                 ]);
         }
@@ -1051,77 +823,25 @@ class InstructorController extends Controller
             ]);
     }
 
-    private function courseWizardFieldNames(): array
-    {
-        return [
-            'title' => 'عنوان الدورة',
-            'category_id' => 'التصنيف الرئيسي',
-            'course_type' => 'نوع الدورة',
-            'seo_description' => 'الوصف المختصر',
-            'description' => 'الوصف التفصيلي',
-            'video_demo_link' => 'رابط الفيديو الترويجي',
-            'video_demo_file' => 'ملف الفيديو الترويجي',
-            'image_thumbnail' => 'الصورة المصغرة',
-            'image_cover' => 'غلاف الدورة',
-            'tags' => 'الوسوم',
-            'locale' => 'لغة الدورة',
-            'downloadable' => 'السماح بتحميل الملفات',
-            'partner_instructor' => 'مدرب مشارك',
-            'quiz_id' => 'الاختبار',
-            'certificate' => 'الشهادة',
-            'price' => 'السعر',
-            'capacity' => 'سعة الطلاب',
-            'access_duration' => 'مدة الوصول',
-            'access_days' => 'عدد أيام الوصول',
-            'confirm_rights' => 'تأكيد حقوق الملكية',
-            'confirm_terms' => 'الموافقة على الشروط',
-            'draft_id' => 'المسودة',
-            'chapter_id' => 'الوحدة',
-            'topic' => 'عنوان الجلسة',
-            'date' => 'تاريخ الجلسة',
-            'duration' => 'مدة الجلسة',
-            'upload' => 'الملف',
-            'summary' => 'ملخص الدرس',
-        ];
-    }
-
-    private function courseWizardMessages(): array
-    {
-        return [
-            'required' => 'حقل :attribute مطلوب',
-            'required_if' => 'حقل :attribute مطلوب',
-            'accepted' => 'يجب الموافقة على :attribute',
-            'in' => 'قيمة :attribute غير صحيحة',
-            'exists' => ':attribute غير موجود',
-            'integer' => 'حقل :attribute يجب أن يكون رقمًا',
-            'numeric' => 'حقل :attribute يجب أن يكون رقمًا',
-            'min.numeric' => 'حقل :attribute يجب ألا يقل عن :min',
-            'min.integer' => 'حقل :attribute يجب ألا يقل عن :min',
-            'max.string' => 'حقل :attribute يجب ألا يتجاوز :max حرفًا',
-            'max.file' => 'حجم :attribute يجب ألا يتجاوز :max كيلوبايت',
-            'image' => 'حقل :attribute يجب أن يكون صورة',
-            'url' => 'حقل :attribute يجب أن يكون رابطًا صالحًا',
-            'file' => 'حقل :attribute يجب أن يكون ملفًا',
-            'mimetypes' => 'نوع ملف :attribute غير مدعوم',
-            'boolean' => 'قيمة :attribute غير صحيحة',
-            'date' => 'حقل :attribute يجب أن يكون تاريخًا صالحًا',
-            'string' => 'حقل :attribute يجب أن يكون نصًا',
-        ];
-    }
-
     private function draftOrFail($user, $draftId)
     {
-        return \App\Models\Webinar::where('id', $draftId)
-            ->where('teacher_id', $user->id)
-            ->where('status', 'is_draft')
-            ->firstOrFail();
+        return $this->wizardWebinarOrFail($user, $draftId);
+    }
+
+    private function assertWizardEditor($user)
+    {
+        if (!$user || (!$user->isTeacher() && !$user->isAdmin())) {
+            return redirect('/login');
+        }
+
+        return null;
     }
 
     public function chapterStore(Request $request)
     {
         $user = $request->user();
-        if (!$user || !$user->isTeacher()) {
-            return redirect('/login');
+        if ($redirect = $this->assertWizardEditor($user)) {
+            return $redirect;
         }
 
         $request->validate([
@@ -1165,8 +885,8 @@ class InstructorController extends Controller
     public function chapterDelete(Request $request, int $chapterId)
     {
         $user = $request->user();
-        if (!$user || !$user->isTeacher()) {
-            return redirect('/login');
+        if ($redirect = $this->assertWizardEditor($user)) {
+            return $redirect;
         }
 
         $request->validate(['draft_id' => 'required|integer'], $this->courseWizardMessages(), $this->courseWizardFieldNames());
@@ -1184,8 +904,8 @@ class InstructorController extends Controller
     public function curriculumSessionStore(Request $request)
     {
         $user = $request->user();
-        if (!$user || !$user->isTeacher()) {
-            return redirect('/login');
+        if ($redirect = $this->assertWizardEditor($user)) {
+            return $redirect;
         }
 
         $request->validate([
@@ -1239,8 +959,8 @@ class InstructorController extends Controller
     public function curriculumSessionDelete(Request $request, int $sessionId)
     {
         $user = $request->user();
-        if (!$user || !$user->isTeacher()) {
-            return redirect('/login');
+        if ($redirect = $this->assertWizardEditor($user)) {
+            return $redirect;
         }
 
         $request->validate(['draft_id' => 'required|integer'], $this->courseWizardMessages(), $this->courseWizardFieldNames());
@@ -1258,8 +978,8 @@ class InstructorController extends Controller
     public function curriculumFileStore(Request $request)
     {
         $user = $request->user();
-        if (!$user || !$user->isTeacher()) {
-            return redirect('/login');
+        if ($redirect = $this->assertWizardEditor($user)) {
+            return $redirect;
         }
 
         $request->validate([
@@ -1318,8 +1038,8 @@ class InstructorController extends Controller
     public function curriculumFileDelete(Request $request, int $fileId)
     {
         $user = $request->user();
-        if (!$user || !$user->isTeacher()) {
-            return redirect('/login');
+        if ($redirect = $this->assertWizardEditor($user)) {
+            return $redirect;
         }
 
         $request->validate(['draft_id' => 'required|integer'], $this->courseWizardMessages(), $this->courseWizardFieldNames());
@@ -1337,8 +1057,8 @@ class InstructorController extends Controller
     public function curriculumTextStore(Request $request)
     {
         $user = $request->user();
-        if (!$user || !$user->isTeacher()) {
-            return redirect('/login');
+        if ($redirect = $this->assertWizardEditor($user)) {
+            return $redirect;
         }
 
         $request->validate([
@@ -1390,8 +1110,8 @@ class InstructorController extends Controller
     public function curriculumTextDelete(Request $request, int $textId)
     {
         $user = $request->user();
-        if (!$user || !$user->isTeacher()) {
-            return redirect('/login');
+        if ($redirect = $this->assertWizardEditor($user)) {
+            return $redirect;
         }
 
         $request->validate(['draft_id' => 'required|integer'], $this->courseWizardMessages(), $this->courseWizardFieldNames());
@@ -1421,6 +1141,13 @@ class InstructorController extends Controller
 
     private function backToDraftStep(Request $request, $draft, int $step, string $message)
     {
+        $user = $request->user();
+        if ($user && method_exists($user, 'isAdmin') && $user->isAdmin()) {
+            return redirect()
+                ->route('panel.v1.admin.education.courses.edit', ['id' => $draft->id, 'step' => $step])
+                ->with('toast', ['title' => 'تم', 'msg' => $message, 'type' => 'success']);
+        }
+
         return redirect()
             ->route('panel.v1.instructor.courses.create', ['step' => $step, 'draft' => $draft->id])
             ->with('toast', ['title' => 'تم', 'msg' => $message, 'type' => 'success']);
@@ -1428,66 +1155,7 @@ class InstructorController extends Controller
 
     private function curriculumUnits($draft): array
     {
-        if (empty($draft)) {
-            return [];
-        }
-
-        $translatedTitle = function ($model) {
-            if (!$model) {
-                return '';
-            }
-            $tr = $model->translate('ar') ?: $model->translate(app()->getLocale()) ?: $model->translations->first();
-            return $tr->title ?? ($model->title ?? '');
-        };
-
-        return \App\Models\WebinarChapter::with(['sessions.translations', 'files.translations', 'textLessons.translations', 'translations'])
-            ->where('webinar_id', $draft->id)
-            ->orderBy('order')
-            ->orderBy('id')
-            ->get()
-            ->map(function ($chapter) use ($translatedTitle) {
-                $lessons = [];
-
-                foreach ($chapter->sessions as $session) {
-                    $lessons[] = [
-                        'kind' => 'session',
-                        'id' => $session->id,
-                        'title' => $translatedTitle($session),
-                        'duration' => ($session->duration ?? 0) . ' دقيقة',
-                        'delete_url' => route('panel.v1.instructor.curriculum.sessions.delete', ['sessionId' => $session->id]),
-                    ];
-                }
-
-                foreach ($chapter->files as $file) {
-                    $lessons[] = [
-                        'kind' => 'file',
-                        'id' => $file->id,
-                        'title' => $translatedTitle($file),
-                        'duration' => 'ملف',
-                        'delete_url' => route('panel.v1.instructor.curriculum.files.delete', ['fileId' => $file->id]),
-                    ];
-                }
-
-                foreach ($chapter->textLessons as $text) {
-                    $lessons[] = [
-                        'kind' => 'text',
-                        'id' => $text->id,
-                        'title' => $translatedTitle($text),
-                        'duration' => 'نصي',
-                        'delete_url' => route('panel.v1.instructor.curriculum.texts.delete', ['textId' => $text->id]),
-                    ];
-                }
-
-                return [
-                    'id' => $chapter->id,
-                    'title' => $translatedTitle($chapter),
-                    'lessons' => $lessons,
-                    'delete_url' => route('panel.v1.instructor.curriculum.chapters.delete', ['chapterId' => $chapter->id]),
-                    'session_store_url' => route('panel.v1.instructor.curriculum.sessions.store'),
-                    'file_store_url' => route('panel.v1.instructor.curriculum.files.store'),
-                    'text_store_url' => route('panel.v1.instructor.curriculum.texts.store'),
-                ];
-            })->all();
+        return $this->curriculumUnitsForWizard($draft);
     }
 
     public function courseWatch(Request $request, string $slug)

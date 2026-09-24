@@ -7,7 +7,7 @@
     $watchUrl = !empty($slug) ? route('panel.v1.instructor.courses.watch', ['slug' => $slug]) : route('panel.v1.instructor.courses');
     $performanceUrl = !empty($slug) ? route('panel.v1.instructor.courses.performance', ['slug' => $slug]) : route('panel.v1.instructor.courses');
     $assignmentsUrl = !empty($slug) ? route('panel.v1.instructor.courses.assignments', ['slug' => $slug]) : route('panel.v1.instructor.assignments');
-    $editUrl = $isDraft && !empty($courseId)
+    $editUrl = !empty($courseId)
         ? route('panel.v1.instructor.courses.create', ['step' => 1, 'draft' => $courseId])
         : $watchUrl;
 @endphp
@@ -27,6 +27,15 @@
                     <p class="font-medium text-16px text-gray">{{ $course['subtitle'] }}</p>
                 </div>
 
+                <div class="flex items-center gap-2 shrink-0">
+                    @if (!empty($courseId))
+                        <a href="{{ $editUrl }}"
+                            class="inline-flex items-center gap-1.5 h-9 px-3 rounded-10px border border-d9 bg-white font-semibold text-13px text-primary hover:bg-[#FAFAF4] transition"
+                            title="{{ $isDraft ? 'متابعة التعديل' : 'تعديل الدورة' }}">
+                            <span class="icon-[tabler--pencil] size-4 text-gray shrink-0"></span>
+                            {{ $isDraft ? 'متابعة التعديل' : 'تعديل' }}
+                        </a>
+                    @endif
                 <div class="dropdown relative inline-flex [--auto-close:true] rtl:[--placement:bottom-end] shrink-0">
                     <button type="button"
                         class="dropdown-toggle size-9 rounded-full bg-[#F1F5F9] !inline-flex !items-center !justify-center border-0 hover:bg-[#E8ECEA] transition"
@@ -35,15 +44,14 @@
                     </button>
                     <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-56 py-2 rounded-12px border border-d9 bg-white shadow-xl z-50"
                         role="menu" aria-labelledby="{{ $menuId }}">
-                        @if ($isDraft)
-                            <li>
-                                <a href="{{ $editUrl }}"
-                                    class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary">
-                                    <span class="icon-[tabler--pencil] size-4 text-gray shrink-0"></span>
-                                    متابعة التعديل
-                                </a>
-                            </li>
-                        @else
+                        <li>
+                            <a href="{{ $editUrl }}"
+                                class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary">
+                                <span class="icon-[tabler--pencil] size-4 text-gray shrink-0"></span>
+                                {{ $isDraft ? 'متابعة التعديل' : 'تعديل الدورة' }}
+                            </a>
+                        </li>
+                        @if (!$isDraft)
                             <li>
                                 <a href="{{ $watchUrl }}"
                                     class="dropdown-item flex items-center gap-2 px-4 py-2.5 font-medium text-15px text-primary">
@@ -87,6 +95,7 @@
                             </li>
                         @endif
                     </ul>
+                </div>
                 </div>
             </div>
         </div>

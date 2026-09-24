@@ -10,6 +10,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class EducationController extends AdminController
 {
+    use \App\Http\Controllers\PanelV1\Support\CourseWizardTrait;
+
     public function home(Request $request)
     {
         $activeCount = (int) \App\Models\Webinar::where('status', 'active')->count();
@@ -474,22 +476,86 @@ class EducationController extends AdminController
         return redirect()->route('panel.v1.admin.education.section',['section'=>'courses'])->with('toast',['title'=>'تم','msg'=>'تم إنشاء الدورة بنجاح (منطق Admin\WebinarController حرفياً)','type'=>'success']);
     }
 
-    public function editCourse(Request $request, int $id)
+    public function editCourse(Request $request, int $id, ?int $step = 1)
     {
         $user = $this->resolveAdmin($request);
-        if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
 
-        $webinar = \App\Models\Webinar::findOrFail($id);
-        $teachers = \App\User::where('role_name','teacher')->select('id','full_name')->orderBy('full_name')->limit(100)->get();
-        $categories = \App\Models\Category::whereNull('parent_id')->orderBy('order')->get()->map(fn($c)=>['id'=>$c->id,'title'=>$c->title])->all();
+        if ($request->filled('step')) {
+            $step = (int) $request->input('step');
+        }
+        $step = max(1, min(5, $step ?? 1));
 
-        return $this->renderAdmin($request, 'panel_v1.admin.pages.education.course-form', 'تعديل دورة', array_merge(AdminMockData::shell('education','courses'), [
-            'teachers'=>$teachers,
-            'categories'=>$categories,
-            'course'=>$webinar,
-            'formAction'=>route('panel.v1.admin.education.courses.update',['id'=>$webinar->id]),
-            'formMethod'=>'POST',
-        ]));
+        $webinar = \App\Models\Webinar::with(['tags', 'translations'])->findOrFail($id);
+        $data = $this->buildCourseWizardViewData($request, $webinar, $step, $user);
+
+        return $this->renderAdmin(
+            $request,
+            'panel_v1.admin.pages.education.course-wizard',
+            'تعديل دورة',
+            array_merge(AdminMockData::shell('education', 'courses'), $data, [
+                'wizardCoursesUrl' => route('panel.v1.admin.education.section', ['section' => 'courses']),
+                'wizardStoreUrl' => route('panel.v1.admin.education.courses.wizard.store', ['id' => $webinar->id]),
+                'wizardCreateUrl' => route('panel.v1.admin.education.courses.edit', ['id' => $webinar->id]),
+            ])
+        );
+    }
+
+    public function storeCourseWizard(Request $request, int $id)
+    {
+        $user = $this->resolveAdmin($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $draft = $this->wizardWebinarOrFail($user, $id);
+        // Keep draft_id in sync for curriculum / SPA
+        $request->merge(['draft_id' => $draft->id]);
+
+        $result = $this->persistCourseWizardStep($request, $user, $draft, ['allowCreate' => false]);
+        $draft = $result['draft'];
+        $isDone = $result['isDone'];
+        $nextStep = $result['nextStep'];
+        $draftTitle = $result['draftTitle'];
+        $doneMessage = $result['doneMessage'];
+        $step = $result['step'];
+
+        $progressMap = [1 => 20, 2 => 40, 3 => 60, 4 => 80, 5 => 100];
+        $coursesUrl = route('panel.v1.admin.education.section', ['section' => 'courses']);
+
+        if ($request->expectsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'ok' => true,
+                'draft_id' => $draft->id ?? null,
+                'draft_title' => $draftTitle ?: 'دورة تدريبية بدون عنوان',
+                'step' => $step,
+                'next_step' => $isDone ? null : $nextStep,
+                'progress' => $progressMap[$isDone ? 5 : $nextStep] ?? 20,
+                'message' => $isDone ? $doneMessage : 'تم حفظ التعديلات',
+                'done' => $isDone,
+                'redirect' => $isDone ? $coursesUrl : null,
+            ]);
+        }
+
+        if ($isDone) {
+            return redirect()
+                ->to($coursesUrl)
+                ->with('toast', [
+                    'title' => 'تم',
+                    'msg' => $doneMessage,
+                    'type' => 'success',
+                ]);
+        }
+
+        return redirect()
+            ->route('panel.v1.admin.education.courses.edit', ['id' => $draft->id, 'step' => $nextStep])
+            ->with('toast', [
+                'title' => 'تم',
+                'msg' => 'تم حفظ التعديلات بنجاح',
+                'type' => 'success',
+            ]);
     }
 
     public function updateCourse(Request $request, int $id)

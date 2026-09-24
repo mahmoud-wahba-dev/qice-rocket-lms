@@ -8,7 +8,7 @@
 <div class="sticky bottom-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 mt-8 border-t border-d9 bg-white/95 backdrop-blur px-4 sm:px-6 lg:px-8 py-4" data-wizard-footer>
     <div class="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
         <div class="flex items-center gap-3 sm:gap-4 order-2 sm:order-1">
-            <a href="{{ route('panel.v1.instructor.courses') }}"
+            <a href="{{ $wizardCoursesUrl ?? route('panel.v1.instructor.courses') }}"
                 class="font-semibold text-15px sm:text-16px text-red-500 hover:opacity-80 transition">
                 إلغاء
             </a>
