@@ -120,12 +120,26 @@ class CourseWizardTraitTest extends TestCase
         $fields = $h->callFieldNames();
         foreach ([
             'title', 'category_id', 'course_type', 'seo_description', 'description',
-            'video_demo_link', 'tags', 'locale', 'downloadable', 'partner_instructor',
+            'video_demo_link', 'tags', 'locale', 'downloadable', 'partner_instructor', 'partners',
             'quiz_id', 'certificate', 'price', 'capacity', 'access_duration', 'access_days',
             'confirm_rights', 'confirm_terms',
         ] as $field) {
             $this->assertArrayHasKey($field, $fields, "Missing wizard field label: {$field}");
         }
+    }
+
+    public function test_partner_teacher_can_load_shared_course(): void
+    {
+        $owner = $this->makeTeacher();
+        $partner = $this->makeTeacher();
+        $course = $this->makeCourse($owner, 'active');
+        \App\Models\WebinarPartnerTeacher::create([
+            'webinar_id' => $course->id,
+            'teacher_id' => $partner->id,
+        ]);
+
+        $loaded = $this->harness()->callWizardWebinarOrFail($partner, $course->id);
+        $this->assertSame($course->id, $loaded->id);
     }
 
     public function test_teacher_can_load_non_draft_owned_course(): void
@@ -189,6 +203,8 @@ class CourseWizardTraitTest extends TestCase
         $this->assertSame('live', $data['draft']['course_type']);
         $this->assertTrue($data['draft']['downloadable']);
         $this->assertTrue($data['draft']['partner_instructor']);
+        $this->assertSame([], $data['draft']['partners']);
+        $this->assertArrayHasKey('availableInstructors', $data);
         $this->assertSame($category?->id, $data['draft']['category_id']);
         $this->assertStringContainsString('جودة', $data['draft']['tags']);
         $this->assertStringContainsString('تميز', $data['draft']['tags']);

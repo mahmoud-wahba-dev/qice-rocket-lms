@@ -38,15 +38,48 @@ class AdminMockData
     {
         $dashboards = self::dashboards();
         $current = collect($dashboards)->firstWhere('key', $dashboard) ?? $dashboards[0];
+        $nav = self::nav($dashboard);
+        if ($dashboard === 'education') {
+            $nav = self::withCourseTypeCounts($nav);
+        }
 
         return [
             'adminDashboard' => $dashboard,
             'adminDashboards' => $dashboards,
             'adminCurrentDashboard' => $current,
-            'adminNav' => self::nav($dashboard),
+            'adminNav' => $nav,
             'adminActive' => $active ?? 'home',
             'adminCta' => null,
         ];
+    }
+
+    /**
+     * Attach live counts to course-type sidebar children (e.g. دورات مسجلة (12)).
+     */
+    private static function withCourseTypeCounts(array $nav): array
+    {
+        try {
+            $counts = [
+                'webinar' => (int) \App\Models\Webinar::where('type', 'webinar')->count(),
+                'course' => (int) \App\Models\Webinar::where('type', 'course')->count(),
+                'text_lesson' => (int) \App\Models\Webinar::where('type', 'text_lesson')->count(),
+            ];
+        } catch (\Throwable $e) {
+            return $nav;
+        }
+
+        foreach ($nav as $gi => $group) {
+            foreach ($group['items'] ?? [] as $ii => $item) {
+                foreach ($item['children'] ?? [] as $ci => $child) {
+                    $type = $child['params']['type'] ?? null;
+                    if ($type && isset($counts[$type])) {
+                        $nav[$gi]['items'][$ii]['children'][$ci]['count'] = $counts[$type];
+                    }
+                }
+            }
+        }
+
+        return $nav;
     }
 
     public static function nav(string $dashboard): array
@@ -73,7 +106,40 @@ class AdminMockData
             [
                 'title' => 'إدارة المحتوى الأكاديمي',
                 'items' => [
-                    ['key' => 'courses', 'label' => 'إدارة الدورات', 'icon' => 'icon-[tabler--book]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'courses']],
+                    [
+                        'key' => 'courses',
+                        'label' => 'إدارة الدورات',
+                        'icon' => 'icon-[tabler--book]',
+                        'route' => 'panel.v1.admin.education.section',
+                        'params' => ['section' => 'courses'],
+                        'children' => [
+                            [
+                                'key' => 'courses-webinar',
+                                'label' => 'دورات مباشرة',
+                                'route' => 'panel.v1.admin.education.section',
+                                'params' => ['section' => 'courses', 'type' => 'webinar'],
+                            ],
+                            [
+                                'key' => 'courses-course',
+                                'label' => 'دورات مسجلة',
+                                'route' => 'panel.v1.admin.education.section',
+                                'params' => ['section' => 'courses', 'type' => 'course'],
+                                'count_type' => 'course',
+                            ],
+                            [
+                                'key' => 'courses-text_lesson',
+                                'label' => 'دورات كتابية',
+                                'route' => 'panel.v1.admin.education.section',
+                                'params' => ['section' => 'courses', 'type' => 'text_lesson'],
+                            ],
+                            [
+                                'key' => 'live',
+                                'label' => 'سجل البث المباشر',
+                                'route' => 'panel.v1.admin.education.section',
+                                'params' => ['section' => 'live'],
+                            ],
+                        ],
+                    ],
                     ['key' => 'bundles', 'label' => 'حزم الدورات والباقات', 'icon' => 'icon-[tabler--package]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'bundles']],
                     ['key' => 'departments', 'label' => 'الأقسام والتصنيفات', 'icon' => 'icon-[tabler--building]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'departments']],
                     ['key' => 'events', 'label' => 'الفعاليات', 'icon' => 'icon-[tabler--calendar-event]', 'route' => 'panel.v1.admin.education.section', 'params' => ['section' => 'events']],

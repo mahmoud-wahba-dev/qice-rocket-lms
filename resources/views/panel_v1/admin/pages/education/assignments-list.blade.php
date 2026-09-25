@@ -94,9 +94,7 @@
                             $enrolled = (int) ($enrolledMap[$a->webinar_id] ?? 0);
                             $isActive = ($a->status ?? '') === 'active';
                             $studentsUrl = route('panel.v1.admin.education.enrollment.history', ['search' => $a->webinar_id]);
-                            $editUrl = !empty($a->webinar_id)
-                                ? route('panel.v1.admin.education.courses.curriculum', ['id' => $a->webinar_id])
-                                : route('panel.v1.admin.education.assignments.create');
+                            $editUrl = route('panel.v1.admin.education.assignments.edit', ['id' => $a->id]);
                         @endphp
                         <tr class="border-b border-d9 last:border-0 hover:bg-[#FAFAF4]/40">
                             <td class="px-3 py-4 min-w-[14rem]">

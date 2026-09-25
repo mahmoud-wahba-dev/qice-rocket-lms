@@ -7,7 +7,7 @@
             <h1 class="font-semibold text-24px text-black mb-1">{{ $welcomeTitle }}</h1>
             <p class="font-medium text-16px text-gray max-w-2xl">{{ $welcomeSubtitle }}</p>
         </div>
-        <a href="{{ route('panel.v1.admin.education.section', ['section' => 'courses']) }}"
+            <a href="{{ route('panel.v1.admin.education.courses.create') }}"
             class="inline-flex items-center justify-center h-12 px-5 rounded-12px bg-color2 text-white font-semibold text-15px hover:opacity-95 transition shrink-0">
             + إنشاء دورة جديدة
         </a>

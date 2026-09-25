@@ -19,7 +19,7 @@
         <div class="rounded-12px bg-[#FAFAF4] border border-d9 px-5 py-4 mb-6 {{ !empty($draftIdValue) ? 'hidden' : '' }}" data-curriculum-need-draft>
             <p class="font-medium text-14px text-gray">احفظ بيانات الخطوة الأولى أولاً (أو اضغط التالي) لتتمكن من بناء المنهج — سيتم حفظ المسودة تلقائيًا.</p>
         </div>
-        <form method="POST" action="{{ route('panel.v1.instructor.curriculum.chapters.store') }}"
+        <form method="POST" action="{{ $curriculumChapterStoreUrl ?? route('panel.v1.instructor.curriculum.chapters.store') }}"
             class="flex flex-col sm:flex-row gap-3 mb-6 {{ empty($draftIdValue) ? 'hidden' : '' }}"
             data-curriculum-ajax="chapter" data-curriculum-ready>
             @csrf

@@ -874,10 +874,10 @@ class InstructorController extends Controller
                 'id' => $chapter->id,
                 'title' => $request->input('title'),
                 'lessons' => [],
-                'delete_url' => route('panel.v1.instructor.curriculum.chapters.delete', ['chapterId' => $chapter->id]),
-                'session_store_url' => route('panel.v1.instructor.curriculum.sessions.store'),
-                'file_store_url' => route('panel.v1.instructor.curriculum.files.store'),
-                'text_store_url' => route('panel.v1.instructor.curriculum.texts.store'),
+                'delete_url' => route($this->curriculumRouteNames($user)['chapters.delete'], ['chapterId' => $chapter->id]),
+                'session_store_url' => route($this->curriculumRouteNames($user)['sessions.store']),
+                'file_store_url' => route($this->curriculumRouteNames($user)['files.store']),
+                'text_store_url' => route($this->curriculumRouteNames($user)['texts.store']),
             ],
         ]);
     }
@@ -951,7 +951,7 @@ class InstructorController extends Controller
                 'id' => $session->id,
                 'title' => $request->input('topic'),
                 'duration' => ((int) $request->input('duration')) . ' دقيقة',
-                'delete_url' => route('panel.v1.instructor.curriculum.sessions.delete', ['sessionId' => $session->id]),
+                'delete_url' => route($this->curriculumRouteNames($user)['sessions.delete'], ['sessionId' => $session->id]),
             ],
         ]);
     }
@@ -1030,7 +1030,7 @@ class InstructorController extends Controller
                 'id' => $file->id,
                 'title' => $request->input('title'),
                 'duration' => 'ملف',
-                'delete_url' => route('panel.v1.instructor.curriculum.files.delete', ['fileId' => $file->id]),
+                'delete_url' => route($this->curriculumRouteNames($user)['files.delete'], ['fileId' => $file->id]),
             ],
         ]);
     }
@@ -1102,7 +1102,7 @@ class InstructorController extends Controller
                 'id' => $text->id,
                 'title' => $request->input('title'),
                 'duration' => 'نصي',
-                'delete_url' => route('panel.v1.instructor.curriculum.texts.delete', ['textId' => $text->id]),
+                'delete_url' => route($this->curriculumRouteNames($user)['texts.delete'], ['textId' => $text->id]),
             ],
         ]);
     }
@@ -5313,25 +5313,31 @@ class InstructorController extends Controller
             ->with('toast', ['title' => 'تم', 'msg' => 'تم حفظ الإعدادات بنجاح', 'type' => 'success']);
     }
 
+    private function applyTeacherWebinarOwnership($query, $user)
+    {
+        return $query->where(function ($ownership) use ($user) {
+            $ownership->where('teacher_id', $user->id)
+                ->orWhere('creator_id', $user->id)
+                ->orWhereHas('webinarPartnerTeacher', function ($partnerQuery) use ($user) {
+                    $partnerQuery->where('teacher_id', $user->id);
+                });
+        });
+    }
+
     private function teacherOwnedWebinarOrFail($user, int $webinarId): Webinar
     {
-        return Webinar::query()
-            ->where('id', $webinarId)
-            ->where(function ($query) use ($user) {
-                $query->where('teacher_id', $user->id)
-                    ->orWhere('creator_id', $user->id);
-            })
-            ->firstOrFail();
+        return $this->applyTeacherWebinarOwnership(
+            Webinar::query()->where('id', $webinarId),
+            $user
+        )->firstOrFail();
     }
 
     private function teacherWebinarOrFail($user, string $slug)
     {
-        return Webinar::where('slug', $slug)
-            ->where(function ($query) use ($user) {
-                $query->where('teacher_id', $user->id)
-                    ->orWhere('creator_id', $user->id);
-            })
-            ->firstOrFail();
+        return $this->applyTeacherWebinarOwnership(
+            Webinar::where('slug', $slug),
+            $user
+        )->firstOrFail();
     }
 
     private function render(Request $request, string $view, string $pageTitle, array $data = [])
@@ -5350,11 +5356,10 @@ class InstructorController extends Controller
 
     private function teacherWebinars($user)
     {
-        return Webinar::with(['category', 'sessions', 'files', 'textLessons'])
-            ->where(function ($query) use ($user) {
-                $query->where('teacher_id', $user->id)
-                    ->orWhere('creator_id', $user->id);
-            })
+        return $this->applyTeacherWebinarOwnership(
+            Webinar::with(['category', 'sessions', 'files', 'textLessons']),
+            $user
+        )
             ->orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")
             ->orderBy('id', 'desc')
             ->get();

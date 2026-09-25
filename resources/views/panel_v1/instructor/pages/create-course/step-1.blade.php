@@ -77,6 +77,22 @@
                 @enderror
             </div>
         </div>
+        @if (!empty($isAdminWizard) && !empty($courseTeachers))
+            <div>
+                <label class="block font-semibold text-14px sm:text-15px text-primary mb-2">المدرب الرئيسي <span class="text-red-500">*</span></label>
+                <select name="teacher_id" class="{{ $select }} {{ $errors->has('teacher_id') ? 'border-[#FECACA]' : '' }}" required>
+                    <option value="">اختر المدرب</option>
+                    @foreach ($courseTeachers as $teacher)
+                        <option value="{{ $teacher['id'] }}" {{ (string) old('teacher_id', $draft['teacher_id'] ?? '') === (string) $teacher['id'] ? 'selected' : '' }}>
+                            {{ $teacher['name'] }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('teacher_id')
+                    <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+                @enderror
+            </div>
+        @endif
         <div>
             <label class="block font-semibold text-14px sm:text-15px text-primary mb-2">عنوان الدورة <span class="text-red-500">*</span></label>
             <input type="text" name="title" value="{{ old('title', $draft['title'] ?? '') }}"
@@ -205,15 +221,53 @@
                 {{ old('downloadable', $draft['downloadable'] ?? true) ? 'checked' : '' }}
                 aria-label="السماح بتحميل الملفات">
         </div>
-        <div class="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
-            <div class="min-w-0 text-start">
-                <p class="font-semibold text-15px sm:text-16px text-primary mb-1">إضافة مدرب مشارك</p>
-                <p class="font-medium text-13px sm:text-14px text-gray">دعوة مدرب آخر للمساعدة في إدارة الدورة</p>
+        @php
+            $partnerOn = (bool) old('partner_instructor', $draft['partner_instructor'] ?? false);
+            $selectedPartners = collect(old('partners', $draft['partners'] ?? []))->map(fn ($id) => (int) $id)->filter()->all();
+            $availableInstructors = $availableInstructors ?? [];
+        @endphp
+        <div class="py-4 first:pt-0 last:pb-0" data-partner-instructor>
+            <div class="flex items-center justify-between gap-4">
+                <div class="min-w-0 text-start">
+                    <p class="font-semibold text-15px sm:text-16px text-primary mb-1">إضافة مدرب مشارك</p>
+                    <p class="font-medium text-13px sm:text-14px text-gray">دعوة مدرب آخر للمساعدة في إدارة الدورة</p>
+                </div>
+                <input type="hidden" name="partner_instructor" value="0">
+                <input type="checkbox" name="partner_instructor" value="1" class="switch switch-primary shrink-0"
+                    data-partner-instructor-switch
+                    {{ $partnerOn ? 'checked' : '' }}
+                    aria-label="إضافة مدرب مشارك"
+                    aria-controls="partner-instructor-fields">
             </div>
-            <input type="hidden" name="partner_instructor" value="0">
-            <input type="checkbox" name="partner_instructor" value="1" class="switch switch-primary shrink-0"
-                {{ old('partner_instructor', $draft['partner_instructor'] ?? false) ? 'checked' : '' }}
-                aria-label="إضافة مدرب مشارك">
+            <div id="partner-instructor-fields" data-partner-instructor-fields
+                class="mt-4 space-y-2 {{ $partnerOn ? '' : 'hidden' }}">
+                <label for="partners" class="block font-semibold text-14px sm:text-15px text-primary">
+                    اختر المدرب المشارك
+                </label>
+                <select id="partners" name="partners[]" multiple size="6"
+                    class="{{ $select }} h-auto min-h-12 py-2"
+                    data-partner-instructor-select
+                    {{ $partnerOn ? '' : 'disabled' }}
+                    aria-label="اختر المدرب المشارك">
+                    @forelse ($availableInstructors as $instructor)
+                        <option value="{{ $instructor['id'] }}"
+                            {{ in_array((int) $instructor['id'], $selectedPartners, true) ? 'selected' : '' }}>
+                            {{ $instructor['name'] }}@if (!empty($instructor['email'])) — {{ $instructor['email'] }}@endif
+                        </option>
+                    @empty
+                        <option value="" disabled>لا يوجد مدربون متاحون</option>
+                    @endforelse
+                </select>
+                <p class="font-medium text-12px sm:text-13px text-gray">
+                    اضغط Ctrl (أو Cmd) لاختيار أكثر من مدرب. سيظهر المقرر في لوحة المدرب المشارك ويمكنه إدارته.
+                </p>
+                @error('partners')
+                    <p class="font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+                @enderror
+                @error('partners.*')
+                    <p class="font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+                @enderror
+            </div>
         </div>
     </div>
 </section>

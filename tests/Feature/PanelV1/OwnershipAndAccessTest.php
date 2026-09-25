@@ -71,6 +71,26 @@ class OwnershipAndAccessTest extends TestCase
         $this->assertSame($webinar->id, $ref->invoke($controller, $owner, $webinar->slug)->id);
     }
 
+    public function test_partner_teacher_opens_shared_webinar(): void
+    {
+        $owner = $this->makeUser('teacher', 4);
+        $partner = $this->makeUser('teacher', 4);
+        $webinar = $this->makeWebinar($owner, 'shared');
+        $webinar->partner_instructor = 1;
+        $webinar->save();
+
+        \App\Models\WebinarPartnerTeacher::create([
+            'webinar_id' => $webinar->id,
+            'teacher_id' => $partner->id,
+        ]);
+
+        $controller = new InstructorController();
+        $ref = new \ReflectionMethod($controller, 'teacherWebinarOrFail');
+        $ref->setAccessible(true);
+
+        $this->assertSame($webinar->id, $ref->invoke($controller, $partner, $webinar->slug)->id);
+    }
+
     public function test_teacher_cannot_grade_foreign_quiz(): void
     {
         $owner = $this->makeUser('teacher', 4);

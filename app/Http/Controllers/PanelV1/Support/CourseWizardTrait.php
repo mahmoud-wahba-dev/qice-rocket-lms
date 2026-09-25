@@ -26,6 +26,8 @@ trait CourseWizardTrait
             'locale' => 'لغة الدورة',
             'downloadable' => 'السماح بتحميل الملفات',
             'partner_instructor' => 'مدرب مشارك',
+            'partners' => 'المدرب المشارك',
+            'teacher_id' => 'المدرب الرئيسي',
             'quiz_id' => 'الاختبار',
             'certificate' => 'الشهادة',
             'price' => 'السعر',
@@ -87,18 +89,101 @@ trait CourseWizardTrait
     {
         $q = \App\Models\Webinar::where('id', $draftId);
         if (!$user->isAdmin()) {
-            $q->where('teacher_id', $user->id);
+            $q->where(function ($query) use ($user) {
+                $query->where('teacher_id', $user->id)
+                    ->orWhere('creator_id', $user->id)
+                    ->orWhereHas('webinarPartnerTeacher', function ($partnerQuery) use ($user) {
+                        $partnerQuery->where('teacher_id', $user->id);
+                    });
+            });
         }
 
         return $q->firstOrFail();
     }
 
-    protected function curriculumUnitsForWizard($draft): array
+    /**
+     * Active teachers available as co-instructors (excludes course owner / current teacher).
+     */
+    protected function availablePartnerInstructors($user, $draft = null): array
+    {
+        $excludeIds = array_values(array_unique(array_filter([
+            (int) optional($draft)->teacher_id,
+            (int) optional($draft)->creator_id,
+            $user->isAdmin() ? null : (int) $user->id,
+        ])));
+
+        return \App\User::query()
+            ->where('role_name', \App\Models\Role::$teacher)
+            ->where('status', 'active')
+            ->when(!empty($excludeIds), function ($query) use ($excludeIds) {
+                $query->whereNotIn('id', $excludeIds);
+            })
+            ->orderBy('full_name')
+            ->get(['id', 'full_name', 'email'])
+            ->map(function ($teacher) {
+                return [
+                    'id' => (int) $teacher->id,
+                    'name' => (string) $teacher->full_name,
+                    'email' => (string) ($teacher->email ?? ''),
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * Sync webinar_partner_teacher rows from the wizard request.
+     */
+    protected function syncWizardPartnerTeachers(Request $request, $draft, $user): void
+    {
+        if (empty($draft) || empty($draft->id)) {
+            return;
+        }
+
+        if (!$request->boolean('partner_instructor')) {
+            \App\Models\WebinarPartnerTeacher::where('webinar_id', $draft->id)->delete();
+
+            return;
+        }
+
+        $ownerIds = array_values(array_unique(array_filter([
+            (int) $draft->teacher_id,
+            (int) $draft->creator_id,
+        ])));
+
+        $requestedIds = collect($request->input('partners', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->reject(fn ($id) => in_array($id, $ownerIds, true))
+            ->values()
+            ->all();
+
+        $validIds = empty($requestedIds)
+            ? []
+            : \App\User::query()
+                ->where('role_name', \App\Models\Role::$teacher)
+                ->whereIn('id', $requestedIds)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+        \App\Models\WebinarPartnerTeacher::where('webinar_id', $draft->id)->delete();
+
+        foreach ($validIds as $partnerId) {
+            \App\Models\WebinarPartnerTeacher::create([
+                'webinar_id' => $draft->id,
+                'teacher_id' => $partnerId,
+            ]);
+        }
+    }
+
+    protected function curriculumUnitsForWizard($draft, $user = null): array
     {
         if (empty($draft)) {
             return [];
         }
 
+        $routes = $this->curriculumRouteNames($user);
         $translatedTitle = function ($model) {
             if (!$model) {
                 return '';
@@ -113,7 +198,7 @@ trait CourseWizardTrait
             ->orderBy('order')
             ->orderBy('id')
             ->get()
-            ->map(function ($chapter) use ($translatedTitle) {
+            ->map(function ($chapter) use ($translatedTitle, $routes) {
                 $lessons = [];
 
                 foreach ($chapter->sessions as $session) {
@@ -122,7 +207,7 @@ trait CourseWizardTrait
                         'id' => $session->id,
                         'title' => $translatedTitle($session),
                         'duration' => ($session->duration ?? 0) . ' دقيقة',
-                        'delete_url' => route('panel.v1.instructor.curriculum.sessions.delete', ['sessionId' => $session->id]),
+                        'delete_url' => route($routes['sessions.delete'], ['sessionId' => $session->id]),
                     ];
                 }
 
@@ -132,7 +217,7 @@ trait CourseWizardTrait
                         'id' => $file->id,
                         'title' => $translatedTitle($file),
                         'duration' => 'ملف',
-                        'delete_url' => route('panel.v1.instructor.curriculum.files.delete', ['fileId' => $file->id]),
+                        'delete_url' => route($routes['files.delete'], ['fileId' => $file->id]),
                     ];
                 }
 
@@ -142,7 +227,7 @@ trait CourseWizardTrait
                         'id' => $text->id,
                         'title' => $translatedTitle($text),
                         'duration' => 'نصي',
-                        'delete_url' => route('panel.v1.instructor.curriculum.texts.delete', ['textId' => $text->id]),
+                        'delete_url' => route($routes['texts.delete'], ['textId' => $text->id]),
                     ];
                 }
 
@@ -150,12 +235,44 @@ trait CourseWizardTrait
                     'id' => $chapter->id,
                     'title' => $translatedTitle($chapter),
                     'lessons' => $lessons,
-                    'delete_url' => route('panel.v1.instructor.curriculum.chapters.delete', ['chapterId' => $chapter->id]),
-                    'session_store_url' => route('panel.v1.instructor.curriculum.sessions.store'),
-                    'file_store_url' => route('panel.v1.instructor.curriculum.files.store'),
-                    'text_store_url' => route('panel.v1.instructor.curriculum.texts.store'),
+                    'delete_url' => route($routes['chapters.delete'], ['chapterId' => $chapter->id]),
+                    'session_store_url' => route($routes['sessions.store']),
+                    'file_store_url' => route($routes['files.store']),
+                    'text_store_url' => route($routes['texts.store']),
                 ];
             })->all();
+    }
+
+    /**
+     * Curriculum AJAX route names — admin must not hit /v1/instructor/* (panel middleware rejects admins).
+     */
+    protected function curriculumRouteNames($user = null): array
+    {
+        $admin = $user && method_exists($user, 'isAdmin') && $user->isAdmin();
+
+        if ($admin) {
+            return [
+                'chapters.store' => 'panel.v1.admin.education.curriculum.chapters.store',
+                'chapters.delete' => 'panel.v1.admin.education.curriculum.chapters.delete',
+                'sessions.store' => 'panel.v1.admin.education.curriculum.sessions.store',
+                'sessions.delete' => 'panel.v1.admin.education.curriculum.sessions.delete',
+                'files.store' => 'panel.v1.admin.education.curriculum.files.store',
+                'files.delete' => 'panel.v1.admin.education.curriculum.files.delete',
+                'texts.store' => 'panel.v1.admin.education.curriculum.texts.store',
+                'texts.delete' => 'panel.v1.admin.education.curriculum.texts.delete',
+            ];
+        }
+
+        return [
+            'chapters.store' => 'panel.v1.instructor.curriculum.chapters.store',
+            'chapters.delete' => 'panel.v1.instructor.curriculum.chapters.delete',
+            'sessions.store' => 'panel.v1.instructor.curriculum.sessions.store',
+            'sessions.delete' => 'panel.v1.instructor.curriculum.sessions.delete',
+            'files.store' => 'panel.v1.instructor.curriculum.files.store',
+            'files.delete' => 'panel.v1.instructor.curriculum.files.delete',
+            'texts.store' => 'panel.v1.instructor.curriculum.texts.store',
+            'texts.delete' => 'panel.v1.instructor.curriculum.texts.delete',
+        ];
     }
 
     protected function buildCourseWizardViewData(Request $request, $draft, int $step, $user): array
@@ -177,6 +294,9 @@ trait CourseWizardTrait
 
         $typeReverse = ['course' => 'recorded', 'webinar' => 'live', 'text_lesson' => 'text'];
         $tagTitles = $draft ? $draft->tags->pluck('title')->filter()->values()->all() : [];
+        $partnerIds = $draft
+            ? $draft->webinarPartnerTeacher()->pluck('teacher_id')->map(fn ($id) => (int) $id)->values()->all()
+            : [];
         $draftLocaleTitle = null;
         $draftLocaleSeo = null;
         $draftLocaleDescription = null;
@@ -200,6 +320,7 @@ trait CourseWizardTrait
             'draft' => $draft ? [
                 'title' => $draftLocaleTitle,
                 'category_id' => $draft->category_id,
+                'teacher_id' => $draft->teacher_id,
                 'course_type' => $typeReverse[$draft->type] ?? 'recorded',
                 'locale' => 'ar',
                 'seo_description' => $draftLocaleSeo,
@@ -208,17 +329,30 @@ trait CourseWizardTrait
                 'tags' => implode(',', $tagTitles),
                 'downloadable' => (bool) ($draft->downloadable ?? false),
                 'partner_instructor' => (bool) ($draft->partner_instructor ?? false),
+                'partners' => $partnerIds,
                 'access_days' => $draft->access_days,
                 'thumbnail' => $draft->thumbnail,
                 'image_cover' => $draft->image_cover,
             ] : [],
             'tags' => $tagTitles,
+            'availableInstructors' => $this->availablePartnerInstructors($user, $draft),
+            'courseTeachers' => $user->isAdmin()
+                ? \App\User::query()
+                    ->where('role_name', \App\Models\Role::$teacher)
+                    ->where('status', 'active')
+                    ->orderBy('full_name')
+                    ->get(['id', 'full_name'])
+                    ->map(fn ($t) => ['id' => (int) $t->id, 'name' => (string) $t->full_name])
+                    ->all()
+                : [],
+            'isAdminWizard' => (bool) $user->isAdmin(),
             'categories' => !empty($categories) ? $categories : [],
             'languages' => [
                 ['key' => 'ar', 'label' => 'العربية'],
                 ['key' => 'en', 'label' => 'English'],
             ],
-            'curriculumUnits' => $this->curriculumUnitsForWizard($draft),
+            'curriculumUnits' => $this->curriculumUnitsForWizard($draft, $user),
+            'curriculumChapterStoreUrl' => route($this->curriculumRouteNames($user)['chapters.store']),
             'teacherQuizzes' => $teacherQuizzes,
             'draftPrice' => $draft->price ?? null,
             'draftCapacity' => $draft->capacity ?? null,
@@ -243,7 +377,8 @@ trait CourseWizardTrait
             || ($request->filled('go_next') && is_numeric($request->input('go_next')) && (int) $request->input('go_next') < $step);
 
         if ($step === 1) {
-            $request->validate([
+            $partnerOn = $request->boolean('partner_instructor');
+            $rules = [
                 'title' => ($soft ? 'nullable' : 'required') . '|string|max:255',
                 'category_id' => 'nullable|exists:categories,id',
                 'course_type' => 'nullable|in:recorded,live,text',
@@ -257,7 +392,13 @@ trait CourseWizardTrait
                 'locale' => 'nullable|in:ar,en',
                 'downloadable' => 'nullable|boolean',
                 'partner_instructor' => 'nullable|boolean',
-            ], $this->courseWizardMessages(), $attrs);
+                'partners' => ($soft || !$partnerOn ? 'nullable' : 'required') . '|array' . ($soft || !$partnerOn ? '' : '|min:1'),
+                'partners.*' => 'integer|exists:users,id',
+            ];
+            if ($user->isAdmin()) {
+                $rules['teacher_id'] = ($soft ? 'nullable' : 'required') . '|exists:users,id';
+            }
+            $request->validate($rules, $this->courseWizardMessages(), $attrs);
 
             $typeMap = ['recorded' => 'course', 'live' => 'webinar', 'text' => 'text_lesson'];
             $title = trim((string) $request->input('title', ''));
@@ -281,10 +422,21 @@ trait CourseWizardTrait
                 $draft->created_at = time();
             }
 
+            if ($user->isAdmin() && $request->filled('teacher_id')) {
+                $teacherId = (int) $request->input('teacher_id');
+                $teacherOk = \App\User::query()
+                    ->where('id', $teacherId)
+                    ->where('role_name', \App\Models\Role::$teacher)
+                    ->exists();
+                if ($teacherOk) {
+                    $draft->teacher_id = $teacherId;
+                }
+            }
+
             $draft->type = $typeMap[$request->input('course_type', 'recorded')] ?? 'course';
             $draft->category_id = $request->input('category_id') ?: null;
             $draft->downloadable = $request->boolean('downloadable');
-            $draft->partner_instructor = $request->boolean('partner_instructor');
+            $draft->partner_instructor = $partnerOn;
             $draft->updated_at = time();
 
             if ($request->hasFile('image_thumbnail')) {
@@ -322,6 +474,8 @@ trait CourseWizardTrait
             foreach (array_slice(array_unique($tags), 0, 10) as $tagTitle) {
                 \App\Models\Tag::create(['title' => mb_substr($tagTitle, 0, 64), 'webinar_id' => $draft->id]);
             }
+
+            $this->syncWizardPartnerTeachers($request, $draft, $user);
         }
 
         if ($step === 2 && !empty($draft)) {

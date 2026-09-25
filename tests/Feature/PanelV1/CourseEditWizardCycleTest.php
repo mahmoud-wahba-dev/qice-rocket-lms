@@ -164,6 +164,7 @@ class CourseEditWizardCycleTest extends TestCase
     public function test_instructor_step1_updates_all_basic_fields(): void
     {
         $teacher = $this->makeTeacher();
+        $partner = $this->makeTeacher();
         $course = $this->seedCourse($teacher, 'pending');
         $categoryId = $this->categoryId();
         $ctrl = new InstructorController();
@@ -182,6 +183,7 @@ class CourseEditWizardCycleTest extends TestCase
             'locale' => 'ar',
             'downloadable' => 1,
             'partner_instructor' => 1,
+            'partners' => [$partner->id],
         ];
 
         $response = $ctrl->storeCourse($this->ajaxPost('/v1/instructor/courses/store', $payload, $teacher));
@@ -191,7 +193,7 @@ class CourseEditWizardCycleTest extends TestCase
         $this->assertSame($course->id, $json['draft_id']);
         $this->assertSame(2, $json['next_step']);
 
-        $fresh = Webinar::with(['translations', 'tags'])->findOrFail($course->id);
+        $fresh = Webinar::with(['translations', 'tags', 'webinarPartnerTeacher'])->findOrFail($course->id);
         $this->assertSame('pending', $fresh->status, 'Step 1 must not change status');
         $this->assertSame('webinar', $fresh->type);
         $this->assertSame($categoryId, $fresh->category_id);
@@ -199,6 +201,7 @@ class CourseEditWizardCycleTest extends TestCase
         $this->assertTrue((bool) $fresh->partner_instructor);
         $this->assertSame('external_link', $fresh->video_demo_source);
         $this->assertSame('https://example.com/demo-video', $fresh->video_demo);
+        $this->assertSame([$partner->id], $fresh->webinarPartnerTeacher->pluck('teacher_id')->map(fn ($id) => (int) $id)->all());
 
         $tr = $fresh->translate('ar');
         $this->assertSame('عنوان بعد التعديل الكامل', $tr->title);
@@ -509,6 +512,7 @@ class CourseEditWizardCycleTest extends TestCase
     public function test_admin_full_cycle_updates_every_step_field(): void
     {
         $teacher = $this->makeTeacher();
+        $partner = $this->makeTeacher();
         $admin = $this->makeAdmin();
         $course = $this->seedCourse($teacher, 'pending');
         $ctrl = new EducationController();
@@ -531,17 +535,19 @@ class CourseEditWizardCycleTest extends TestCase
                 'locale' => 'ar',
                 'downloadable' => 1,
                 'partner_instructor' => 1,
+                'partners' => [$partner->id],
             ],
             $admin
         ), $course->id);
         $this->assertTrue($r1->getData(true)['ok']);
 
-        $fresh = $course->fresh(['translations', 'tags']);
+        $fresh = $course->fresh(['translations', 'tags', 'webinarPartnerTeacher']);
         $this->assertSame('text_lesson', $fresh->type);
         $this->assertSame('تعديل إداري كامل', $fresh->translate('ar')->title);
         $this->assertSame('ملخص إداري بعد التعديل', $fresh->translate('ar')->seo_description);
         $this->assertTrue((bool) $fresh->downloadable);
         $this->assertTrue((bool) $fresh->partner_instructor);
+        $this->assertSame([$partner->id], $fresh->webinarPartnerTeacher->pluck('teacher_id')->map(fn ($id) => (int) $id)->all());
         $this->assertSame('https://admin.example.com/promo', $fresh->video_demo);
 
         // Step 2 — curriculum via shared instructor API (admin allowed)

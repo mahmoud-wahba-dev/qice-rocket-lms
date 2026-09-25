@@ -19,6 +19,7 @@
         'locale' => 'لغة الدورة',
         'downloadable' => 'السماح بتحميل الملفات',
         'partner_instructor' => 'مدرب مشارك',
+        'partners' => 'المدرب المشارك',
         'quiz_id' => 'الاختبار',
         'certificate' => 'الشهادة',
         'price' => 'السعر',

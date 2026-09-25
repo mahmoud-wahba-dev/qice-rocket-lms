@@ -153,10 +153,45 @@ body:has(.panel-v1-admin)::-webkit-scrollbar-thumb:hover {
         overflow: hidden;
     }
 
+    /* Hide chevrons + nested rails when collapsed — icons only */
+    .panel-v1-admin[data-admin-sidebar="collapsed"] .admin-nav-chevron,
+    .panel-v1-admin[data-admin-sidebar="collapsed"] [data-admin-group-chevron],
+    .panel-v1-admin[data-admin-sidebar="collapsed"] [data-admin-nav-dropdown-chevron] {
+        display: none !important;
+    }
+
+    .panel-v1-admin[data-admin-sidebar="collapsed"] [data-admin-nav-dropdown-panel],
+    .panel-v1-admin[data-admin-sidebar="collapsed"] .admin-nav-dropdown-panel,
+    .panel-v1-admin[data-admin-sidebar="collapsed"] .admin-nav-dropdown-rail {
+        display: none !important;
+    }
+
+    .panel-v1-admin[data-admin-sidebar="collapsed"] [data-admin-nav-dropdown] {
+        background: transparent !important;
+    }
+
+    .panel-v1-admin[data-admin-sidebar="collapsed"] [data-admin-group] {
+        margin-bottom: 0.5rem;
+    }
+
+    /* Force top-level icons visible even if accordion was closed */
+    .panel-v1-admin[data-admin-sidebar="collapsed"] [data-admin-group-panel] {
+        display: flex !important;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 0;
+    }
+
+    .panel-v1-admin[data-admin-sidebar="collapsed"] .admin-nav-group-toggle {
+        display: none !important;
+    }
+
     .panel-v1-admin[data-admin-sidebar="collapsed"] .admin-nav-link {
         justify-content: center;
         gap: 0;
         padding-inline: 0.5rem;
+        padding-block: 0.85rem;
+        min-height: 2.75rem;
     }
 
     /* CSS ::after tooltips kept as fallback; JS fixed tooltip preferred (avoids overflow clip) */
@@ -173,10 +208,12 @@ body:has(.panel-v1-admin)::-webkit-scrollbar-thumb:hover {
 
     .panel-v1-admin[data-admin-sidebar="collapsed"] .admin-sidebar-scroll {
         padding-inline: 0.5rem;
+        padding-top: 0.25rem;
     }
 
     .panel-v1-admin[data-admin-sidebar="collapsed"] .admin-sidebar-brand {
         padding-inline: 0.5rem;
+        padding-bottom: 1rem;
     }
 }
 

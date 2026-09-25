@@ -348,6 +348,23 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 Route::post('/courses/{id}/sessions/{sessionId}/delete', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'adminSessionDelete'])->name('courses.sessions.delete');
                 Route::post('/courses/{id}/files', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'adminFileStore'])->name('courses.files.store');
                 Route::post('/courses/{id}/files/{fileId}/delete', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'adminFileDelete'])->name('courses.files.delete');
+                // Wizard curriculum AJAX (admin middleware — instructor /v1/instructor/* rejects admins)
+                Route::post('/curriculum/chapters', [InstructorController::class, 'chapterStore'])
+                    ->name('curriculum.chapters.store');
+                Route::post('/curriculum/chapters/{chapterId}/delete', [InstructorController::class, 'chapterDelete'])
+                    ->name('curriculum.chapters.delete');
+                Route::post('/curriculum/sessions', [InstructorController::class, 'curriculumSessionStore'])
+                    ->name('curriculum.sessions.store');
+                Route::post('/curriculum/sessions/{sessionId}/delete', [InstructorController::class, 'curriculumSessionDelete'])
+                    ->name('curriculum.sessions.delete');
+                Route::post('/curriculum/files', [InstructorController::class, 'curriculumFileStore'])
+                    ->name('curriculum.files.store');
+                Route::post('/curriculum/files/{fileId}/delete', [InstructorController::class, 'curriculumFileDelete'])
+                    ->name('curriculum.files.delete');
+                Route::post('/curriculum/texts', [InstructorController::class, 'curriculumTextStore'])
+                    ->name('curriculum.texts.store');
+                Route::post('/curriculum/texts/{textId}/delete', [InstructorController::class, 'curriculumTextDelete'])
+                    ->name('curriculum.texts.delete');
                 // حِزم واختبارات وتكليفات — قابل للاستخدام
                 Route::get('/bundles/create', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'createBundle'])->name('bundles.create');
                 Route::post('/bundles', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'storeBundle'])->name('bundles.store');
@@ -359,9 +376,13 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 Route::post('/quizzes/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'deleteQuiz'])->name('quizzes.delete');
                 Route::get('/quizzes/{id}/questions', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'quizQuestions'])->name('quizzes.questions');
                 Route::post('/quizzes/{id}/questions', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'storeQuizQuestion'])->name('quizzes.questions.store');
+                Route::get('/quizzes/{id}/questions/{questionId}/edit', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'editQuizQuestion'])->name('quizzes.questions.edit');
+                Route::post('/quizzes/{id}/questions/{questionId}/update', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'updateQuizQuestion'])->name('quizzes.questions.update');
                 Route::post('/quizzes/questions/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'deleteQuizQuestion'])->name('quizzes.questions.delete');
                 Route::get('/assignments/create', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'createAssignment'])->name('assignments.create');
                 Route::post('/assignments', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'storeAssignment'])->name('assignments.store');
+                Route::get('/assignments/{id}/edit', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'editAssignment'])->name('assignments.edit');
+                Route::post('/assignments/{id}/update', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'updateAssignment'])->name('assignments.update');
                 Route::post('/assignments/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'deleteAssignment'])->name('assignments.delete');
                 Route::post('/reviews/{id}/approve', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'approveReview'])->name('reviews.approve');
                 Route::post('/reviews/{id}/reject', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'rejectReview'])->name('reviews.reject');

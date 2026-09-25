@@ -58,21 +58,28 @@
     </div>
 
     <div class="px-4 sm:px-5 py-4 border-t border-d9 bg-white space-y-4">
-        <details class="rounded-10px border border-d9">
-            <summary class="cursor-pointer px-4 py-3 font-semibold text-14px text-primary">+ إضافة جلسة</summary>
+        <details class="rounded-10px border border-d9" open>
+            <summary class="cursor-pointer px-4 py-3 font-semibold text-14px text-primary list-none flex items-center justify-between gap-2">
+                <span>+ إضافة جلسة</span>
+                <span class="icon-[tabler--chevron-down] size-4 text-gray"></span>
+            </summary>
             <form method="POST" action="{{ $unit['session_store_url'] ?? route('panel.v1.instructor.curriculum.sessions.store') }}"
-                class="grid grid-cols-1 sm:grid-cols-4 gap-3 px-4 pb-4" data-curriculum-ajax="session">
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 px-4 pb-4" data-curriculum-ajax="session">
                 @csrf
                 <input type="hidden" name="draft_id" value="{{ $draftIdValue }}" data-draft-id-input>
                 <input type="hidden" name="chapter_id" value="{{ $unit['id'] }}">
                 <input type="text" name="topic" required placeholder="عنوان الجلسة" class="{{ $input }}" data-field-label="عنوان الجلسة">
                 <input type="datetime-local" name="date" required class="{{ $input }}" data-field-label="تاريخ الجلسة">
                 <input type="number" name="duration" required min="1" placeholder="المدة (دقيقة)" class="{{ $input }}" data-field-label="مدة الجلسة">
-                <button type="submit" class="btn btn-primary rounded-10px h-12 font-bold text-15px">إضافة</button>
+                <button type="submit" class="inline-flex items-center justify-center h-12 sm:h-14 px-5 rounded-10px bg-primary text-white font-bold text-15px hover:opacity-90 transition">إضافة</button>
             </form>
+            <p class="hidden px-4 pb-3 font-medium text-13px text-[#B91C1C]" data-curriculum-form-error></p>
         </details>
         <details class="rounded-10px border border-d9">
-            <summary class="cursor-pointer px-4 py-3 font-semibold text-14px text-primary">+ إضافة ملف</summary>
+            <summary class="cursor-pointer px-4 py-3 font-semibold text-14px text-primary list-none flex items-center justify-between gap-2">
+                <span>+ إضافة ملف</span>
+                <span class="icon-[tabler--chevron-down] size-4 text-gray"></span>
+            </summary>
             <form method="POST" action="{{ $unit['file_store_url'] ?? route('panel.v1.instructor.curriculum.files.store') }}" enctype="multipart/form-data"
                 class="grid grid-cols-1 gap-3 px-4 pb-4" data-curriculum-ajax="file">
                 @csrf
@@ -87,11 +94,15 @@
                     'required' => true,
                     'compact' => true,
                 ])
-                <button type="submit" class="btn btn-primary rounded-10px h-12 font-bold text-15px">رفع</button>
+                <button type="submit" class="inline-flex items-center justify-center h-12 sm:h-14 px-5 rounded-10px bg-primary text-white font-bold text-15px hover:opacity-90 transition">رفع</button>
             </form>
+            <p class="hidden px-4 pb-3 font-medium text-13px text-[#B91C1C]" data-curriculum-form-error></p>
         </details>
         <details class="rounded-10px border border-d9">
-            <summary class="cursor-pointer px-4 py-3 font-semibold text-14px text-primary">+ إضافة درس نصي</summary>
+            <summary class="cursor-pointer px-4 py-3 font-semibold text-14px text-primary list-none flex items-center justify-between gap-2">
+                <span>+ إضافة درس نصي</span>
+                <span class="icon-[tabler--chevron-down] size-4 text-gray"></span>
+            </summary>
             <form method="POST" action="{{ $unit['text_store_url'] ?? route('panel.v1.instructor.curriculum.texts.store') }}"
                 class="grid grid-cols-1 gap-3 px-4 pb-4" data-curriculum-ajax="text">
                 @csrf
@@ -99,8 +110,9 @@
                 <input type="hidden" name="chapter_id" value="{{ $unit['id'] }}">
                 <input type="text" name="title" required placeholder="عنوان الدرس" class="{{ $input }}" data-field-label="عنوان الدرس">
                 <textarea name="summary" rows="3" placeholder="ملخص الدرس" class="{{ $input }}" data-field-label="ملخص الدرس"></textarea>
-                <button type="submit" class="btn btn-primary rounded-10px h-12 font-bold text-15px">إضافة</button>
+                <button type="submit" class="inline-flex items-center justify-center h-12 sm:h-14 px-5 rounded-10px bg-primary text-white font-bold text-15px hover:opacity-90 transition">إضافة</button>
             </form>
+            <p class="hidden px-4 pb-3 font-medium text-13px text-[#B91C1C]" data-curriculum-form-error></p>
         </details>
     </div>
 </div>

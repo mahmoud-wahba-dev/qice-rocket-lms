@@ -202,6 +202,27 @@ export function initCreateCourseWizard(root) {
         return;
     }
 
+    const syncPartnerInstructorFields = () => {
+        wrap.querySelectorAll('[data-partner-instructor]').forEach((block) => {
+            const toggle = block.querySelector('[data-partner-instructor-switch]');
+            const fields = block.querySelector('[data-partner-instructor-fields]');
+            const select = block.querySelector('[data-partner-instructor-select]');
+            if (!toggle || !fields) {
+                return;
+            }
+            const on = !!toggle.checked;
+            fields.classList.toggle('hidden', !on);
+            if (select) {
+                select.disabled = !on;
+            }
+        });
+    };
+
+    wrap.querySelectorAll('[data-partner-instructor-switch]').forEach((toggle) => {
+        toggle.addEventListener('change', syncPartnerInstructorFields);
+    });
+    syncPartnerInstructorFields();
+
     const isSpa = wrap.hasAttribute('data-spa-wizard');
     const form = wrap.querySelector('[data-wizard-form]');
     const storeUrl = wrap.getAttribute('data-store-url') || form?.action;
@@ -976,6 +997,21 @@ function initCurriculumAjax(wrap) {
             return;
         }
 
+        const errorEl = form.closest('details')?.querySelector('[data-curriculum-form-error]')
+            || form.parentElement?.querySelector('[data-curriculum-form-error]');
+        if (errorEl) {
+            errorEl.classList.add('hidden');
+            errorEl.textContent = '';
+        }
+
+        // Keep draft_id in sync with wizard
+        const liveDraft = wrap.getAttribute('data-draft-id') || draftId;
+        form.querySelectorAll('[data-draft-id-input]').forEach((input) => {
+            if (liveDraft) {
+                input.value = liveDraft;
+            }
+        });
+
         setBusy(form, true);
         try {
             const response = await fetch(form.action, {
@@ -986,6 +1022,7 @@ function initCurriculumAjax(wrap) {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                 },
                 body: new FormData(form),
+                credentials: 'same-origin',
             });
 
             let data = null;
@@ -996,7 +1033,12 @@ function initCurriculumAjax(wrap) {
             }
 
             if (!response.ok) {
-                toast('خطأ في الحقل', firstValidationError(data), 'error');
+                const msg = firstValidationError(data);
+                if (errorEl) {
+                    errorEl.textContent = msg;
+                    errorEl.classList.remove('hidden');
+                }
+                toast('خطأ في الحقل', msg, 'error');
                 return;
             }
 
@@ -1047,7 +1089,12 @@ function initCurriculumAjax(wrap) {
 
             toast('تم', data?.message || 'تم بنجاح', 'success');
         } catch (_) {
-            toast('خطأ', 'فشل الاتصال بالخادم', 'error');
+            const msg = 'فشل الاتصال بالخادم';
+            if (errorEl) {
+                errorEl.textContent = msg;
+                errorEl.classList.remove('hidden');
+            }
+            toast('خطأ', msg, 'error');
         } finally {
             setBusy(form, false);
         }

@@ -119,7 +119,13 @@ class EducationController extends AdminController
         $search = trim((string)$request->input('search',''));
         switch($section){
             case 'courses':
-                $title = 'جميع الدورات المسجلة';
+                $courseType = $request->input('type');
+                $typeLabels = [
+                    'webinar' => 'دورات مباشرة',
+                    'course' => 'دورات مسجلة',
+                    'text_lesson' => 'دورات كتابية',
+                ];
+                $title = $typeLabels[$courseType] ?? 'جميع الدورات';
                 $q = \App\Models\Webinar::query()
                     ->with(['category', 'teacher'])
                     ->withCount([
@@ -129,6 +135,10 @@ class EducationController extends AdminController
                         'sales as sales_amount' => fn ($sq) => $sq->whereNull('refund_at'),
                     ], 'total_amount')
                     ->orderBy('id', 'desc');
+                if (in_array($courseType, ['webinar', 'course', 'text_lesson'], true)) {
+                    $q->where('type', $courseType);
+                    $real['adminActive'] = 'courses-'.$courseType;
+                }
                 if ($search !== '') {
                     $q->where(function ($qq) use ($search) {
                         $qq->where('id', $search);
@@ -145,10 +155,14 @@ class EducationController extends AdminController
                 $real['courses'] = $q->paginate(10)->withQueryString();
                 $real['paginator'] = $real['courses'];
                 $real['filterCategories'] = \App\Models\Category::whereNull('parent_id')->orderBy('order')->get()->map(fn ($c) => ['id' => $c->id, 'title' => $c->title])->all();
+                $real['courseType'] = $courseType;
                 $real['courseListStats'] = [
                     [
                         'label' => 'الدورات النشطة',
-                        'value' => (string) \App\Models\Webinar::where('status', 'active')->count(),
+                        'value' => (string) \App\Models\Webinar::when(
+                            in_array($courseType, ['webinar', 'course', 'text_lesson'], true),
+                            fn ($qq) => $qq->where('type', $courseType)
+                        )->where('status', 'active')->count(),
                         'icon' => 'icon-[tabler--book]',
                     ],
                     [
@@ -168,7 +182,12 @@ class EducationController extends AdminController
                     ],
                 ];
                 $real['stubTitle'] = $title;
-                $real['stubSubtitle'] = 'دورات فيديو مُعدّة مسبقاً يمكن للطلاب مشاهدتها في أي وقت — تعلّم مرن حسب جدولك.';
+                $real['stubSubtitle'] = match ($courseType) {
+                    'webinar' => 'دورات وجلسات مباشرة تُبث في مواعيد محددة مع المدرب.',
+                    'text_lesson' => 'دورات نصية ومحتوى مقروء يمكن للطلاب دراسته في أي وقت.',
+                    'course' => 'دورات فيديو مُعدّة مسبقاً يمكن للطلاب مشاهدتها في أي وقت — تعلّم مرن حسب جدولك.',
+                    default => 'جميع أنواع الدورات في المنصة.',
+                };
                 break;
             case 'bundles':
                 $title='حزم الدورات';
@@ -515,18 +534,45 @@ class EducationController extends AdminController
     public function createCourse(Request $request)
     {
         $user = $this->resolveAdmin($request);
-        if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
 
-        $teachers = \App\User::where('role_name','teacher')->select('id','full_name')->orderBy('full_name')->limit(100)->get();
-        $categories = \App\Models\Category::whereNull('parent_id')->orderBy('order')->get()->map(fn($c)=>['id'=>$c->id,'title'=>$c->title])->all();
+        $teacher = \App\User::query()
+            ->where('role_name', \App\Models\Role::$teacher)
+            ->where('status', 'active')
+            ->orderBy('full_name')
+            ->first();
 
-        return $this->renderAdmin($request, 'panel_v1.admin.pages.education.course-form', 'إنشاء دورة جديدة', array_merge(AdminMockData::shell('education','courses'), [
-            'teachers'=>$teachers,
-            'categories'=>$categories,
-            'course'=>null,
-            'formAction'=>route('panel.v1.admin.education.courses.store'),
-            'formMethod'=>'POST',
-        ]));
+        if (empty($teacher)) {
+            return redirect()
+                ->route('panel.v1.admin.education.section', ['section' => 'courses'])
+                ->with('toast', [
+                    'title' => 'تعذر الإنشاء',
+                    'msg' => 'لا يوجد مدرب نشط — أضف مدربًا أولاً ثم أنشئ الدورة',
+                    'type' => 'error',
+                ]);
+        }
+
+        $draft = new \App\Models\Webinar();
+        $draft->teacher_id = $teacher->id;
+        $draft->creator_id = $user->id;
+        $draft->type = 'course';
+        $draft->status = 'is_draft';
+        $draft->slug = 'course-' . time() . '-' . rand(100, 999);
+        $draft->created_at = time();
+        $draft->updated_at = time();
+        $draft->save();
+
+        $translation = $draft->translateOrNew('ar');
+        $translation->locale = 'ar';
+        $translation->title = 'دورة تدريبية بدون عنوان';
+        $translation->save();
+
+        return redirect()->route('panel.v1.admin.education.courses.edit', [
+            'id' => $draft->id,
+            'step' => 1,
+        ]);
     }
 
     public function storeCourse(Request $request)
@@ -994,8 +1040,94 @@ class EducationController extends AdminController
         $questions=\App\Models\QuizzesQuestion::with(['quizzesQuestionsAnswers'])->where('quiz_id',$quiz->id)->orderBy('order')->orderBy('id')->paginate(20);
         return $this->renderAdmin($request,'panel_v1.admin.pages.education.quiz-questions','أسئلة: '.$quiz->title,array_merge(AdminMockData::shell('education','quizzes'),[
             'quiz'=>$quiz,'questions'=>$questions,'paginator'=>$questions,'stubTitle'=>'أسئلة: '.$quiz->title,
+            'editQuestion'=>null,
         ]));
     }
+
+    public function editQuizQuestion(Request $request, int $id, int $questionId)
+    {
+        $user = $this->resolveAdmin($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $quiz = \App\Models\Quiz::with(['webinar'])->findOrFail($id);
+        $editQuestion = \App\Models\QuizzesQuestion::with(['quizzesQuestionsAnswers'])
+            ->where('quiz_id', $quiz->id)
+            ->where('id', $questionId)
+            ->firstOrFail();
+
+        $questions = \App\Models\QuizzesQuestion::with(['quizzesQuestionsAnswers'])
+            ->where('quiz_id', $quiz->id)
+            ->orderBy('order')
+            ->orderBy('id')
+            ->paginate(20);
+
+        return $this->renderAdmin(
+            $request,
+            'panel_v1.admin.pages.education.quiz-questions',
+            'تعديل سؤال: '.$quiz->title,
+            array_merge(AdminMockData::shell('education', 'quizzes'), [
+                'quiz' => $quiz,
+                'questions' => $questions,
+                'paginator' => $questions,
+                'stubTitle' => 'أسئلة: '.$quiz->title,
+                'editQuestion' => $editQuestion,
+            ])
+        );
+    }
+
+    public function updateQuizQuestion(Request $request, int $id, int $questionId)
+    {
+        $user = $this->resolveAdmin($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $quiz = \App\Models\Quiz::findOrFail($id);
+        $question = \App\Models\QuizzesQuestion::where('quiz_id', $quiz->id)->where('id', $questionId)->firstOrFail();
+
+        $request->validate([
+            'title' => 'required|string|max:1000',
+            'type' => 'required|in:multiple,descriptive',
+            'grade' => 'required|integer|min:1',
+        ]);
+
+        $question->grade = $request->input('grade');
+        $question->type = $request->input('type');
+        $question->updated_at = time();
+        $question->save();
+
+        $translation = $question->translateOrNew('ar');
+        $translation->locale = 'ar';
+        $translation->title = $request->input('title');
+        $translation->save();
+
+        // Rebuild multiple-choice answers
+        \App\Models\QuizzesQuestionsAnswer::where('question_id', $question->id)->delete();
+        if ($question->type === 'multiple') {
+            $options = array_values(array_filter(array_map('trim', (array) $request->input('options', []))));
+            $correctIndex = (int) $request->input('correct_index', 0);
+            foreach ($options as $index => $optionTitle) {
+                $answer = new \App\Models\QuizzesQuestionsAnswer();
+                $answer->question_id = $question->id;
+                $answer->creator_id = $question->creator_id;
+                $answer->correct = $index === $correctIndex;
+                $answer->created_at = time();
+                $answer->updated_at = time();
+                $answer->save();
+                $answerTranslation = $answer->translateOrNew('ar');
+                $answerTranslation->locale = 'ar';
+                $answerTranslation->title = mb_substr($optionTitle, 0, 1000);
+                $answerTranslation->save();
+            }
+        }
+
+        return redirect()
+            ->route('panel.v1.admin.education.quizzes.questions', ['id' => $quiz->id])
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم تحديث السؤال', 'type' => 'success']);
+    }
+
     public function storeQuizQuestion(Request $request,int $id){
         $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
         $quiz=\App\Models\Quiz::findOrFail($id);
@@ -1043,7 +1175,9 @@ class EducationController extends AdminController
         $webinars=\App\Models\Webinar::orderBy('id','desc')->limit(100)->get()->map(fn($w)=>['id'=>$w->id,'title'=>$w->title])->all();
         $chapters=\App\Models\WebinarChapter::with(['webinar'])->orderBy('id','desc')->limit(200)->get()->map(fn($ch)=>['id'=>$ch->id,'title'=>($ch->title ?: 'وحدة #'.$ch->id).' — '.($ch->webinar->title ?? '')])->all();
         return $this->renderAdmin($request,'panel_v1.admin.pages.education.assignment-form','إنشاء تكليف',array_merge(AdminMockData::shell('education','assignments'),[
-            'webinars'=>$webinars,'chapters'=>$chapters,'formAction'=>route('panel.v1.admin.education.assignments.store'),
+            'webinars'=>$webinars,'chapters'=>$chapters,'assignment'=>null,
+            'formAction'=>route('panel.v1.admin.education.assignments.store'),
+            'formTitle'=>'إنشاء تكليف جديد','submitLabel'=>'إنشاء التكليف',
         ]));
     }
     public function storeAssignment(Request $request){
@@ -1068,6 +1202,79 @@ class EducationController extends AdminController
         $translation->save();
         return redirect()->route('panel.v1.admin.education.section',['section'=>'assignments'])->with('toast',['title'=>'تم','msg'=>'تم إنشاء التكليف','type'=>'success']);
     }
+
+    public function editAssignment(Request $request, int $id)
+    {
+        $user = $this->resolveAdmin($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $assignment = \App\Models\WebinarAssignment::with(['webinar'])->findOrFail($id);
+        $webinars = \App\Models\Webinar::orderBy('id', 'desc')->limit(100)->get()
+            ->map(fn ($w) => ['id' => $w->id, 'title' => $w->title])->all();
+        $chapters = \App\Models\WebinarChapter::with(['webinar'])->orderBy('id', 'desc')->limit(200)->get()
+            ->map(fn ($ch) => [
+                'id' => $ch->id,
+                'title' => ($ch->title ?: 'وحدة #'.$ch->id).' — '.($ch->webinar->title ?? ''),
+            ])->all();
+
+        return $this->renderAdmin(
+            $request,
+            'panel_v1.admin.pages.education.assignment-form',
+            'تعديل تكليف',
+            array_merge(AdminMockData::shell('education', 'assignments'), [
+                'webinars' => $webinars,
+                'chapters' => $chapters,
+                'assignment' => $assignment,
+                'formAction' => route('panel.v1.admin.education.assignments.update', ['id' => $assignment->id]),
+                'formTitle' => 'تعديل التكليف',
+                'submitLabel' => 'حفظ التعديلات',
+            ])
+        );
+    }
+
+    public function updateAssignment(Request $request, int $id)
+    {
+        $user = $this->resolveAdmin($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $assignment = \App\Models\WebinarAssignment::findOrFail($id);
+        $request->validate([
+            'webinar_id' => 'required|exists:webinars,id',
+            'chapter_id' => 'required|exists:webinar_chapters,id',
+            'title' => 'required|string|max:255',
+            'grade' => 'required|integer|min:0',
+            'pass_grade' => 'required|integer|min:0',
+            'attempts' => 'nullable|integer|min:1',
+            'deadline' => 'nullable|integer|min:1',
+            'status' => 'required|in:active,inactive',
+        ]);
+
+        $webinar = \App\Models\Webinar::findOrFail($request->input('webinar_id'));
+        $assignment->webinar_id = $webinar->id;
+        $assignment->chapter_id = $request->input('chapter_id');
+        $assignment->grade = $request->input('grade');
+        $assignment->pass_grade = $request->input('pass_grade');
+        $assignment->attempts = $request->input('attempts');
+        $assignment->deadline = $request->input('deadline');
+        $assignment->status = $request->input('status', 'active');
+        $assignment->updated_at = time();
+        $assignment->save();
+
+        $translation = $assignment->translateOrNew('ar');
+        $translation->locale = 'ar';
+        $translation->title = $request->input('title');
+        $translation->description = $request->input('description');
+        $translation->save();
+
+        return redirect()
+            ->route('panel.v1.admin.education.section', ['section' => 'assignments'])
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم تحديث التكليف', 'type' => 'success']);
+    }
+
     public function deleteAssignment(Request $request,int $id){
         $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
         \App\Models\WebinarAssignment::where('id',$id)->delete();

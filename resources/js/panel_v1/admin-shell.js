@@ -9,6 +9,42 @@ export function initAdminShell() {
     }
     initDashboardSidebarCollapse(root);
     initAdminHeaderMenus(root);
+    initAdminNavDropdowns(root);
+}
+
+/**
+ * Nested sidebar dropdowns (e.g. إدارة الدورات → course types).
+ */
+function initAdminNavDropdowns(root) {
+    root.querySelectorAll('[data-admin-nav-dropdown]').forEach((wrap) => {
+        const btn = wrap.querySelector('[data-admin-nav-dropdown-toggle]');
+        const panel = wrap.querySelector('[data-admin-nav-dropdown-panel]');
+        const chevron = wrap.querySelector('[data-admin-nav-dropdown-chevron]');
+        if (!btn || !panel) {
+            return;
+        }
+
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Collapsed: go to parent section (submenu is hidden)
+            const shell = document.querySelector('.panel-v1-admin');
+            if (shell?.getAttribute('data-admin-sidebar') === 'collapsed') {
+                const parentHref = btn.getAttribute('data-admin-nav-parent-href');
+                if (parentHref) {
+                    window.location.href = parentHref;
+                }
+                return;
+            }
+
+            const willOpen = panel.classList.contains('hidden');
+            panel.classList.toggle('hidden', !willOpen);
+            btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+            chevron?.classList.toggle('rotate-180', willOpen);
+            wrap.classList.toggle('bg-white/10', willOpen);
+        });
+    });
 }
 
 /**
