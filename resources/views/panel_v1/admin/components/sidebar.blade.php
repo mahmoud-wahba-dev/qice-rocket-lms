@@ -102,7 +102,7 @@
                                                 <span data-admin-nav-dropdown-chevron class="admin-nav-chevron icon-[tabler--chevron-down] size-4 shrink-0 text-white/70 transition-transform duration-200 {{ $dropdownOpen ? 'rotate-180' : '' }}"></span>
                                             </button>
                                             <ul data-admin-nav-dropdown-panel
-                                                class="admin-nav-dropdown-panel relative pe-2 pb-3 ps-3 {{ $dropdownOpen ? '' : 'hidden' }}">
+                                                class="admin-nav-dropdown-panel relative flex flex-col gap-2.5 pe-5 pb-3 ps-3 {{ $dropdownOpen ? '' : 'hidden' }}">
                                                 <span class="admin-nav-dropdown-rail pointer-events-none absolute top-1 bottom-3 start-6 w-px bg-white/35" aria-hidden="true"></span>
                                                 @foreach ($children as $child)
                                                     @php
@@ -113,11 +113,11 @@
                                                             $childLabel .= ' ('.$child['count'].')';
                                                         }
                                                     @endphp
-                                                    <li>
+                                                    <li class="ps-1 pe-1">
                                                         <a href="{{ $childHref }}"
                                                             data-tooltip="{{ $childLabel }}"
                                                             aria-label="{{ $childLabel }}"
-                                                            class="admin-nav-child-link relative flex items-center gap-2 ps-9 pe-3 py-2.5 rounded-10px font-medium text-15px text-white/90 hover:bg-white/10 transition-colors {{ $isChildActive ? 'bg-white/15 text-white' : '' }}">
+                                                            class="admin-nav-child-link relative flex items-center gap-2 ms-7 me-1 ps-3 pe-3 py-3 rounded-10px font-medium text-14px sm:text-15px text-white/90 hover:bg-white/10 transition-colors {{ $isChildActive ? 'bg-white/15 text-white' : '' }}">
                                                             <span class="admin-nav-label whitespace-nowrap overflow-hidden" data-sidebar-label>{{ $childLabel }}</span>
                                                         </a>
                                                     </li>

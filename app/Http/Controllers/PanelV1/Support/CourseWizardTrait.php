@@ -212,13 +212,14 @@ trait CourseWizardTrait
                 }
 
                 foreach ($chapter->files as $file) {
-                    $lessons[] = [
+                    $meta = $this->curriculumFilePreviewMeta($file->file ?? null, $file->file_type ?? null);
+                    $lessons[] = array_merge([
                         'kind' => 'file',
                         'id' => $file->id,
                         'title' => $translatedTitle($file),
                         'duration' => 'ملف',
                         'delete_url' => route($routes['files.delete'], ['fileId' => $file->id]),
-                    ];
+                    ], $meta);
                 }
 
                 foreach ($chapter->textLessons as $text) {
@@ -272,6 +273,36 @@ trait CourseWizardTrait
             'files.delete' => 'panel.v1.instructor.curriculum.files.delete',
             'texts.store' => 'panel.v1.instructor.curriculum.texts.store',
             'texts.delete' => 'panel.v1.instructor.curriculum.texts.delete',
+        ];
+    }
+
+    protected function curriculumFilePublicUrl(?string $path): ?string
+    {
+        return function_exists('panelV1PublicUrl') ? panelV1PublicUrl($path) : (
+            empty($path) ? null : url('/' . ltrim($path, '/'))
+        );
+    }
+
+    protected function curriculumFilePreviewMeta(?string $path, ?string $fileType = null): array
+    {
+        $url = $this->curriculumFilePublicUrl($path);
+        $kind = 'file';
+        if (function_exists('panelV1FileKind')) {
+            $kind = panelV1FileKind($path, $fileType);
+        } elseif (!empty($path)) {
+            if (preg_match('/\.(jpe?g|png|gif|webp|bmp|svg)$/i', $path)) {
+                $kind = 'image';
+            } elseif (preg_match('/\.pdf$/i', $path)) {
+                $kind = 'pdf';
+            } elseif (preg_match('/\.(mp4|webm|mov|m4v)$/i', $path)) {
+                $kind = 'video';
+            }
+        }
+
+        return [
+            'view_url' => $url,
+            'preview_kind' => $kind,
+            'preview_url' => in_array($kind, ['image', 'video', 'pdf'], true) ? $url : null,
         ];
     }
 

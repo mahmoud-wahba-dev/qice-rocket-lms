@@ -13,44 +13,72 @@
                 <p class="font-medium text-13px text-gray"><span data-unit-lesson-count>{{ count($unit['lessons'] ?? []) }}</span> دروس</p>
             </div>
         </div>
-        <form method="POST"
-            action="{{ $unit['delete_url'] ?? route('panel.v1.instructor.curriculum.chapters.delete', ['chapterId' => $unit['id']]) }}"
-            data-curriculum-ajax="delete-chapter"
-            data-confirm="حذف الوحدة بكل محتوياتها؟">
-            @csrf
-            <input type="hidden" name="draft_id" value="{{ $draftIdValue }}" data-draft-id-input>
-            <button type="submit" class="size-9 rounded-8px center text-red-500 hover:bg-red-50 transition" aria-label="حذف الوحدة">
-                <span class="icon-[tabler--trash] size-5"></span>
-            </button>
-        </form>
+        <button type="button" class="size-9 rounded-8px center text-red-500 hover:bg-red-50 transition" aria-label="حذف الوحدة"
+            data-curriculum-delete
+            data-delete-url="{{ $unit['delete_url'] ?? route('panel.v1.instructor.curriculum.chapters.delete', ['chapterId' => $unit['id']]) }}"
+            data-delete-title="حذف الوحدة"
+            data-delete-message="حذف الوحدة بكل محتوياتها؟ لا يمكن التراجع بعد الحذف."
+            data-delete-item="{{ $unit['title'] }}"
+            data-delete-mode="delete-chapter"
+            data-delete-draft-id="{{ $draftIdValue }}">
+            <span class="icon-[tabler--trash] size-5"></span>
+        </button>
     </div>
 
     <div class="divide-y divide-d9" data-curriculum-lessons>
         @forelse ($unit['lessons'] ?? [] as $lesson)
             <div class="flex flex-wrap items-center gap-3 px-4 sm:px-5 py-3.5" data-curriculum-lesson="{{ $lesson['id'] }}" data-lesson-kind="{{ $lesson['kind'] }}">
-                <span class="size-9 rounded-8px bg-primary/10 center shrink-0">
-                    @if (($lesson['kind'] ?? '') === 'text')
-                        <span class="icon-[tabler--file-text] size-4 text-primary"></span>
-                    @elseif (($lesson['kind'] ?? '') === 'file')
-                        <span class="icon-[tabler--paperclip] size-4 text-primary"></span>
-                    @else
-                        <span class="icon-[tabler--player-play] size-4 text-primary"></span>
-                    @endif
-                </span>
+                @if (($lesson['kind'] ?? '') === 'file' && ($lesson['preview_kind'] ?? '') === 'image' && !empty($lesson['preview_url']))
+                    <button type="button"
+                        class="size-12 rounded-10px overflow-hidden border border-d9 bg-fa shrink-0"
+                        data-curriculum-preview
+                        data-preview-url="{{ $lesson['preview_url'] }}"
+                        data-preview-kind="image"
+                        data-preview-title="{{ $lesson['title'] }}"
+                        aria-label="معاينة الملف">
+                        <img src="{{ $lesson['preview_url'] }}" alt="" class="size-full object-cover">
+                    </button>
+                @else
+                    <span class="size-9 rounded-8px bg-primary/10 center shrink-0">
+                        @if (($lesson['kind'] ?? '') === 'text')
+                            <span class="icon-[tabler--file-text] size-4 text-primary"></span>
+                        @elseif (($lesson['kind'] ?? '') === 'file')
+                            <span class="icon-[tabler--paperclip] size-4 text-primary"></span>
+                        @else
+                            <span class="icon-[tabler--player-play] size-4 text-primary"></span>
+                        @endif
+                    </span>
+                @endif
                 <div class="min-w-0 flex-1 text-start">
                     <p class="font-semibold text-15px sm:text-16px text-primary truncate">{{ $lesson['title'] }}</p>
                     <p class="font-medium text-13px text-gray">{{ $lesson['duration'] }}</p>
                 </div>
-                <form method="POST"
-                    action="{{ $lesson['delete_url'] ?? '#' }}"
-                    data-curriculum-ajax="delete-lesson"
-                    data-confirm="حذف هذا العنصر؟">
-                    @csrf
-                    <input type="hidden" name="draft_id" value="{{ $draftIdValue }}" data-draft-id-input>
-                    <button type="submit" class="size-8 rounded-8px center text-red-500 hover:bg-red-50" aria-label="حذف">
+                <div class="flex items-center gap-1.5 shrink-0">
+                    @if (($lesson['kind'] ?? '') === 'file' && !empty($lesson['view_url']))
+                        <button type="button"
+                            class="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-8px bg-primary/10 text-primary font-semibold text-12px hover:bg-primary/15 transition"
+                            data-curriculum-preview
+                            data-preview-url="{{ $lesson['view_url'] }}"
+                            data-preview-kind="{{ $lesson['preview_kind'] ?? 'file' }}"
+                            data-preview-title="{{ $lesson['title'] }}"
+                            aria-label="عرض الملف">
+                            <span class="icon-[tabler--eye] size-4"></span>
+                            عرض
+                        </button>
+                    @endif
+                    <button type="button"
+                        class="size-8 rounded-8px center text-red-500 hover:bg-red-50"
+                        aria-label="حذف"
+                        data-curriculum-delete
+                        data-delete-url="{{ $lesson['delete_url'] ?? '#' }}"
+                        data-delete-title="تأكيد الحذف"
+                        data-delete-message="{{ ($lesson['kind'] ?? '') === 'file' ? 'حذف هذا الملف من المنهج؟' : ((($lesson['kind'] ?? '') === 'text') ? 'حذف هذا الدرس النصي؟' : 'حذف هذه الجلسة؟') }}"
+                        data-delete-item="{{ $lesson['title'] }}"
+                        data-delete-mode="delete-lesson"
+                        data-delete-draft-id="{{ $draftIdValue }}">
                         <span class="icon-[tabler--trash] size-4"></span>
                     </button>
-                </form>
+                </div>
             </div>
         @empty
             <p class="font-medium text-14px text-gray px-4 sm:px-5 py-4" data-lessons-empty>لا يوجد محتوى بعد — أضف جلسة أو ملفًا أو درسًا نصيًا.</p>

@@ -1004,7 +1004,8 @@ class InstructorController extends Controller
         $file->accessibility = 'paid';
         $file->downloadable = 1;
         $file->storage = 'upload';
-        $file->file = '/storage/' . $path;
+        // Public disk root is public/store → URL prefix /store (not /storage)
+        $file->file = '/store/' . ltrim($path, '/');
         $file->volume = (string) $request->file('upload')->getSize();
         $file->file_type = explode('/', $request->file('upload')->getMimeType())[0] ?? 'file';
         $file->status = 'active';
@@ -1025,13 +1026,13 @@ class InstructorController extends Controller
 
         return $this->curriculumResponse($request, $draft, 'تم رفع الملف', [
             'chapter_id' => $chapter->id,
-            'lesson' => [
+            'lesson' => array_merge([
                 'kind' => 'file',
                 'id' => $file->id,
                 'title' => $request->input('title'),
                 'duration' => 'ملف',
                 'delete_url' => route($this->curriculumRouteNames($user)['files.delete'], ['fileId' => $file->id]),
-            ],
+            ], $this->curriculumFilePreviewMeta($file->file, $file->file_type)),
         ]);
     }
 

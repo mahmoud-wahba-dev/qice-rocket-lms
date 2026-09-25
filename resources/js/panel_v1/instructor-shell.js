@@ -206,14 +206,24 @@ export function initCreateCourseWizard(root) {
         wrap.querySelectorAll('[data-partner-instructor]').forEach((block) => {
             const toggle = block.querySelector('[data-partner-instructor-switch]');
             const fields = block.querySelector('[data-partner-instructor-fields]');
-            const select = block.querySelector('[data-partner-instructor-select]');
+            const picker = block.querySelector('[data-partner-picker]');
+            const search = block.querySelector('[data-partner-search]');
             if (!toggle || !fields) {
                 return;
             }
             const on = !!toggle.checked;
             fields.classList.toggle('hidden', !on);
-            if (select) {
-                select.disabled = !on;
+            if (picker) {
+                picker.classList.toggle('opacity-60', !on);
+                picker.classList.toggle('pointer-events-none', !on);
+                if (on) {
+                    picker.removeAttribute('data-partner-picker-disabled');
+                } else {
+                    picker.setAttribute('data-partner-picker-disabled', '');
+                }
+            }
+            if (search) {
+                search.disabled = !on;
             }
         });
     };
@@ -222,6 +232,7 @@ export function initCreateCourseWizard(root) {
         toggle.addEventListener('change', syncPartnerInstructorFields);
     });
     syncPartnerInstructorFields();
+    initPartnerInstructorPicker(wrap);
 
     const isSpa = wrap.hasAttribute('data-spa-wizard');
     const form = wrap.querySelector('[data-wizard-form]');
@@ -879,6 +890,157 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
+/**
+ * Searchable multi-select for partner instructors (chip + suggestions).
+ */
+function initPartnerInstructorPicker(root) {
+    root.querySelectorAll('[data-partner-picker]').forEach((picker) => {
+        if (picker.dataset.pickerReady === '1') {
+            return;
+        }
+        picker.dataset.pickerReady = '1';
+
+        const chipsEl = picker.querySelector('[data-partner-chips]');
+        const hiddenEl = picker.querySelector('[data-partner-hidden]');
+        const search = picker.querySelector('[data-partner-search]');
+        const suggestions = picker.querySelector('[data-partner-suggestions]');
+        const optionsJson = picker.querySelector('[data-partner-options]');
+        if (!chipsEl || !hiddenEl || !search || !suggestions || !optionsJson) {
+            return;
+        }
+
+        let options = [];
+        try {
+            options = JSON.parse(optionsJson.textContent || '[]');
+        } catch (_) {
+            options = [];
+        }
+
+        const selectedIds = () => Array.from(hiddenEl.querySelectorAll('input[name="partners[]"]'))
+            .map((input) => Number(input.value))
+            .filter(Boolean);
+
+        const syncHidden = (ids) => {
+            hiddenEl.innerHTML = ids.map((id) => `<input type="hidden" name="partners[]" value="${id}">`).join('');
+        };
+
+        const renderChips = (ids) => {
+            chipsEl.innerHTML = '';
+            ids.forEach((id) => {
+                const item = options.find((opt) => Number(opt.id) === Number(id));
+                if (!item) {
+                    return;
+                }
+                const chip = document.createElement('span');
+                chip.className = 'inline-flex items-center gap-1.5 max-w-full rounded-full bg-primary/10 px-3 py-1.5 font-medium text-13px text-primary';
+                chip.setAttribute('data-partner-chip', '');
+                chip.setAttribute('data-id', String(item.id));
+                chip.innerHTML = `<span class="truncate">${escapeHtml(item.name)}</span>
+                    <button type="button" class="shrink-0 hover:opacity-70" data-partner-chip-remove aria-label="إزالة المدرب">
+                        <span class="icon-[tabler--x] size-3.5"></span>
+                    </button>`;
+                chipsEl.appendChild(chip);
+            });
+            syncHidden(ids);
+        };
+
+        const hideSuggestions = () => {
+            suggestions.classList.add('hidden');
+            suggestions.innerHTML = '';
+        };
+
+        const showSuggestions = (query) => {
+            const q = String(query || '').trim().toLowerCase();
+            const taken = new Set(selectedIds());
+            const matches = options.filter((opt) => {
+                if (taken.has(Number(opt.id))) {
+                    return false;
+                }
+                if (!q) {
+                    return true;
+                }
+                const hay = `${opt.name || ''} ${opt.email || ''}`.toLowerCase();
+                return hay.includes(q);
+            }).slice(0, 12);
+
+            if (!matches.length) {
+                suggestions.innerHTML = `<li class="px-4 py-3 font-medium text-13px text-gray">لا توجد نتائج</li>`;
+                suggestions.classList.remove('hidden');
+                return;
+            }
+
+            suggestions.innerHTML = matches.map((opt) => `
+                <li role="option">
+                    <button type="button" class="w-full text-start px-4 py-3 hover:bg-primary/5 transition"
+                        data-partner-option data-id="${opt.id}">
+                        <span class="block font-semibold text-14px text-primary truncate">${escapeHtml(opt.name)}</span>
+                        ${opt.email ? `<span class="block font-medium text-12px text-gray truncate mt-0.5">${escapeHtml(opt.email)}</span>` : ''}
+                    </button>
+                </li>
+            `).join('');
+            suggestions.classList.remove('hidden');
+        };
+
+        const addPartner = (id) => {
+            const numId = Number(id);
+            if (!numId || selectedIds().includes(numId)) {
+                return;
+            }
+            renderChips([...selectedIds(), numId]);
+            search.value = '';
+            hideSuggestions();
+            search.focus();
+        };
+
+        chipsEl.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-partner-chip-remove]');
+            if (!btn) {
+                return;
+            }
+            const chip = btn.closest('[data-partner-chip]');
+            const id = Number(chip?.getAttribute('data-id'));
+            renderChips(selectedIds().filter((item) => item !== id));
+        });
+
+        suggestions.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-partner-option]');
+            if (!btn) {
+                return;
+            }
+            addPartner(btn.getAttribute('data-id'));
+        });
+
+        search.addEventListener('focus', () => {
+            if (picker.hasAttribute('data-partner-picker-disabled')) {
+                return;
+            }
+            showSuggestions(search.value);
+        });
+
+        search.addEventListener('input', () => {
+            showSuggestions(search.value);
+        });
+
+        search.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                hideSuggestions();
+            }
+            if (e.key === 'Backspace' && !search.value) {
+                const ids = selectedIds();
+                if (ids.length) {
+                    renderChips(ids.slice(0, -1));
+                }
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!picker.contains(e.target)) {
+                hideSuggestions();
+            }
+        });
+    });
+}
+
 function lessonIcon(kind) {
     if (kind === 'text') {
         return 'icon-[tabler--file-text]';
@@ -894,26 +1056,54 @@ function buildLessonRow(draftId, lesson) {
     row.className = 'flex flex-wrap items-center gap-3 px-4 sm:px-5 py-3.5';
     row.setAttribute('data-curriculum-lesson', String(lesson.id));
     row.setAttribute('data-lesson-kind', lesson.kind || 'session');
+
+    const isImage = lesson.kind === 'file' && lesson.preview_kind === 'image' && lesson.preview_url;
+    const thumb = isImage
+        ? `<button type="button" class="size-12 rounded-10px overflow-hidden border border-d9 bg-fa shrink-0"
+                data-curriculum-preview data-preview-url="${escapeHtml(lesson.preview_url)}"
+                data-preview-kind="image" data-preview-title="${escapeHtml(lesson.title)}" aria-label="معاينة الملف">
+                <img src="${escapeHtml(lesson.preview_url)}" alt="" class="size-full object-cover">
+            </button>`
+        : `<span class="size-9 rounded-8px bg-primary/10 center shrink-0">
+                <span class="${lessonIcon(lesson.kind)} size-4 text-primary"></span>
+            </span>`;
+
+    const viewBtn = (lesson.kind === 'file' && lesson.view_url)
+        ? `<button type="button"
+                class="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-8px bg-primary/10 text-primary font-semibold text-12px hover:bg-primary/15 transition"
+                data-curriculum-preview
+                data-preview-url="${escapeHtml(lesson.view_url)}"
+                data-preview-kind="${escapeHtml(lesson.preview_kind || 'file')}"
+                data-preview-title="${escapeHtml(lesson.title)}"
+                aria-label="عرض الملف">
+                <span class="icon-[tabler--eye] size-4"></span>
+                عرض
+            </button>`
+        : '';
+
+    const deleteMsg = lesson.kind === 'file'
+        ? 'حذف هذا الملف من المنهج؟'
+        : (lesson.kind === 'text' ? 'حذف هذا الدرس النصي؟' : 'حذف هذه الجلسة؟');
+
     row.innerHTML = `
-        <span class="size-9 rounded-8px bg-primary/10 center shrink-0">
-            <span class="${lessonIcon(lesson.kind)} size-4 text-primary"></span>
-        </span>
+        ${thumb}
         <div class="min-w-0 flex-1 text-start">
             <p class="font-semibold text-15px sm:text-16px text-primary truncate">${escapeHtml(lesson.title)}</p>
             <p class="font-medium text-13px text-gray">${escapeHtml(lesson.duration || '')}</p>
         </div>
-        <form method="POST" action="${escapeHtml(lesson.delete_url || '#')}" data-curriculum-ajax="delete-lesson" data-confirm="حذف هذا العنصر؟">
-            <input type="hidden" name="_token" value="">
-            <input type="hidden" name="draft_id" value="${escapeHtml(draftId)}">
-            <button type="submit" class="size-8 rounded-8px center text-red-500 hover:bg-red-50" aria-label="حذف">
+        <div class="flex items-center gap-1.5 shrink-0">
+            ${viewBtn}
+            <button type="button" class="size-8 rounded-8px center text-red-500 hover:bg-red-50" aria-label="حذف"
+                data-curriculum-delete
+                data-delete-url="${escapeHtml(lesson.delete_url || '#')}"
+                data-delete-title="تأكيد الحذف"
+                data-delete-message="${escapeHtml(deleteMsg)}"
+                data-delete-item="${escapeHtml(lesson.title)}"
+                data-delete-mode="delete-lesson"
+                data-delete-draft-id="${escapeHtml(draftId)}">
                 <span class="icon-[tabler--trash] size-4"></span>
             </button>
-        </form>`;
-    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-    const tokenInput = row.querySelector('input[name="_token"]');
-    if (tokenInput) {
-        tokenInput.value = token;
-    }
+        </div>`;
     return row;
 }
 
@@ -925,6 +1115,79 @@ function syncUnitLessonCount(unitEl) {
     }
 }
 
+function openOverlay(el) {
+    if (!el) {
+        return;
+    }
+    if (typeof window.HSOverlay !== 'undefined' && typeof window.HSOverlay.open === 'function') {
+        window.HSOverlay.open(el);
+        return;
+    }
+    el.classList.remove('hidden');
+}
+
+function closeOverlay(el) {
+    if (!el) {
+        return;
+    }
+    if (typeof window.HSOverlay !== 'undefined' && typeof window.HSOverlay.close === 'function') {
+        window.HSOverlay.close(el);
+        return;
+    }
+    el.classList.add('hidden');
+}
+
+function openCurriculumFilePreview(btn) {
+    const modal = document.getElementById('curriculum-file-preview-modal');
+    if (!modal || !btn) {
+        return;
+    }
+
+    const url = btn.getAttribute('data-preview-url') || '';
+    const kind = (btn.getAttribute('data-preview-kind') || 'file').toLowerCase();
+    const title = btn.getAttribute('data-preview-title') || 'معاينة الملف';
+    if (!url) {
+        toast('خطأ', 'لا يوجد رابط للملف', 'error');
+        return;
+    }
+
+    const titleEl = modal.querySelector('[data-preview-title]');
+    const openTab = modal.querySelector('[data-preview-open-tab]');
+    const body = modal.querySelector('[data-preview-body]');
+    if (titleEl) {
+        titleEl.textContent = title;
+    }
+    if (openTab) {
+        openTab.setAttribute('href', url);
+    }
+    if (body) {
+        const safeUrl = escapeHtml(url);
+        const safeTitle = escapeHtml(title);
+        if (kind === 'image') {
+            body.innerHTML = `<img src="${safeUrl}" alt="${safeTitle}" class="max-w-full max-h-[65vh] rounded-12px object-contain shadow-sm">`;
+        } else if (kind === 'video') {
+            body.innerHTML = `<video src="${safeUrl}" controls class="max-w-full max-h-[65vh] rounded-12px bg-black"></video>`;
+        } else if (kind === 'pdf') {
+            body.innerHTML = `<iframe src="${safeUrl}" title="${safeTitle}" class="w-full h-[65vh] rounded-12px border border-d9 bg-white"></iframe>`;
+        } else {
+            body.innerHTML = `<div class="text-center space-y-4 py-6">
+                <span class="size-16 rounded-full bg-primary/10 center mx-auto">
+                    <span class="icon-[tabler--file] size-8 text-primary"></span>
+                </span>
+                <p class="font-semibold text-16px text-primary">${safeTitle}</p>
+                <p class="font-medium text-14px text-gray">لا تتوفر معاينة مباشرة لهذا النوع — افتح الملف في تبويب جديد.</p>
+                <a href="${safeUrl}" target="_blank" rel="noopener noreferrer"
+                    class="inline-flex items-center gap-2 h-11 px-5 rounded-12px bg-primary text-white font-bold text-14px hover:opacity-90 transition">
+                    <span class="icon-[tabler--external-link] size-4"></span>
+                    فتح الملف
+                </a>
+            </div>`;
+        }
+    }
+
+    openOverlay(modal);
+}
+
 function initCurriculumAjax(wrap) {
     const root = wrap.querySelector('[data-curriculum-root]');
     if (!root) {
@@ -934,6 +1197,12 @@ function initCurriculumAjax(wrap) {
     const draftId = wrap.getAttribute('data-draft-id') || '';
     const unitsWrap = root.querySelector('[data-curriculum-units]');
     const unitTemplate = document.getElementById('curriculum-unit-template');
+    const deleteModal = document.getElementById('instructor-confirm-delete-modal');
+    const deleteForm = document.getElementById('instructor-confirm-delete-form');
+    const deleteTitle = document.getElementById('instructor-confirm-delete-title');
+    const deleteMessage = document.getElementById('instructor-confirm-delete-message');
+    const deleteItem = document.getElementById('instructor-confirm-delete-item');
+    let pendingDelete = null;
 
     const setBusy = (form, busy) => {
         const btn = form.querySelector('[type="submit"]');
@@ -942,6 +1211,34 @@ function initCurriculumAjax(wrap) {
         }
         btn.disabled = busy;
         btn.classList.toggle('opacity-70', busy);
+    };
+
+    const applyDeleteResult = (mode, data) => {
+        if (mode === 'delete-chapter' && data?.deleted) {
+            root.querySelector(`[data-curriculum-unit="${data.deleted.id}"]`)?.remove();
+            if (unitsWrap && !unitsWrap.querySelector('[data-curriculum-unit]')) {
+                unitsWrap.innerHTML = `<div class="rounded-14px border border-dashed border-d9 px-6 py-10 center flex-col text-center" data-curriculum-empty>
+                    <p class="font-semibold text-18px text-gray">لا توجد وحدات بعد</p>
+                    <p class="font-medium text-14px text-gray mt-2">أضف أول وحدة من الأعلى لبدء بناء المنهج.</p>
+                </div>`;
+            }
+            toast('تم', data.message || 'تم الحذف', 'success');
+            return;
+        }
+
+        if (mode === 'delete-lesson' && data?.deleted) {
+            const lessonEl = root.querySelector(`[data-curriculum-lesson="${data.deleted.id}"]`);
+            const unitEl = lessonEl?.closest('[data-curriculum-unit]');
+            lessonEl?.remove();
+            if (unitEl) {
+                const lessons = unitEl.querySelector('[data-curriculum-lessons]');
+                if (lessons && !lessons.querySelector('[data-curriculum-lesson]')) {
+                    lessons.innerHTML = '<p class="font-medium text-14px text-gray px-4 sm:px-5 py-4" data-lessons-empty>لا يوجد محتوى بعد — أضف جلسة أو ملفًا أو درسًا نصيًا.</p>';
+                }
+                syncUnitLessonCount(unitEl);
+            }
+            toast('تم', data.message || 'تم الحذف', 'success');
+        }
     };
 
     const appendUnit = (unit) => {
@@ -961,7 +1258,6 @@ function initCurriculumAjax(wrap) {
         holder.innerHTML = html.trim();
         const node = holder.firstElementChild;
         if (node) {
-            // Fill title text (escaped already in replace for attribute; set textContent for title)
             const titleEl = node.querySelector('[data-unit-title]');
             if (titleEl) {
                 titleEl.textContent = unit.title;
@@ -984,6 +1280,116 @@ function initCurriculumAjax(wrap) {
         syncUnitLessonCount(unitEl);
     };
 
+    root.addEventListener('click', (e) => {
+        const previewBtn = e.target.closest('[data-curriculum-preview]');
+        if (previewBtn && root.contains(previewBtn)) {
+            e.preventDefault();
+            openCurriculumFilePreview(previewBtn);
+            return;
+        }
+
+        const deleteBtn = e.target.closest('[data-curriculum-delete]');
+        if (!deleteBtn || !root.contains(deleteBtn) || !deleteForm || !deleteModal) {
+            return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+
+        pendingDelete = {
+            url: deleteBtn.getAttribute('data-delete-url') || '',
+            mode: deleteBtn.getAttribute('data-delete-mode') || 'delete-lesson',
+            draftId: deleteBtn.getAttribute('data-delete-draft-id')
+                || wrap.getAttribute('data-draft-id')
+                || draftId
+                || '',
+        };
+
+        deleteForm.action = pendingDelete.url || '#';
+        if (deleteTitle) {
+            deleteTitle.textContent = deleteBtn.getAttribute('data-delete-title') || 'تأكيد الحذف';
+        }
+        if (deleteMessage) {
+            deleteMessage.textContent = deleteBtn.getAttribute('data-delete-message')
+                || 'هل أنت متأكد من حذف هذا العنصر؟ لا يمكن التراجع بعد الحذف.';
+        }
+        if (deleteItem) {
+            const itemText = deleteBtn.getAttribute('data-delete-item') || '';
+            if (itemText) {
+                deleteItem.textContent = itemText;
+                deleteItem.classList.remove('hidden');
+            } else {
+                deleteItem.textContent = '';
+                deleteItem.classList.add('hidden');
+            }
+        }
+
+        openOverlay(deleteModal);
+    });
+
+    deleteModal?.querySelectorAll('[data-overlay="#instructor-confirm-delete-modal"]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            pendingDelete = null;
+        });
+    });
+
+    if (deleteForm && !deleteForm.dataset.curriculumDeleteBound) {
+        deleteForm.dataset.curriculumDeleteBound = '1';
+        deleteForm.addEventListener('submit', async (e) => {
+            if (!pendingDelete?.url || !/\/curriculum\//.test(pendingDelete.url)) {
+                return;
+            }
+            e.preventDefault();
+
+            const submitBtn = deleteForm.querySelector('[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.classList.toggle('opacity-70', true);
+            }
+
+            const body = new FormData();
+            body.append('_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '');
+            if (pendingDelete.draftId) {
+                body.append('draft_id', pendingDelete.draftId);
+            }
+
+            try {
+                const response = await fetch(pendingDelete.url, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    },
+                    body,
+                    credentials: 'same-origin',
+                });
+
+                let data = null;
+                try {
+                    data = await response.json();
+                } catch (_) {
+                    data = null;
+                }
+
+                if (!response.ok) {
+                    toast('خطأ', firstValidationError(data) || 'تعذر الحذف', 'error');
+                    return;
+                }
+
+                applyDeleteResult(pendingDelete.mode, data);
+                closeOverlay(deleteModal);
+                pendingDelete = null;
+            } catch (_) {
+                toast('خطأ', 'فشل الاتصال بالخادم', 'error');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-70');
+                }
+            }
+        });
+    }
+
     root.addEventListener('submit', async (e) => {
         const form = e.target.closest('form[data-curriculum-ajax]');
         if (!form || !root.contains(form)) {
@@ -992,8 +1398,7 @@ function initCurriculumAjax(wrap) {
         e.preventDefault();
 
         const mode = form.getAttribute('data-curriculum-ajax');
-        const confirmMsg = form.getAttribute('data-confirm');
-        if (confirmMsg && !window.confirm(confirmMsg)) {
+        if (mode === 'delete-chapter' || mode === 'delete-lesson') {
             return;
         }
 
@@ -1004,7 +1409,6 @@ function initCurriculumAjax(wrap) {
             errorEl.textContent = '';
         }
 
-        // Keep draft_id in sync with wizard
         const liveDraft = wrap.getAttribute('data-draft-id') || draftId;
         form.querySelectorAll('[data-draft-id-input]').forEach((input) => {
             if (liveDraft) {
@@ -1057,33 +1461,6 @@ function initCurriculumAjax(wrap) {
                     details.open = false;
                 }
                 toast('تم', data.message || 'تمت الإضافة', 'success');
-                return;
-            }
-
-            if (mode === 'delete-chapter' && data?.deleted) {
-                root.querySelector(`[data-curriculum-unit="${data.deleted.id}"]`)?.remove();
-                if (unitsWrap && !unitsWrap.querySelector('[data-curriculum-unit]')) {
-                    unitsWrap.innerHTML = `<div class="rounded-14px border border-dashed border-d9 px-6 py-10 center flex-col text-center" data-curriculum-empty>
-                        <p class="font-semibold text-18px text-gray">لا توجد وحدات بعد</p>
-                        <p class="font-medium text-14px text-gray mt-2">أضف أول وحدة من الأعلى لبدء بناء المنهج.</p>
-                    </div>`;
-                }
-                toast('تم', data.message || 'تم الحذف', 'success');
-                return;
-            }
-
-            if (mode === 'delete-lesson' && data?.deleted) {
-                const lessonEl = root.querySelector(`[data-curriculum-lesson="${data.deleted.id}"]`);
-                const unitEl = lessonEl?.closest('[data-curriculum-unit]');
-                lessonEl?.remove();
-                if (unitEl) {
-                    const lessons = unitEl.querySelector('[data-curriculum-lessons]');
-                    if (lessons && !lessons.querySelector('[data-curriculum-lesson]')) {
-                        lessons.innerHTML = '<p class="font-medium text-14px text-gray px-4 sm:px-5 py-4" data-lessons-empty>لا يوجد محتوى بعد — أضف جلسة أو ملفًا أو درسًا نصيًا.</p>';
-                    }
-                    syncUnitLessonCount(unitEl);
-                }
-                toast('تم', data.message || 'تم الحذف', 'success');
                 return;
             }
 

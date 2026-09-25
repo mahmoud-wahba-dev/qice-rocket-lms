@@ -2727,11 +2727,26 @@ if (!function_exists('panelV1PublicUrl')) {
             return $path;
         }
 
-        if (str_starts_with($path, '/')) {
-            return url($path);
+        $normalized = str_replace('\\', '/', ltrim($path, '/'));
+
+        // This LMS public disk is public/store (URL /store), not Laravel's /storage symlink.
+        // Rewrite mistaken /storage/webinars/... paths saved by curriculum upload.
+        if (str_starts_with($normalized, 'storage/')) {
+            $rest = substr($normalized, strlen('storage/'));
+            if (preg_match('#^(webinars|panel_v1|uploads|users|certificates)/#', $rest)) {
+                $normalized = 'store/' . $rest;
+            }
         }
 
-        return url('/' . ltrim($path, '/'));
+        if (
+            !str_starts_with($normalized, 'store/') &&
+            !str_starts_with($normalized, 'storage/') &&
+            preg_match('#^(webinars|panel_v1|uploads|users|certificates)/#', $normalized)
+        ) {
+            $normalized = 'store/' . $normalized;
+        }
+
+        return url('/' . $normalized);
     }
 }
 

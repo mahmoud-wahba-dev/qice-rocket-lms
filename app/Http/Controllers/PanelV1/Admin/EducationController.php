@@ -894,7 +894,7 @@ class EducationController extends AdminController
         $file->accessibility='paid';
         $file->downloadable=1;
         $file->storage='upload';
-        $file->file='/storage/'.$path;
+        $file->file='/store/'.ltrim($path,'/');
         $file->volume=(string)$request->file('upload')->getSize();
         $file->file_type=explode('/',$request->file('upload')->getMimeType())[0] ?? 'file';
         $file->status='active';

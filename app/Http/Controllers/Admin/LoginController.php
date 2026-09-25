@@ -44,12 +44,8 @@ class LoginController extends Controller
 
     public function showLoginForm()
     {
-        $data = [
-            'pageTitle' => trans('auth.login'),
-        ];
-
-
-        return view('admin.auth.new.login', $data);
+        // Old admin login UI disabled — use landing auth (/login).
+        return redirect('/login');
     }
 
     /**
@@ -90,44 +86,20 @@ class LoginController extends Controller
 
     public function login(Request $request)
     {
-        $rules = [
-            'email' => 'required|email|exists:users,email,status,active',
-            'password' => 'required|min:4',
-        ];
-
-        if (!empty(getGeneralSecuritySettings('captcha_for_admin_login'))) {
-            $rules['captcha'] = 'required|captcha';
-        }
-
-        // validate the form data
-        $this->validate($request, $rules);
-
-        $remember = true;
-
-        if (Auth::attempt(['email' => $request->email, 'password' => $request->password], $remember)) {
-            $user = auth()->user();
-
-            if (!empty($user)) {
-                $userLoginHistoryMixin = new UserLoginHistoryMixin();
-                $userLoginHistoryMixin->storeUserLoginHistory($user);
-            }
-
-            return Redirect::to(route('panel.v1.admin.education.home'));
-        }
-
-        return redirect()->back()->withInput($request->only('email', 'remember'))->withErrors([
-            'password' => 'Wrong password or this account not approved yet.',
-        ]);
+        // Old admin POST login disabled — use landing auth (/login).
+        return redirect('/login');
     }
 
     public function logout(Request $request)
     {
         $user = auth()->user();
 
-        $userLoginHistoryMixin = new UserLoginHistoryMixin();
-        $userLoginHistoryMixin->storeUserLogoutHistory($user->id);
+        if (!empty($user)) {
+            $userLoginHistoryMixin = new UserLoginHistoryMixin();
+            $userLoginHistoryMixin->storeUserLogoutHistory($user->id);
+        }
 
         Auth::logout();
-        return redirect(getAdminPanelUrl() . '/login');
+        return redirect('/login');
     }
 }

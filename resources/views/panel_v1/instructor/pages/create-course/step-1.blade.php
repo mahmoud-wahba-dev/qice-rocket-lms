@@ -240,26 +240,52 @@
                     aria-controls="partner-instructor-fields">
             </div>
             <div id="partner-instructor-fields" data-partner-instructor-fields
-                class="mt-4 space-y-2 {{ $partnerOn ? '' : 'hidden' }}">
-                <label for="partners" class="block font-semibold text-14px sm:text-15px text-primary">
+                class="mt-4 space-y-3 {{ $partnerOn ? '' : 'hidden' }}">
+                <label class="block font-semibold text-14px sm:text-15px text-primary">
                     اختر المدرب المشارك
                 </label>
-                <select id="partners" name="partners[]" multiple size="6"
-                    class="{{ $select }} h-auto min-h-12 py-2"
-                    data-partner-instructor-select
-                    {{ $partnerOn ? '' : 'disabled' }}
-                    aria-label="اختر المدرب المشارك">
-                    @forelse ($availableInstructors as $instructor)
-                        <option value="{{ $instructor['id'] }}"
-                            {{ in_array((int) $instructor['id'], $selectedPartners, true) ? 'selected' : '' }}>
-                            {{ $instructor['name'] }}@if (!empty($instructor['email'])) — {{ $instructor['email'] }}@endif
-                        </option>
-                    @empty
-                        <option value="" disabled>لا يوجد مدربون متاحون</option>
-                    @endforelse
-                </select>
+                <div data-partner-picker
+                    class="{{ $partnerOn ? '' : 'opacity-60 pointer-events-none' }}"
+                    {{ $partnerOn ? '' : 'data-partner-picker-disabled' }}>
+                    <div class="rounded-14px border border-d9 bg-white focus-within:border-primary transition min-h-[7.5rem]">
+                        <div class="flex flex-wrap items-center gap-2 px-3 sm:px-4 pt-3 pb-2" data-partner-chips>
+                            @foreach ($availableInstructors as $instructor)
+                                @if (in_array((int) $instructor['id'], $selectedPartners, true))
+                                    <span class="inline-flex items-center gap-1.5 max-w-full rounded-full bg-primary/10 px-3 py-1.5 font-medium text-13px text-primary"
+                                        data-partner-chip
+                                        data-id="{{ $instructor['id'] }}">
+                                        <span class="truncate">{{ $instructor['name'] }}</span>
+                                        <button type="button" class="shrink-0 hover:opacity-70" data-partner-chip-remove aria-label="إزالة المدرب">
+                                            <span class="icon-[tabler--x] size-3.5"></span>
+                                        </button>
+                                    </span>
+                                @endif
+                            @endforeach
+                        </div>
+                        <div class="relative px-3 sm:px-4 pb-3">
+                            <span class="icon-[tabler--search] size-4 absolute start-6 top-1/2 -translate-y-1/2 text-gray pointer-events-none"></span>
+                            <input type="search" data-partner-search autocomplete="off"
+                                class="input input-bordered w-full h-12 rounded-10px border-d9 font-medium text-14px sm:text-15px text-black focus:outline-none focus:border-primary !ps-10"
+                                placeholder="ابحث بالاسم أو البريد ثم اختر..."
+                                {{ $partnerOn ? '' : 'disabled' }}
+                                aria-label="بحث عن مدرب مشارك"
+                                aria-autocomplete="list"
+                                aria-controls="partner-instructor-suggestions">
+                            <ul id="partner-instructor-suggestions"
+                                data-partner-suggestions
+                                class="absolute z-20 inset-x-3 sm:inset-x-4 bottom-full mb-1 max-h-56 overflow-y-auto rounded-12px border border-d9 bg-white shadow-lg hidden"
+                                role="listbox"></ul>
+                        </div>
+                    </div>
+                    <div data-partner-hidden class="hidden" aria-hidden="true">
+                        @foreach ($selectedPartners as $partnerId)
+                            <input type="hidden" name="partners[]" value="{{ $partnerId }}">
+                        @endforeach
+                    </div>
+                    <script type="application/json" data-partner-options>@json($availableInstructors)</script>
+                </div>
                 <p class="font-medium text-12px sm:text-13px text-gray">
-                    اضغط Ctrl (أو Cmd) لاختيار أكثر من مدرب. سيظهر المقرر في لوحة المدرب المشارك ويمكنه إدارته.
+                    ابحث واختر مدربًا أو أكثر — سيظهر المقرر في لوحة كل مدرب مشارك ويمكنه إدارته.
                 </p>
                 @error('partners')
                     <p class="font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
