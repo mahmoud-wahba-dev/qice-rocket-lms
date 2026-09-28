@@ -38,12 +38,16 @@ class CoursePlayerController extends Controller
             'pageTitle' => 'مشاهدة الدورة',
             'authUser' => $user,
             'webinar' => $webinar,
+            'slug' => $webinar->slug,
             'courseTitle' => $player['course']['title'] ?? $webinar->title,
             'lesson' => $lesson,
             'currentMedia' => $player['currentMedia'] ?? null,
             'hasLectureQuiz' => $hasQuiz,
             'hasLectureAssignment' => $hasAssignment,
             'hasFiles' => $hasFiles,
+            'existingReview' => \App\Models\WebinarReview::where('webinar_id', $webinar->id)
+                ->where('creator_id', $user->id)
+                ->first(),
             'files' => $files->map(function ($f) use ($webinar) {
                 $isDownloadable = (bool) ($f->downloadable ?? false);
                 $url = $isDownloadable
@@ -127,6 +131,123 @@ class CoursePlayerController extends Controller
             'msg' => $msg,
             'type' => 'success',
         ]);
+    }
+
+    public function storeCourseReview(Request $request, string $slug)
+    {
+        return $this->storeStudentRating($request, $slug, 'course');
+    }
+
+    public function storeInstructorReview(Request $request, string $slug)
+    {
+        return $this->storeStudentRating($request, $slug, 'instructor');
+    }
+
+    private function storeStudentRating(Request $request, string $slug, string $kind)
+    {
+        $resolved = $this->resolveCourse($request, $slug);
+        if ($resolved instanceof \Illuminate\Http\RedirectResponse) {
+            return $resolved;
+        }
+        [$user, $webinar] = $resolved;
+
+        $request->validate([
+            'rate' => 'required|integer|min:1|max:5',
+            'description' => 'nullable|string|max:2000',
+        ], [], [
+            'rate' => 'التقييم',
+            'description' => 'الملاحظات',
+        ]);
+
+        $rate = (int) $request->input('rate');
+        $description = trim((string) $request->input('description', ''));
+
+        $review = \App\Models\WebinarReview::firstOrNew([
+            'webinar_id' => $webinar->id,
+            'creator_id' => $user->id,
+        ]);
+
+        if (!$review->exists) {
+            $review->content_quality = $rate;
+            $review->instructor_skills = $rate;
+            $review->purchase_worth = $rate;
+            $review->support_quality = $rate;
+            $review->created_at = time();
+            $review->status = $this->reviewPublishStatus();
+        }
+
+        if ($kind === 'instructor') {
+            $review->instructor_skills = $rate;
+            if ($description !== '') {
+                $prefix = '【تقييم المدرب】';
+                $review->description = trim(($review->description ? $review->description . "\n" : '') . $prefix . ' ' . $description);
+            }
+        } else {
+            $review->content_quality = $rate;
+            $review->purchase_worth = $rate;
+            $review->support_quality = $rate;
+            if ($description !== '') {
+                $review->description = $description;
+            }
+        }
+
+        $sum = (int) $review->content_quality
+            + (int) $review->instructor_skills
+            + (int) $review->purchase_worth
+            + (int) $review->support_quality;
+        $review->rates = $sum > 0 ? round($sum / 4, 1) : $rate;
+        if (empty($review->status)) {
+            $review->status = $this->reviewPublishStatus();
+        }
+        $review->save();
+
+        try {
+            $notifyOptions = [
+                '[c.title]' => $this->localizedTitle($webinar) ?: $webinar->title,
+                '[item_title]' => $this->localizedTitle($webinar) ?: $webinar->title,
+                '[student.name]' => $user->full_name,
+                '[u.name]' => $user->full_name,
+                '[rate.count]' => $review->rates,
+                '[content_type]' => $kind === 'instructor' ? 'المدرب' : 'الدورة',
+            ];
+            if (!empty($webinar->teacher_id)) {
+                sendNotification('new_rating', $notifyOptions, $webinar->teacher_id);
+            }
+            sendNotification('new_user_item_rating', $notifyOptions, 1);
+        } catch (\Throwable $e) {
+        }
+
+        $message = $review->status === 'active'
+            ? 'تم نشر تقييمك بنجاح'
+            : 'تم إرسال تقييمك وبانتظار اعتماد الإدارة';
+
+        if ($request->expectsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'ok' => true,
+                'message' => $message,
+                'review' => [
+                    'id' => $review->id,
+                    'rates' => $review->rates,
+                    'content_quality' => $review->content_quality,
+                    'instructor_skills' => $review->instructor_skills,
+                    'status' => $review->status,
+                ],
+            ]);
+        }
+
+        return back()->with('toast', ['title' => 'تم', 'msg' => $message, 'type' => 'success']);
+    }
+
+    private function reviewPublishStatus(): string
+    {
+        try {
+            if (!empty(getGeneralOptionsSettings('direct_publication_of_reviews'))) {
+                return 'active';
+            }
+        } catch (\Throwable $e) {
+        }
+
+        return 'pending';
     }
 
     private function courseCommentsForStudent($webinar, $user): array
@@ -213,7 +334,12 @@ class CoursePlayerController extends Controller
                 $itemKey = $kind . '_' . $model->id;
                 $title = $this->localizedTitle($model) ?: ($kind === 'file' ? 'محتوى' : 'عنصر');
                 $type = $kind === 'file'
-                    ? (($model->file_type === 'video' || $model->storage === 'youtube' || $model->storage === 'vimeo') ? 'video' : 'file')
+                    ? (($model->file_type === 'video'
+                        || $model->storage === 'youtube'
+                        || $model->storage === 'vimeo'
+                        || (method_exists($model, 'isVideo') && $model->isVideo())
+                        || preg_match('/\.(mp4|webm|mov|m4v|mkv|avi)$/i', (string) ($model->file ?? ''))
+                    ) ? 'video' : 'file')
                     : ($kind === 'session' ? 'video' : 'text');
 
                 $isCompleted = match ($kind) {
@@ -579,11 +705,16 @@ class CoursePlayerController extends Controller
 
             if (
                 $model->isVideo()
-                || (in_array($storage, ['upload', 'external_link'], true) && $model->file_type === 'video')
+                || (in_array($storage, ['upload', 'external_link', 's3'], true) && (
+                    $model->file_type === 'video'
+                    || preg_match('/\.(mp4|webm|mov|m4v|mkv|avi)$/i', (string) $src)
+                ))
             ) {
                 $playSrc = $src;
-                if (!empty($src) && str_starts_with($src, '/') && !str_starts_with($src, '//')) {
-                    $playSrc = url($src);
+                if (!empty($src) && !preg_match('#^(https?:)?//#i', $src)) {
+                    $playSrc = function_exists('panelV1PublicUrl')
+                        ? panelV1PublicUrl($src)
+                        : url('/' . ltrim($src, '/'));
                 }
 
                 return [

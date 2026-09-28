@@ -361,12 +361,21 @@ class EducationController extends AdminController
                 $real['stubTitle']=$title;
                 break;
             case 'reviews':
-                $title='المراجعات';
-                $q = \App\Models\Comment::with(['webinar','user'])->whereNotNull('webinar_id')->orderBy('id','desc');
-                if($search !== '') $q->where('id',$search)->orWhere('comment','like',"%{$search}%");
-                $real['reviews'] = $q->paginate(15)->withQueryString();
-                $real['paginator'] = $real['reviews'];
-                $real['stubTitle']=$title;
+                $title = 'المراجعات والتقييمات';
+                $q = \App\Models\WebinarReview::with(['webinar', 'creator'])
+                    ->whereNotNull('webinar_id')
+                    ->orderBy('id', 'desc');
+                if ($search !== '') {
+                    $q->where(function ($inner) use ($search) {
+                        $inner->where('id', $search)
+                            ->orWhere('description', 'like', "%{$search}%")
+                            ->orWhereHas('creator', fn ($u) => $u->where('full_name', 'like', "%{$search}%"))
+                            ->orWhereHas('webinar.translations', fn ($t) => $t->where('title', 'like', "%{$search}%"));
+                    });
+                }
+                $real['courseReviews'] = $q->paginate(15)->withQueryString();
+                $real['paginator'] = $real['courseReviews'];
+                $real['stubTitle'] = $title;
                 break;
             case 'departments':
                 $title='الأقسام والتصنيفات';
@@ -1281,29 +1290,40 @@ class EducationController extends AdminController
         return back()->with('toast',['title'=>'تم','msg'=>'تم الحذف','type'=>'success']);
     }
 
-    // ===== مراجعات — Admin\CommentsController (اعتماد/رفض/حذف) =====
-    public function approveReview(Request $request,int $id){
-        $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
-        $comment=\App\Models\Comment::where('id',$id)->whereNotNull('webinar_id')->firstOrFail();
-        $comment->update(['status'=>'active']);
-        if(!empty($comment->webinar_id)){
-            try{
-                $webinar=\App\Models\Webinar::findOrFail($comment->webinar_id);
-                $commentedUser=\App\User::findOrFail($comment->user_id);
-                sendNotification('new_comment',['[c.title]'=>$webinar->title,'[u.name]'=>$commentedUser->full_name],$webinar->teacher_id);
-            }catch(\Throwable $e){}
+    // ===== تقييمات الدورات — WebinarReview =====
+    public function approveReview(Request $request, int $id)
+    {
+        $user = $this->resolveAdmin($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
         }
-        return back()->with('toast',['title'=>'تم','msg'=>'تم اعتماد المراجعة','type'=>'success']);
+        $review = \App\Models\WebinarReview::where('id', $id)->whereNotNull('webinar_id')->firstOrFail();
+        $review->status = 'active';
+        $review->save();
+
+        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم اعتماد التقييم', 'type' => 'success']);
     }
-    public function rejectReview(Request $request,int $id){
-        $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
-        \App\Models\Comment::where('id',$id)->update(['status'=>'pending']);
-        return back()->with('toast',['title'=>'تم','msg'=>'تم إرجاع المراجعة للانتظار','type'=>'success']);
+
+    public function rejectReview(Request $request, int $id)
+    {
+        $user = $this->resolveAdmin($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+        \App\Models\WebinarReview::where('id', $id)->update(['status' => 'pending']);
+
+        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم إرجاع التقييم للانتظار', 'type' => 'success']);
     }
-    public function deleteReview(Request $request,int $id){
-        $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
-        \App\Models\Comment::where('id',$id)->delete();
-        return back()->with('toast',['title'=>'تم','msg'=>'تم حذف المراجعة','type'=>'success']);
+
+    public function deleteReview(Request $request, int $id)
+    {
+        $user = $this->resolveAdmin($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+        \App\Models\WebinarReview::where('id', $id)->delete();
+
+        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم حذف التقييم', 'type' => 'success']);
     }
 
     // ===== شهادات — حذف + قوالب (parity مع Admin\CertificateController) =====

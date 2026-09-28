@@ -912,21 +912,67 @@ class InstructorController extends Controller
             'draft_id' => 'required|integer',
             'chapter_id' => 'required|integer',
             'topic' => 'required|string|max:255',
-            'date' => 'required|date',
             'duration' => 'required|integer|min:1',
+            'session_date' => 'nullable|date_format:Y-m-d',
+            'session_time' => 'nullable|string|max:8',
+            'date' => 'nullable|date',
         ], $this->courseWizardMessages(), $this->courseWizardFieldNames());
 
         $draft = $this->draftOrFail($user, $request->input('draft_id'));
+        $isLive = ($draft->type ?? '') === 'webinar';
+
+        if ($isLive) {
+            $request->validate([
+                'session_date' => 'required|date_format:Y-m-d',
+                'session_time' => 'required|string|max:8',
+            ], $this->courseWizardMessages(), [
+                'session_date' => 'تاريخ الجلسة',
+                'session_time' => 'وقت الجلسة',
+            ]);
+        }
 
         $chapter = \App\Models\WebinarChapter::where('id', $request->input('chapter_id'))
             ->where('webinar_id', $draft->id)
             ->firstOrFail();
 
+        $sessionTs = null;
+        if ($request->filled('session_date')) {
+            $timePart = $request->input('session_time') ?: '00:00';
+            if (preg_match('/^\d{2}:\d{2}/', (string) $timePart, $m)) {
+                $timePart = substr($m[0], 0, 5);
+            }
+            $sessionTs = strtotime(trim($request->input('session_date') . ' ' . $timePart));
+        } elseif ($request->filled('date')) {
+            $sessionTs = strtotime($request->input('date'));
+        }
+
+        if ($isLive && empty($sessionTs)) {
+            if ($request->expectsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'تاريخ ووقت الجلسة مطلوبان للدورة المباشرة',
+                    'errors' => [
+                        'session_date' => ['تاريخ الجلسة مطلوب'],
+                        'session_time' => ['وقت الجلسة مطلوب'],
+                    ],
+                ], 422);
+            }
+
+            return back()->withErrors([
+                'session_date' => 'تاريخ الجلسة مطلوب',
+                'session_time' => 'وقت الجلسة مطلوب',
+            ])->withInput();
+        }
+
+        if (empty($sessionTs)) {
+            $sessionTs = time();
+        }
+
         $session = new \App\Models\Session();
         $session->creator_id = $user->id;
         $session->webinar_id = $draft->id;
         $session->chapter_id = $chapter->id;
-        $session->date = strtotime($request->input('date'));
+        $session->date = $sessionTs;
         $session->duration = (int) $request->input('duration');
         $session->status = 'active';
         $session->created_at = time();
@@ -944,15 +990,76 @@ class InstructorController extends Controller
             $tEn->save();
         }
 
+        $whenLabel = date('Y-m-d H:i', $sessionTs);
+
         return $this->curriculumResponse($request, $draft, 'تمت إضافة الجلسة', [
             'chapter_id' => $chapter->id,
             'lesson' => [
                 'kind' => 'session',
                 'id' => $session->id,
                 'title' => $request->input('topic'),
-                'duration' => ((int) $request->input('duration')) . ' دقيقة',
+                'duration' => ((int) $request->input('duration')) . ' دقيقة · ' . $whenLabel,
                 'delete_url' => route($this->curriculumRouteNames($user)['sessions.delete'], ['sessionId' => $session->id]),
             ],
+        ]);
+    }
+
+    public function wizardQuizStore(Request $request)
+    {
+        $user = $request->user();
+        if ($redirect = $this->assertWizardEditor($user)) {
+            return $redirect;
+        }
+
+        $request->validate([
+            'draft_id' => 'required|integer',
+            'title' => 'required|string|max:255',
+            'pass_mark' => 'required|integer|min:0|max:100',
+            'time' => 'nullable|integer|min:0',
+            'attempt' => 'nullable|integer|min:1',
+        ], $this->courseWizardMessages(), [
+            'title' => 'عنوان الاختبار',
+            'pass_mark' => 'درجة النجاح',
+            'time' => 'مدة الاختبار',
+            'attempt' => 'عدد المحاولات',
+            'draft_id' => 'المسودة',
+        ]);
+
+        $draft = $this->draftOrFail($user, $request->input('draft_id'));
+
+        $quiz = new \App\Models\Quiz();
+        $quiz->webinar_id = $draft->id;
+        $quiz->creator_id = $user->isAdmin() ? ($draft->teacher_id ?: $user->id) : $user->id;
+        $quiz->pass_mark = (int) $request->input('pass_mark');
+        $quiz->time = (int) ($request->input('time') ?: 0);
+        $quiz->attempt = $request->filled('attempt') ? (int) $request->input('attempt') : null;
+        $quiz->certificate = 0;
+        $quiz->status = 'active';
+        $quiz->created_at = time();
+        $quiz->updated_at = time();
+        $quiz->save();
+
+        $translation = $quiz->translateOrNew('ar');
+        $translation->locale = 'ar';
+        $translation->title = $request->input('title');
+        $translation->save();
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'ok' => true,
+                'message' => 'تم إنشاء الاختبار وربطه بالدورة',
+                'quiz' => [
+                    'id' => $quiz->id,
+                    'title' => $request->input('title'),
+                    'webinar_id' => $draft->id,
+                ],
+            ]);
+        }
+
+        return back()->with('toast', [
+            'title' => 'تم',
+            'msg' => 'تم إنشاء الاختبار وربطه بالدورة',
+            'type' => 'success',
         ]);
     }
 
@@ -1517,6 +1624,27 @@ class InstructorController extends Controller
         $avgProgress = (int) ($perf['avg_progress'] ?? 0);
         $certsCount = Certificate::where('webinar_id', $webinar->id)->count();
 
+        $courseReviews = \App\Models\WebinarReview::with(['creator'])
+            ->where('webinar_id', $webinar->id)
+            ->where('status', 'active')
+            ->orderByDesc('id')
+            ->limit(30)
+            ->get()
+            ->map(function ($r) {
+                return [
+                    'id' => $r->id,
+                    'student' => $r->creator->full_name ?? 'طالب',
+                    'content' => (int) ($r->content_quality ?? 0),
+                    'instructor' => (int) ($r->instructor_skills ?? 0),
+                    'avg' => $r->rates ?? '—',
+                    'comment' => \Illuminate\Support\Str::limit(strip_tags($r->description ?? ''), 120),
+                    'date' => !empty($r->created_at) ? date('Y/m/d', (int) $r->created_at) : '—',
+                ];
+            })->all();
+        $avgCourseRate = \App\Models\WebinarReview::where('webinar_id', $webinar->id)
+            ->where('status', 'active')
+            ->avg('rates');
+
         $filters = [
             'q' => trim((string) $request->get('q', '')),
             'progress' => (string) $request->get('progress', ''),
@@ -1547,9 +1675,11 @@ class InstructorController extends Controller
                 'extraStats' => [
                     ['label' => 'اختبارات الدورة', 'value' => (string) $quizCount],
                     ['label' => 'شهادات صادرة', 'value' => (string) $certsCount],
+                    ['label' => 'متوسط التقييم', 'value' => $avgCourseRate ? number_format((float) $avgCourseRate, 1) . '/5' : '—'],
                     ['label' => 'طلاب في القائمة', 'value' => (string) count($perf['students'] ?? [])],
                 ],
                 'students' => $perf['students'] ?? [],
+                'courseReviews' => $courseReviews,
                 'filters' => $filters,
                 'exportUrl' => route('panel.v1.instructor.courses.performance.export', array_filter([
                     'slug' => $webinar->slug,

@@ -2,10 +2,11 @@
     $input = 'input input-bordered w-full h-12 sm:h-14 rounded-10px border-d9 font-medium text-15px sm:text-16px text-black focus:outline-none focus:border-primary';
     $card = 'border border-d9 rounded-14px bg-white px-5 sm:px-7 py-6 sm:py-8';
     $draftIdValue = $draftId ?? request('draft');
+    $courseTypeKey = $draft['course_type'] ?? 'recorded';
 @endphp
 
 {{-- Curriculum (standalone forms — not nested in wizard store form) --}}
-<section class="{{ $card }}" data-curriculum-root>
+<section class="{{ $card }}" data-curriculum-root data-course-type="{{ $courseTypeKey }}">
     <div class="flex flex-wrap items-center justify-between gap-3 mb-5 sm:mb-6">
         <div class="flex items-center gap-3">
             <span class="size-10 rounded-10px bg-primary/10 center shrink-0">
@@ -14,6 +15,29 @@
             <h2 class="font-bold text-18px sm:text-20px text-primary">بناء المنهج الدراسي</h2>
         </div>
     </div>
+
+    @if ($courseTypeKey === 'live')
+        <div class="rounded-12px border border-primary/20 bg-primary/5 px-5 py-4 mb-6 text-start">
+            <p class="font-semibold text-15px text-primary mb-1">دورة تفاعلية مباشرة</p>
+            <p class="font-medium text-13px sm:text-14px text-gray">
+                أضف وحدات ثم جلسات مباشرة — لكل جلسة <strong class="text-primary">تاريخ ووقت البدء</strong> و<strong class="text-primary">المدة بالدقائق</strong>. تاريخ بدء الدورة العام يُضبط من الخطوة الأولى.
+            </p>
+        </div>
+    @elseif ($courseTypeKey === 'text')
+        <div class="rounded-12px border border-d9 bg-[#FAFAF4] px-5 py-4 mb-6 text-start">
+            <p class="font-semibold text-15px text-primary mb-1">دورة نصية</p>
+            <p class="font-medium text-13px sm:text-14px text-gray">
+                ركّز على إضافة دروس نصية وملفات قراءة داخل الوحدات.
+            </p>
+        </div>
+    @else
+        <div class="rounded-12px border border-d9 bg-[#FAFAF4] px-5 py-4 mb-6 text-start">
+            <p class="font-semibold text-15px text-primary mb-1">دورة فيديو مسجّلة</p>
+            <p class="font-medium text-13px sm:text-14px text-gray">
+                أضف ملفات فيديو ومواد داخل الوحدات. الجلسات المباشرة اختيارية لهذا النوع.
+            </p>
+        </div>
+    @endif
 
     @if (true)
         <div class="rounded-12px bg-[#FAFAF4] border border-d9 px-5 py-4 mb-6 {{ !empty($draftIdValue) ? 'hidden' : '' }}" data-curriculum-need-draft>
@@ -40,6 +64,7 @@
                 'unit' => $unit,
                 'draftIdValue' => $draftIdValue,
                 'input' => $input,
+                'courseTypeKey' => $courseTypeKey,
             ])
         @empty
             <div class="rounded-14px border border-dashed border-d9 px-6 py-10 center flex-col text-center" data-curriculum-empty>
@@ -64,5 +89,6 @@
         'draftIdValue' => $draftIdValue ?? '__DRAFT__',
         'input' => $input,
         'isTemplate' => true,
+        'courseTypeKey' => $courseTypeKey,
     ])
 </template>

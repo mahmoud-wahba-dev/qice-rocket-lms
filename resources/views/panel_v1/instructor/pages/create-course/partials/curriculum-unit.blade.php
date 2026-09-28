@@ -2,6 +2,10 @@
     $input = $input ?? 'input input-bordered w-full h-12 sm:h-14 rounded-10px border-d9 font-medium text-15px sm:text-16px text-black focus:outline-none focus:border-primary';
     $draftIdValue = $draftIdValue ?? '';
     $isTemplate = !empty($isTemplate);
+    $courseTypeKey = $courseTypeKey ?? 'recorded';
+    $openSession = $courseTypeKey === 'live';
+    $openFile = $courseTypeKey === 'recorded';
+    $openText = $courseTypeKey === 'text';
 @endphp
 
 <div class="rounded-14px border border-d9 overflow-hidden mb-4 last:mb-0" data-curriculum-unit="{{ $unit['id'] }}">
@@ -86,24 +90,59 @@
     </div>
 
     <div class="px-4 sm:px-5 py-4 border-t border-d9 bg-white space-y-4">
-        <details class="rounded-10px border border-d9" open>
+        <details class="rounded-10px border border-d9 {{ $openSession ? 'border-primary/30' : '' }}" @if($openSession) open @endif>
             <summary class="cursor-pointer px-4 py-3 font-semibold text-14px text-primary list-none flex items-center justify-between gap-2">
-                <span>+ إضافة جلسة</span>
+                <span>+ إضافة جلسة
+                    @if ($courseTypeKey === 'live')
+                        مباشرة
+                        <span class="font-medium text-12px text-gray">(تاريخ ووقت مطلوبان)</span>
+                    @elseif ($courseTypeKey === 'recorded')
+                        / محاضرة
+                        <span class="font-medium text-12px text-gray">(المدة مطلوبة — التاريخ اختياري)</span>
+                    @endif
+                </span>
                 <span class="icon-[tabler--chevron-down] size-4 text-gray"></span>
             </summary>
             <form method="POST" action="{{ $unit['session_store_url'] ?? route('panel.v1.instructor.curriculum.sessions.store') }}"
-                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 px-4 pb-4" data-curriculum-ajax="session">
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 px-4 pb-4" data-curriculum-ajax="session"
+                data-session-mode="{{ $courseTypeKey === 'live' ? 'live' : 'recorded' }}">
                 @csrf
                 <input type="hidden" name="draft_id" value="{{ $draftIdValue }}" data-draft-id-input>
                 <input type="hidden" name="chapter_id" value="{{ $unit['id'] }}">
-                <input type="text" name="topic" required placeholder="عنوان الجلسة" class="{{ $input }}" data-field-label="عنوان الجلسة">
-                <input type="datetime-local" name="date" required class="{{ $input }}" data-field-label="تاريخ الجلسة">
-                <input type="number" name="duration" required min="1" placeholder="المدة (دقيقة)" class="{{ $input }}" data-field-label="مدة الجلسة">
-                <button type="submit" class="inline-flex items-center justify-center h-12 sm:h-14 px-5 rounded-10px bg-primary text-white font-bold text-15px hover:opacity-90 transition">إضافة</button>
+                <input type="hidden" name="date" value="" data-session-datetime>
+                <div class="sm:col-span-2 lg:col-span-1">
+                    <label class="block font-medium text-12px text-gray mb-1.5">عنوان الجلسة</label>
+                    <input type="text" name="topic" required placeholder="عنوان الجلسة" class="{{ $input }}" data-field-label="عنوان الجلسة">
+                </div>
+                <div>
+                    <label class="block font-medium text-12px text-gray mb-1.5">
+                        تاريخ الجلسة
+                        @if ($courseTypeKey === 'live') <span class="text-red-500">*</span> @endif
+                    </label>
+                    <input type="date" name="session_date"
+                        {{ $courseTypeKey === 'live' ? 'required' : '' }}
+                        class="{{ $input }}" data-field-label="تاريخ الجلسة" data-session-date>
+                </div>
+                <div>
+                    <label class="block font-medium text-12px text-gray mb-1.5">
+                        وقت البدء
+                        @if ($courseTypeKey === 'live') <span class="text-red-500">*</span> @endif
+                    </label>
+                    <input type="time" name="session_time"
+                        {{ $courseTypeKey === 'live' ? 'required' : '' }}
+                        class="{{ $input }}" data-field-label="وقت الجلسة" data-session-time>
+                </div>
+                <div>
+                    <label class="block font-medium text-12px text-gray mb-1.5">المدة (دقيقة) <span class="text-red-500">*</span></label>
+                    <input type="number" name="duration" required min="1" placeholder="90" class="{{ $input }}" data-field-label="مدة الجلسة">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="inline-flex items-center justify-center w-full h-12 sm:h-14 px-5 rounded-10px bg-primary text-white font-bold text-15px hover:opacity-90 transition">إضافة</button>
+                </div>
             </form>
             <p class="hidden px-4 pb-3 font-medium text-13px text-[#B91C1C]" data-curriculum-form-error></p>
         </details>
-        <details class="rounded-10px border border-d9">
+        <details class="rounded-10px border border-d9" @if($openFile) open @endif>
             <summary class="cursor-pointer px-4 py-3 font-semibold text-14px text-primary list-none flex items-center justify-between gap-2">
                 <span>+ إضافة ملف</span>
                 <span class="icon-[tabler--chevron-down] size-4 text-gray"></span>
@@ -126,7 +165,7 @@
             </form>
             <p class="hidden px-4 pb-3 font-medium text-13px text-[#B91C1C]" data-curriculum-form-error></p>
         </details>
-        <details class="rounded-10px border border-d9">
+        <details class="rounded-10px border border-d9" @if($openText) open @endif>
             <summary class="cursor-pointer px-4 py-3 font-semibold text-14px text-primary list-none flex items-center justify-between gap-2">
                 <span>+ إضافة درس نصي</span>
                 <span class="icon-[tabler--chevron-down] size-4 text-gray"></span>

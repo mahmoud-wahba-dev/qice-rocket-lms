@@ -46,6 +46,103 @@
     @enderror
 </section>
 
+{{-- Type-specific schedule / duration (maps to webinars.start_date, duration, timezone) --}}
+@php
+    $draftDuration = old('course_duration', $draft['duration'] ?? '');
+    $draftStartDate = old('start_date', $draft['start_date'] ?? '');
+    $draftTimezone = old('timezone', $draft['timezone'] ?? (function_exists('getTimezone') ? getTimezone() : 'Asia/Riyadh'));
+    $wizardTimezones = $wizardTimezones ?? ['Asia/Riyadh', 'UTC'];
+@endphp
+<section class="{{ $card }}" data-course-type-fields>
+    <div class="flex items-center gap-3 mb-5 sm:mb-6">
+        <span class="size-10 rounded-10px bg-primary/10 center shrink-0">
+            <span class="icon-[tabler--calendar-event] size-5 text-primary"></span>
+        </span>
+        <div class="min-w-0 text-start">
+            <h2 class="font-bold text-18px sm:text-20px text-primary">توقيت ومدة الدورة</h2>
+            <p class="font-medium text-13px sm:text-14px text-gray mt-0.5" data-type-fields-hint>
+                تختلف الحقول حسب نوع الدورة المحدد أعلاه
+            </p>
+        </div>
+    </div>
+
+    <div data-type-panel="live" class="space-y-5 {{ $selectedType === 'live' ? '' : 'hidden' }}">
+        <div class="rounded-12px bg-[#F7F0E6]/60 border border-d9 px-4 py-3 text-start">
+            <p class="font-medium text-13px sm:text-14px text-primary">
+                الدورة المباشرة تحتاج تاريخ ووقت البدء، ومدة الجلسة، والمنطقة الزمنية. يمكنك لاحقًا إضافة جلسات إضافية بتاريخ ووقت في خطوة المنهج.
+            </p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+            <div>
+                <label class="block font-semibold text-14px sm:text-15px text-primary mb-2">
+                    تاريخ ووقت بدء الدورة <span class="text-red-500">*</span>
+                </label>
+                <input type="datetime-local" name="start_date" value="{{ $draftStartDate }}"
+                    data-live-field
+                    class="{{ $input }} {{ $errors->has('start_date') ? 'border-[#FECACA]' : '' }}"
+                    {{ $selectedType === 'live' ? '' : 'disabled' }}>
+                @error('start_date')
+                    <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+                @enderror
+            </div>
+            <div>
+                <label class="block font-semibold text-14px sm:text-15px text-primary mb-2">
+                    المنطقة الزمنية <span class="text-red-500">*</span>
+                </label>
+                <select name="timezone" data-live-field
+                    class="{{ $select }} {{ $errors->has('timezone') ? 'border-[#FECACA]' : '' }}"
+                    {{ $selectedType === 'live' ? '' : 'disabled' }}>
+                    @foreach ($wizardTimezones as $tz)
+                        <option value="{{ $tz }}" {{ $draftTimezone === $tz ? 'selected' : '' }}>{{ $tz }}</option>
+                    @endforeach
+                </select>
+                @error('timezone')
+                    <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+                @enderror
+            </div>
+        </div>
+    </div>
+
+    <div data-type-panel="recorded" class="{{ $selectedType === 'recorded' ? '' : 'hidden' }}">
+        <div class="rounded-12px bg-[#FAFAF4] border border-d9 px-4 py-3 text-start mb-5">
+            <p class="font-medium text-13px sm:text-14px text-gray">
+                للدورة المسجّلة حدّد المدة الإجمالية للمحتوى بالدقائق (تظهر للطالب في صفحة الدورة).
+            </p>
+        </div>
+    </div>
+
+    <div data-type-panel="text" class="{{ $selectedType === 'text' ? '' : 'hidden' }}">
+        <div class="rounded-12px bg-[#FAFAF4] border border-d9 px-4 py-3 text-start mb-5">
+            <p class="font-medium text-13px sm:text-14px text-gray">
+                للدورة النصية حدّد المدة المقدّرة لإتمام المحتوى بالدقائق.
+            </p>
+        </div>
+    </div>
+
+    <div>
+        <label class="block font-semibold text-14px sm:text-15px text-primary mb-2">
+            <span data-duration-label>
+                @if ($selectedType === 'live')
+                    مدة الجلسة (دقيقة)
+                @elseif ($selectedType === 'text')
+                    مدة الدراسة المقدّرة (دقيقة)
+                @else
+                    مدة المحتوى (دقيقة)
+                @endif
+            </span>
+            <span class="text-red-500">*</span>
+        </label>
+        <input type="number" name="course_duration" min="1" max="100000"
+            value="{{ $draftDuration }}"
+            class="{{ $input }} {{ $errors->has('course_duration') ? 'border-[#FECACA]' : '' }}"
+            placeholder="مثال: 90"
+            data-field-label="مدة الدورة">
+        @error('course_duration')
+            <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+        @enderror
+    </div>
+</section>
+
 {{-- Basic info --}}
 <section class="{{ $card }}">
     <div class="flex items-center gap-3 mb-5 sm:mb-6">
@@ -142,20 +239,38 @@
         <h2 class="font-bold text-18px sm:text-20px text-primary">الوسائط والصور</h2>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-6">
-        @foreach ([['الصورة المصغرة', 'thumbnail', 'image_thumbnail'], ['غلاف الدورة', 'cover', 'image_cover']] as [$label, $key, $field])
-            <label class="flex flex-col items-center justify-center gap-3 min-h-44 rounded-14px border border-dashed border-d9 bg-[#F7F0E6]/40 px-4 py-8 cursor-pointer hover:border-primary/40 transition">
-                <span class="icon-[tabler--cloud-upload] size-8 text-primary"></span>
-                <span class="font-semibold text-15px text-primary">{{ $label }}</span>
-                @if (!empty($draft[$key === 'thumbnail' ? 'thumbnail' : 'image_cover']))
-                    <span class="font-medium text-12px text-gray">ملف محفوظ — اختر ملفًا لاستبداله</span>
-                @endif
-                <span class="inline-flex items-center h-10 px-4 rounded-10px bg-primary text-white font-semibold text-14px">اختر ملفًا</span>
-                <input type="file" name="{{ $field }}" class="hidden" accept="image/*" data-upload="{{ $key }}">
-            </label>
-            @error($field)
-                <p class="font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+        <div>
+            <p class="font-semibold text-14px sm:text-15px text-primary mb-2">الصورة المصغرة</p>
+            @include('panel_v1.components.file-upload', [
+                'name' => 'image_thumbnail',
+                'accept' => 'image/*',
+                'label' => 'اختر الصورة المصغرة',
+                'hint' => 'PNG أو JPG — تظهر في بطاقة الدورة',
+                'media' => true,
+                'valueUrl' => !empty($draft['thumbnail']) ? panelV1PublicUrl($draft['thumbnail']) : null,
+                'valueName' => 'الصورة المصغرة الحالية',
+                'valueMime' => 'image',
+            ])
+            @error('image_thumbnail')
+                <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
             @enderror
-        @endforeach
+        </div>
+        <div>
+            <p class="font-semibold text-14px sm:text-15px text-primary mb-2">غلاف الدورة</p>
+            @include('panel_v1.components.file-upload', [
+                'name' => 'image_cover',
+                'accept' => 'image/*',
+                'label' => 'اختر غلاف الدورة',
+                'hint' => 'PNG أو JPG — تظهر أعلى صفحة الدورة',
+                'media' => true,
+                'valueUrl' => !empty($draft['image_cover']) ? panelV1PublicUrl($draft['image_cover']) : null,
+                'valueName' => 'الغلاف الحالي',
+                'valueMime' => 'image',
+            ])
+            @error('image_cover')
+                <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+            @enderror
+        </div>
     </div>
     <div>
         <p class="font-semibold text-15px sm:text-16px text-primary mb-3">الفيديو الترويجي</p>
@@ -174,11 +289,14 @@
             @enderror
         </div>
         <div data-promo-panel="file" class="hidden">
-            <label class="flex items-center justify-center gap-2 h-14 rounded-10px border border-dashed border-d9 cursor-pointer hover:bg-primary/5 transition font-semibold text-15px text-primary">
-                <span class="icon-[tabler--upload] size-5"></span>
-                اختر ملف فيديو
-                <input type="file" name="video_demo_file" class="hidden" accept="video/mp4,video/webm,video/quicktime">
-            </label>
+            @include('panel_v1.components.file-upload', [
+                'name' => 'video_demo_file',
+                'accept' => 'video/mp4,video/webm,video/quicktime',
+                'label' => 'اختر ملف فيديو',
+                'hint' => 'MP4 أو WebM',
+                'media' => true,
+                'compact' => true,
+            ])
             @error('video_demo_file')
                 <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
             @enderror

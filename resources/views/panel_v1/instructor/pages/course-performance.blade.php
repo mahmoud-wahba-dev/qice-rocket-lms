@@ -156,5 +156,44 @@
             </table>
         </div>
     </div>
+
+    <div class="rounded-14px border border-d9 bg-white overflow-hidden">
+        <div class="px-5 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex flex-wrap items-center justify-between gap-3">
+            <h2 class="font-bold text-16px sm:text-18px text-primary">تقييمات الطلاب</h2>
+            <p class="font-medium text-13px text-gray">التقييمات المنشورة على هذه الدورة</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="table w-full text-14px">
+                <thead>
+                    <tr class="bg-fa border-b border-d9 text-gray">
+                        <th class="px-4 py-3 text-start">الطالب</th>
+                        <th class="px-4 py-3 text-center">المحتوى</th>
+                        <th class="px-4 py-3 text-center">المدرب</th>
+                        <th class="px-4 py-3 text-center">المتوسط</th>
+                        <th class="px-4 py-3 text-start">الملاحظات</th>
+                        <th class="px-4 py-3 text-center">التاريخ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($courseReviews ?? [] as $review)
+                        <tr class="border-b border-d9 last:border-0">
+                            <td class="px-4 py-3 font-bold text-primary">{{ $review['student'] }}</td>
+                            <td class="px-4 py-3 text-center font-semibold text-primary">{{ $review['content'] }}/5</td>
+                            <td class="px-4 py-3 text-center font-semibold text-primary">{{ $review['instructor'] }}/5</td>
+                            <td class="px-4 py-3 text-center font-bold text-[#D97706]">{{ $review['avg'] }}</td>
+                            <td class="px-4 py-3 font-medium text-gray text-start">{{ $review['comment'] ?: '—' }}</td>
+                            <td class="px-4 py-3 text-center font-medium text-gray">{{ $review['date'] }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="px-4 py-12 text-center font-medium text-15px text-gray">
+                                لا توجد تقييمات منشورة بعد
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 @endsection

@@ -78,6 +78,8 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
             Route::prefix('student/courses/{slug}')->name('student.course.')->group(function () {
                 Route::get('/watch', [CoursePlayerController::class, 'watch'])->name('watch');
                 Route::post('/comments', [CoursePlayerController::class, 'storeComment'])->name('comments.store');
+                Route::post('/reviews/course', [CoursePlayerController::class, 'storeCourseReview'])->name('reviews.course');
+                Route::post('/reviews/instructor', [CoursePlayerController::class, 'storeInstructorReview'])->name('reviews.instructor');
                 Route::get('/forum', [CoursePlayerController::class, 'forum'])->name('forum');
                 Route::post('/forum', [CoursePlayerController::class, 'storeForumTopic'])->name('forum.store');
                 Route::get('/assignment', [CoursePlayerController::class, 'assignment'])->name('assignment');
@@ -139,6 +141,8 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 ->name('instructor.curriculum.texts.store');
             Route::post('/instructor/curriculum/texts/{textId}/delete', [InstructorController::class, 'curriculumTextDelete'])
                 ->name('instructor.curriculum.texts.delete');
+            Route::post('/instructor/curriculum/quizzes', [InstructorController::class, 'wizardQuizStore'])
+                ->name('instructor.curriculum.quizzes.store');
             Route::get('/instructor/courses/{slug}/watch', [InstructorController::class, 'courseWatch'])
                 ->name('instructor.courses.watch');
             Route::get('/instructor/courses/{slug}/assignment', [InstructorController::class, 'courseAssignment'])
@@ -365,6 +369,8 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                     ->name('curriculum.texts.store');
                 Route::post('/curriculum/texts/{textId}/delete', [InstructorController::class, 'curriculumTextDelete'])
                     ->name('curriculum.texts.delete');
+                Route::post('/curriculum/quizzes', [InstructorController::class, 'wizardQuizStore'])
+                    ->name('curriculum.quizzes.store');
                 // حِزم واختبارات وتكليفات — قابل للاستخدام
                 Route::get('/bundles/create', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'createBundle'])->name('bundles.create');
                 Route::post('/bundles', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'storeBundle'])->name('bundles.store');

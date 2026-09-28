@@ -261,6 +261,9 @@ export function initCreateCourseWizard(root) {
         price: 'السعر',
         capacity: 'سعة الطلاب',
         access_days: 'عدد أيام الوصول',
+        start_date: 'تاريخ ووقت بدء الدورة',
+        course_duration: 'مدة الدورة',
+        timezone: 'المنطقة الزمنية',
         confirm_rights: 'تأكيد حقوق الملكية',
         confirm_terms: 'الموافقة على الشروط',
         draft_id: 'المسودة',
@@ -551,9 +554,44 @@ export function initCreateCourseWizard(root) {
         }
     };
 
-    // Course type cards
+    // Course type cards + type-specific fields
     const typeGroup = wrap.querySelector('[data-course-type-group]');
     const typeValue = wrap.querySelector('[data-course-type-value]');
+    const typeFields = wrap.querySelector('[data-course-type-fields]');
+    const durationLabel = wrap.querySelector('[data-duration-label]');
+    const typeHints = {
+        live: 'تاريخ البدء ومدة الجلسة والمنطقة الزمنية مطلوبة للدورة المباشرة',
+        recorded: 'مدة المحتوى الإجمالية مطلوبة للدورة المسجّلة',
+        text: 'مدة الدراسة المقدّرة مطلوبة للدورة النصية',
+    };
+    const durationLabels = {
+        live: 'مدة الجلسة (دقيقة)',
+        recorded: 'مدة المحتوى (دقيقة)',
+        text: 'مدة الدراسة المقدّرة (دقيقة)',
+    };
+
+    const applyCourseTypeUi = (type) => {
+        const key = type || 'recorded';
+        if (typeValue) {
+            typeValue.value = key;
+        }
+        if (typeFields) {
+            typeFields.querySelectorAll('[data-type-panel]').forEach((panel) => {
+                panel.classList.toggle('hidden', panel.getAttribute('data-type-panel') !== key);
+            });
+            typeFields.querySelectorAll('[data-live-field]').forEach((field) => {
+                field.disabled = key !== 'live';
+            });
+            const hint = typeFields.querySelector('[data-type-fields-hint]');
+            if (hint) {
+                hint.textContent = typeHints[key] || typeHints.recorded;
+            }
+        }
+        if (durationLabel) {
+            durationLabel.textContent = durationLabels[key] || durationLabels.recorded;
+        }
+    };
+
     const syncTypeValue = () => {
         if (!typeGroup || !typeValue) {
             return;
@@ -561,7 +599,7 @@ export function initCreateCourseWizard(root) {
         const active = typeGroup.querySelector('[data-course-type].border-primary')
             || typeGroup.querySelector('[data-course-type]');
         if (active) {
-            typeValue.value = active.getAttribute('data-course-type') || 'recorded';
+            applyCourseTypeUi(active.getAttribute('data-course-type') || 'recorded');
         }
     };
     if (typeGroup) {
@@ -575,7 +613,7 @@ export function initCreateCourseWizard(root) {
                 btn.classList.add('border-primary', 'bg-[#F7F0E6]');
                 btn.classList.remove('border-d9', 'bg-white');
                 btn.querySelector('[data-type-check]')?.classList.remove('hidden');
-                syncTypeValue();
+                applyCourseTypeUi(btn.getAttribute('data-course-type') || 'recorded');
                 dirty = true;
             });
         });
@@ -769,6 +807,120 @@ export function initCreateCourseWizard(root) {
 
     initRichEditors(wrap);
     initCurriculumAjax(wrap);
+    initWizardQuizCreate(wrap);
+}
+
+function initWizardQuizCreate(wrap) {
+    const openBtn = wrap.querySelector('[data-open-wizard-quiz]');
+    const modal = document.getElementById('wizard-quiz-create-modal');
+    const form = modal?.querySelector('[data-wizard-quiz-form]');
+    const select = wrap.querySelector('[data-wizard-quiz-select]');
+    const createdBox = wrap.querySelector('[data-wizard-quiz-created]');
+    const createdTitle = wrap.querySelector('[data-wizard-quiz-created-title]');
+    const errorEl = form?.querySelector('[data-wizard-quiz-error]');
+    if (!openBtn || !modal || !form) {
+        return;
+    }
+
+    const openModal = () => {
+        const draftId = wrap.getAttribute('data-draft-id') || '';
+        if (!draftId) {
+            toast('تنبيه', 'احفظ بيانات الدورة أولاً ثم أضف الاختبار', 'error');
+            return;
+        }
+        form.querySelectorAll('[data-draft-id-input]').forEach((input) => {
+            input.value = draftId;
+        });
+        if (errorEl) {
+            errorEl.classList.add('hidden');
+            errorEl.textContent = '';
+        }
+        openOverlay(modal);
+    };
+
+    const closeModal = () => closeOverlay(modal);
+
+    openBtn.addEventListener('click', openModal);
+    modal.querySelectorAll('[data-wizard-quiz-close]').forEach((btn) => {
+        btn.addEventListener('click', closeModal);
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const draftId = wrap.getAttribute('data-draft-id') || '';
+        if (!draftId) {
+            toast('تنبيه', 'احفظ بيانات الدورة أولاً ثم أضف الاختبار', 'error');
+            return;
+        }
+        form.querySelectorAll('[data-draft-id-input]').forEach((input) => {
+            input.value = draftId;
+        });
+
+        const submitBtn = form.querySelector('[data-wizard-quiz-submit]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-70');
+        }
+        if (errorEl) {
+            errorEl.classList.add('hidden');
+            errorEl.textContent = '';
+        }
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+                body: new FormData(form),
+                credentials: 'same-origin',
+            });
+            let data = null;
+            try {
+                data = await response.json();
+            } catch (_) {
+                data = null;
+            }
+
+            if (!response.ok) {
+                const msg = firstValidationError(data) || data?.message || 'تعذر إنشاء الاختبار';
+                if (errorEl) {
+                    errorEl.textContent = msg;
+                    errorEl.classList.remove('hidden');
+                }
+                toast('خطأ', msg, 'error');
+                return;
+            }
+
+            const quiz = data?.quiz;
+            if (quiz?.id && select) {
+                let option = select.querySelector(`option[value="${quiz.id}"]`);
+                if (!option) {
+                    option = document.createElement('option');
+                    option.value = String(quiz.id);
+                    option.textContent = quiz.title || `اختبار #${quiz.id}`;
+                    select.appendChild(option);
+                }
+                select.value = String(quiz.id);
+            }
+            if (createdBox && createdTitle && quiz) {
+                createdTitle.textContent = quiz.title || 'تم إنشاء الاختبار';
+                createdBox.classList.remove('hidden');
+            }
+            form.reset();
+            closeModal();
+            toast('تم', data?.message || 'تم إنشاء الاختبار وربطه بالدورة', 'success');
+        } catch (_) {
+            toast('خطأ', 'فشل الاتصال بالخادم', 'error');
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-70');
+            }
+        }
+    });
 }
 
 /**
@@ -1415,6 +1567,26 @@ function initCurriculumAjax(wrap) {
                 input.value = liveDraft;
             }
         });
+
+        // Combine separate date + time into hidden `date` for live/recorded sessions
+        if (mode === 'session') {
+            const datePart = form.querySelector('[data-session-date]')?.value || '';
+            const timePart = form.querySelector('[data-session-time]')?.value || '00:00';
+            const hidden = form.querySelector('[data-session-datetime]');
+            const isLiveSession = form.getAttribute('data-session-mode') === 'live';
+            if (isLiveSession && (!datePart || !form.querySelector('[data-session-time]')?.value)) {
+                const msg = 'تاريخ ووقت الجلسة مطلوبان للدورة المباشرة';
+                if (errorEl) {
+                    errorEl.textContent = msg;
+                    errorEl.classList.remove('hidden');
+                }
+                toast('خطأ في الحقل', msg, 'error');
+                return;
+            }
+            if (hidden) {
+                hidden.value = datePart ? `${datePart} ${timePart}` : '';
+            }
+        }
 
         setBusy(form, true);
         try {

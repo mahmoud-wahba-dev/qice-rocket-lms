@@ -65,6 +65,22 @@
         <li>
             <button type="button"
                 class="dropdown-item flex items-center gap-3 px-4 py-3 font-medium text-15px text-gray hover:bg-fa transition w-full text-start"
+                data-open-rate-course>
+                <span class="icon-[tabler--star] size-6 text-gray shrink-0"></span>
+                تقييم محتوى الدورة
+            </button>
+        </li>
+        <li>
+            <button type="button"
+                class="dropdown-item flex items-center gap-3 px-4 py-3 font-medium text-15px text-gray hover:bg-fa transition w-full text-start"
+                data-open-rate-instructor>
+                <span class="icon-[tabler--user-star] size-6 text-gray shrink-0"></span>
+                تقييم المدرب
+            </button>
+        </li>
+        <li>
+            <button type="button"
+                class="dropdown-item flex items-center gap-3 px-4 py-3 font-medium text-15px text-gray hover:bg-fa transition w-full text-start"
                 aria-haspopup="dialog" data-overlay="#course-support-modal">
                 <span class="icon-[tabler--help-circle] size-6 text-gray shrink-0"></span>
                 احصل على مساعدة

@@ -92,4 +92,5 @@
 </div>
 @include('panel_v1.instructor.components.confirm-delete-modal')
 @include('panel_v1.instructor.components.curriculum-file-preview-modal')
+@include('panel_v1.instructor.components.wizard-quiz-create-modal')
 @endsection

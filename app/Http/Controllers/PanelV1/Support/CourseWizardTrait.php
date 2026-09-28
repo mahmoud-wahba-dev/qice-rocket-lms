@@ -34,6 +34,9 @@ trait CourseWizardTrait
             'capacity' => 'سعة الطلاب',
             'access_duration' => 'مدة الوصول',
             'access_days' => 'عدد أيام الوصول',
+            'start_date' => 'تاريخ ووقت بدء الدورة',
+            'course_duration' => 'مدة الدورة (دقيقة)',
+            'timezone' => 'المنطقة الزمنية',
             'confirm_rights' => 'تأكيد حقوق الملكية',
             'confirm_terms' => 'الموافقة على الشروط',
             'draft_id' => 'المسودة',
@@ -341,9 +344,9 @@ trait CourseWizardTrait
         return [
             'wizardSteps' => $this->courseWizardStepsMeta(),
             'courseTypes' => [
-                ['key' => 'recorded', 'label' => 'دورة فيديو مسجلة', 'hint' => 'محتوى مسجل يشاهده الطالب في أي وقت'],
-                ['key' => 'live', 'label' => 'دورة تفاعلية مباشرة', 'hint' => 'جلسات مباشرة عبر Zoom أو Teams'],
-                ['key' => 'text', 'label' => 'دورة نصية', 'hint' => 'محتوى مقروء ومواد مكتوبة'],
+                ['key' => 'recorded', 'label' => 'دورة فيديو مسجلة', 'hint' => 'محتوى مسجل يشاهده الطالب في أي وقت — تحتاج مدة المحتوى'],
+                ['key' => 'live', 'label' => 'دورة تفاعلية مباشرة', 'hint' => 'جلسات مباشرة — تحتاج تاريخ البدء ومدة الجلسة'],
+                ['key' => 'text', 'label' => 'دورة نصية', 'hint' => 'محتوى مقروء ومواد مكتوبة — تحتاج مدة الدراسة المقدّرة'],
             ],
             'wizardStep' => $step,
             'draftId' => $draft->id ?? null,
@@ -364,7 +367,11 @@ trait CourseWizardTrait
                 'access_days' => $draft->access_days,
                 'thumbnail' => $draft->thumbnail,
                 'image_cover' => $draft->image_cover,
+                'start_date' => $this->wizardStartDateLocalValue($draft),
+                'duration' => $draft->duration ?? null,
+                'timezone' => $draft->timezone ?: (function_exists('getTimezone') ? getTimezone() : 'Asia/Riyadh'),
             ] : [],
+            'wizardTimezones' => $this->wizardTimezoneOptions($draft),
             'tags' => $tagTitles,
             'availableInstructors' => $this->availablePartnerInstructors($user, $draft),
             'courseTeachers' => $user->isAdmin()
@@ -384,6 +391,11 @@ trait CourseWizardTrait
             ],
             'curriculumUnits' => $this->curriculumUnitsForWizard($draft, $user),
             'curriculumChapterStoreUrl' => route($this->curriculumRouteNames($user)['chapters.store']),
+            'wizardQuizStoreUrl' => route(
+                $user->isAdmin()
+                    ? 'panel.v1.admin.education.curriculum.quizzes.store'
+                    : 'panel.v1.instructor.curriculum.quizzes.store'
+            ),
             'teacherQuizzes' => $teacherQuizzes,
             'draftPrice' => $draft->price ?? null,
             'draftCapacity' => $draft->capacity ?? null,
@@ -409,10 +421,15 @@ trait CourseWizardTrait
 
         if ($step === 1) {
             $partnerOn = $request->boolean('partner_instructor');
+            $courseType = $request->input('course_type', 'recorded');
+            if (!in_array($courseType, ['recorded', 'live', 'text'], true)) {
+                $courseType = 'recorded';
+            }
+
             $rules = [
                 'title' => ($soft ? 'nullable' : 'required') . '|string|max:255',
                 'category_id' => 'nullable|exists:categories,id',
-                'course_type' => 'nullable|in:recorded,live,text',
+                'course_type' => ($soft ? 'nullable' : 'required') . '|in:recorded,live,text',
                 'seo_description' => ($soft ? 'nullable' : 'required') . '|string|max:160',
                 'description' => 'nullable|string',
                 'video_demo_link' => 'nullable|url|max:2000',
@@ -425,7 +442,17 @@ trait CourseWizardTrait
                 'partner_instructor' => 'nullable|boolean',
                 'partners' => ($soft || !$partnerOn ? 'nullable' : 'required') . '|array' . ($soft || !$partnerOn ? '' : '|min:1'),
                 'partners.*' => 'integer|exists:users,id',
+                'course_duration' => ($soft ? 'nullable' : 'required') . '|integer|min:1|max:100000',
+                'start_date' => 'nullable|date',
+                'timezone' => 'nullable|string|max:64',
             ];
+
+            // Live interactive courses need a scheduled start datetime (webinars.start_date).
+            if ($courseType === 'live' && !$soft) {
+                $rules['start_date'] = 'required|date';
+                $rules['timezone'] = 'required|string|max:64';
+            }
+
             if ($user->isAdmin()) {
                 $rules['teacher_id'] = ($soft ? 'nullable' : 'required') . '|exists:users,id';
             }
@@ -464,22 +491,44 @@ trait CourseWizardTrait
                 }
             }
 
-            $draft->type = $typeMap[$request->input('course_type', 'recorded')] ?? 'course';
+            $draft->type = $typeMap[$courseType] ?? 'course';
             $draft->category_id = $request->input('category_id') ?: null;
             $draft->downloadable = $request->boolean('downloadable');
             $draft->partner_instructor = $partnerOn;
             $draft->updated_at = time();
 
+            // duration maps to webinars.duration for all types (minutes).
+            if ($request->filled('course_duration')) {
+                $draft->duration = (int) $request->input('course_duration');
+            }
+
+            if ($courseType === 'live') {
+                $timezone = $request->input('timezone') ?: (function_exists('getTimezone') ? getTimezone() : 'Asia/Riyadh');
+                $draft->timezone = $timezone;
+                if ($request->filled('start_date')) {
+                    $startRaw = str_replace('T', ' ', (string) $request->input('start_date'));
+                    if (function_exists('convertTimeToUTCzone')) {
+                        $draft->start_date = convertTimeToUTCzone($startRaw, $timezone)->getTimestamp();
+                    } else {
+                        $draft->start_date = strtotime($startRaw) ?: null;
+                    }
+                }
+            } else {
+                // Recorded / text courses are on-demand — clear live schedule fields.
+                $draft->start_date = null;
+                $draft->timezone = null;
+            }
+
             if ($request->hasFile('image_thumbnail')) {
-                $draft->thumbnail = '/storage/' . $request->file('image_thumbnail')->store('webinars', 'public');
+                $draft->thumbnail = '/store/' . ltrim($request->file('image_thumbnail')->store('webinars', 'public'), '/');
             }
 
             if ($request->hasFile('image_cover')) {
-                $draft->image_cover = '/storage/' . $request->file('image_cover')->store('webinars', 'public');
+                $draft->image_cover = '/store/' . ltrim($request->file('image_cover')->store('webinars', 'public'), '/');
             }
 
             if ($request->hasFile('video_demo_file')) {
-                $draft->video_demo = '/storage/' . $request->file('video_demo_file')->store('webinars/videos', 'public');
+                $draft->video_demo = '/store/' . ltrim($request->file('video_demo_file')->store('webinars/videos', 'public'), '/');
                 $draft->video_demo_source = 'upload';
             } elseif ($request->filled('video_demo_link')) {
                 $draft->video_demo = $request->input('video_demo_link');
@@ -606,5 +655,55 @@ trait CourseWizardTrait
             'doneMessage' => $doneMessage,
             'step' => $step,
         ];
+    }
+
+    protected function wizardStartDateLocalValue($draft): ?string
+    {
+        if (empty($draft) || empty($draft->start_date)) {
+            return null;
+        }
+
+        $tz = $draft->timezone ?: (function_exists('getTimezone') ? getTimezone() : 'UTC');
+
+        try {
+            if (function_exists('dateTimeFormat')) {
+                $formatted = dateTimeFormat((int) $draft->start_date, 'Y-m-d H:i', false, true, $tz);
+
+                return $formatted ? str_replace(' ', 'T', $formatted) : null;
+            }
+
+            return \Carbon\Carbon::createFromTimestampUTC((int) $draft->start_date)
+                ->setTimezone($tz)
+                ->format('Y-m-d\TH:i');
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    protected function wizardTimezoneOptions($draft = null): array
+    {
+        $preferred = [
+            'Asia/Riyadh',
+            'Asia/Dubai',
+            'Asia/Kuwait',
+            'Asia/Bahrain',
+            'Asia/Qatar',
+            'Africa/Cairo',
+            'Europe/Istanbul',
+            'Europe/London',
+            'UTC',
+        ];
+
+        $current = $draft->timezone ?? null;
+        if ($current && !in_array($current, $preferred, true)) {
+            array_unshift($preferred, $current);
+        }
+
+        $default = function_exists('getTimezone') ? getTimezone() : 'Asia/Riyadh';
+        if ($default && !in_array($default, $preferred, true)) {
+            $preferred[] = $default;
+        }
+
+        return array_values(array_unique($preferred));
     }
 }

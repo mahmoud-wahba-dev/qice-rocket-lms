@@ -302,16 +302,56 @@
         </div>
     @endif
 
-    @if (!empty($reviews))
+    @if (!empty($courseReviews))
         <div class="border border-d9 rounded-14px bg-white overflow-hidden">
-            <table class="table w-full text-14px">
-                <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">التعليق</th><th class="px-4 py-3">المستخدم</th><th class="px-4 py-3">الدورة</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead>
-                <tbody>
-                @foreach ($reviews as $r)
-                    <tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ \Illuminate\Support\Str::limit(strip_tags($r->comment ?? ''),50) }}</td><td class="px-4 py-3 text-center">{{ $r->user->full_name ?? '' }}</td><td class="px-4 py-3 text-center">{{ $r->webinar->title ?? '' }}</td><td class="px-4 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'edu-review-'.$r->id, 'items' => [['label' => 'اعتماد', 'action' => route('panel.v1.admin.education.reviews.approve',['id'=>$r->id]), 'tone' => 'success'], ['label' => 'إرجاع للانتظار', 'action' => route('panel.v1.admin.education.reviews.reject',['id'=>$r->id]), 'tone' => 'gray'], ['label' => 'حذف', 'action' => route('panel.v1.admin.education.reviews.delete',['id'=>$r->id]), 'confirm' => 'حذف؟', 'tone' => 'danger']]])</td></tr>
-                @endforeach
-                </tbody>
-            </table>
+            <div class="overflow-x-auto">
+                <table class="table w-full text-14px">
+                    <thead>
+                        <tr class="bg-fa border-b border-d9 text-gray">
+                            <th class="px-4 py-3 text-start">الطالب</th>
+                            <th class="px-4 py-3 text-center">الدورة</th>
+                            <th class="px-4 py-3 text-center">المحتوى</th>
+                            <th class="px-4 py-3 text-center">المدرب</th>
+                            <th class="px-4 py-3 text-center">المتوسط</th>
+                            <th class="px-4 py-3 text-start">الملاحظات</th>
+                            <th class="px-4 py-3 text-center">الحالة</th>
+                            <th class="px-4 py-3 text-center">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach ($courseReviews as $r)
+                        @php
+                            $statusLabel = ($r->status ?? '') === 'active' ? 'منشور' : 'بانتظار الاعتماد';
+                        @endphp
+                        <tr class="border-b border-d9 last:border-0">
+                            <td class="px-4 py-3 font-bold text-primary">{{ $r->creator->full_name ?? '—' }}</td>
+                            <td class="px-4 py-3 text-center font-medium text-gray">{{ \Illuminate\Support\Str::limit($r->webinar->title ?? '—', 28) }}</td>
+                            <td class="px-4 py-3 text-center font-bold text-primary">{{ (int) ($r->content_quality ?? 0) }}/5</td>
+                            <td class="px-4 py-3 text-center font-bold text-primary">{{ (int) ($r->instructor_skills ?? 0) }}/5</td>
+                            <td class="px-4 py-3 text-center font-bold text-[#D97706]">{{ $r->rates ?? '—' }}</td>
+                            <td class="px-4 py-3 font-medium text-gray text-start">{{ \Illuminate\Support\Str::limit(strip_tags($r->description ?? ''), 60) ?: '—' }}</td>
+                            <td class="px-4 py-3 text-center">
+                                <span @class([
+                                    'inline-flex rounded-full px-2.5 py-1 font-semibold text-11px',
+                                    'bg-[#D1FAE5] text-[#059669]' => ($r->status ?? '') === 'active',
+                                    'bg-[#FEF3C7] text-[#D97706]' => ($r->status ?? '') !== 'active',
+                                ])>{{ $statusLabel }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                @include('panel_v1.components.actions-dropdown', [
+                                    'id' => 'edu-review-'.$r->id,
+                                    'items' => [
+                                        ['label' => 'اعتماد', 'action' => route('panel.v1.admin.education.reviews.approve', ['id' => $r->id]), 'tone' => 'success'],
+                                        ['label' => 'إرجاع للانتظار', 'action' => route('panel.v1.admin.education.reviews.reject', ['id' => $r->id]), 'tone' => 'gray'],
+                                        ['label' => 'حذف', 'action' => route('panel.v1.admin.education.reviews.delete', ['id' => $r->id]), 'confirm' => 'حذف التقييم؟', 'tone' => 'danger'],
+                                    ],
+                                ])
+                            </td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
         </div>
     @endif
 
@@ -552,7 +592,7 @@
         </div>
     @endif
 
-    @if (!empty($stats) && empty($courses) && empty($bundles) && empty($assignments) && empty($quizzes) && empty($certificates) && empty($lives) && empty($events) && empty($reviews) && empty($departments) && empty($attendances) && empty($filters) && empty($trends) && empty($sales) && empty($upcomingCourses) && empty($waitlists) && empty($waitlistItems) && empty($noticeboards) && empty($quizzesResults) && empty($relatedCourses))
+    @if (!empty($stats) && empty($courses) && empty($bundles) && empty($assignments) && empty($quizzes) && empty($certificates) && empty($lives) && empty($events) && empty($reviews) && empty($courseReviews) && empty($departments) && empty($attendances) && empty($filters) && empty($trends) && empty($sales) && empty($upcomingCourses) && empty($waitlists) && empty($waitlistItems) && empty($noticeboards) && empty($quizzesResults) && empty($relatedCourses))
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach($stats as $st)
                 <div class="border border-d9 rounded-14px bg-white p-6 text-center">
@@ -563,7 +603,7 @@
         </div>
     @endif
 
-    @if (empty($courses) && empty($bundles) && empty($assignments) && empty($quizzes) && empty($certificates) && empty($lives) && empty($events) && empty($reviews) && empty($departments) && empty($attendances) && empty($filters) && empty($trends) && empty($sales) && empty($upcomingCourses) && empty($waitlists) && empty($waitlistItems) && empty($noticeboards) && empty($quizzesResults) && empty($relatedCourses) && empty($stats))
+    @if (empty($courses) && empty($bundles) && empty($assignments) && empty($quizzes) && empty($certificates) && empty($lives) && empty($events) && empty($reviews) && empty($courseReviews) && empty($departments) && empty($attendances) && empty($filters) && empty($trends) && empty($sales) && empty($upcomingCourses) && empty($waitlists) && empty($waitlistItems) && empty($noticeboards) && empty($quizzesResults) && empty($relatedCourses) && empty($stats))
         @include('panel_v1.admin.components.empty-stub')
     @endif
 
