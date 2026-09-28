@@ -640,6 +640,29 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 Route::get('/forums/{id}/edit', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'editForum'])->name('forums.edit');
                 Route::post('/forums/{id}/update', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'updateForum'])->name('forums.update');
                 Route::post('/settings/{id}/save', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'saveSetting'])->name('settings.save')->whereNumber('id');
+
+                // Settings form pages (panel_v1 rebuild of legacy admin/settings/*)
+                Route::get('/settings/page/general', [\App\Http\Controllers\PanelV1\Admin\SettingsController::class, 'general'])->name('settings.general');
+                Route::get('/settings/page/financial', [\App\Http\Controllers\PanelV1\Admin\SettingsController::class, 'financial'])->name('settings.financial');
+                Route::get('/settings/page/personalization/{name?}', [\App\Http\Controllers\PanelV1\Admin\SettingsController::class, 'personalization'])
+                    ->name('settings.personalization')
+                    ->where('name', 'panel_sidebar');
+                Route::get('/settings/page/notifications', [\App\Http\Controllers\PanelV1\Admin\SettingsController::class, 'notifications'])->name('settings.notifications');
+                Route::get('/settings/page/seo', [\App\Http\Controllers\PanelV1\Admin\SettingsController::class, 'seo'])->name('settings.seo');
+
+                Route::post('/settings/store/{name?}', [\App\Http\Controllers\PanelV1\Admin\SettingsController::class, 'store'])->name('settings.store');
+                Route::post('/settings/seo/store', [\App\Http\Controllers\PanelV1\Admin\SettingsController::class, 'storeSeoMetas'])->name('settings.seo.store');
+                Route::post('/settings/notifications/store', [\App\Http\Controllers\PanelV1\Admin\SettingsController::class, 'storeNotifications'])->name('settings.notifications.store');
+                Route::post('/settings/socials/store', [\App\Http\Controllers\PanelV1\Admin\SettingsController::class, 'storeSocials'])->name('settings.socials.store');
+                Route::post('/settings/socials/{key}/delete', [\App\Http\Controllers\PanelV1\Admin\SettingsController::class, 'deleteSocial'])->name('settings.socials.delete');
+                Route::post('/settings/reset-login-count', [\App\Http\Controllers\PanelV1\Admin\SettingsController::class, 'resetUsersLoginCount'])->name('settings.reset-login-count');
+
+                Route::get('/settings/offline-banks/form', [\App\Http\Controllers\PanelV1\Admin\SettingsController::class, 'offlineBankForm'])->name('settings.offline-banks.form');
+                Route::post('/settings/offline-banks/store', [\App\Http\Controllers\PanelV1\Admin\SettingsController::class, 'financialOfflineBankStore'])->name('settings.offline-banks.store');
+                Route::get('/settings/offline-banks/{id}/edit', [\App\Http\Controllers\PanelV1\Admin\SettingsController::class, 'offlineBankEdit'])->name('settings.offline-banks.edit')->whereNumber('id');
+                Route::post('/settings/offline-banks/{id}/update', [\App\Http\Controllers\PanelV1\Admin\SettingsController::class, 'financialOfflineBankUpdate'])->name('settings.offline-banks.update')->whereNumber('id');
+                Route::post('/settings/offline-banks/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\SettingsController::class, 'financialOfflineBankDelete'])->name('settings.offline-banks.delete')->whereNumber('id');
+
                 Route::get('/settings/{group}', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'settingsGroup'])->name('settings.group')
                     ->where('group', 'general|financial|personalization|notifications|seo|mobile-app|update-app');
                 Route::post('/groups/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'deleteGroup'])->name('groups.delete');

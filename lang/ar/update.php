@@ -2534,7 +2534,7 @@ return [
     'sms_channel_msegat' => 'مسجات',
     'sms_channel_vonage' => 'فوناج',
     'sms_channel_msg91' => 'Msg91',
-    'sms_channel_2factor' => '2Factor',
+    'sms_channel_2factor' => 'تو فاكتور',
     'sms_sending_channel' => 'البوابة النشطة لإرسال الرسائل',
     'select_a_sms_channel' => 'اختر بوابة رسائل قصيرة',
     
@@ -2607,7 +2607,7 @@ return [
     'kavenegar_settings' => 'إعدادات Kavenegar',
     'kavenegar_url' => 'رابط Kavenegar',
     'kavenegar_api_key' => 'مفتاح API لـ Kavenegar',
-    'sms_channel_kavenegar' => 'Kavenegar',
+    'sms_channel_kavenegar' => 'كافينيجار',
     'kavenegar_number' => 'رقم Kavenegar',
     
     'msg91_flow_id' => 'معرّف التدفق (Flow ID) لـ Msg91',

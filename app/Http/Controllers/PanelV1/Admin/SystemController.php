@@ -843,6 +843,20 @@ class SystemController extends AdminController
             return redirect()->route('panel.v1.admin.system.update');
         }
 
+        // Redirect form groups to dedicated panel_v1 settings pages
+        $formRedirects = [
+            'general' => 'panel.v1.admin.system.settings.general',
+            'financial' => 'panel.v1.admin.system.settings.financial',
+            'notifications' => 'panel.v1.admin.system.settings.notifications',
+            'seo' => 'panel.v1.admin.system.settings.seo',
+        ];
+        if (isset($formRedirects[$group])) {
+            return redirect()->route($formRedirects[$group]);
+        }
+        if ($group === 'personalization') {
+            return redirect()->route('panel.v1.admin.system.settings.personalization', ['name' => 'panel_sidebar']);
+        }
+
         $names = $card['setting_names'] ?? [];
         $settings = empty($names)
             ? collect()
@@ -869,7 +883,7 @@ class SystemController extends AdminController
                 'title' => trans('admin/main.general_card_title'),
                 'hint' => trans('admin/main.general_card_hint'),
                 'icon' => 'icon-[tabler--adjustments-horizontal]',
-                'url' => route('panel.v1.admin.system.settings.group', ['group' => 'general']),
+                'url' => route('panel.v1.admin.system.settings.general'),
                 'setting_names' => [
                     'general', 'general_options', 'socials', 'custom_css_js', 'security',
                     'sms_channels', 'cookie_settings', '404', '500', '419', '403',
@@ -881,7 +895,7 @@ class SystemController extends AdminController
                 'title' => trans('admin/main.financial_card_title'),
                 'hint' => trans('admin/main.financial_card_hint'),
                 'icon' => 'icon-[tabler--calculator]',
-                'url' => route('panel.v1.admin.system.settings.group', ['group' => 'financial']),
+                'url' => route('panel.v1.admin.system.settings.financial', ['tab' => 'offline_banks']),
                 'setting_names' => [
                     'financial', 'commission_settings', 'currency_settings', 'offline_banks',
                     'offline_banks_credits', 'site_bank_accounts', 'installments_settings',
@@ -897,7 +911,7 @@ class SystemController extends AdminController
                 'title' => trans('admin/main.personalization_card_title'),
                 'hint' => trans('admin/main.personalization_card_hint'),
                 'icon' => 'icon-[tabler--paint]',
-                'url' => route('panel.v1.admin.system.settings.group', ['group' => 'personalization']),
+                'url' => route('panel.v1.admin.system.settings.personalization', ['name' => 'panel_sidebar']),
                 'setting_names' => [
                     'panel_sidebar', 'page_background', 'home_hero', 'home_hero2', 'home_sections',
                     'home_video_or_image_box', 'theme_colors', 'theme_fonts', 'others_personalization',
@@ -912,7 +926,7 @@ class SystemController extends AdminController
                 'title' => trans('admin/main.notifications_card_title'),
                 'hint' => trans('admin/main.notifications_card_hint'),
                 'icon' => 'icon-[tabler--bell]',
-                'url' => route('panel.v1.admin.system.settings.group', ['group' => 'notifications']),
+                'url' => route('panel.v1.admin.system.settings.notifications'),
                 'setting_names' => ['notifications', 'reminders'],
             ],
             [
@@ -920,7 +934,7 @@ class SystemController extends AdminController
                 'title' => trans('admin/main.seo_card_title'),
                 'hint' => trans('admin/main.seo_card_hint'),
                 'icon' => 'icon-[tabler--world-search]',
-                'url' => route('panel.v1.admin.system.settings.group', ['group' => 'seo']),
+                'url' => route('panel.v1.admin.system.settings.seo'),
                 'setting_names' => ['seo_metas'],
             ],
             [
