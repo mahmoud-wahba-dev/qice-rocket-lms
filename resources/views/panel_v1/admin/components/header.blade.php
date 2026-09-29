@@ -123,9 +123,29 @@
                 <span class="icon-[tabler--chevron-down] size-4 text-primary/70 transition-transform duration-200" data-admin-menu-chevron></span>
             </button>
             <ul data-admin-menu-panel hidden
-                class="absolute top-[calc(100%+8px)] end-0 min-w-44 py-2 rounded-12px border border-d9 bg-white shadow-xl z-[80]"
+                class="absolute top-[calc(100%+8px)] end-0 min-w-52 py-2 rounded-12px border border-d9 bg-white shadow-xl z-[80]"
                 role="menu">
-                <li><a href="/logout" class="dropdown-item px-4 py-2.5 font-medium text-14px text-red-500">تسجيل الخروج</a></li>
+                <li role="none">
+                    <a href="{{ route('panel.v1.admin.education.home') }}" role="menuitem"
+                        class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary inline-flex items-center gap-2 w-full">
+                        <span class="icon-[tabler--home] size-4 shrink-0"></span>
+                        الرئيسية
+                    </a>
+                </li>
+                <li role="none">
+                    <a href="{{ route('panel.v1.admin.system.section', ['section' => 'settings']) }}" role="menuitem"
+                        class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary inline-flex items-center gap-2 w-full">
+                        <span class="icon-[tabler--settings] size-4 shrink-0"></span>
+                        الإعدادات
+                    </a>
+                </li>
+                <li class="my-1 border-t border-d9" role="separator"></li>
+                <li role="none">
+                    <a href="/logout" role="menuitem" class="dropdown-item px-4 py-2.5 font-medium text-14px text-red-500 inline-flex items-center gap-2 w-full">
+                        <span class="icon-[tabler--logout] size-4 shrink-0"></span>
+                        تسجيل الخروج
+                    </a>
+                </li>
             </ul>
         </div>
     </div>

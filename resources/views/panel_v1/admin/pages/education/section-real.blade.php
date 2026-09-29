@@ -302,16 +302,35 @@
         </div>
     @endif
 
-    @if (!empty($courseReviews))
+    @if (!empty($reviewStats))
+        @include('panel_v1.admin.components.stats-cards', ['stats' => $reviewStats])
+    @endif
+
+    @if (!empty($courseReviews) && (is_countable($courseReviews) ? count($courseReviews) > 0 : true))
         <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex flex-wrap items-center justify-between gap-3">
+                <h2 class="font-bold text-16px text-primary">تقييمات الدورات والمدربين</h2>
+                <form method="GET" action="{{ url()->current() }}" class="flex flex-wrap items-center gap-2">
+                    @foreach (request()->except(['status', 'page']) as $fkey => $fval)
+                        @if (!is_array($fval))
+                            <input type="hidden" name="{{ $fkey }}" value="{{ $fval }}">
+                        @endif
+                    @endforeach
+                    <select name="status" onchange="this.form.submit()" class="select select-bordered h-10 rounded-10px border-d9 text-13px bg-white min-w-[10rem]">
+                        <option value="">كل الحالات</option>
+                        <option value="pending" @selected(request('status')==='pending')>بانتظار الاعتماد</option>
+                        <option value="active" @selected(request('status')==='active')>منشور</option>
+                    </select>
+                </form>
+            </div>
             <div class="overflow-x-auto">
                 <table class="table w-full text-14px">
                     <thead>
                         <tr class="bg-fa border-b border-d9 text-gray">
                             <th class="px-4 py-3 text-start">الطالب</th>
-                            <th class="px-4 py-3 text-center">الدورة</th>
-                            <th class="px-4 py-3 text-center">المحتوى</th>
-                            <th class="px-4 py-3 text-center">المدرب</th>
+                            <th class="px-4 py-3 text-start">الدورة</th>
+                            <th class="px-4 py-3 text-center">تقييم الدورة</th>
+                            <th class="px-4 py-3 text-center">تقييم المدرب</th>
                             <th class="px-4 py-3 text-center">المتوسط</th>
                             <th class="px-4 py-3 text-start">الملاحظات</th>
                             <th class="px-4 py-3 text-center">الحالة</th>
@@ -319,15 +338,29 @@
                         </tr>
                     </thead>
                     <tbody>
-                    @foreach ($courseReviews as $r)
+                    @forelse ($courseReviews as $r)
                         @php
                             $statusLabel = ($r->status ?? '') === 'active' ? 'منشور' : 'بانتظار الاعتماد';
+                            $courseTitle = $r->webinar->title
+                                ?? ($r->bundle->title ?? null)
+                                ?? ($r->event->title ?? null)
+                                ?? ($r->webinar_id ? ('دورة #'.$r->webinar_id) : '—');
                         @endphp
                         <tr class="border-b border-d9 last:border-0">
                             <td class="px-4 py-3 font-bold text-primary">{{ $r->creator->full_name ?? '—' }}</td>
-                            <td class="px-4 py-3 text-center font-medium text-gray">{{ \Illuminate\Support\Str::limit($r->webinar->title ?? '—', 28) }}</td>
-                            <td class="px-4 py-3 text-center font-bold text-primary">{{ (int) ($r->content_quality ?? 0) }}/5</td>
-                            <td class="px-4 py-3 text-center font-bold text-primary">{{ (int) ($r->instructor_skills ?? 0) }}/5</td>
+                            <td class="px-4 py-3 font-medium text-primary text-start">{{ \Illuminate\Support\Str::limit($courseTitle, 36) }}</td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="inline-flex items-center gap-1 font-bold text-primary">
+                                    <span class="icon-[tabler--star-filled] size-4 text-[#D97706]"></span>
+                                    {{ (int) ($r->content_quality ?? 0) }}/5
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="inline-flex items-center gap-1 font-bold text-primary">
+                                    <span class="icon-[tabler--star-filled] size-4 text-[#D97706]"></span>
+                                    {{ (int) ($r->instructor_skills ?? 0) }}/5
+                                </span>
+                            </td>
                             <td class="px-4 py-3 text-center font-bold text-[#D97706]">{{ $r->rates ?? '—' }}</td>
                             <td class="px-4 py-3 font-medium text-gray text-start">{{ \Illuminate\Support\Str::limit(strip_tags($r->description ?? ''), 60) ?: '—' }}</td>
                             <td class="px-4 py-3 text-center">
@@ -348,7 +381,11 @@
                                 ])
                             </td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="8" class="px-4 py-10 text-center font-medium text-14px text-gray">لا توجد تقييمات بعد</td>
+                        </tr>
+                    @endforelse
                     </tbody>
                 </table>
             </div>

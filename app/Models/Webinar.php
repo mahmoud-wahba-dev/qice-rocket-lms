@@ -862,7 +862,8 @@ class Webinar extends Model implements TranslatableContract
 
     public function getLearningPageUrl()
     {
-        return url('/course/learning/' . $this->slug);
+        // Panel V1 course player (free + paid)
+        return url('/v1/student/courses/' . $this->slug . '/watch');
     }
 
     public function getNoticeboardsPageUrl()
@@ -927,19 +928,15 @@ class Webinar extends Model implements TranslatableContract
 
     public function canSale()
     {
-        $result = true;
-
+        // Capacity is the only enrollment limiter.
+        // Live webinars previously blocked after start_date and showed a false "class full" error.
         if (!is_null($this->capacity)) {
             $salesCount = !empty($this->sales_count) ? $this->sales_count : $this->sales()->count();
 
-            $result = $salesCount < $this->capacity;
+            return $salesCount < $this->capacity;
         }
 
-        if ($result and $this->type == 'webinar') {
-            $result = ($this->start_date > time());
-        }
-
-        return $result;
+        return true;
     }
 
     public function canJoinToWaitlist()
@@ -955,16 +952,11 @@ class Webinar extends Model implements TranslatableContract
 
         if ($hasBought) {
             $status = 'js-course-has-bought-status';
-        } else {
+        } elseif (!is_null($this->capacity)) {
+            $salesCount = !empty($this->sales_count) ? $this->sales_count : $this->sales()->count();
 
-            if (!is_null($this->capacity)) {
-                $salesCount = !empty($this->sales_count) ? $this->sales_count : $this->sales()->count();
-
-                if ($salesCount >= $this->capacity) {
-                    $status = 'js-course-not-capacity-status';
-                }
-            } elseif ($this->type == 'webinar' and $this->start_date <= time()) {
-                $status = 'js-course-has-started-status';
+            if ($salesCount >= $this->capacity) {
+                $status = 'js-course-not-capacity-status';
             }
         }
 

@@ -15,7 +15,7 @@
         </div>
 
         <h2 class="hidden lg:block font-bold text-25px leading-snug mb-2">{{ $courseData['title'] }}</h2>
-        <p class="font-medium text-14px text-white mb-5">{{ $courseData['subtitle'] }}</p>
+        {{-- <p class="font-medium text-14px text-white mb-5">{{ $courseData['subtitle'] }}</p> --}}
 
         <div>
             <div class="flex items-center justify-between gap-2 mb-2">
@@ -60,9 +60,9 @@
                         @endif
 
                         <span class="min-w-0 flex flex-col gap-1">
-                            <span class="font-bold text-16px text-black leading-snug">{{ $chapter['title'] }}</span>
+                            <span class="font-bold text-16px text-black leading-snug break-words line-clamp-2">{{ $chapter['title'] }}</span>
                             <span
-                                class="font-medium text-12px text-gray leading-snug {{ $isExpanded ? '' : 'hidden' }}"
+                                class="font-medium text-12px text-gray leading-snug break-words line-clamp-2 {{ $isExpanded ? '' : 'hidden' }}"
                                 data-course-accordion-subtitle>
                                 {{ $chapterSubtitle }}
                             </span>
@@ -99,7 +99,7 @@
                                 @else
                                     <span class="icon-[tabler--file-text] size-5 shrink-0 {{ ($isActive || $itemDone) ? 'text-primary' : 'text-black' }}"></span>
                                 @endif
-                                <span class="leading-snug flex-1">{{ $item['title'] }}</span>
+                                <span class="leading-snug flex-1 min-w-0 break-words line-clamp-2">{{ $item['title'] }}</span>
                                 @if ($itemDone)
                                     <span class="icon-[tabler--circle-check-filled] size-4 text-[#0FC787] shrink-0" aria-label="مكتمل"></span>
                                 @endif

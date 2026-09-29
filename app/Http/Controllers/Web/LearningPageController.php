@@ -21,68 +21,18 @@ class LearningPageController extends Controller
 
     public function index(Request $request, $slug)
     {
-        $user = auth()->user();
+        // Old /course/learning/{slug} → panel_v1 player (free + paid)
+        $params = array_filter([
+            'type' => $request->get('type'),
+            'item' => $request->get('item'),
+            'student' => $request->get('student'),
+        ], fn ($v) => $v !== null && $v !== '');
 
-        if (!$user->isAdmin()) {
-            $this->authorize("panel_webinars_learning_page");
+        $url = '/v1/student/courses/' . $slug . '/watch';
+        if (!empty($params)) {
+            $url .= '?' . http_build_query($params);
         }
 
-        $requestData = $request->all();
-
-        $webinarController = new WebinarController();
-
-        $data = $webinarController->course($request, $slug, true);
-
-        $course = $data['course'];
-        $user = $data['user'];
-
-        /* Check Not Active */
-        if ($course->status != "active" and (empty($user) or (!$user->isAdmin() and !$course->canAccess($user)))) {
-            $data = [
-                'pageTitle' => trans('update.access_denied'),
-                'pageRobot' => getPageRobotNoIndex(),
-            ];
-            return view('design_1.web.courses.not_access.index', $data);
-        }
-
-        $installmentLimitation = $webinarController->installmentContentLimitation($user, $course->id, 'webinar_id');
-        if ($installmentLimitation != "ok") {
-            return $installmentLimitation;
-        }
-
-
-        if (!$data or (!$data['hasBought'] and empty($course->getInstallmentOrder()))) {
-            abort(403);
-        }
-
-
-        if ($course->certificate) {
-            $data["courseCertificate"] = Certificate::where('type', 'course')
-                ->where('student_id', $user->id)
-                ->where('webinar_id', $course->id)
-                ->first();
-        }
-
-        $data["userIsCourseTeacher"] = $this->checkUserIsInstructor($user, $course);
-
-        $data['userLearningLastView'] = CourseLearningLastView::query()
-            ->where('user_id', $user->id)
-            ->where('webinar_id', $course->id)
-            ->first();
-
-        $siteTitle = getGeneralSettings("site_name") ?? trans('update.platform');
-
-        $data['breadcrumbs'] = [
-            ['text' => $siteTitle, 'url' => '/'],
-            ['text' => trans('update.course'), 'url' => $course->getUrl()],
-            ['text' => trans('update.learning_page'), 'url' => null],
-        ];
-
-        $data['saleItem'] = $course->getSaleItem();
-
-        // Handle Start Tracking Time
-        $this->handleStartTrackingTime($course->id, $user->id);
-
-        return view('design_1.web.courses.learning_page.index', $data);
+        return redirect()->to($url);
     }
 }

@@ -362,8 +362,12 @@ class EducationController extends AdminController
                 break;
             case 'reviews':
                 $title = 'المراجعات والتقييمات';
-                $q = \App\Models\WebinarReview::with(['webinar', 'creator'])
-                    ->whereNotNull('webinar_id')
+                $q = \App\Models\WebinarReview::with(['webinar.translations', 'bundle.translations', 'event', 'creator'])
+                    ->where(function ($inner) {
+                        $inner->whereNotNull('webinar_id')
+                            ->orWhereNotNull('bundle_id')
+                            ->orWhereNotNull('event_id');
+                    })
                     ->orderBy('id', 'desc');
                 if ($search !== '') {
                     $q->where(function ($inner) use ($search) {
@@ -373,8 +377,34 @@ class EducationController extends AdminController
                             ->orWhereHas('webinar.translations', fn ($t) => $t->where('title', 'like', "%{$search}%"));
                     });
                 }
+                $statusFilter = trim((string) $request->input('status', ''));
+                if (in_array($statusFilter, ['active', 'pending'], true)) {
+                    $q->where('status', $statusFilter);
+                }
                 $real['courseReviews'] = $q->paginate(15)->withQueryString();
                 $real['paginator'] = $real['courseReviews'];
+                $real['reviewStats'] = [
+                    [
+                        'label' => 'تقييمات الدورات',
+                        'value' => (string) \App\Models\WebinarReview::whereNotNull('webinar_id')->count(),
+                        'icon' => 'icon-[tabler--book]',
+                    ],
+                    [
+                        'label' => 'متوسط تقييم الدورة',
+                        'value' => (($avg = \App\Models\WebinarReview::whereNotNull('webinar_id')->where('status', 'active')->avg('content_quality')) ? number_format((float) $avg, 1) . '/5' : '—'),
+                        'icon' => 'icon-[tabler--star]',
+                    ],
+                    [
+                        'label' => 'متوسط تقييم المدرب',
+                        'value' => (($avg = \App\Models\WebinarReview::whereNotNull('webinar_id')->where('status', 'active')->avg('instructor_skills')) ? number_format((float) $avg, 1) . '/5' : '—'),
+                        'icon' => 'icon-[tabler--user-star]',
+                    ],
+                    [
+                        'label' => 'بانتظار الاعتماد',
+                        'value' => (string) \App\Models\WebinarReview::whereNotNull('webinar_id')->where('status', 'pending')->count(),
+                        'icon' => 'icon-[tabler--clock]',
+                    ],
+                ];
                 $real['stubTitle'] = $title;
                 break;
             case 'departments':
@@ -1297,7 +1327,7 @@ class EducationController extends AdminController
         if ($user instanceof \Illuminate\Http\RedirectResponse) {
             return $user;
         }
-        $review = \App\Models\WebinarReview::where('id', $id)->whereNotNull('webinar_id')->firstOrFail();
+        $review = \App\Models\WebinarReview::where('id', $id)->firstOrFail();
         $review->status = 'active';
         $review->save();
 

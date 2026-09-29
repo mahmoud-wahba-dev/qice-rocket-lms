@@ -1926,9 +1926,14 @@ function random_str($length, $includeNumeric = true, $includeChar = true)
 function checkCourseForSale($course, $user)
 {
     if (!$course->canSale()) {
+        $salesCount = !empty($course->sales_count) ? $course->sales_count : $course->sales()->count();
+        $capacityFull = !is_null($course->capacity) && $salesCount >= $course->capacity;
+
         return [
             'title' => trans('public.request_failed'),
-            'msg' => trans('cart.course_not_capacity'),
+            'msg' => $capacityFull
+                ? trans('cart.course_not_capacity')
+                : (trans('update.class_has_started') ?: 'لا يمكن التسجيل في هذه الدورة حالياً'),
             'status' => 'error'
         ];
     }

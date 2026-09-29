@@ -303,6 +303,20 @@ class CoursePlayerController extends Controller
             ->get();
 
         $requestedItem = $request ? (string) $request->get('item', '') : '';
+        // Legacy learning URLs: ?type=file&item=35 → item=file_35
+        if ($request && $requestedItem !== '' && !str_contains($requestedItem, '_') && $request->filled('type')) {
+            $legacyType = (string) $request->get('type');
+            $kindMap = [
+                'file' => 'file',
+                'session' => 'session',
+                'text_lesson' => 'text',
+                'text' => 'text',
+                'assignment' => 'assignment',
+                'quiz' => 'quiz',
+            ];
+            $kind = $kindMap[$legacyType] ?? $legacyType;
+            $requestedItem = $kind . '_' . $requestedItem;
+        }
         $currentLesson = null;
         $currentMedia = null;
         $activeChapterId = null;
@@ -679,7 +693,10 @@ class CoursePlayerController extends Controller
         if ($kind === 'file') {
             $storage = $model->storage;
             $src = $model->file;
-            $poster = method_exists($webinar, 'getImageCover') ? $webinar->getImageCover() : ($webinar->image_cover ?? null);
+            $posterRaw = method_exists($webinar, 'getImageCover') ? $webinar->getImageCover() : ($webinar->image_cover ?? null);
+            $poster = !empty($posterRaw) && function_exists('panelV1PublicUrl')
+                ? panelV1PublicUrl($posterRaw)
+                : $posterRaw;
 
             if ($storage === 'youtube') {
                 $embed = $this->youtubeEmbedUrl($src);

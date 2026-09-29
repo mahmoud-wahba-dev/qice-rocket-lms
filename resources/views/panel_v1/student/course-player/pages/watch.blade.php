@@ -22,38 +22,69 @@ $mediaMode = $media['mode'] ?? null;
 @push('head')
 <link rel="stylesheet" href="/assets/vendors/plyr.io/plyr.min.css">
 <style>
-    #landing-v1-app .panel-v1-course-player .plyr {
+    /* Fixed 16:9 shell — never let portrait uploads (9:16) inflate player height */
+    #landing-v1-app .panel-v1-course-player .course-player-media-shell {
+        position: relative;
+        width: 100%;
+        max-width: 100%;
+        height: min(56.25vw, 426px);
+        max-height: 426px;
+        overflow: hidden;
+        background: #2f2f2f;
+        border-radius: 16px;
+    }
+    @media (min-width: 1024px) {
+        #landing-v1-app .panel-v1-course-player .course-player-media-shell {
+            height: 426px;
+            max-height: 426px;
+        }
+    }
+    #landing-v1-app .panel-v1-course-player .course-player-media-shell .plyr {
         --plyr-color-main: #0F3D36;
+        width: 100% !important;
+        height: 100% !important;
+        max-height: 100% !important;
         border-radius: 16px;
         overflow: hidden;
-        width: 100%;
-        height: 100%;
-    }
-    #landing-v1-app .panel-v1-course-player .plyr--video,
-    #landing-v1-app .panel-v1-course-player .plyr__video-embed {
         background: #2f2f2f;
     }
-    #landing-v1-app .panel-v1-course-player .aspect-video .plyr,
-    #landing-v1-app .panel-v1-course-player .aspect-video .plyr__video-wrapper {
-        height: 100%;
+    #landing-v1-app .panel-v1-course-player .course-player-media-shell .plyr__video-wrapper,
+    #landing-v1-app .panel-v1-course-player .course-player-media-shell .plyr__video-embed {
+        height: 100% !important;
+        max-height: 100% !important;
+        padding-bottom: 0 !important;
+        background: #2f2f2f;
     }
-    #landing-v1-app .panel-v1-course-player .aspect-video video {
-        width: 100%;
-        height: 100%;
+    #landing-v1-app .panel-v1-course-player .course-player-media-shell video,
+    #landing-v1-app .panel-v1-course-player .course-player-media-shell iframe {
+        width: 100% !important;
+        height: 100% !important;
+        max-height: 100% !important;
         object-fit: contain;
+        background: #000;
+    }
+    #landing-v1-app .panel-v1-course-player .course-player-media-shell .plyr__poster {
+        background-size: cover !important;
+        background-position: center !important;
     }
 </style>
 @endpush
 
 <div class="flex flex-col gap-8 pb-8">
-    <h1 class="font-extrabold text-24px sm:text-28px lg:text-32px text-primary leading-snug">
+    <h1 class="font-extrabold text-24px sm:text-28px lg:text-32px text-primary leading-snug break-words">
         {{ $heading }}
     </h1>
 
-    {{-- Real player (Plyr — same stack as design_1 learning page) --}}
-    <div class="relative w-full overflow-hidden rounded-16px bg-[#4a4a4a] shadow-sm">
+    {{-- Real player (Plyr — fixed height shell so portrait MP4s cannot blow up layout) --}}
+    @if ($mediaMode === 'text')
+        <div class="relative w-full overflow-hidden rounded-16px bg-white shadow-sm min-h-[280px] text-primary px-6 py-8">
+            <h2 class="font-bold text-20px mb-4">{{ $media['title'] ?? '' }}</h2>
+            <div class="font-medium text-15px leading-relaxed prose max-w-none">{!! $media['content'] ?? '' !!}</div>
+        </div>
+    @else
+    <div class="relative w-full overflow-hidden rounded-16px bg-[#4a4a4a] shadow-sm course-player-media-shell">
         @if ($mediaMode === 'youtube' || $mediaMode === 'vimeo')
-            <div class="js-file-player-el plyr__video-embed aspect-video w-full" id="course-player-media">
+            <div class="js-file-player-el plyr__video-embed w-full h-full" id="course-player-media">
                 <iframe
                     src="{{ $media['src'] }}"
                     allowfullscreen
@@ -63,15 +94,13 @@ $mediaMode = $media['mode'] ?? null;
                 ></iframe>
             </div>
         @elseif ($mediaMode === 'html5')
-            <div class="aspect-video w-full bg-[#2f2f2f]">
-                <video id="course-player-media" class="js-file-player-el plyr-io-video w-full h-full"
-                    controls preload="metadata" playsinline crossorigin="anonymous"
-                    @if (!empty($media['poster'])) data-poster="{{ $media['poster'] }}" @endif>
-                    <source src="{{ $media['src'] }}" type="video/mp4"/>
-                </video>
-            </div>
+            <video id="course-player-media" class="js-file-player-el plyr-io-video"
+                controls preload="metadata" playsinline width="100%" height="426"
+                @if (!empty($media['poster'])) data-poster="{{ $media['poster'] }}" @endif>
+                <source src="{{ $media['src'] }}" type="video/mp4"/>
+            </video>
         @elseif ($mediaMode === 'download')
-            <div class="aspect-video flex flex-col items-center justify-center gap-4 px-6 text-center text-white">
+            <div class="flex h-full flex-col items-center justify-center gap-4 px-6 text-center text-white">
                 <span class="icon-[tabler--file-text] size-14 text-white/80"></span>
                 <p class="font-bold text-18px">{{ $media['title'] ?? 'ملف مرفق' }}</p>
                 <p class="font-medium text-14px text-white/70">{{ strtoupper($media['file_type'] ?? 'file') }} — {{ $media['volume'] ?? '' }}</p>
@@ -81,7 +110,7 @@ $mediaMode = $media['mode'] ?? null;
                 @endif
             </div>
         @elseif ($mediaMode === 'session')
-            <div class="aspect-video flex flex-col items-center justify-center gap-3 px-6 text-center text-white">
+            <div class="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white">
                 <span class="icon-[tabler--broadcast] size-14 text-white/80"></span>
                 <p class="font-bold text-18px">{{ $media['title'] ?? 'محاضرة مباشرة' }}</p>
                 @if (!empty($media['date']))
@@ -94,13 +123,8 @@ $mediaMode = $media['mode'] ?? null;
                     <p class="font-medium text-13px text-white/60">رابط الجلسة غير متاح حالياً</p>
                 @endif
             </div>
-        @elseif ($mediaMode === 'text')
-            <div class="min-h-[280px] bg-white text-primary px-6 py-8">
-                <h2 class="font-bold text-20px mb-4">{{ $media['title'] ?? '' }}</h2>
-                <div class="font-medium text-15px leading-relaxed prose max-w-none">{!! $media['content'] ?? '' !!}</div>
-            </div>
         @else
-            <div class="aspect-video flex flex-col items-center justify-center text-white/90">
+            <div class="flex h-full flex-col items-center justify-center text-white/90">
                 <span class="size-16 rounded-full bg-white/20 center mb-4">
                     <span class="icon-[tabler--player-play-filled] size-8 text-white ms-1"></span>
                 </span>
@@ -108,6 +132,7 @@ $mediaMode = $media['mode'] ?? null;
             </div>
         @endif
     </div>
+    @endif
 
     <nav class="student-dash-tabs tabs tabs-bordered tabs-lg w-full overflow-x-auto" aria-label="محتوى المحاضرة"
         role="tablist" aria-orientation="horizontal">
@@ -339,7 +364,10 @@ $mediaMode = $media['mode'] ?? null;
 document.addEventListener('DOMContentLoaded', function () {
     if (typeof Plyr === 'undefined') return;
     document.querySelectorAll('.js-file-player-el').forEach(function (el) {
-        try { new Plyr(el); } catch (e) {}
+        try {
+            // Lock 16:9 so portrait uploads (e.g. 9:16 phone videos) do not stretch the shell
+            new Plyr(el, { ratio: '16:9' });
+        } catch (e) {}
     });
 });
 </script>
