@@ -1626,6 +1626,479 @@ class EducationController extends AdminController
     public function waitlistDelete(Request $request,int $id){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; \App\Models\Waitlist::where('id',$id)->delete(); return back()->with('toast',['title'=>'تم','msg'=>'تم الحذف','type'=>'success']); }
     public function waitlistDeleteAll(Request $request,int $webinarId){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; \App\Models\Waitlist::where('webinar_id',$webinarId)->delete(); return back()->with('toast',['title'=>'تم','msg'=>'تم الحذف','type'=>'success']); }
 
+    // ===== Course Students List =====
+    public function courseStudents(Request $request, int $id)
+    {
+        $u = $this->resolveAdmin($request);
+        if ($u instanceof \Illuminate\Http\RedirectResponse) {
+            return $u;
+        }
+
+        $webinar = \App\Models\Webinar::findOrFail($id);
+        $payload = $this->buildCourseStudentsPayload($webinar, $request, false);
+
+        return $this->renderAdmin(
+            $request,
+            'panel_v1.admin.pages.education.course-students',
+            ($webinar->title ?? 'الدورة') . ' - الطلاب',
+            array_merge(AdminMockData::shell('education', 'courses'), [
+                'webinar' => $webinar,
+                'courseId' => $webinar->id,
+                'students' => $payload['rows'],
+                'paginator' => $payload['paginator'],
+                'filterGroups' => $payload['filterGroups'],
+            ])
+        );
+    }
+
+    public function exportCourseStudents(Request $request, int $id)
+    {
+        $u = $this->resolveAdmin($request);
+        if ($u instanceof \Illuminate\Http\RedirectResponse) {
+            return $u;
+        }
+
+        $webinar = \App\Models\Webinar::findOrFail($id);
+        $payload = $this->buildCourseStudentsPayload($webinar, $request, true);
+        $fileName = 'course_students_' . ($webinar->slug ?: $webinar->id) . '_' . date('Ymd_His') . '.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\CourseStudentsListExport($payload['rows']),
+            $fileName
+        );
+    }
+
+    /**
+     * @return array{rows: array, paginator: \Illuminate\Contracts\Pagination\LengthAwarePaginator|null, filterGroups: array}
+     */
+    private function buildCourseStudentsPayload(\App\Models\Webinar $webinar, Request $request, bool $forExport = false): array
+    {
+        $webinar->loadMissing(['sessions', 'files', 'textLessons']);
+
+        $query = \App\Models\Sale::query()
+            ->with(['buyer'])
+            ->where('webinar_id', $webinar->id)
+            ->whereNull('refund_at')
+            ->orderByDesc('created_at');
+
+        $search = trim((string) $request->get('search', ''));
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                if (ctype_digit($search)) {
+                    $q->where('id', (int) $search)
+                        ->orWhere('buyer_id', (int) $search);
+                }
+                $q->orWhereHas('buyer', function ($buyer) use ($search) {
+                    $buyer->where('full_name', 'like', '%' . $search . '%')
+                        ->orWhere('email', 'like', '%' . $search . '%')
+                        ->orWhere('mobile', 'like', '%' . $search . '%');
+                    if (ctype_digit($search)) {
+                        $buyer->orWhere('id', (int) $search);
+                    }
+                });
+            });
+        }
+
+        $groupId = $request->get('group_id');
+        if (!empty($groupId)) {
+            $userIds = \App\Models\GroupUser::where('group_id', $groupId)->pluck('user_id')->all();
+            $query->whereIn('buyer_id', $userIds ?: [0]);
+        }
+
+        $status = (string) $request->get('status', '');
+        if ($status === 'blocked') {
+            $query->where('access_to_purchased_item', false);
+        } elseif ($status === 'active') {
+            $query->where(function ($q) {
+                $q->where('access_to_purchased_item', true)->orWhereNull('access_to_purchased_item');
+            });
+            if (!empty($webinar->access_days)) {
+                $accessTimestamp = (int) $webinar->access_days * 24 * 60 * 60;
+                $query->whereRaw('created_at + ? >= ?', [$accessTimestamp, time()]);
+            }
+        } elseif ($status === 'expire' && !empty($webinar->access_days)) {
+            $accessTimestamp = (int) $webinar->access_days * 24 * 60 * 60;
+            $query->whereRaw('created_at + ? < ?', [$accessTimestamp, time()]);
+        }
+
+        $filterGroups = \App\Models\Group::where('status', 'active')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn ($g) => ['id' => $g->id, 'name' => $g->name])
+            ->all();
+
+        if ($forExport) {
+            $sales = $query->limit(2000)->get();
+            $paginator = null;
+        } else {
+            $paginator = $query->paginate(10)->withQueryString();
+            $sales = collect($paginator->items());
+        }
+
+        $reviewRates = \App\Models\WebinarReview::query()
+            ->where('webinar_id', $webinar->id)
+            ->whereIn('creator_id', $sales->pluck('buyer_id')->filter()->unique()->all() ?: [0])
+            ->pluck('rates', 'creator_id');
+
+        $rows = $sales->map(function ($sale) use ($webinar, $reviewRates) {
+            $buyer = $sale->buyer;
+            $buyerId = (int) ($sale->buyer_id ?? 0);
+            $purchaseAt = (int) ($sale->created_at ?? 0);
+            $hasAccess = $sale->access_to_purchased_item !== false && $sale->access_to_purchased_item !== 0;
+
+            $expired = false;
+            if (!empty($webinar->access_days) && $purchaseAt > 0) {
+                try {
+                    $expired = !$webinar->checkHasExpiredAccessDays($purchaseAt, $sale->gift_id ?? null);
+                } catch (\Throwable $e) {
+                    $accessSeconds = (int) $webinar->access_days * 86400;
+                    $expired = ($purchaseAt + $accessSeconds) < time();
+                }
+            }
+
+            if (!$buyerId || empty($buyer)) {
+                $statusLabel = 'غير مسجّل';
+                $statusClass = 'bg-[#FFFBEB] text-[#D97706]';
+            } elseif ($expired) {
+                $statusLabel = 'منتهي';
+                $statusClass = 'bg-[#FFFBEB] text-[#D97706]';
+            } elseif (!$hasAccess) {
+                $statusLabel = 'محظور';
+                $statusClass = 'bg-[#FEF2F2] text-[#DC2626]';
+            } else {
+                $statusLabel = 'نشط';
+                $statusClass = 'bg-[#ECFDF5] text-[#059669]';
+            }
+
+            $learning = 0;
+            if ($buyer) {
+                $learning = \App\Http\Controllers\PanelV1\Support\CoursePerformanceBuilder::studentProgressPercent($webinar, $buyer);
+            }
+
+            $groupName = '—';
+            if ($buyer && method_exists($buyer, 'getUserGroup')) {
+                try {
+                    $group = $buyer->getUserGroup();
+                    $groupName = $group->name ?? '—';
+                } catch (\Throwable $e) {
+                    $groupName = '—';
+                }
+            }
+
+            $rate = $reviewRates[$buyerId] ?? null;
+            $actions = [];
+            if ($buyerId) {
+                $actions[] = [
+                    'label' => 'تعديل المستخدم',
+                    'url' => route('panel.v1.admin.system.users.edit', ['id' => $buyerId]),
+                ];
+                if ($hasAccess) {
+                    $actions[] = [
+                        'label' => 'حظر الوصول',
+                        'action' => route('panel.v1.admin.education.enrollment.block', ['saleId' => $sale->id]),
+                        'tone' => 'danger',
+                        'confirm' => 'حظر وصول هذا المتدرب للدورة؟',
+                    ];
+                } else {
+                    $actions[] = [
+                        'label' => 'تفعيل الوصول',
+                        'action' => route('panel.v1.admin.education.enrollment.enable', ['saleId' => $sale->id]),
+                        'tone' => 'success',
+                    ];
+                }
+            }
+
+            return [
+                'id' => $buyerId ?: ('sale-' . $sale->id),
+                'name' => $buyer->full_name ?? 'متدرب',
+                'email' => $buyer->email ?? '',
+                'avatar' => ($buyer && method_exists($buyer, 'getAvatar')) ? $buyer->getAvatar() : null,
+                'rate' => $rate !== null ? $rate : '—',
+                'learning' => $learning,
+                'group' => $groupName,
+                'income' => handlePrice($sale->total_amount ?? 0),
+                'income_raw' => (float) ($sale->total_amount ?? 0),
+                'purchase_date' => $purchaseAt > 0 ? date('Y/m/d H:i', $purchaseAt) : '—',
+                'status_label' => $statusLabel,
+                'status_class' => $statusClass,
+                'actions' => $actions,
+            ];
+        })->values()->all();
+
+        return [
+            'rows' => $rows,
+            'paginator' => $paginator,
+            'filterGroups' => $filterGroups,
+        ];
+    }
+
+    // ===== Course Performance (per course) =====
+    public function coursePerformance(Request $request, int $id)
+    {
+        $u = $this->resolveAdmin($request);
+        if ($u instanceof \Illuminate\Http\RedirectResponse) {
+            return $u;
+        }
+
+        $webinar = \App\Models\Webinar::with(['category'])->findOrFail($id);
+        $perf = \App\Http\Controllers\PanelV1\Support\CoursePerformanceBuilder::build($webinar, $request, [
+            'review_route' => 'panel.v1.admin.education.assignments.review',
+            'assignments_fallback_url' => route('panel.v1.admin.education.section', ['section' => 'assignments']),
+            'remind_route' => 'panel.v1.admin.education.courses.performance.remind',
+            'remind_params' => ['id' => $webinar->id],
+        ]);
+
+        $pendingCount = (int) ($perf['pending_count'] ?? 0);
+        $behindCount = (int) ($perf['behind_count'] ?? 0);
+        $completedCount = (int) ($perf['completed_count'] ?? 0);
+        $firstPendingId = $perf['first_pending_id'] ?? null;
+
+        $alertParts = [];
+        if ($pendingCount > 0) {
+            $alertParts[] = "{$pendingCount} واجبات بانتظار التصحيح والتقييم";
+        }
+        if ($behindCount > 0) {
+            $alertParts[] = "{$behindCount} طلاب متأخرين عن جدول الدراسة";
+        }
+        $alertText = !empty($alertParts)
+            ? ('مهام تشغيلية تتطلب تدخلك اليوم: ' . implode(' • ', $alertParts))
+            : 'لا توجد مهام تشغيلية عاجلة لهذه الدورة حالياً';
+
+        $filters = [
+            'q' => trim((string) $request->get('q', '')),
+            'progress' => (string) $request->get('progress', ''),
+        ];
+
+        $courseReviews = \App\Models\WebinarReview::with(['creator'])
+            ->where('webinar_id', $webinar->id)
+            ->where('status', 'active')
+            ->orderByDesc('id')
+            ->limit(30)
+            ->get()
+            ->map(function ($r) {
+                return [
+                    'id' => $r->id,
+                    'student' => $r->creator->full_name ?? 'طالب',
+                    'content' => (int) ($r->content_quality ?? 0),
+                    'instructor' => (int) ($r->instructor_skills ?? 0),
+                    'avg' => $r->rates ?? '—',
+                    'comment' => \Illuminate\Support\Str::limit(strip_tags($r->description ?? ''), 120),
+                    'date' => !empty($r->created_at) ? date('Y/m/d', (int) $r->created_at) : '—',
+                ];
+            })->all();
+
+        return $this->renderAdmin(
+            $request,
+            'panel_v1.admin.pages.education.course-performance',
+            'لوحة أداء الدورة',
+            array_merge(AdminMockData::shell('education', 'courses'), [
+                'webinar' => $webinar,
+                'courseId' => $webinar->id,
+                'courseTitle' => $webinar->title,
+                'courseSubtitle' => $webinar->title,
+                'courseDetailsUrl' => route('landing.v1.course-details', ['slug' => $webinar->slug]),
+                'alertText' => $alertText,
+                'reviewId' => $firstPendingId,
+                'canGradeNow' => !empty($firstPendingId),
+                'gradeNowUrl' => !empty($firstPendingId)
+                    ? route('panel.v1.admin.education.assignments.review', ['id' => $firstPendingId])
+                    : route('panel.v1.admin.education.section', ['section' => 'assignments']),
+                'perfStats' => [
+                    [
+                        'value' => $pendingCount . ' واجبات',
+                        'label' => 'بانتظار التصحيح',
+                        'tone' => 'red',
+                    ],
+                    [
+                        'value' => $behindCount . ' طلاب',
+                        'label' => 'متأخرين عن جدول التقدم',
+                        'tone' => 'yellow',
+                    ],
+                    [
+                        'value' => $completedCount . ' طالب',
+                        'label' => 'أكملوا كافة متطلبات الدورة',
+                        'tone' => 'green',
+                    ],
+                ],
+                'students' => $perf['students'] ?? [],
+                'courseReviews' => $courseReviews,
+                'filters' => $filters,
+                'exportUrl' => route('panel.v1.admin.education.courses.performance.export', array_filter([
+                    'id' => $webinar->id,
+                    'q' => $filters['q'] ?: null,
+                    'progress' => $filters['progress'] ?: null,
+                ])),
+            ])
+        );
+    }
+
+    public function exportCoursePerformance(Request $request, int $id)
+    {
+        $u = $this->resolveAdmin($request);
+        if ($u instanceof \Illuminate\Http\RedirectResponse) {
+            return $u;
+        }
+
+        $webinar = \App\Models\Webinar::findOrFail($id);
+        $perf = \App\Http\Controllers\PanelV1\Support\CoursePerformanceBuilder::build($webinar, $request, [
+            'review_route' => 'panel.v1.admin.education.assignments.review',
+            'assignments_fallback_url' => route('panel.v1.admin.education.section', ['section' => 'assignments']),
+            'remind_route' => 'panel.v1.admin.education.courses.performance.remind',
+            'remind_params' => ['id' => $webinar->id],
+        ]);
+
+        $fileName = 'course_students_' . ($webinar->slug ?: $webinar->id) . '_' . date('Ymd_His') . '.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\InstructorCoursePerformanceExport($perf['students'] ?? []),
+            $fileName
+        );
+    }
+
+    public function remindCourseStudent(Request $request, int $id, int $studentId)
+    {
+        $u = $this->resolveAdmin($request);
+        if ($u instanceof \Illuminate\Http\RedirectResponse) {
+            return $u;
+        }
+
+        $webinar = \App\Models\Webinar::findOrFail($id);
+        $sale = \App\Models\Sale::query()
+            ->where('webinar_id', $webinar->id)
+            ->where('buyer_id', $studentId)
+            ->whereNull('refund_at')
+            ->first();
+
+        if (empty($sale)) {
+            abort(404);
+        }
+
+        $student = \App\User::find($studentId);
+        \App\Models\Notification::create([
+            'user_id' => $studentId,
+            'sender_id' => $u->id,
+            'webinar_id' => $webinar->id,
+            'title' => 'تذكير بمتابعة الدورة',
+            'message' => 'تذكير من الإدارة لمتابعة تقدمك في دورة: ' . ($webinar->title ?? ''),
+            'sender' => 'system',
+            'type' => 'single',
+            'created_at' => time(),
+        ]);
+
+        return back()->with('toast', [
+            'title' => 'تم',
+            'msg' => 'تم إرسال تذكير إلى ' . ($student->full_name ?? 'الطالب'),
+            'type' => 'success',
+        ]);
+    }
+
+    public function assignmentReview(Request $request, int $id)
+    {
+        $u = $this->resolveAdmin($request);
+        if ($u instanceof \Illuminate\Http\RedirectResponse) {
+            return $u;
+        }
+
+        $history = \App\Models\WebinarAssignmentHistory::with(['assignment.webinar', 'student', 'messages'])
+            ->findOrFail($id);
+
+        $assignment = $history->assignment;
+        $webinar = $assignment->webinar ?? null;
+        $student = $history->student;
+
+        $studentMessages = $history->messages
+            ->where('sender_id', $history->student_id)
+            ->sortBy('id')
+            ->values();
+
+        $answerParagraphs = $studentMessages
+            ->pluck('message')
+            ->filter(fn ($msg) => filled(trim((string) $msg)))
+            ->values()
+            ->all();
+
+        $attachment = $studentMessages->first(fn ($msg) => filled($msg->file_path) || filled($msg->file_title));
+        $attachmentUrl = null;
+        if ($attachment && filled($attachment->file_path)) {
+            $publicPath = public_path($attachment->file_path);
+            $attachmentUrl = is_file($publicPath)
+                ? asset($attachment->file_path)
+                : url($attachment->getDownloadUrl($history->assignment_id));
+        }
+
+        $statusLabel = match ($history->status) {
+            \App\Models\WebinarAssignmentHistory::$pending => 'بانتظار التصحيح',
+            \App\Models\WebinarAssignmentHistory::$passed => 'ناجح',
+            \App\Models\WebinarAssignmentHistory::$notPassed => 'راسب',
+            default => $history->status ?: '—',
+        };
+
+        return $this->renderAdmin(
+            $request,
+            'panel_v1.admin.pages.education.assignment-review',
+            'تصحيح التكليف',
+            array_merge(AdminMockData::shell('education', 'assignments'), [
+                'history' => $history,
+                'historyId' => $history->id,
+                'webinar' => $webinar,
+                'courseTitle' => $webinar->title ?? '',
+                'coursePerformanceUrl' => $webinar
+                    ? route('panel.v1.admin.education.courses.performance', ['id' => $webinar->id])
+                    : route('panel.v1.admin.education.section', ['section' => 'courses']),
+                'studentName' => $student->full_name ?? 'طالب',
+                'studentEmail' => $student->email ?? '',
+                'assignmentTitle' => $assignment->title ?? 'تكليف',
+                'assignmentDescription' => trim(strip_tags((string) ($assignment->description ?? ''))) ?: 'لا يوجد وصف لهذا التكليف.',
+                'answerParagraphs' => $answerParagraphs,
+                'attachmentName' => $attachment->file_title ?? null,
+                'attachmentUrl' => $attachmentUrl,
+                'maxGrade' => (int) ($assignment->grade ?? 50),
+                'passGrade' => (int) ($assignment->pass_grade ?? 25),
+                'historyGrade' => $history->grade,
+                'historyStatus' => $history->status,
+                'historyStatusLabel' => $statusLabel,
+                'canGrade' => in_array($history->status, [
+                    \App\Models\WebinarAssignmentHistory::$pending,
+                    \App\Models\WebinarAssignmentHistory::$passed,
+                    \App\Models\WebinarAssignmentHistory::$notPassed,
+                ], true),
+                'gradeAction' => route('panel.v1.admin.education.assignments.grade', ['id' => $history->id]),
+            ])
+        );
+    }
+
+    public function gradeAssignment(Request $request, int $id)
+    {
+        $u = $this->resolveAdmin($request);
+        if ($u instanceof \Illuminate\Http\RedirectResponse) {
+            return $u;
+        }
+
+        $history = \App\Models\WebinarAssignmentHistory::with(['assignment.webinar'])->findOrFail($id);
+        $maxGrade = (int) ($history->assignment->grade ?? 50);
+
+        $request->validate([
+            'grade' => 'required|numeric|min:0|max:' . $maxGrade,
+        ]);
+
+        $grade = (int) $request->input('grade');
+        $passGrade = (int) ($history->assignment->pass_grade ?? 0);
+
+        $history->grade = $grade;
+        $history->status = $grade >= $passGrade
+            ? \App\Models\WebinarAssignmentHistory::$passed
+            : \App\Models\WebinarAssignmentHistory::$notPassed;
+        $history->save();
+
+        return redirect()
+            ->route('panel.v1.admin.education.assignments.review', ['id' => $history->id])
+            ->with('toast', [
+                'title' => 'تم',
+                'msg' => 'تم حفظ درجة التكليف',
+                'type' => 'success',
+            ]);
+    }
+
     // ===== WebinarStatistic =====
     public function webinarStatistic(Request $request){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $stats=[['label'=>'إجمالي الدورات','value'=>(string)\App\Models\Webinar::count(),'icon'=>'icon-[tabler--book]'],['label'=>'نشطة','value'=>(string)\App\Models\Webinar::where('status','active')->count(),'icon'=>'icon-[tabler--check]'],['label'=>'بانتظار المراجعة','value'=>(string)\App\Models\Webinar::where('status','pending')->count(),'icon'=>'icon-[tabler--hourglass]'],['label'=>'مسودات','value'=>(string)\App\Models\Webinar::where('status','is_draft')->count(),'icon'=>'icon-[tabler--file-text]'],['label'=>'إجمالي المبيعات','value'=>handlePrice(\App\Models\Sale::whereNotNull('webinar_id')->whereNull('refund_at')->sum('total_amount')),'icon'=>'icon-[tabler--cash]']]; return $this->renderAdmin($request,'panel_v1.admin.pages.education.section-real','إحصائيات الدورات',array_merge(AdminMockData::shell('education','home'),['stats'=>$stats,'stubTitle'=>'الإحصائيات'])); }
 

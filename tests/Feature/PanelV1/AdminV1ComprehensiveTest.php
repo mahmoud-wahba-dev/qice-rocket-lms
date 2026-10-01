@@ -170,6 +170,39 @@ class AdminV1ComprehensiveTest extends TestCase
         $this->assertNull(\App\Models\Role::find($r->id));
     }
 
+    public function test_course_students_list_page_real(){
+        $admin=$this->admin();
+        $webinar=\App\Models\Webinar::orderByDesc('id')->first();
+        $this->assertNotNull($webinar);
+        $c=new \App\Http\Controllers\PanelV1\Admin\EducationController();
+        $v=$c->courseStudents($this->req($admin,"/v1/admin/education/courses/{$webinar->id}/students"), $webinar->id);
+        $this->assertEquals('panel_v1.admin.pages.education.course-students', $v->getName());
+        $data=$v->getData();
+        $this->assertEquals($webinar->id, $data['courseId']);
+        $this->assertArrayHasKey('students', $data);
+        $html=$v->render();
+        $this->assertStringContainsString('قائمة الطلاب', $html);
+        $this->assertStringContainsString('التقييمات(5)', $html);
+        $this->assertStringContainsString('تاريخ الشراء', $html);
+    }
+
+    public function test_course_performance_page_real(){
+        $admin=$this->admin();
+        $webinar=\App\Models\Webinar::orderByDesc('id')->first();
+        $this->assertNotNull($webinar);
+        $c=new \App\Http\Controllers\PanelV1\Admin\EducationController();
+        $v=$c->coursePerformance($this->req($admin,"/v1/admin/education/courses/{$webinar->id}/performance"), $webinar->id);
+        $this->assertEquals('panel_v1.admin.pages.education.course-performance', $v->getName());
+        $data=$v->getData();
+        $this->assertEquals($webinar->id, $data['courseId']);
+        $this->assertArrayHasKey('students', $data);
+        $this->assertArrayHasKey('perfStats', $data);
+        $this->assertCount(3, $data['perfStats']);
+        $html=$v->render();
+        $this->assertStringContainsString('لوحة اداء الدورة', $html);
+        $this->assertStringContainsString('قائمة طلاب الدورة', $html);
+    }
+
     public function test_review_approve_and_offline_confirm(){
         $admin=$this->admin();
         $comment=\App\Models\Comment::whereNotNull('webinar_id')->first();

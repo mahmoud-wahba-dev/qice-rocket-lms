@@ -341,6 +341,11 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 Route::post('/courses/{id}/reject', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'rejectCourse'])->name('courses.reject');
                 Route::get('/courses/{id}/notify', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'notifyCourseForm'])->name('courses.notify');
                 Route::post('/courses/{id}/notify', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'sendCourseNotification'])->name('courses.notify.send');
+                Route::get('/courses/{id}/performance', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'coursePerformance'])->name('courses.performance');
+                Route::get('/courses/{id}/performance/export', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'exportCoursePerformance'])->name('courses.performance.export');
+                Route::post('/courses/{id}/performance/remind/{studentId}', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'remindCourseStudent'])->name('courses.performance.remind');
+                Route::get('/courses/{id}/students', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'courseStudents'])->name('courses.students');
+                Route::get('/courses/{id}/students/export', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'exportCourseStudents'])->name('courses.students.export');
                 Route::get('/courses/{id}/curriculum', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'courseCurriculum'])->name('courses.curriculum');
                 Route::get('/extra-descriptions/{scope}/{itemId}', [\App\Http\Controllers\PanelV1\Admin\WebinarExtraDescriptionController::class, 'index'])->name('extra-descriptions.index');
                 Route::post('/extra-descriptions/{scope}/{itemId}', [\App\Http\Controllers\PanelV1\Admin\WebinarExtraDescriptionController::class, 'store'])->name('extra-descriptions.store');
@@ -390,6 +395,8 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 Route::get('/assignments/{id}/edit', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'editAssignment'])->name('assignments.edit');
                 Route::post('/assignments/{id}/update', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'updateAssignment'])->name('assignments.update');
                 Route::post('/assignments/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'deleteAssignment'])->name('assignments.delete');
+                Route::get('/assignments/histories/{id}/review', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'assignmentReview'])->name('assignments.review');
+                Route::post('/assignments/histories/{id}/grade', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'gradeAssignment'])->name('assignments.grade');
                 Route::post('/reviews/{id}/approve', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'approveReview'])->name('reviews.approve');
                 Route::post('/reviews/{id}/reject', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'rejectReview'])->name('reviews.reject');
                 Route::post('/reviews/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'deleteReview'])->name('reviews.delete');

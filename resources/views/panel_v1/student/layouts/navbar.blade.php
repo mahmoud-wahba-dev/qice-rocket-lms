@@ -9,15 +9,15 @@
     </div>
     <div class="navbar-center max-md:hidden">
         <ul class="menu menu-horizontal p-0 font-medium">
-            <li><a class="font-medium text-15px text-[#3D455D] " href="{{ route('landing.v1.index') }}">الرئيسية</a>
+            <li><a class="font-medium text-20px text-[#3D455D] " href="{{ route('landing.v1.index') }}">الرئيسية</a>
             </li>
-            <li><a class="font-medium text-15px text-[#3D455D] " href="{{ route('landing.v1.workshops') }}">دورات مجانية</a></li>
+            <li><a class="font-medium text-20px text-[#3D455D] " href="{{ route('landing.v1.workshops') }}">دورات مجانية</a></li>
        
-            <li><a class="font-medium text-15px text-[#3D455D] "
+            <li><a class="font-medium text-20px text-[#3D455D] "
                     href="{{ route('landing.v1.instructors') }}">المدربين</a></li>
             <li class="dropdown relative justify-center inline-flex [--auto-close:true] rtl:[--placement:bottom]">
                 <button id="paid-courses-nav-toggle" type="button"
-                    class="dropdown-toggle font-medium text-15px text-[#3D455D] flex items-center gap-1 bg-transparent border-0 cursor-pointer p-0"
+                    class="dropdown-toggle font-medium text-20px text-[#3D455D] flex items-center gap-1 bg-transparent border-0 cursor-pointer p-0"
                     aria-haspopup="menu" aria-expanded="false" aria-label="الدورات المعتمدة">
                     الدورات المعتمدة
                     <span class="icon-[tabler--chevron-down] size-4 dropdown-open:rotate-180 transition-transform duration-200"></span>
@@ -63,11 +63,11 @@
                 <li><a class="dropdown-item font-medium text-15px text-[#3D455D]"
                         href="{{ route('landing.v1.workshops') }}">دورات مجانية</a></li>
                 <li><span class="dropdown-item font-semibold text-15px text-[#3D455D]">الدورات المعتمدة</span></li>
-                <li><a class="dropdown-item font-medium text-15px text-[#3D455D] ps-6"
+                <li><a class="dropdown-item font-medium text-20px text-[#3D455D] ps-6"
                         href="{{ route('landing.v1.courses-paid') }}">جميع الدورات المعتمدة</a></li>
                 @if (!empty($paidCourseCategories) && $paidCourseCategories->isNotEmpty())
                     @foreach ($paidCourseCategories as $category)
-                        <li><a class="dropdown-item font-medium text-15px text-[#3D455D] ps-6"
+                        <li><a class="dropdown-item font-medium text-20px text-[#3D455D] ps-6"
                                 href="{{ route('landing.v1.courses-paid', ['category_id' => $category->id]) }}">{{ $category->title }}</a></li>
                     @endforeach
                 @endif
@@ -196,7 +196,7 @@
                             </span>
                         </div>
 
-                        <span class="max-md:hidden font-semibold text-14px text-primary">{{ auth()->user()->full_name }}</span>
+                        <span class="max-md:hidden font-semibold text-20px text-primary">{{ auth()->user()->full_name }}</span>
                         <span class="icon-[tabler--chevron-down] size-4 text-primary/60 max-md:hidden dropdown-open:rotate-180 transition-transform duration-200"></span>
                     </button>
 

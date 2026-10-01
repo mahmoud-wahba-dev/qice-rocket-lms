@@ -165,11 +165,11 @@
                                                 class="dropdown-item px-4 py-2.5 font-medium text-14px text-gray hover:bg-[#FAFAF4]">إرسال إخطار للمتدربين</a>
                                         </li>
                                         <li>
-                                            <a href="{{ route('panel.v1.admin.education.enrollment.history', ['search' => $c->id]) }}"
+                                            <a href="{{ route('panel.v1.admin.education.courses.students', ['id' => $c->id]) }}"
                                                 class="dropdown-item px-4 py-2.5 font-medium text-14px text-gray hover:bg-[#FAFAF4]">قائمة المتدربين</a>
                                         </li>
                                         <li>
-                                            <a href="{{ route('panel.v1.admin.education.statistics') }}"
+                                            <a href="{{ route('panel.v1.admin.education.courses.performance', ['id' => $c->id]) }}"
                                                 class="dropdown-item px-4 py-2.5 font-medium text-14px text-gray hover:bg-[#FAFAF4]">لوحة أداء الدورة</a>
                                         </li>
                                         <li>

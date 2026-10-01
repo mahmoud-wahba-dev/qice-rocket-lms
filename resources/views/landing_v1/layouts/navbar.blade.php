@@ -9,15 +9,15 @@
     </div>
     <div class="navbar-center max-md:hidden">
         <ul class="menu menu-horizontal p-0 font-medium">
-            <li><a class="font-medium text-15px text-[#3D455D] " href="{{ route('landing.v1.index') }}">الرئيسية</a>
+            <li><a class="font-medium text-23px text-[#3D455D] " href="{{ route('landing.v1.index') }}">الرئيسية</a>
             </li>
-            <li><a class="font-medium text-15px text-[#3D455D] " href="{{ route('landing.v1.workshops') }}">دورات مجانية</a></li>
+            <li><a class="font-medium text-23px text-[#3D455D] " href="{{ route('landing.v1.workshops') }}">دورات مجانية</a></li>
        
-            <li><a class="font-medium text-15px text-[#3D455D] "
+            <li><a class="font-medium text-23px text-[#3D455D] "
                     href="{{ route('landing.v1.instructors') }}">المدربين</a></li>
             <li class="dropdown relative justify-center inline-flex [--auto-close:true] rtl:[--placement:bottom]">
                 <button id="paid-courses-nav-toggle" type="button"
-                    class="dropdown-toggle font-medium text-15px text-[#3D455D] flex items-center gap-1 bg-transparent border-0 cursor-pointer p-0"
+                    class="dropdown-toggle font-medium text-23px text-[#3D455D] flex items-center gap-1 bg-transparent border-0 cursor-pointer p-0"
                     aria-haspopup="menu" aria-expanded="false" aria-label="الدورات المعتمدة">
                     الدورات المعتمدة
                     <span class="icon-[tabler--chevron-down] size-4 dropdown-open:rotate-180 transition-transform duration-200"></span>
@@ -25,7 +25,7 @@
                 <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-56 py-2" role="menu"
                     aria-orientation="vertical" aria-labelledby="paid-courses-nav-toggle">
                     <li>
-                        <a class="dropdown-item font-medium text-15px text-[#3D455D]"
+                        <a class="dropdown-item font-medium text-20px text-[#3D455D]"
                             href="{{ route('landing.v1.courses-paid') }}">
                             جميع الدورات المعتمدة
                         </a>
@@ -34,7 +34,7 @@
                         <li class="border-t border-gray-100 my-1"></li>
                         @foreach ($paidCourseCategories as $category)
                             <li>
-                                <a class="dropdown-item font-medium text-15px text-[#3D455D]"
+                                <a class="dropdown-item font-medium text-20px text-[#3D455D]"
                                     href="{{ route('landing.v1.courses-paid', ['category_id' => $category->id]) }}">
                                     {{ $category->title }}
                                 </a>
@@ -56,24 +56,24 @@
             </button>
             <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-60" role="menu" aria-orientation="vertical"
                 aria-labelledby="dropdown-default">
-                <li><a class="dropdown-item font-medium text-15px text-[#3D455D]"
+                <li><a class="dropdown-item font-medium text-20px text-[#3D455D]"
                         href="{{ route('landing.v1.index') }}">الرئيسية</a></li>
-                {{-- <li><a class="dropdown-item font-medium text-15px text-[#3D455D]"
+                {{-- <li><a class="dropdown-item font-medium text-20px text-[#3D455D]"
                         href="{{ route('landing.v1.about') }}">من نحن</a></li> --}}
-                <li><a class="dropdown-item font-medium text-15px text-[#3D455D]"
+                <li><a class="dropdown-item font-medium text-20px text-[#3D455D]"
                         href="{{ route('landing.v1.workshops') }}">دورات مجانية</a></li>
-                <li><span class="dropdown-item font-semibold text-15px text-[#3D455D]">الدورات المعتمدة</span></li>
-                <li><a class="dropdown-item font-medium text-15px text-[#3D455D] ps-6"
+                <li><span class="dropdown-item font-semibold text-20px text-[#3D455D]">الدورات المعتمدة</span></li>
+                <li><a class="dropdown-item font-medium text-23px text-[#3D455D] ps-6"
                         href="{{ route('landing.v1.courses-paid') }}">جميع الدورات المعتمدة</a></li>
                 @if (!empty($paidCourseCategories) && $paidCourseCategories->isNotEmpty())
                     @foreach ($paidCourseCategories as $category)
-                        <li><a class="dropdown-item font-medium text-15px text-[#3D455D] ps-6"
+                        <li><a class="dropdown-item font-medium text-23px text-[#3D455D] ps-6"
                                 href="{{ route('landing.v1.courses-paid', ['category_id' => $category->id]) }}">{{ $category->title }}</a></li>
                     @endforeach
                 @endif
-                <li><a class="dropdown-item font-medium text-15px text-[#3D455D]"
+                <li><a class="dropdown-item font-medium text-20px text-[#3D455D]"
                         href="{{ route('landing.v1.instructors') }}">المدربين</a></li>
-                {{-- <li><a class="dropdown-item font-medium text-15px text-[#3D455D]"
+                {{-- <li><a class="dropdown-item font-medium text-20px text-[#3D455D]"
                         href="{{ route('landing.v1.contact') }}">تواصل معنا</a></li> --}}
             </ul>
         </div>
@@ -132,7 +132,7 @@
                             role="menu" aria-orientation="vertical" aria-labelledby="landing-notifications-toggle">
                             <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-d9 bg-fa/60">
                                 <div>
-                                    <p class="font-bold text-15px text-primary">الإشعارات</p>
+                                    <p class="font-bold text-20px text-primary">الإشعارات</p>
                                     @if ($unreadCount > 0)
                                         <p class="font-medium text-12px text-gray">{{ $unreadCount }} غير مقروء</p>
                                     @endif
@@ -215,7 +215,7 @@
                             </span>
                         </div>
 
-                        <span class="max-md:hidden font-semibold text-14px text-primary">{{ $authNavUser->full_name }}</span>
+                        <span class="max-md:hidden font-semibold text-20px text-primary">{{ $authNavUser->full_name }}</span>
                         <span class="icon-[tabler--chevron-down] size-4 text-primary/60 max-md:hidden dropdown-open:rotate-180 transition-transform duration-200"></span>
                     </button>
 
@@ -233,50 +233,50 @@
                                     </span>
                                 </div>
                                 <div class="min-w-0">
-                                    <p class="font-bold text-15px text-primary truncate">{{ $authNavUser->full_name }}</p>
+                                    <p class="font-bold text-20px text-primary truncate">{{ $authNavUser->full_name }}</p>
                                     <p class="font-medium text-12px text-gray truncate">{{ $authNavUser->email }}</p>
                                 </div>
                             </div>
                             <ul class="py-1">
                                 <li>
                                     <a href="{{ route('panel.v1.instructor.home') }}"
-                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-20px text-primary hover:bg-fa transition">
                                         لوحة التحكم
                                     </a>
                                 </li>
                                 <li>
                                     <a href="{{ $publicInstructorUrl }}"
-                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-20px text-primary hover:bg-fa transition">
                                         الملف الشخصي
                                     </a>
                                 </li>
                                 <li>
                                     <a href="{{ route('panel.v1.instructor.finance') }}"
-                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-20px text-primary hover:bg-fa transition">
                                         الأرباح
                                     </a>
                                 </li>
                                 <li>
                                     <a href="{{ route('panel.v1.instructor.courses') }}"
-                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-20px text-primary hover:bg-fa transition">
                                         الدورات
                                     </a>
                                 </li>
                                 <li>
                                     <a href="{{ route('panel.v1.instructor.settings') }}"
-                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-20px text-primary hover:bg-fa transition">
                                         الإعدادات
                                     </a>
                                 </li>
                                 <li>
                                     <a href="{{ route('panel.v1.instructor.support') }}"
-                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-20px text-primary hover:bg-fa transition">
                                         الدعم
                                     </a>
                                 </li>
                                 <li>
                                     <a href="/logout"
-                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-[#E11D48] hover:bg-red-50 transition">
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-20px text-[#E11D48] hover:bg-red-50 transition">
                                         تسجيل الخروج
                                     </a>
                                 </li>
@@ -285,19 +285,19 @@
                             <ul class="py-1">
                                 <li>
                                     <a href="{{ route('panel.v1.organization.home') }}"
-                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-20px text-primary hover:bg-fa transition">
                                         لوحة المنظمة
                                     </a>
                                 </li>
                                 <li>
                                     <a href="{{ route('panel.v1.organization.settings') }}"
-                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-20px text-primary hover:bg-fa transition">
                                         الإعدادات
                                     </a>
                                 </li>
                                 <li>
                                     <a href="/logout"
-                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-[#E11D48] hover:bg-red-50 transition">
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-20px text-[#E11D48] hover:bg-red-50 transition">
                                         تسجيل الخروج
                                     </a>
                                 </li>
@@ -306,13 +306,13 @@
                             <ul class="py-1">
                                 <li>
                                     <a href="{{ route('panel.v1.admin.home') }}"
-                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-20px text-primary hover:bg-fa transition">
                                         لوحة الإدارة
                                     </a>
                                 </li>
                                 <li>
                                     <a href="/logout"
-                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-[#E11D48] hover:bg-red-50 transition">
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-20px text-[#E11D48] hover:bg-red-50 transition">
                                         تسجيل الخروج
                                     </a>
                                 </li>
@@ -321,31 +321,31 @@
                             <ul class="py-1">
                                 <li>
                                     <a href="{{ route('panel.v1.student.home') }}"
-                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-20px text-primary hover:bg-fa transition">
                                         لوحة التعلم
                                     </a>
                                 </li>
                                 <li>
                                     <a href="{{ route('panel.v1.student.purchases') }}"
-                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-20px text-primary hover:bg-fa transition">
                                         مشترياتي
                                     </a>
                                 </li>
                                 <li>
                                     <a href="{{ route('panel.v1.student.settings') }}"
-                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-20px text-primary hover:bg-fa transition">
                                         الاعدادات
                                     </a>
                                 </li>
                                 <li>
                                     <a href="{{ route('panel.v1.student.support') }}"
-                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-primary hover:bg-fa transition">
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-20px text-primary hover:bg-fa transition">
                                         الدعم
                                     </a>
                                 </li>
                                 <li>
                                     <a href="/logout"
-                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-15px text-[#E11D48] hover:bg-red-50 transition">
+                                        class="dropdown-item rounded-10px px-4 py-3 font-semibold text-20px text-[#E11D48] hover:bg-red-50 transition">
                                         تسجيل الخروج
                                     </a>
                                 </li>
@@ -371,7 +371,7 @@
                     href="{{ route('landing.v1.login') }}"
                     aria-label="تسجيل الدخول">
                     <span class="icon-[tabler--login] size-5 xl:hidden"></span>
-                    <span class="max-xl:hidden font-medium text-15px">تسجيل الدخول</span>
+                    <span class="max-xl:hidden font-medium text-20px">تسجيل الدخول</span>
                 </a>
             @endauth
         </div>
