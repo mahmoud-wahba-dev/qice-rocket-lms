@@ -54,7 +54,7 @@ return [
         'file' => [
             'folder_name' => '/',
             'startup_view' => 'list',
-            'max_size' => 2097152, // size in KB
+            'max_size' => 5242880, // 5 GB in KB
             'thumb' => true,
             'thumb_width' => 80,
             'thumb_height' => 80,
@@ -86,7 +86,7 @@ return [
         'image' => [
             'folder_name' => '/',
             'startup_view' => 'list',
-            'max_size' => 2097152, // size in KB
+            'max_size' => 5242880, // 5 GB in KB
             'thumb' => true,
             'thumb_width' => 80,
             'thumb_height' => 80,

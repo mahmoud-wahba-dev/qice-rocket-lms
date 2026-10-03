@@ -149,9 +149,9 @@
                                     'id' => 'admin-quiz-actions-' . $quiz->id . '-' . $index,
                                     'items' => [
                                         [
-                                            'label' => 'إدارة الأسئلة',
-                                            'url' => route('panel.v1.admin.education.quizzes.questions', ['id' => $quiz->id]),
-                                            'tone' => 'gray',
+                                            'label' => 'إدارة الاختبار',
+                                            'url' => route('panel.v1.admin.education.quizzes.view', ['id' => $quiz->id]),
+                                            'tone' => 'primary',
                                         ],
                                         [
                                             'label' => 'نتائج الطلاب',

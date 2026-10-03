@@ -1758,7 +1758,7 @@ function initCurriculumAjax(wrap) {
         if (mode === 'file') {
             const fileInput = form.querySelector('input[type="file"][name="upload"], input[type="file"]');
             const file = fileInput?.files?.[0];
-            const maxBytes = 2 * 1024 * 1024 * 1024;
+            const maxBytes = 5 * 1024 * 1024 * 1024;
             if (!file) {
                 const msg = 'يرجى اختيار ملف للرفع';
                 if (errorEl) {
@@ -1769,7 +1769,7 @@ function initCurriculumAjax(wrap) {
                 return;
             }
             if (file.size > maxBytes) {
-                const msg = `حجم الملف (${formatUploadBytes(file.size)}) أكبر من الحد المسموح (2 GB)`;
+                const msg = `حجم الملف (${formatUploadBytes(file.size)}) أكبر من الحد المسموح (5 GB)`;
                 if (errorEl) {
                     errorEl.textContent = msg;
                     errorEl.classList.remove('hidden');

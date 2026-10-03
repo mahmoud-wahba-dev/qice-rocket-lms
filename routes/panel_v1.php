@@ -396,6 +396,15 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 Route::post('/bundles/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'deleteBundle'])->name('bundles.delete');
                 Route::get('/quizzes/create', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'createQuiz'])->name('quizzes.create');
                 Route::post('/quizzes', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'storeQuiz'])->name('quizzes.store');
+                Route::get('/quizzes/{id}/view', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'quizView'])
+                    ->whereNumber('id')
+                    ->name('quizzes.view');
+                Route::get('/quizzes/{id}/edit', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'editQuiz'])
+                    ->whereNumber('id')
+                    ->name('quizzes.edit');
+                Route::post('/quizzes/{id}/update', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'updateQuiz'])
+                    ->whereNumber('id')
+                    ->name('quizzes.update');
                 Route::post('/quizzes/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'deleteQuiz'])->name('quizzes.delete');
                 Route::get('/quizzes/{id}/questions', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'quizQuestions'])->name('quizzes.questions');
                 Route::post('/quizzes/{id}/questions', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'storeQuizQuestion'])->name('quizzes.questions.store');
@@ -640,6 +649,9 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 Route::get('/users/{id}/edit', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'editUser'])->name('users.edit');
                 Route::post('/users/{id}/update', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'updateUser'])->name('users.update');
                 Route::post('/users/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'deleteUser'])->name('users.delete');
+                Route::post('/users/{id}/assign-course', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'assignUserCourse'])->name('users.assign-course');
+                Route::post('/users/{id}/courses/{saleId}/block', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'blockUserCourse'])->name('users.block-course');
+                Route::post('/users/{id}/courses/{saleId}/enable', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'enableUserCourse'])->name('users.enable-course');
                 Route::get('/users/{id}/impersonate', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'impersonateUser'])->name('users.impersonate');
                 Route::get('/users/export', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'exportUsers'])->name('users.export');
                 Route::get('/groups/create', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'createGroup'])->name('groups.create');

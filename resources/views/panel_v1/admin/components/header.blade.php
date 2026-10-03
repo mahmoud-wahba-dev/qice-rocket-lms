@@ -113,40 +113,120 @@
         </div>
 
         <div class="relative inline-flex shrink-0" data-admin-menu>
+            @php
+                $avatarUrl = null;
+                try {
+                    $avatarUrl = $authUser?->getAvatar();
+                } catch (\Throwable $e) {
+                    $avatarUrl = null;
+                }
+                $userInitial = mb_substr($userName, 0, 1);
+                $roleLabel = 'Admin';
+            @endphp
             <button type="button" data-admin-menu-toggle
                 class="inline-flex items-center gap-2 rounded-full pe-1 ps-1 py-1 hover:bg-[#F5F5F0] transition"
                 aria-haspopup="menu" aria-expanded="false" aria-label="قائمة المستخدم">
-                <span class="size-9 rounded-full bg-primary/10 center font-bold text-14px text-primary">
-                    {{ mb_substr($userName, 0, 1) }}
+                <span class="relative size-9 rounded-full bg-primary/10 center overflow-hidden shrink-0">
+                    @if ($avatarUrl)
+                        <img src="{{ $avatarUrl }}" alt="" class="w-full h-full object-cover"
+                            onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden'); this.nextElementSibling.classList.add('flex');">
+                        <span class="hidden w-full h-full items-center justify-center font-bold text-14px text-primary bg-primary/10">{{ $userInitial }}</span>
+                    @else
+                        <span class="font-bold text-14px text-primary">{{ $userInitial }}</span>
+                    @endif
                 </span>
-                <span class="hidden md:inline font-semibold text-14px text-primary">{{ $userName }}</span>
+                <span class="hidden md:inline font-semibold text-14px text-primary max-w-[9rem] truncate">{{ $userName }}</span>
                 <span class="icon-[tabler--chevron-down] size-4 text-primary/70 transition-transform duration-200" data-admin-menu-chevron></span>
             </button>
-            <ul data-admin-menu-panel hidden
-                class="absolute top-[calc(100%+8px)] end-0 min-w-52 py-2 rounded-12px border border-d9 bg-white shadow-xl z-[80]"
+            <div data-admin-menu-panel hidden
+                class="absolute top-[calc(100%+8px)] end-0 w-72 p-0 rounded-16px border border-d9 bg-white shadow-[0_12px_40px_rgba(15,76,69,0.12)] overflow-hidden z-[80]"
                 role="menu">
-                <li role="none">
-                    <a href="{{ route('panel.v1.admin.education.home') }}" role="menuitem"
-                        class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary inline-flex items-center gap-2 w-full">
-                        <span class="icon-[tabler--home] size-4 shrink-0"></span>
-                        الرئيسية
-                    </a>
-                </li>
-                <li role="none">
-                    <a href="{{ route('panel.v1.admin.system.section', ['section' => 'settings']) }}" role="menuitem"
-                        class="dropdown-item px-4 py-2.5 font-medium text-14px text-primary inline-flex items-center gap-2 w-full">
-                        <span class="icon-[tabler--settings] size-4 shrink-0"></span>
-                        الإعدادات
-                    </a>
-                </li>
-                <li class="my-1 border-t border-d9" role="separator"></li>
-                <li role="none">
-                    <a href="/logout" role="menuitem" class="dropdown-item px-4 py-2.5 font-medium text-14px text-red-500 inline-flex items-center gap-2 w-full">
-                        <span class="icon-[tabler--logout] size-4 shrink-0"></span>
-                        تسجيل الخروج
-                    </a>
-                </li>
-            </ul>
+                <div class="flex items-center justify-between gap-3 px-4 py-4 border-b border-d9">
+                    <div class="min-w-0 text-start">
+                        <p class="font-bold text-16px text-primary truncate">{{ $userName }}</p>
+                        <p class="font-medium text-13px text-gray mt-0.5">{{ $roleLabel }}</p>
+                    </div>
+                    <div class="relative size-12 rounded-full overflow-hidden bg-primary/10 center shrink-0">
+                        @if ($avatarUrl)
+                            <img src="{{ $avatarUrl }}" alt="" class="w-full h-full object-cover"
+                                onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden'); this.nextElementSibling.classList.add('flex');">
+                            <span class="hidden w-full h-full items-center justify-center font-bold text-18px text-primary bg-primary/10">{{ $userInitial }}</span>
+                        @else
+                            <span class="font-bold text-18px text-primary">{{ $userInitial }}</span>
+                        @endif
+                        <span class="absolute -bottom-0.5 -end-0.5 size-5 rounded-full bg-[#0F4C45] center border-2 border-white">
+                            <span class="icon-[tabler--check] size-3 text-white"></span>
+                        </span>
+                    </div>
+                </div>
+
+                <ul class="py-2">
+                    <li role="none">
+                        <a href="{{ url('/') }}" role="menuitem"
+                            class="flex items-center justify-between gap-3 px-4 py-2.5 font-medium text-14px text-[#64748B] hover:bg-[#F8FAFC] hover:text-primary transition w-full">
+                            <span>الرئيسية</span>
+                            <span class="icon-[tabler--home] size-5 shrink-0"></span>
+                        </a>
+                    </li>
+                    <li role="none">
+                        <a href="{{ route('panel.v1.admin.home') }}" role="menuitem"
+                            class="flex items-center justify-between gap-3 px-4 py-2.5 font-medium text-14px text-[#64748B] hover:bg-[#F8FAFC] hover:text-primary transition w-full">
+                            <span>لوحة التحكم</span>
+                            <span class="icon-[tabler--chart-bar] size-5 shrink-0"></span>
+                        </a>
+                    </li>
+                    <li role="none">
+                        <a href="{{ route('panel.v1.admin.system.section', ['section' => 'notifications']) }}" role="menuitem"
+                            class="flex items-center justify-between gap-3 px-4 py-2.5 font-medium text-14px text-[#64748B] hover:bg-[#F8FAFC] hover:text-primary transition w-full">
+                            <span>الإشعارات</span>
+                            <span class="icon-[tabler--bell] size-5 shrink-0"></span>
+                        </a>
+                    </li>
+                    <li role="none">
+                        <a href="{{ route('panel.v1.admin.education.section', ['section' => 'courses']) }}" role="menuitem"
+                            class="flex items-center justify-between gap-3 px-4 py-2.5 font-medium text-14px text-[#64748B] hover:bg-[#F8FAFC] hover:text-primary transition w-full">
+                            <span>الدورات</span>
+                            <span class="icon-[tabler--player-play] size-5 shrink-0"></span>
+                        </a>
+                    </li>
+                    <li role="none">
+                        <a href="{{ route('panel.v1.admin.sales.home') }}" role="menuitem"
+                            class="flex items-center justify-between gap-3 px-4 py-2.5 font-medium text-14px text-[#64748B] hover:bg-[#F8FAFC] hover:text-primary transition w-full">
+                            <span>المبيعات</span>
+                            <span class="icon-[tabler--cards] size-5 shrink-0"></span>
+                        </a>
+                    </li>
+                    <li role="none">
+                        <a href="{{ route('panel.v1.admin.system.section', ['section' => 'tickets']) }}" role="menuitem"
+                            class="flex items-center justify-between gap-3 px-4 py-2.5 font-medium text-14px text-[#64748B] hover:bg-[#F8FAFC] hover:text-primary transition w-full">
+                            <span>الدعم</span>
+                            <span class="icon-[tabler--message-circle-question] size-5 shrink-0"></span>
+                        </a>
+                    </li>
+                    <li role="none">
+                        <a href="{{ route('panel.v1.admin.system.settings.general') }}" role="menuitem"
+                            class="flex items-center justify-between gap-3 px-4 py-2.5 font-medium text-14px text-[#64748B] hover:bg-[#F8FAFC] hover:text-primary transition w-full">
+                            <span>الملف الشخصي</span>
+                            <span class="icon-[tabler--user] size-5 shrink-0"></span>
+                        </a>
+                    </li>
+                    <li role="none">
+                        <a href="{{ route('panel.v1.admin.system.section', ['section' => 'settings']) }}" role="menuitem"
+                            class="flex items-center justify-between gap-3 px-4 py-2.5 font-medium text-14px text-[#64748B] hover:bg-[#F8FAFC] hover:text-primary transition w-full">
+                            <span>الإعدادات</span>
+                            <span class="icon-[tabler--settings] size-5 shrink-0"></span>
+                        </a>
+                    </li>
+                    <li class="my-1 border-t border-d9" role="separator"></li>
+                    <li role="none">
+                        <a href="/logout" role="menuitem"
+                            class="flex items-center justify-between gap-3 px-4 py-2.5 font-medium text-14px text-[#EF4444] hover:bg-red-50 transition w-full">
+                            <span>تسجيل الخروج</span>
+                            <span class="icon-[tabler--logout] size-5 shrink-0"></span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 </nav>

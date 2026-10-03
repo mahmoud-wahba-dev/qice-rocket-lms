@@ -144,6 +144,7 @@ class SystemController extends AdminController
             'status_class' => $statusMeta['class'],
             'profile_url' => $username !== '' ? $u->getProfileUrl() : null,
             'is_admin' => $u->isAdmin(),
+            'is_self' => auth()->check() && (int) auth()->id() === (int) $u->id,
             // Login-as (impersonate) for students, instructors, organizations
             'can_impersonate' => !$u->isAdmin() && in_array((string) $u->role_name, [
                 \App\Models\Role::$user,
@@ -387,56 +388,291 @@ class SystemController extends AdminController
     {
         $user = $this->resolveAdmin($request);
         if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
-        $editUser=\App\User::findOrFail($id);
-        if($editUser->isAdmin()) abort(403,'لا يمكن تعديل مدير');
-        $roles=\App\Models\Role::orderBy('created_at','desc')->get();
-        return $this->renderAdmin($request,'panel_v1.admin.pages.system.user-edit','تعديل مستخدم',array_merge(AdminMockData::shell('system','home'),[
-            'editUser'=>$editUser,'roles'=>$roles,
-            'formAction'=>route('panel.v1.admin.system.users.update',['id'=>$editUser->id]),
-        ]));
+
+        $editUser = \App\User::with(['userMetas', 'role'])->findOrFail($id);
+        $roles = \App\Models\Role::orderBy('created_at', 'desc')->get();
+
+        $userLanguages = getGeneralSettings('user_languages');
+        if (!empty($userLanguages) && is_array($userLanguages)) {
+            $userLanguages = getLanguages($userLanguages);
+        } else {
+            $userLanguages = [];
+        }
+
+        $organizations = \App\User::select('id', 'full_name')
+            ->where('role_name', \App\Models\Role::$organization)
+            ->orderBy('full_name')
+            ->get()
+            ->map(fn ($o) => ['id' => $o->id, 'name' => $o->full_name])
+            ->all();
+
+        $courses = \App\Models\Webinar::query()
+            ->orderBy('created_at', 'desc')
+            ->limit(800)
+            ->get()
+            ->map(fn ($c) => ['id' => $c->id, 'title' => $c->title ?? ('دورة #' . $c->id)])
+            ->all();
+
+        $purchased = $this->getUserPurchasedClassesData($editUser);
+
+        return $this->renderAdmin($request, 'panel_v1.admin.pages.system.user-edit', 'تعديل مستخدم', array_merge(
+            AdminMockData::shell('system', 'home'),
+            [
+                'editUser' => $editUser,
+                'roles' => $roles,
+                'userLanguages' => $userLanguages,
+                'timezones' => getListOfTimezones(),
+                'organizations' => $organizations,
+                'courses' => $courses,
+                'manualAddedClasses' => $purchased['manualAddedClasses'],
+                'purchasedClasses' => $purchased['purchasedClasses'],
+                'manualDisabledClasses' => $purchased['manualDisabledClasses'],
+                'formAction' => route('panel.v1.admin.system.users.update', ['id' => $editUser->id]),
+            ]
+        ));
     }
+
     public function updateUser(Request $request, int $id)
     {
         $user = $this->resolveAdmin($request);
         if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
-        $editUser=\App\User::findOrFail($id);
-        if($editUser->isAdmin()) abort(403);
+
+        $editUser = \App\User::findOrFail($id);
+
         $request->validate([
-            'full_name'=>'required|min:3|max:255',
-            'email'=>'nullable|email|unique:users,email,'.$editUser->id,
-            'mobile'=>'nullable|numeric|unique:users,mobile,'.$editUser->id,
-            'password'=>'nullable|string|min:6',
-            'status'=>'required|in:active,inactive',
-            'role_id'=>'nullable|exists:roles,id',
+            'full_name' => 'required|min:3|max:255',
+            'username' => 'required|max:255|unique:users,username,' . $editUser->id,
+            'email' => (!empty($editUser->email))
+                ? 'required|email|unique:users,email,' . $editUser->id
+                : 'nullable|email|unique:users,email,' . $editUser->id,
+            'mobile' => (!empty($editUser->mobile))
+                ? 'required|numeric|unique:users,mobile,' . $editUser->id
+                : 'nullable|numeric|unique:users,mobile,' . $editUser->id,
+            'password' => 'nullable|string|min:6',
+            'bio' => 'nullable|string|max:48',
+            'about' => 'nullable|string',
+            'certificate_additional' => 'nullable|string|max:255',
+            'status' => 'required|in:' . implode(',', \App\User::$statuses),
+            'role_id' => 'required|exists:roles,id',
+            'timezone' => 'nullable|string|max:64',
+            'language' => 'nullable|string|max:16',
+            'organ_id' => 'nullable|exists:users,id',
+            'ban_start_at' => 'nullable|required_if:ban,1|date',
+            'ban_end_at' => 'nullable|required_if:ban,1|date',
         ]);
-        $data=$request->all();
-        $editUser->full_name=$data['full_name'];
-        if(!empty($data['email'])) $editUser->email=$data['email'];
-        if(array_key_exists('mobile',$data)) $editUser->mobile=$data['mobile'];
-        $editUser->status=$data['status'];
-        if(!empty($data['password'])) $editUser->password=\App\User::generatePassword($data['password']);
-        if(!empty($data['role_id'])){
-            $role=\App\Models\Role::find($data['role_id']);
-            if($role){ $editUser->role_name=$role->name; $editUser->role_id=$role->id; }
+
+        $data = $request->all();
+        $role = \App\Models\Role::findOrFail((int) $data['role_id']);
+
+        // Prevent the logged-in admin from stripping their own admin role accidentally.
+        if ((int) $user->id === (int) $editUser->id && empty($role->is_admin) && $editUser->isAdmin()) {
+            return back()->withErrors(['role_id' => 'لا يمكنك إزالة صلاحية الإدارة عن حسابك.'])->withInput();
         }
-        if(!empty($data['ban'])&&$data['ban']=='1'){
-            $editUser->ban=true;
-            $editUser->ban_start_at=!empty($data['ban_start_at'])?strtotime($data['ban_start_at']):time();
-            $editUser->ban_end_at=!empty($data['ban_end_at'])?strtotime($data['ban_end_at']):null;
+
+        $editUser->full_name = $data['full_name'];
+        $editUser->username = $data['username'];
+        $editUser->role_name = $role->name;
+        $editUser->role_id = $role->id;
+        $editUser->timezone = $data['timezone'] ?? null;
+        $editUser->organ_id = !empty($data['organ_id']) ? (int) $data['organ_id'] : null;
+        $editUser->email = !empty($data['email']) ? $data['email'] : null;
+        $editUser->mobile = !empty($data['mobile']) ? $data['mobile'] : null;
+        $editUser->bio = !empty($data['bio']) ? $data['bio'] : null;
+        $editUser->about = !empty($data['about']) ? $data['about'] : null;
+        $editUser->status = $data['status'];
+        $editUser->language = $data['language'] ?? null;
+
+        if (!empty($data['password'])) {
+            $editUser->password = \App\User::generatePassword($data['password']);
+        }
+
+        $flagValue = function (string $key) use ($data): int {
+            $v = $data[$key] ?? 0;
+            if (is_array($v)) {
+                $v = end($v);
+            }
+            return (string) $v === '1' ? 1 : 0;
+        };
+
+        if ($flagValue('ban') === 1) {
+            $editUser->ban = 1;
+            $editUser->ban_start_at = !empty($data['ban_start_at']) ? strtotime($data['ban_start_at']) : time();
+            $editUser->ban_end_at = !empty($data['ban_end_at']) ? strtotime($data['ban_end_at']) : null;
         } else {
-            $editUser->ban=false; $editUser->ban_start_at=null; $editUser->ban_end_at=null;
+            $editUser->ban = 0;
+            $editUser->ban_start_at = null;
+            $editUser->ban_end_at = null;
         }
+
+        $editUser->verified = $flagValue('verified');
+        $editUser->affiliate = $flagValue('affiliate');
+        $editUser->can_create_store = $flagValue('can_create_store');
+        $editUser->access_content = $flagValue('access_content');
+        $editUser->enable_ai_content = $flagValue('enable_ai_content');
+
         $editUser->save();
-        return redirect()->route('panel.v1.admin.system.home')->with('toast',['title'=>'تم','msg'=>'تم تحديث المستخدم','type'=>'success']);
+
+        $this->handleUserCertificateAdditional($editUser->id, $data['certificate_additional'] ?? null);
+
+        return redirect()
+            ->route('panel.v1.admin.system.users.edit', ['id' => $editUser->id])
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم تحديث المستخدم', 'type' => 'success']);
     }
+
     public function deleteUser(Request $request, int $id)
     {
         $user = $this->resolveAdmin($request);
         if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
-        $del=\App\User::findOrFail($id);
-        if($del->isAdmin()) abort(403);
+
+        if ((int) $user->id === (int) $id) {
+            return back()->with('toast', [
+                'title' => 'غير مسموح',
+                'msg' => 'لا يمكنك حذف حسابك أنت',
+                'type' => 'error',
+            ]);
+        }
+
+        $del = \App\User::findOrFail($id);
         $del->delete();
-        return back()->with('toast',['title'=>'تم','msg'=>'تم حذف المستخدم','type'=>'success']);
+
+        return redirect()
+            ->route('panel.v1.admin.system.home')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم حذف المستخدم', 'type' => 'success']);
+    }
+
+    public function assignUserCourse(Request $request, int $id)
+    {
+        $admin = $this->resolveAdmin($request);
+        if ($admin instanceof \Illuminate\Http\RedirectResponse) return $admin;
+
+        $editUser = \App\User::findOrFail($id);
+        $request->validate(['webinar_id' => 'required|exists:webinars,id']);
+
+        $course = \App\Models\Webinar::findOrFail((int) $request->input('webinar_id'));
+
+        $exists = \App\Models\Sale::where('buyer_id', $editUser->id)
+            ->where('webinar_id', $course->id)
+            ->whereNull('refund_at')
+            ->where('access_to_purchased_item', true)
+            ->exists();
+
+        if ($exists) {
+            return back()->with('toast', [
+                'title' => 'تنبيه',
+                'msg' => 'المستخدم لديه وصول لهذه الدورة بالفعل',
+                'type' => 'error',
+            ]);
+        }
+
+        // Re-enable a previously disabled sale if present.
+        $disabled = \App\Models\Sale::where('buyer_id', $editUser->id)
+            ->where('webinar_id', $course->id)
+            ->whereNull('refund_at')
+            ->where('access_to_purchased_item', false)
+            ->first();
+
+        if ($disabled) {
+            $disabled->update(['access_to_purchased_item' => true, 'manual_added' => true]);
+        } else {
+            \App\Models\Sale::create([
+                'buyer_id' => $editUser->id,
+                'seller_id' => $course->creator_id,
+                'webinar_id' => $course->id,
+                'type' => \App\Models\Sale::$webinar,
+                'manual_added' => true,
+                'access_to_purchased_item' => true,
+                'payment_method' => \App\Models\Sale::$credit,
+                'amount' => 0,
+                'total_amount' => 0,
+                'created_at' => time(),
+            ]);
+        }
+
+        return back()->with('toast', [
+            'title' => 'تم',
+            'msg' => 'تم إسناد الدورة للمستخدم',
+            'type' => 'success',
+        ]);
+    }
+
+    public function blockUserCourse(Request $request, int $id, int $saleId)
+    {
+        $admin = $this->resolveAdmin($request);
+        if ($admin instanceof \Illuminate\Http\RedirectResponse) return $admin;
+
+        $sale = \App\Models\Sale::where('id', $saleId)
+            ->where('buyer_id', $id)
+            ->whereNull('refund_at')
+            ->firstOrFail();
+
+        if ($sale->manual_added) {
+            $sale->delete();
+        } else {
+            $sale->update(['access_to_purchased_item' => false]);
+        }
+
+        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم إزالة الوصول', 'type' => 'success']);
+    }
+
+    public function enableUserCourse(Request $request, int $id, int $saleId)
+    {
+        $admin = $this->resolveAdmin($request);
+        if ($admin instanceof \Illuminate\Http\RedirectResponse) return $admin;
+
+        \App\Models\Sale::where('id', $saleId)
+            ->where('buyer_id', $id)
+            ->whereNull('refund_at')
+            ->firstOrFail()
+            ->update(['access_to_purchased_item' => true]);
+
+        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم إعادة تفعيل الوصول', 'type' => 'success']);
+    }
+
+    private function getUserPurchasedClassesData(\App\User $user): array
+    {
+        $base = \App\Models\Sale::whereNull('refund_at')
+            ->where('buyer_id', $user->id)
+            ->whereNotNull('webinar_id')
+            ->whereHas('webinar')
+            ->with(['webinar.teacher', 'webinar.creator']);
+
+        $manualAddedClasses = (clone $base)
+            ->where('sales.manual_added', true)
+            ->where('sales.access_to_purchased_item', true)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $manualDisabledClasses = (clone $base)
+            ->where('sales.access_to_purchased_item', false)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $purchasedClasses = (clone $base)
+            ->where('sales.access_to_purchased_item', true)
+            ->where('sales.manual_added', false)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return [
+            'manualAddedClasses' => $manualAddedClasses,
+            'purchasedClasses' => $purchasedClasses,
+            'manualDisabledClasses' => $manualDisabledClasses,
+        ];
+    }
+
+    private function handleUserCertificateAdditional(int $userId, $value): void
+    {
+        $name = 'certificate_additional';
+
+        if (empty($value)) {
+            \App\Models\UserMeta::where('user_id', $userId)->where('name', $name)->delete();
+            return;
+        }
+
+        \App\Models\UserMeta::updateOrCreate(
+            ['user_id' => $userId, 'name' => $name],
+            ['value' => $value]
+        );
     }
 
     /**

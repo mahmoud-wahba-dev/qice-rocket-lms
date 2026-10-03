@@ -96,7 +96,7 @@
                             </td>
                                 <td class="px-3 py-4 text-center">
                                     @php
-                                        $isAdminRow = !empty($row['is_admin']);
+                                        $isSelf = !empty($row['is_self']);
                                         $canImpersonate = !empty($row['can_impersonate']);
                                         $userMenuItems = [];
                                         if ($canImpersonate) {
@@ -110,14 +110,13 @@
                                             'label' => 'تعديل',
                                             'url' => route('panel.v1.admin.system.users.edit', ['id' => $row['id']]),
                                             'tone' => 'gray',
-                                            'disabled' => $isAdminRow,
                                         ];
                                         $userMenuItems[] = [
                                             'label' => 'حذف',
                                             'action' => route('panel.v1.admin.system.users.delete', ['id' => $row['id']]),
                                             'confirm' => 'حذف المستخدم؟',
                                             'tone' => 'danger',
-                                            'disabled' => $isAdminRow,
+                                            'disabled' => $isSelf,
                                         ];
                                     @endphp
                                     @include('panel_v1.components.actions-dropdown', [
