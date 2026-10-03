@@ -77,15 +77,16 @@
 
 <template id="curriculum-unit-template">
     @include('panel_v1.instructor.pages.create-course.partials.curriculum-unit', [
-        'unit' => [
-            'id' => '__ID__',
-            'title' => '__TITLE__',
-            'lessons' => [],
-            'delete_url' => '__DELETE_URL__',
-            'session_store_url' => '__SESSION_STORE__',
-            'file_store_url' => '__FILE_STORE__',
-            'text_store_url' => '__TEXT_STORE__',
-        ],
+            'unit' => [
+                'id' => '__ID__',
+                'title' => '__TITLE__',
+                'lessons' => [],
+                'delete_url' => '__DELETE_URL__',
+                'update_url' => '__UPDATE_URL__',
+                'session_store_url' => '__SESSION_STORE__',
+                'file_store_url' => '__FILE_STORE__',
+                'text_store_url' => '__TEXT_STORE__',
+            ],
         'draftIdValue' => $draftIdValue ?? '__DRAFT__',
         'input' => $input,
         'isTemplate' => true,

@@ -22,9 +22,12 @@
                 class="group relative text-start rounded-14px border p-4 sm:p-5 transition
                     {{ $isActive
                         ? 'border-primary bg-[#F7F0E6]'
-                        : 'border-d9 bg-white hover:border-primary/40' }}">
+                        : 'border-d9 bg-white hover:border-primary/40' }}"
+                aria-pressed="{{ $isActive ? 'true' : 'false' }}">
+                {{-- Avoid combining `.center` + `.hidden` (center wins display:flex and shows all checks) --}}
                 <span data-type-check
-                    class="absolute top-3 end-3 size-6 rounded-full bg-primary text-white center {{ $isActive ? '' : 'hidden' }}">
+                    class="absolute top-3 end-3 size-6 rounded-full bg-primary text-white flex items-center justify-center {{ $isActive ? '' : '!hidden' }}"
+                    aria-hidden="{{ $isActive ? 'false' : 'true' }}">
                     <span class="icon-[tabler--check] size-3.5"></span>
                 </span>
                 <span class="size-11 rounded-12px bg-primary/10 center mb-3">

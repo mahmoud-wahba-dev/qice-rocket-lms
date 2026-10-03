@@ -1,3 +1,13 @@
+# ── Large course video uploads (XAMPP / Apache mod_php) ──
+# Overrides php.ini without requiring an Apache service restart.
+<IfModule php_module>
+    php_value upload_max_filesize 2048M
+    php_value post_max_size 2048M
+    php_value max_execution_time 600
+    php_value max_input_time 600
+    php_value memory_limit 1024M
+</IfModule>
+
 # ── Static asset cache + compression (landing / Vite) ──
 <IfModule mod_headers.c>
     <FilesMatch "\.(css|js|woff2?|webp|svg|png|jpg|jpeg|gif|ico)$">

@@ -923,7 +923,7 @@ class EducationController extends AdminController
     {
         $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
         $webinar=\App\Models\Webinar::findOrFail($id);
-        $request->validate(['chapter_id'=>'required|integer','title'=>'required|string|max:255','upload'=>'required|file|max:102400']);
+        $request->validate(['chapter_id'=>'required|integer','title'=>'required|string|max:255','upload'=>'required|file|max:2097152']);
         $chapter=\App\Models\WebinarChapter::where('id',$request->input('chapter_id'))->where('webinar_id',$webinar->id)->firstOrFail();
         $path=$request->file('upload')->store('webinars/files','public');
         $file=new \App\Models\File();

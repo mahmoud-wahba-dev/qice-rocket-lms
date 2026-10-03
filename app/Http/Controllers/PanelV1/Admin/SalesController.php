@@ -34,19 +34,26 @@ class SalesController extends AdminController
                 try{ SaleLog::create(['sale_id'=>$sale->id,'viewed_at'=>time()]); }catch(\Throwable $e){}
             }
         }
-        $rows = collect($paginator->items())->map(fn($s)=>[
-            'id'=>'#'.$s->id,
-            'student'=> $s->buyer->full_name ?? '—',
-            'student_email'=> $s->buyer->email ?? '',
-            'instructor'=> $s->item_seller ?? '—',
-            'service'=> $s->item_title ?? $s->type,
-            'price'=> handlePrice($s->amount),
-            'discount'=> handlePrice($s->discount),
-            'vat'=> handlePrice($s->tax ?? 0),
-            'type'=> $s->type==='webinar' ? 'دورة' : $s->type,
-            'date'=> date('Y/m/d',(int)$s->created_at),
-            'status'=> empty($s->refund_at) ? 'مكتمل' : 'مسترد',
-        ])->all();
+        $rows = collect($paginator->items())->map(function ($s) {
+            $refunded = !empty($s->refund_at);
+
+            return [
+                'id' => $s->id,
+                'display_id' => '#' . $s->id,
+                'student' => $s->buyer->full_name ?? '—',
+                'student_email' => $s->buyer->email ?? '',
+                'instructor' => $s->item_seller ?? '—',
+                'service' => $s->item_title ?? $s->type,
+                'price' => handlePrice($s->amount),
+                'discount' => handlePrice($s->discount),
+                'vat' => handlePrice($s->tax ?? 0),
+                'type' => $s->type === 'webinar' ? 'دورة' : $s->type,
+                'date' => date('Y/m/d', (int) $s->created_at),
+                'status' => $refunded ? 'مسترد' : 'مكتمل',
+                'is_refunded' => $refunded,
+                'can_invoice' => !empty($s->webinar_id) || !empty($s->bundle_id) || !empty($s->meeting_id) || !empty($s->subscribe_id) || !empty($s->product_order_id) || !empty($s->event_ticket_id) || !empty($s->gift_id) || !empty($s->installment_payment_id) || !empty($s->meeting_package_id) || !empty($s->promotion_id) || !empty($s->registration_package_id) || !empty($s->total_amount) || !empty($s->amount),
+            ];
+        })->all();
 
         $teacherIds = $request->get('teacher_ids');
         $studentIds = $request->get('student_ids');
@@ -132,30 +139,127 @@ class SalesController extends AdminController
         return $query;
     }
 
-    public function refund(Request $request,int $id){
-        $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
-        $sale=Sale::findOrFail($id);
-        if($sale->type==Sale::$subscribe){
-            $withSub=Sale::whereNotNull('webinar_id')->where('buyer_id',$sale->buyer_id)->where('subscribe_id',$sale->subscribe_id)->whereNull('refund_at')->with('webinar','subscribe')->get();
-            foreach($withSub as $s){ $s->update(['refund_at'=>time()]); if(!empty($s->webinar)&&!empty($s->subscribe)) Accounting::refundAccountingForSaleWithSubscribe($s->webinar,$s->subscribe); }
+    public function refund(Request $request, int $id)
+    {
+        $user = $this->resolveAdmin($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
         }
-        if(!empty($sale->total_amount)) Accounting::refundAccounting($sale);
-        if(!empty($sale->meeting_id) && $sale->type==Sale::$meeting){
-            $app=ReserveMeeting::where('meeting_id',$sale->meeting_id)->where('sale_id',$sale->id)->first();
-            if(!empty($app)) $app->update(['status'=>ReserveMeeting::$canceled]);
+
+        $sale = Sale::findOrFail($id);
+
+        if (!empty($sale->refund_at)) {
+            return back()->with('toast', [
+                'title' => 'تنبيه',
+                'msg' => 'تم استرداد هذه العملية مسبقاً',
+                'type' => 'warning',
+            ]);
         }
-        $sale->update(['refund_at'=>time()]);
-        return back()->with('toast',['title'=>'تم','msg'=>'تم الاسترجاع','type'=>'success']);
+
+        if ($sale->type == Sale::$subscribe) {
+            $withSub = Sale::whereNotNull('webinar_id')
+                ->where('buyer_id', $sale->buyer_id)
+                ->where('subscribe_id', $sale->subscribe_id)
+                ->whereNull('refund_at')
+                ->with('webinar', 'subscribe')
+                ->get();
+            foreach ($withSub as $s) {
+                $s->update(['refund_at' => time()]);
+                if (!empty($s->webinar) && !empty($s->subscribe)) {
+                    Accounting::refundAccountingForSaleWithSubscribe($s->webinar, $s->subscribe);
+                }
+            }
+        }
+
+        if (!empty($sale->total_amount)) {
+            Accounting::refundAccounting($sale);
+        }
+
+        if (!empty($sale->meeting_id) && $sale->type == Sale::$meeting) {
+            $app = ReserveMeeting::where('meeting_id', $sale->meeting_id)->where('sale_id', $sale->id)->first();
+            if (!empty($app)) {
+                $app->update(['status' => ReserveMeeting::$canceled]);
+            }
+        }
+
+        $sale->update(['refund_at' => time()]);
+
+        return back()->with('toast', [
+            'title' => 'تم',
+            'msg' => 'تم تنفيذ الاسترداد بنجاح',
+            'type' => 'success',
+        ]);
     }
 
-    public function invoice(Request $request,int $id){
-        $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
-        $sale=Sale::where('id',$id)->with(['order','buyer'=>fn($q)=>$q->select('id','full_name'),'webinar'=>fn($q)=>$q->with(['teacher'=>fn($q)=>$q->select('id','full_name'),'creator'=>fn($q)=>$q->select('id','full_name')]),'bundle'])->first();
-        if(!empty($sale)){
-            $webinar=$sale->webinar ?? $sale->bundle;
-            if(!empty($webinar)) return view('admin.financial.sales.invoice',['pageTitle'=>trans('webinars.invoice_page_title'),'sale'=>$sale,'webinar'=>$webinar]);
+    public function invoice(Request $request, int $id)
+    {
+        $user = $this->resolveAdmin($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
         }
-        abort(404);
+
+        $sale = Sale::where('id', $id)
+            ->with([
+                'order',
+                'buyer' => fn ($q) => $q->select('id', 'full_name', 'email', 'mobile'),
+                'webinar' => function ($query) {
+                    $query->with([
+                        'teacher' => fn ($q) => $q->select('id', 'full_name'),
+                        'creator' => fn ($q) => $q->select('id', 'full_name'),
+                        'webinarPartnerTeacher.teacher' => fn ($q) => $q->select('id', 'full_name'),
+                    ]);
+                },
+                'bundle' => function ($query) {
+                    $query->with([
+                        'teacher' => fn ($q) => $q->select('id', 'full_name'),
+                        'creator' => fn ($q) => $q->select('id', 'full_name'),
+                    ]);
+                },
+                'meeting.creator' => fn ($q) => $q->select('id', 'full_name'),
+                'subscribe',
+                'promotion',
+            ])
+            ->firstOrFail();
+
+        $this->makeSaleTitle($sale);
+
+        $item = $sale->webinar ?? $sale->bundle;
+        $itemTitle = $sale->item_title ?? ($item->title ?? '—');
+        $itemId = $item->id ?? ($sale->item_id ?? $sale->id);
+        $itemTypeLabel = match ($sale->type) {
+            'webinar' => !empty($item->type) ? (trans('webinars.' . $item->type) ?: 'دورة') : 'دورة',
+            'bundle' => 'باقة',
+            'meeting' => 'موعد',
+            'subscribe' => 'اشتراك',
+            'promotion' => 'ترويج',
+            default => $sale->type ?: 'خدمة',
+        };
+        $teacherName = $item->teacher->full_name
+            ?? $sale->meeting->creator->full_name
+            ?? ($sale->item_seller ?? '—');
+        $creatorName = $item->creator->full_name ?? null;
+        $partners = [];
+        if (!empty($item->webinarPartnerTeacher)) {
+            foreach ($item->webinarPartnerTeacher as $partner) {
+                if (!empty($partner->teacher->full_name)) {
+                    $partners[] = $partner->teacher->full_name;
+                }
+            }
+        }
+
+        return view('panel_v1.admin.pages.sales.invoice', [
+            'pageTitle' => trans('webinars.invoice_page_title') ?: 'فاتورة البيع',
+            'sale' => $sale,
+            'webinar' => $item,
+            'itemTitle' => $itemTitle,
+            'itemId' => $itemId,
+            'itemType' => $itemTypeLabel,
+            'teacherName' => $teacherName,
+            'creatorName' => $creatorName,
+            'partnerTeachers' => $partners,
+            'siteName' => getGeneralSettings('site_name') ?: 'QIEC',
+            'platformAddress' => getContactPageSettings('address') ?? '',
+        ]);
     }
 
     public function section(Request $request, string $section)

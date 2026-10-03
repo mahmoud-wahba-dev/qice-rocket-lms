@@ -127,6 +127,8 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 ->name('instructor.courses.store');
             Route::post('/instructor/curriculum/chapters', [InstructorController::class, 'chapterStore'])
                 ->name('instructor.curriculum.chapters.store');
+            Route::post('/instructor/curriculum/chapters/{chapterId}/update', [InstructorController::class, 'chapterUpdate'])
+                ->name('instructor.curriculum.chapters.update');
             Route::post('/instructor/curriculum/chapters/{chapterId}/delete', [InstructorController::class, 'chapterDelete'])
                 ->name('instructor.curriculum.chapters.delete');
             Route::post('/instructor/curriculum/sessions', [InstructorController::class, 'curriculumSessionStore'])
@@ -360,6 +362,8 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 // Wizard curriculum AJAX (admin middleware — instructor /v1/instructor/* rejects admins)
                 Route::post('/curriculum/chapters', [InstructorController::class, 'chapterStore'])
                     ->name('curriculum.chapters.store');
+                Route::post('/curriculum/chapters/{chapterId}/update', [InstructorController::class, 'chapterUpdate'])
+                    ->name('curriculum.chapters.update');
                 Route::post('/curriculum/chapters/{chapterId}/delete', [InstructorController::class, 'chapterDelete'])
                     ->name('curriculum.chapters.delete');
                 Route::post('/curriculum/sessions', [InstructorController::class, 'curriculumSessionStore'])

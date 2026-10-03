@@ -875,9 +875,48 @@ class InstructorController extends Controller
                 'title' => $request->input('title'),
                 'lessons' => [],
                 'delete_url' => route($this->curriculumRouteNames($user)['chapters.delete'], ['chapterId' => $chapter->id]),
+                'update_url' => route($this->curriculumRouteNames($user)['chapters.update'], ['chapterId' => $chapter->id]),
                 'session_store_url' => route($this->curriculumRouteNames($user)['sessions.store']),
                 'file_store_url' => route($this->curriculumRouteNames($user)['files.store']),
                 'text_store_url' => route($this->curriculumRouteNames($user)['texts.store']),
+            ],
+        ]);
+    }
+
+    public function chapterUpdate(Request $request, int $chapterId)
+    {
+        $user = $request->user();
+        if ($redirect = $this->assertWizardEditor($user)) {
+            return $redirect;
+        }
+
+        $request->validate([
+            'draft_id' => 'required|integer',
+            'title' => 'required|string|max:255',
+        ], $this->courseWizardMessages(), $this->courseWizardFieldNames());
+
+        $draft = $this->draftOrFail($user, $request->input('draft_id'));
+
+        $chapter = \App\Models\WebinarChapter::where('id', $chapterId)
+            ->where('webinar_id', $draft->id)
+            ->firstOrFail();
+
+        $title = trim((string) $request->input('title'));
+        $translation = $chapter->translateOrNew('ar');
+        $translation->locale = 'ar';
+        $translation->title = $title;
+        $translation->save();
+        if (app()->getLocale() !== 'ar') {
+            $tEn = $chapter->translateOrNew(app()->getLocale());
+            $tEn->locale = app()->getLocale();
+            $tEn->title = $title;
+            $tEn->save();
+        }
+
+        return $this->curriculumResponse($request, $draft, 'تم تحديث عنوان الوحدة', [
+            'unit' => [
+                'id' => $chapter->id,
+                'title' => $title,
             ],
         ]);
     }
@@ -925,9 +964,17 @@ class InstructorController extends Controller
             $request->validate([
                 'session_date' => 'required|date_format:Y-m-d',
                 'session_time' => 'required|string|max:8',
+                'link' => 'required|url|max:2000',
             ], $this->courseWizardMessages(), [
                 'session_date' => 'تاريخ الجلسة',
                 'session_time' => 'وقت الجلسة',
+                'link' => 'رابط الاجتماع',
+            ]);
+        } else {
+            $request->validate([
+                'link' => 'nullable|url|max:2000',
+            ], $this->courseWizardMessages(), [
+                'link' => 'رابط الاجتماع',
             ]);
         }
 
@@ -974,6 +1021,9 @@ class InstructorController extends Controller
         $session->chapter_id = $chapter->id;
         $session->date = $sessionTs;
         $session->duration = (int) $request->input('duration');
+        $session->session_api = 'local';
+        $session->link = $request->filled('link') ? trim((string) $request->input('link')) : null;
+        $session->api_secret = $session->api_secret ?: \Illuminate\Support\Str::random(10);
         $session->status = 'active';
         $session->created_at = time();
         $session->updated_at = time();
@@ -991,6 +1041,10 @@ class InstructorController extends Controller
         }
 
         $whenLabel = date('Y-m-d H:i', $sessionTs);
+        $durationLabel = ((int) $request->input('duration')) . ' دقيقة · ' . $whenLabel;
+        if (!empty($session->link)) {
+            $durationLabel .= ' · رابط اجتماع';
+        }
 
         return $this->curriculumResponse($request, $draft, 'تمت إضافة الجلسة', [
             'chapter_id' => $chapter->id,
@@ -998,7 +1052,7 @@ class InstructorController extends Controller
                 'kind' => 'session',
                 'id' => $session->id,
                 'title' => $request->input('topic'),
-                'duration' => ((int) $request->input('duration')) . ' دقيقة · ' . $whenLabel,
+                'duration' => $durationLabel,
                 'delete_url' => route($this->curriculumRouteNames($user)['sessions.delete'], ['sessionId' => $session->id]),
             ],
         ]);
@@ -1093,7 +1147,7 @@ class InstructorController extends Controller
             'draft_id' => 'required|integer',
             'chapter_id' => 'required|integer',
             'title' => 'required|string|max:255',
-            'upload' => 'required|file|max:102400',
+            'upload' => 'required|file|max:2097152',
         ], $this->courseWizardMessages(), $this->courseWizardFieldNames());
 
         $draft = $this->draftOrFail($user, $request->input('draft_id'));

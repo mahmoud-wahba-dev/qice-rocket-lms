@@ -2,6 +2,8 @@
  * Course-context shell helpers only.
  * Dashboard sidebar uses FlyonUI overlay drawer (data-overlay) — no custom drawer JS.
  */
+import { initPanelV1FileUploads } from './file-upload.js';
+
 export function initInstructorShell() {
     const root = document.querySelector('.panel-v1-instructor');
     if (!root) {
@@ -608,11 +610,21 @@ export function initCreateCourseWizard(root) {
                 typeGroup.querySelectorAll('[data-course-type]').forEach((el) => {
                     el.classList.remove('border-primary', 'bg-[#F7F0E6]');
                     el.classList.add('border-d9', 'bg-white');
-                    el.querySelector('[data-type-check]')?.classList.add('hidden');
+                    el.setAttribute('aria-pressed', 'false');
+                    const check = el.querySelector('[data-type-check]');
+                    if (check) {
+                        check.classList.add('!hidden', 'hidden');
+                        check.setAttribute('aria-hidden', 'true');
+                    }
                 });
                 btn.classList.add('border-primary', 'bg-[#F7F0E6]');
                 btn.classList.remove('border-d9', 'bg-white');
-                btn.querySelector('[data-type-check]')?.classList.remove('hidden');
+                btn.setAttribute('aria-pressed', 'true');
+                const activeCheck = btn.querySelector('[data-type-check]');
+                if (activeCheck) {
+                    activeCheck.classList.remove('!hidden', 'hidden');
+                    activeCheck.setAttribute('aria-hidden', 'false');
+                }
                 applyCourseTypeUi(btn.getAttribute('data-course-type') || 'recorded');
                 dirty = true;
             });
@@ -1033,6 +1045,27 @@ function firstValidationError(data) {
     return msg || `${field}: خطأ`;
 }
 
+function uploadFailureMessage(result) {
+    const status = Number(result?.status) || 0;
+    const data = result?.data;
+    if (status === 413 || status === 0) {
+        return 'حجم الملف أكبر من الحد المسموح به على الخادم. ارفع ملفًا أصغر أو زد حدود الرفع في PHP.';
+    }
+    if (!data || (typeof data === 'object' && !data.message && !data.errors)) {
+        if (status >= 500) {
+            return 'خطأ في الخادم أثناء رفع الملف. حاول مرة أخرى.';
+        }
+        if (status === 419) {
+            return 'انتهت صلاحية الجلسة. حدّث الصفحة ثم أعد المحاولة.';
+        }
+        if (status === 422) {
+            return firstValidationError(data) || 'بيانات الملف غير صالحة';
+        }
+        return 'تعذر رفع الملف. تأكد من اتصال الإنترنت وحدود حجم الرفع ثم أعد المحاولة.';
+    }
+    return firstValidationError(data) || 'تعذر تنفيذ العملية';
+}
+
 function escapeHtml(value) {
     return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -1402,6 +1435,7 @@ function initCurriculumAjax(wrap) {
             .replaceAll('__ID__', String(unit.id))
             .replaceAll('__TITLE__', escapeHtml(unit.title))
             .replaceAll('__DELETE_URL__', unit.delete_url || '#')
+            .replaceAll('__UPDATE_URL__', unit.update_url || '#')
             .replaceAll('__SESSION_STORE__', unit.session_store_url || '#')
             .replaceAll('__FILE_STORE__', unit.file_store_url || '#')
             .replaceAll('__TEXT_STORE__', unit.text_store_url || '#')
@@ -1414,7 +1448,12 @@ function initCurriculumAjax(wrap) {
             if (titleEl) {
                 titleEl.textContent = unit.title;
             }
+            const editInput = node.querySelector('[data-unit-edit-input]');
+            if (editInput) {
+                editInput.value = unit.title || '';
+            }
             unitsWrap.appendChild(node);
+            initPanelV1FileUploads(node);
         }
     };
 
@@ -1433,6 +1472,43 @@ function initCurriculumAjax(wrap) {
     };
 
     root.addEventListener('click', (e) => {
+        const editToggle = e.target.closest('[data-unit-edit-toggle]');
+        if (editToggle && root.contains(editToggle)) {
+            e.preventDefault();
+            const unitEl = editToggle.closest('[data-curriculum-unit]');
+            if (!unitEl) {
+                return;
+            }
+            const titleEl = unitEl.querySelector('[data-unit-title]');
+            const form = unitEl.querySelector('[data-unit-edit-form]');
+            const input = unitEl.querySelector('[data-unit-edit-input]');
+            if (!form) {
+                return;
+            }
+            const opening = form.classList.contains('hidden');
+            form.classList.toggle('hidden', !opening);
+            form.classList.toggle('flex', opening);
+            titleEl?.classList.toggle('hidden', opening);
+            if (opening && input) {
+                input.value = titleEl?.textContent?.trim() || input.value;
+                input.focus();
+                input.select();
+            }
+            return;
+        }
+
+        const editCancel = e.target.closest('[data-unit-edit-cancel]');
+        if (editCancel && root.contains(editCancel)) {
+            e.preventDefault();
+            const unitEl = editCancel.closest('[data-curriculum-unit]');
+            const titleEl = unitEl?.querySelector('[data-unit-title]');
+            const form = unitEl?.querySelector('[data-unit-edit-form]');
+            form?.classList.add('hidden');
+            form?.classList.remove('flex');
+            titleEl?.classList.remove('hidden');
+            return;
+        }
+
         const previewBtn = e.target.closest('[data-curriculum-preview]');
         if (previewBtn && root.contains(previewBtn)) {
             e.preventDefault();
@@ -1542,6 +1618,85 @@ function initCurriculumAjax(wrap) {
         });
     }
 
+    const postCurriculumForm = (form, { onProgress } = {}) => new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', form.action);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.setRequestHeader('Accept', 'application/json');
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        if (csrf) {
+            xhr.setRequestHeader('X-CSRF-TOKEN', csrf);
+        }
+        xhr.withCredentials = true;
+
+        if (typeof onProgress === 'function' && xhr.upload) {
+            xhr.upload.addEventListener('progress', (event) => {
+                if (!event.lengthComputable) {
+                    return;
+                }
+                const percent = Math.max(0, Math.min(99, Math.round((event.loaded / event.total) * 100)));
+                onProgress({
+                    percent,
+                    loaded: event.loaded,
+                    total: event.total,
+                });
+            });
+        }
+
+        xhr.onload = () => {
+            let data = null;
+            try {
+                data = JSON.parse(xhr.responseText || '{}');
+            } catch (_) {
+                data = null;
+            }
+            resolve({
+                ok: xhr.status >= 200 && xhr.status < 300,
+                status: xhr.status,
+                data,
+            });
+        };
+        xhr.onerror = () => reject(new Error('network'));
+        xhr.send(new FormData(form));
+    });
+
+    const formatUploadBytes = (bytes) => {
+        const n = Number(bytes) || 0;
+        if (n < 1024 * 1024) {
+            return `${(n / 1024).toFixed(0)} KB`;
+        }
+        return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+    };
+
+    const setUploadProgress = (form, state) => {
+        const box = form.querySelector('[data-upload-progress]');
+        if (!box) {
+            return;
+        }
+        const bar = box.querySelector('[data-upload-progress-bar]');
+        const percentEl = box.querySelector('[data-upload-progress-percent]');
+        const labelEl = box.querySelector('[data-upload-progress-label]');
+        const metaEl = box.querySelector('[data-upload-progress-meta]');
+
+        if (!state) {
+            box.classList.add('hidden');
+            if (bar) bar.style.width = '0%';
+            if (percentEl) percentEl.textContent = '0%';
+            return;
+        }
+
+        box.classList.remove('hidden');
+        const percent = Math.max(0, Math.min(100, Number(state.percent) || 0));
+        if (bar) bar.style.width = `${percent}%`;
+        if (percentEl) percentEl.textContent = `${percent}%`;
+        if (labelEl) {
+            labelEl.textContent = state.label || 'جاري الرفع...';
+        }
+        if (metaEl) {
+            metaEl.textContent = state.meta || '';
+        }
+    };
+
     root.addEventListener('submit', async (e) => {
         const form = e.target.closest('form[data-curriculum-ajax]');
         if (!form || !root.contains(form)) {
@@ -1555,7 +1710,8 @@ function initCurriculumAjax(wrap) {
         }
 
         const errorEl = form.closest('details')?.querySelector('[data-curriculum-form-error]')
-            || form.parentElement?.querySelector('[data-curriculum-form-error]');
+            || form.parentElement?.querySelector('[data-curriculum-form-error]')
+            || form.querySelector('[data-curriculum-form-error]');
         if (errorEl) {
             errorEl.classList.add('hidden');
             errorEl.textContent = '';
@@ -1573,6 +1729,7 @@ function initCurriculumAjax(wrap) {
             const datePart = form.querySelector('[data-session-date]')?.value || '';
             const timePart = form.querySelector('[data-session-time]')?.value || '00:00';
             const hidden = form.querySelector('[data-session-datetime]');
+            const linkInput = form.querySelector('[data-session-link]');
             const isLiveSession = form.getAttribute('data-session-mode') === 'live';
             if (isLiveSession && (!datePart || !form.querySelector('[data-session-time]')?.value)) {
                 const msg = 'تاريخ ووقت الجلسة مطلوبان للدورة المباشرة';
@@ -1583,39 +1740,89 @@ function initCurriculumAjax(wrap) {
                 toast('خطأ في الحقل', msg, 'error');
                 return;
             }
+            if (isLiveSession && linkInput && !String(linkInput.value || '').trim()) {
+                const msg = 'رابط الاجتماع مطلوب للدورة المباشرة';
+                if (errorEl) {
+                    errorEl.textContent = msg;
+                    errorEl.classList.remove('hidden');
+                }
+                toast('خطأ في الحقل', msg, 'error');
+                linkInput.focus();
+                return;
+            }
             if (hidden) {
                 hidden.value = datePart ? `${datePart} ${timePart}` : '';
             }
         }
 
-        setBusy(form, true);
-        try {
-            const response = await fetch(form.action, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    Accept: 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                },
-                body: new FormData(form),
-                credentials: 'same-origin',
-            });
-
-            let data = null;
-            try {
-                data = await response.json();
-            } catch (_) {
-                data = null;
-            }
-
-            if (!response.ok) {
-                const msg = firstValidationError(data);
+        if (mode === 'file') {
+            const fileInput = form.querySelector('input[type="file"][name="upload"], input[type="file"]');
+            const file = fileInput?.files?.[0];
+            const maxBytes = 2 * 1024 * 1024 * 1024;
+            if (!file) {
+                const msg = 'يرجى اختيار ملف للرفع';
                 if (errorEl) {
                     errorEl.textContent = msg;
                     errorEl.classList.remove('hidden');
                 }
                 toast('خطأ في الحقل', msg, 'error');
                 return;
+            }
+            if (file.size > maxBytes) {
+                const msg = `حجم الملف (${formatUploadBytes(file.size)}) أكبر من الحد المسموح (2 GB)`;
+                if (errorEl) {
+                    errorEl.textContent = msg;
+                    errorEl.classList.remove('hidden');
+                }
+                toast('خطأ في الحقل', msg, 'error');
+                return;
+            }
+        }
+
+        setBusy(form, true);
+        if (mode === 'file') {
+            setUploadProgress(form, {
+                percent: 0,
+                label: 'جاري رفع الملف...',
+                meta: 'يرجى الانتظار — قد يستغرق رفع الفيديوهات الكبيرة وقتًا',
+            });
+        }
+
+        try {
+            const result = await postCurriculumForm(form, {
+                onProgress: mode === 'file'
+                    ? ({ percent, loaded, total }) => {
+                        setUploadProgress(form, {
+                            percent,
+                            label: 'جاري رفع الملف...',
+                            meta: `${formatUploadBytes(loaded)} من ${formatUploadBytes(total)}`,
+                        });
+                    }
+                    : undefined,
+            });
+
+            const data = result.data;
+            if (!result.ok) {
+                const msg = mode === 'file'
+                    ? (uploadFailureMessage(result) || 'تعذر إكمال العملية')
+                    : (firstValidationError(data) || 'تعذر إكمال العملية');
+                if (errorEl) {
+                    errorEl.textContent = msg;
+                    errorEl.classList.remove('hidden');
+                }
+                toast('خطأ في الحقل', msg, 'error');
+                if (mode === 'file') {
+                    setUploadProgress(form, null);
+                }
+                return;
+            }
+
+            if (mode === 'file') {
+                setUploadProgress(form, {
+                    percent: 100,
+                    label: 'اكتمل الرفع',
+                    meta: 'جاري حفظ الملف في الدورة...',
+                });
             }
 
             if (mode === 'chapter' && data?.unit) {
@@ -1625,9 +1832,39 @@ function initCurriculumAjax(wrap) {
                 return;
             }
 
+            if (mode === 'chapter-update' && data?.unit) {
+                const unitEl = form.closest('[data-curriculum-unit]');
+                const titleEl = unitEl?.querySelector('[data-unit-title]');
+                if (titleEl) {
+                    titleEl.textContent = data.unit.title || titleEl.textContent;
+                    titleEl.classList.remove('hidden');
+                }
+                form.classList.add('hidden');
+                form.classList.remove('flex');
+                const deleteBtn = unitEl?.querySelector('[data-curriculum-delete]');
+                if (deleteBtn && data.unit.title) {
+                    deleteBtn.setAttribute('data-delete-item', data.unit.title);
+                }
+                toast('تم', data.message || 'تم تحديث الوحدة', 'success');
+                return;
+            }
+
             if ((mode === 'session' || mode === 'file' || mode === 'text') && data?.lesson) {
                 appendLesson(data.chapter_id, data.lesson);
                 form.reset();
+                form.querySelectorAll('[data-v1-file-upload]').forEach((rootUpload) => {
+                    rootUpload.querySelector('[data-v1-preview]')?.classList.add('hidden');
+                    const preview = rootUpload.querySelector('[data-v1-preview]');
+                    if (preview) preview.innerHTML = '';
+                    const nameEl = rootUpload.querySelector('[data-v1-selected-name]');
+                    if (nameEl) {
+                        nameEl.textContent = '';
+                        nameEl.classList.add('hidden');
+                    }
+                    const input = rootUpload.querySelector('[data-v1-file-input]');
+                    if (input) input.value = '';
+                });
+                setUploadProgress(form, null);
                 const details = form.closest('details');
                 if (details) {
                     details.open = false;
@@ -1644,6 +1881,9 @@ function initCurriculumAjax(wrap) {
                 errorEl.classList.remove('hidden');
             }
             toast('خطأ', msg, 'error');
+            if (mode === 'file') {
+                setUploadProgress(form, null);
+            }
         } finally {
             setBusy(form, false);
         }

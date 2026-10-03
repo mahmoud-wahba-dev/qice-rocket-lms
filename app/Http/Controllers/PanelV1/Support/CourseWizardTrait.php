@@ -240,6 +240,7 @@ trait CourseWizardTrait
                     'title' => $translatedTitle($chapter),
                     'lessons' => $lessons,
                     'delete_url' => route($routes['chapters.delete'], ['chapterId' => $chapter->id]),
+                    'update_url' => route($routes['chapters.update'], ['chapterId' => $chapter->id]),
                     'session_store_url' => route($routes['sessions.store']),
                     'file_store_url' => route($routes['files.store']),
                     'text_store_url' => route($routes['texts.store']),
@@ -257,6 +258,7 @@ trait CourseWizardTrait
         if ($admin) {
             return [
                 'chapters.store' => 'panel.v1.admin.education.curriculum.chapters.store',
+                'chapters.update' => 'panel.v1.admin.education.curriculum.chapters.update',
                 'chapters.delete' => 'panel.v1.admin.education.curriculum.chapters.delete',
                 'sessions.store' => 'panel.v1.admin.education.curriculum.sessions.store',
                 'sessions.delete' => 'panel.v1.admin.education.curriculum.sessions.delete',
@@ -269,6 +271,7 @@ trait CourseWizardTrait
 
         return [
             'chapters.store' => 'panel.v1.instructor.curriculum.chapters.store',
+            'chapters.update' => 'panel.v1.instructor.curriculum.chapters.update',
             'chapters.delete' => 'panel.v1.instructor.curriculum.chapters.delete',
             'sessions.store' => 'panel.v1.instructor.curriculum.sessions.store',
             'sessions.delete' => 'panel.v1.instructor.curriculum.sessions.delete',

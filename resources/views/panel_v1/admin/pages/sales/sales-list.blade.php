@@ -46,7 +46,7 @@
                 <tbody>
                     @foreach ($salesRows ?? [] as $i => $row)
                         <tr class="border-b border-d9 last:border-0">
-                            <td class="px-3 py-4 font-medium text-primary whitespace-nowrap">{{ $row['id'] }}</td>
+                            <td class="px-3 py-4 font-medium text-primary whitespace-nowrap">{{ $row['display_id'] ?? ('#'.$row['id']) }}</td>
                             <td class="px-3 py-4 min-w-40">
                                 <p class="font-semibold text-primary">{{ $row['student'] }}</p>
                                 <p class="font-medium text-12px text-gray">{{ $row['student_email'] }}</p>
@@ -59,17 +59,32 @@
                             <td class="px-3 py-4 font-medium text-primary">{{ $row['type'] }}</td>
                             <td class="px-3 py-4 font-medium text-gray whitespace-nowrap">{{ $row['date'] }}</td>
                             <td class="px-3 py-4">
-                                <span class="inline-flex rounded-full bg-[#D1FAE5] text-[#059669] px-3 py-1 font-semibold text-12px">
+                                <span class="inline-flex rounded-full px-3 py-1 font-semibold text-12px {{ !empty($row['is_refunded']) ? 'bg-[#FEE2E2] text-[#DC2626]' : 'bg-[#D1FAE5] text-[#059669]' }}">
                                     {{ $row['status'] }}
                                 </span>
                             </td>
                             <td class="px-3 py-4 text-center">
+                                @php
+                                    $saleActions = [
+                                        [
+                                            'label' => 'عرض الفاتورة',
+                                            'url' => route('panel.v1.admin.sales.sales.invoice', ['id' => $row['id']]),
+                                            'tone' => 'gray',
+                                            'target' => '_blank',
+                                        ],
+                                    ];
+                                    if (empty($row['is_refunded'])) {
+                                        $saleActions[] = [
+                                            'label' => 'استرداد',
+                                            'action' => route('panel.v1.admin.sales.sales.refund', ['id' => $row['id']]),
+                                            'confirm' => 'تنفيذ الاسترداد لهذه العملية؟',
+                                            'tone' => 'danger',
+                                        ];
+                                    }
+                                @endphp
                                 @include('panel_v1.components.actions-dropdown', [
                                     'id' => 'sales-row-'.$row['id'],
-                                    'items' => [
-                                        ['label' => 'عرض الفاتورة', 'url' => route('panel.v1.admin.sales.sales.invoice', ['id' => $row['id']]), 'tone' => 'gray'],
-                                        ['label' => 'استرداد', 'action' => route('panel.v1.admin.sales.sales.refund', ['id' => $row['id']]), 'confirm' => 'تنفيذ الاسترداد؟', 'tone' => 'danger'],
-                                    ],
+                                    'items' => $saleActions,
                                 ])
                             </td>
                         </tr>
