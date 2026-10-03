@@ -123,7 +123,12 @@ class InstructorController extends Controller
             return $user;
         }
 
-        $courseCards = $this->courseCards($user);
+        // Soft-deleted (inactive) courses must not appear — otherwise "حذف" looks broken.
+        $courseCards = array_values(array_filter(
+            $this->courseCards($user),
+            fn ($card) => ($card['status'] ?? '') !== Webinar::$inactive
+                && ($card['status'] ?? '') !== 'inactive'
+        ));
 
         return $this->render($request, 'panel_v1.instructor.pages.courses', 'إدارة الدورات', [
             'courseCards' => $courseCards,
@@ -727,14 +732,25 @@ class InstructorController extends Controller
             })
             ->firstOrFail();
 
-        $webinar->update([
-            'status' => Webinar::$inactive,
-            'updated_at' => time(),
-        ]);
+        // Drafts: hard-delete. Published/pending: soft-delete (inactive) so sales history stays intact.
+        // Match legacy panel when direct delete is allowed.
+        $isDraft = ($webinar->status === Webinar::$isDraft || $webinar->status === 'is_draft');
+        $canHardDelete = $isDraft || (function_exists('canDeleteContentDirectly') && canDeleteContentDirectly());
+
+        if ($canHardDelete) {
+            $webinar->delete();
+            $msg = $isDraft ? 'تم حذف المسودة بنجاح' : 'تم حذف الدورة بنجاح';
+        } else {
+            $webinar->update([
+                'status' => Webinar::$inactive,
+                'updated_at' => time(),
+            ]);
+            $msg = 'تم حذف الدورة من قائمتك';
+        }
 
         return redirect()
             ->route('panel.v1.instructor.courses')
-            ->with('toast', ['title' => 'تم', 'msg' => 'تم حذف الدورة بنجاح', 'type' => 'success']);
+            ->with('toast', ['title' => 'تم', 'msg' => $msg, 'type' => 'success']);
     }
 
     public function createCourse(Request $request, ?int $step = 1)
@@ -3342,6 +3358,106 @@ class InstructorController extends Controller
                 'quizView' => $quizView,
                 'realQuestions' => $realQuestions,
                 'waitingResults' => $waitingResults,
+                'editQuestion' => null,
+            ])
+        );
+    }
+
+    public function questionEdit(Request $request, int $id, int $questionId)
+    {
+        $guardUser = $request->user();
+        if (!$guardUser) {
+            return redirect('/login');
+        }
+
+        $quiz = $this->teacherQuizOrFail($guardUser, $id);
+        $webinar = $quiz->webinar;
+        $shell = $this->instructorCourseShell($webinar, $request);
+
+        $editQuestion = \App\Models\QuizzesQuestion::with(['quizzesQuestionsAnswers'])
+            ->where('quiz_id', $quiz->id)
+            ->where('id', $questionId)
+            ->firstOrFail();
+
+        $questions = \App\Models\QuizzesQuestion::with(['quizzesQuestionsAnswers'])
+            ->where('quiz_id', $quiz->id)
+            ->orderBy('order')
+            ->orderBy('id')
+            ->get();
+
+        $realQuestions = $questions->map(function ($question) {
+            return [
+                'id' => $question->id,
+                'title' => $question->title,
+                'type' => $question->type,
+                'grade' => $question->grade,
+                'model_answer' => $question->type === \App\Models\QuizzesQuestion::$descriptive
+                    ? ($question->correct ?: '—')
+                    : null,
+                'options' => $question->quizzesQuestionsAnswers->map(function ($answer) {
+                    return [
+                        'id' => $answer->id,
+                        'text' => $answer->title,
+                        'correct' => (bool) $answer->correct,
+                    ];
+                })->values()->all(),
+            ];
+        })->values()->all();
+
+        $waitingResults = \App\Models\QuizzesResult::with(['user'])
+            ->where('quiz_id', $quiz->id)
+            ->where('status', \App\Models\QuizzesResult::$waiting)
+            ->orderByDesc('id')
+            ->limit(20)
+            ->get();
+
+        $editPayload = [
+            'id' => $editQuestion->id,
+            'title' => $editQuestion->title,
+            'type' => $editQuestion->type,
+            'grade' => $editQuestion->grade,
+            'model_answer' => $editQuestion->type === \App\Models\QuizzesQuestion::$descriptive
+                ? ($editQuestion->correct ?: '')
+                : '',
+            'options' => $editQuestion->quizzesQuestionsAnswers->map(fn ($a) => [
+                'text' => $a->title,
+                'correct' => (bool) $a->correct,
+            ])->values()->all(),
+            'correct_option' => (function () use ($editQuestion) {
+                foreach ($editQuestion->quizzesQuestionsAnswers->values() as $i => $a) {
+                    if (!empty($a->correct)) {
+                        return (int) $i;
+                    }
+                }
+
+                return 0;
+            })(),
+        ];
+
+        return $this->render(
+            $request,
+            'panel_v1.instructor.pages.quiz-view',
+            'تعديل سؤال',
+            array_merge($shell, [
+                'quizId' => $quiz->id,
+                'slug' => $webinar->slug ?? '',
+                'webinar' => $webinar,
+                'quizTitle' => $quiz->title,
+                'quizMeta' => [
+                    'pass_mark' => $quiz->pass_mark,
+                    'time' => $quiz->time,
+                    'attempt' => $quiz->attempt,
+                    'status' => $quiz->status,
+                    'total_mark' => $quiz->total_mark,
+                ],
+                'quizView' => [
+                    'title' => $quiz->title,
+                    'subtitle' => ($webinar->title ?? '') . (!empty($webinar->category->title) ? (' • ' . $webinar->category->title) : ''),
+                    'questions_count' => count($realQuestions),
+                ],
+                'realQuestions' => $realQuestions,
+                'waitingResults' => $waitingResults,
+                'editQuestion' => $editPayload,
             ])
         );
     }
@@ -3573,6 +3689,91 @@ class InstructorController extends Controller
         return redirect()
             ->route('panel.v1.instructor.quizzes.view', ['id' => $quiz->id])
             ->with('toast', ['title' => 'تم', 'msg' => 'تمت إضافة السؤال بنجاح', 'type' => 'success']);
+    }
+
+    public function questionUpdate(Request $request, int $id, int $questionId)
+    {
+        $guardUser = $request->user();
+        if (!$guardUser || !$guardUser->isTeacher()) {
+            return redirect('/login');
+        }
+
+        $quiz = $this->teacherQuizOrFail($guardUser, $id);
+        $question = \App\Models\QuizzesQuestion::where('quiz_id', $quiz->id)
+            ->where('id', $questionId)
+            ->firstOrFail();
+
+        $type = $request->input('type', 'multiple');
+        $rules = [
+            'title' => 'required|string|max:1000',
+            'type' => 'required|in:multiple,descriptive',
+            'grade' => 'required|integer|min:1|max:1000',
+        ];
+        if ($type === 'multiple') {
+            $rules['options'] = 'required|array|min:2';
+            $rules['options.*'] = 'nullable|string|max:1000';
+            $rules['correct_option'] = 'required|integer|min:0|max:10';
+        } else {
+            $rules['correct'] = 'nullable|string|max:5000';
+        }
+
+        $data = $request->validate($rules, [
+            'title.required' => 'اكتب نص السؤال',
+            'grade.required' => 'حدد درجة السؤال',
+            'options.required' => 'أضف خيارين على الأقل',
+            'options.min' => 'أضف خيارين على الأقل',
+            'correct_option.required' => 'اختر الإجابة الصحيحة بالنقر على ○ بجانب الخيار',
+        ]);
+
+        $options = [];
+        if ($type === 'multiple') {
+            $options = array_values(array_filter(array_map('trim', (array) $request->input('options', [])), fn ($v) => $v !== ''));
+            if (count($options) < 2) {
+                return back()->withInput()->withErrors(['options' => 'أضف خيارين مكتوبين على الأقل']);
+            }
+            $correctOption = (int) $request->input('correct_option', 0);
+            if ($correctOption < 0 || $correctOption >= count($options)) {
+                return back()->withInput()->withErrors(['correct_option' => 'اختر الإجابة الصحيحة من الخيارات المكتوبة']);
+            }
+        }
+
+        $question->grade = (int) $data['grade'];
+        $question->type = $type;
+        $question->updated_at = time();
+        $question->save();
+
+        $translation = $question->translateOrNew('ar');
+        $translation->locale = 'ar';
+        $translation->title = $data['title'];
+        $translation->correct = $type === 'descriptive' ? $request->input('correct') : null;
+        $translation->save();
+
+        \App\Models\QuizzesQuestionsAnswer::where('question_id', $question->id)->delete();
+        if ($type === 'multiple') {
+            $correctOption = (int) $request->input('correct_option', 0);
+            foreach ($options as $index => $optionTitle) {
+                $answer = new \App\Models\QuizzesQuestionsAnswer();
+                $answer->question_id = $question->id;
+                $answer->creator_id = $guardUser->id;
+                $answer->correct = $index === $correctOption ? 1 : 0;
+                $answer->created_at = time();
+                $answer->updated_at = time();
+                $answer->save();
+
+                $answerTranslation = $answer->translateOrNew('ar');
+                $answerTranslation->locale = 'ar';
+                $answerTranslation->title = mb_substr($optionTitle, 0, 1000);
+                $answerTranslation->save();
+            }
+        }
+
+        $quiz->total_mark = (int) \App\Models\QuizzesQuestion::where('quiz_id', $quiz->id)->sum('grade');
+        $quiz->updated_at = time();
+        $quiz->save();
+
+        return redirect()
+            ->route('panel.v1.instructor.quizzes.view', ['id' => $quiz->id])
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم تحديث السؤال بنجاح', 'type' => 'success']);
     }
 
     public function questionDelete(Request $request, int $id, int $questionId)

@@ -51,8 +51,9 @@
                 </li>
             @elseif (!empty($item['action']))
                 <li>
+                    {{-- Use single-quoted onsubmit: @js/@json emit double quotes and break HTML attrs --}}
                     <form method="POST" action="{{ $item['action'] }}"
-                        @if (!empty($item['confirm'])) onsubmit="return confirm(@js($item['confirm']));" @endif>
+                        @if (!empty($item['confirm'])) onsubmit='return confirm(@json($item['confirm']));' @endif>
                         @csrf
                         @if (!empty($item['method']) && strtoupper($item['method']) !== 'POST')
                             @method($item['method'])

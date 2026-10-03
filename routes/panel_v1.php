@@ -197,6 +197,14 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 ->name('instructor.quizzes.delete');
             Route::post('/instructor/quizzes/{id}/questions', [InstructorController::class, 'questionStore'])
                 ->name('instructor.quizzes.questions.store');
+            Route::get('/instructor/quizzes/{id}/questions/{questionId}/edit', [InstructorController::class, 'questionEdit'])
+                ->whereNumber('id')
+                ->whereNumber('questionId')
+                ->name('instructor.quizzes.questions.edit');
+            Route::post('/instructor/quizzes/{id}/questions/{questionId}', [InstructorController::class, 'questionUpdate'])
+                ->whereNumber('id')
+                ->whereNumber('questionId')
+                ->name('instructor.quizzes.questions.update');
             Route::post('/instructor/quizzes/{id}/questions/{questionId}/delete', [InstructorController::class, 'questionDelete'])
                 ->name('instructor.quizzes.questions.delete');
             Route::get('/instructor/quiz-results/{resultId}/grade', [InstructorController::class, 'gradeQuizResult'])

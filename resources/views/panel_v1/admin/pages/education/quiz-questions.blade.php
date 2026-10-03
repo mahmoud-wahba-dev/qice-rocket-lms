@@ -20,9 +20,25 @@
 <div class="space-y-6 pb-8">
     @include('panel_v1.admin.components.page-header', [
         'title' => $stubTitle ?? 'أسئلة الاختبار',
-        'subtitle' => $quiz->webinar->title ?? '',
+        'subtitle' => ($quiz->webinar->title ?? '') . ' — أضف أو عدّل الأسئلة بنفس دورة المدرب (حفظ كل سؤال مباشرة)',
     ])
 
+    <div class="rounded-14px border border-[#BFDBFE] bg-[#EFF6FF] px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-start gap-3 min-w-0">
+            <span class="icon-[tabler--list-check] size-5 text-[#1D4ED8] shrink-0 mt-0.5"></span>
+            <div class="min-w-0">
+                <p class="font-bold text-15px text-[#1E3A8A] mb-0.5">الخطوة 2: أسئلة الاختبار</p>
+                <p class="font-medium text-13px text-[#1E40AF]">
+                    كل سؤال يُحفظ فور الضغط على زر الحفظ — لا حاجة لزر حفظ عام.
+                </p>
+            </div>
+        </div>
+        <a href="#question-form"
+            class="inline-flex items-center justify-center gap-2 rounded-12px bg-primary h-11 px-5 font-bold text-14px text-white hover:opacity-95 transition shrink-0">
+            <span class="icon-[tabler--plus] size-4"></span>
+            سؤال جديد
+        </a>
+    </div>
     <div class="border border-d9 rounded-14px bg-white overflow-hidden">
         <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4]">
             <h2 class="font-bold text-16px text-primary">الأسئلة ({{ $questions->total() }})</h2>

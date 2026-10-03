@@ -141,9 +141,14 @@
                         <span class="inline-flex rounded-full bg-[#F1F5F9] px-3 py-1 font-semibold text-12px text-gray">
                             {{ ($question['type'] ?? '') === 'descriptive' ? 'وصفي' : 'اختيار من متعدد' }}
                         </span>
+                        <a href="{{ route('panel.v1.instructor.quizzes.questions.edit', ['id' => $quizId, 'questionId' => $question['id']]) }}#add-question"
+                            class="size-9 rounded-full bg-[#EFF6FF] center text-[#1D4ED8] hover:opacity-80"
+                            title="تعديل السؤال" aria-label="تعديل">
+                            <span class="icon-[tabler--pencil] size-4"></span>
+                        </a>
                         <form method="POST"
                             action="{{ route('panel.v1.instructor.quizzes.questions.delete', ['id' => $quizId, 'questionId' => $question['id']]) }}"
-                            onsubmit="return confirm('حذف هذا السؤال؟');">
+                            onsubmit='return confirm(@json("حذف هذا السؤال؟"));'>
                             @csrf
                             <button type="submit" class="size-9 rounded-full bg-[#FEF2F2] center text-[#EF4444] hover:opacity-80" aria-label="حذف">
                                 <span class="icon-[tabler--trash] size-4"></span>
@@ -189,15 +194,44 @@
         @endforelse
     </div>
 
-    {{-- Add question form --}}
-    <div id="add-question" class="rounded-20px border border-d9 bg-white px-5 sm:px-7 py-7 shadow-sm scroll-mt-24">
-        <h2 class="font-bold text-20px sm:text-22px text-primary mb-2">إضافة سؤال جديد</h2>
-        <p class="font-medium text-14px text-gray mb-6">
-            للاختيار من متعدد: اكتب 2–4 خيارات ثم انقر على ○ بجانب الإجابة الصحيحة.
-        </p>
+    {{-- Add / edit question form --}}
+    @php
+        $editQuestion = $editQuestion ?? null;
+        $isEditingQuestion = !empty($editQuestion);
+        $eqType = old('type', $isEditingQuestion ? ($editQuestion['type'] ?? 'multiple') : 'multiple');
+        $eqCorrect = (string) old('correct_option', $isEditingQuestion ? ($editQuestion['correct_option'] ?? 0) : 0);
+        $eqOptions = old('options', $isEditingQuestion
+            ? collect($editQuestion['options'] ?? [])->pluck('text')->pad(4, '')->take(4)->all()
+            : ['', '', '', '']);
+        $questionFormAction = $isEditingQuestion
+            ? route('panel.v1.instructor.quizzes.questions.update', ['id' => $quizId, 'questionId' => $editQuestion['id']])
+            : route('panel.v1.instructor.quizzes.questions.store', ['id' => $quizId]);
+    @endphp
+    <div id="add-question" class="rounded-20px border border-d9 bg-white px-5 sm:px-7 py-7 shadow-sm scroll-mt-24 {{ $isEditingQuestion ? 'ring-2 ring-primary/20' : '' }}">
+        <div class="flex flex-wrap items-start justify-between gap-3 mb-2">
+            <div>
+                <h2 class="font-bold text-20px sm:text-22px text-primary mb-2">
+                    {{ $isEditingQuestion ? ('تعديل السؤال #' . $editQuestion['id']) : 'إضافة سؤال جديد' }}
+                </h2>
+                <p class="font-medium text-14px text-gray mb-0">
+                    @if ($isEditingQuestion)
+                        عدّل النص أو الخيارات ثم احفظ — التغييرات تُطبَّق فورًا على هذا الاختبار.
+                    @else
+                        للاختيار من متعدد: اكتب 2–4 خيارات ثم انقر على ○ بجانب الإجابة الصحيحة.
+                    @endif
+                </p>
+            </div>
+            @if ($isEditingQuestion)
+                <a href="{{ route('panel.v1.instructor.quizzes.view', ['id' => $quizId]) }}#add-question"
+                    class="inline-flex items-center gap-1.5 font-semibold text-14px text-gray hover:text-primary transition shrink-0">
+                    <span class="icon-[tabler--x] size-4"></span>
+                    إلغاء التعديل
+                </a>
+            @endif
+        </div>
 
         @if ($errors->any())
-            <div class="rounded-12px bg-[#FEF2F2] border border-[#FECACA] px-4 py-3 mb-5">
+            <div class="rounded-12px bg-[#FEF2F2] border border-[#FECACA] px-4 py-3 mb-5 mt-4">
                 <ul class="list-disc list-inside space-y-1 font-medium text-14px text-[#DC2626]">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
@@ -206,13 +240,15 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('panel.v1.instructor.quizzes.questions.store', ['id' => $quizId]) }}"
-            class="space-y-5" data-question-form>
+        <form method="POST" action="{{ $questionFormAction }}"
+            class="space-y-5 {{ $errors->any() || $isEditingQuestion ? 'mt-4' : 'mt-6' }}" data-question-form>
             @csrf
 
             <div>
                 <label class="block font-semibold text-14px text-primary mb-2">نص السؤال <span class="text-[#E11D48]">*</span></label>
-                <input type="text" name="title" value="{{ old('title') }}" required maxlength="1000"
+                <input type="text" name="title"
+                    value="{{ old('title', $isEditingQuestion ? ($editQuestion['title'] ?? '') : '') }}"
+                    required maxlength="1000"
                     placeholder="مثال: ما هو الهدف من معايير الجودة؟"
                     class="input input-bordered w-full h-12 rounded-10px border-d9 font-medium text-15px text-primary">
             </div>
@@ -222,13 +258,13 @@
                     <label class="block font-semibold text-14px text-primary mb-2">نوع السؤال</label>
                     <div class="grid grid-cols-2 gap-2" data-question-type-toggle>
                         <label class="cursor-pointer">
-                            <input type="radio" name="type" value="multiple" class="peer sr-only" @checked(old('type', 'multiple') === 'multiple')>
+                            <input type="radio" name="type" value="multiple" class="peer sr-only" @checked($eqType === 'multiple')>
                             <span class="flex items-center justify-center gap-2 h-12 rounded-10px border border-d9 font-semibold text-14px text-gray peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:text-primary">
                                 اختيار من متعدد
                             </span>
                         </label>
                         <label class="cursor-pointer">
-                            <input type="radio" name="type" value="descriptive" class="peer sr-only" @checked(old('type') === 'descriptive')>
+                            <input type="radio" name="type" value="descriptive" class="peer sr-only" @checked($eqType === 'descriptive')>
                             <span class="flex items-center justify-center gap-2 h-12 rounded-10px border border-d9 font-semibold text-14px text-gray peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:text-primary">
                                 سؤال وصفي
                             </span>
@@ -237,12 +273,14 @@
                 </div>
                 <div>
                     <label class="block font-semibold text-14px text-primary mb-2">درجة السؤال <span class="text-[#E11D48]">*</span></label>
-                    <input type="number" name="grade" value="{{ old('grade', 10) }}" min="1" max="1000" required
+                    <input type="number" name="grade"
+                        value="{{ old('grade', $isEditingQuestion ? ($editQuestion['grade'] ?? 10) : 10) }}"
+                        min="1" max="1000" required
                         class="input input-bordered w-full h-12 rounded-10px border-d9 font-medium text-15px text-primary">
                 </div>
             </div>
 
-            <div data-multiple-fields class="space-y-3">
+            <div data-multiple-fields class="space-y-3 {{ $eqType === 'descriptive' ? 'hidden' : '' }}">
                 <div class="flex items-center justify-between gap-3">
                     <p class="font-semibold text-14px text-primary">الخيارات — اختر الصحيحة بالنقر على ○</p>
                     <p class="font-medium text-12px text-gray">خياران على الأقل</p>
@@ -252,10 +290,10 @@
                     <label class="flex items-center gap-3 rounded-12px border border-d9 bg-[#F8FAFC] px-3 py-2.5 cursor-pointer hover:border-primary/40 transition has-[:checked]:border-primary has-[:checked]:bg-primary/5">
                         <input type="radio" name="correct_option" value="{{ $i }}"
                             class="radio radio-primary size-5 shrink-0"
-                            @checked((string) old('correct_option', '0') === (string) $i)
+                            @checked($eqCorrect === (string) $i)
                             {{ $i > 1 ? '' : 'required' }}>
                         <span class="font-semibold text-13px text-primary shrink-0 w-16">خيار {{ $i + 1 }}</span>
-                        <input type="text" name="options[]" value="{{ old('options.' . $i) }}"
+                        <input type="text" name="options[]" value="{{ $eqOptions[$i] ?? '' }}"
                             placeholder="{{ $i < 2 ? 'اكتب نص الخيار *' : 'اختياري' }}"
                             class="input input-bordered border-0 bg-transparent w-full h-10 font-medium text-15px text-primary focus:outline-none"
                             {{ $i < 2 ? 'required' : '' }}>
@@ -266,24 +304,33 @@
                 </p>
             </div>
 
-            <div data-descriptive-fields class="hidden space-y-3">
+            <div data-descriptive-fields class="space-y-3 {{ $eqType === 'descriptive' ? '' : 'hidden' }}">
                 <div>
                     <label class="block font-semibold text-14px text-primary mb-2">الإجابة النموذجية (اختياري)</label>
                     <textarea name="correct" rows="4"
                         class="textarea textarea-bordered w-full rounded-10px border-d9 font-medium text-15px text-primary min-h-28"
-                        placeholder="اكتب نموذجاً يساعد المدرب عند التصحيح اليدوي...">{{ old('correct') }}</textarea>
+                        placeholder="اكتب نموذجاً يساعد المدرب عند التصحيح اليدوي...">{{ old('correct', $isEditingQuestion ? ($editQuestion['model_answer'] ?? '') : '') }}</textarea>
                 </div>
             </div>
 
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
                 <p class="font-medium text-13px text-gray">
-                    بعد الحفظ يظهر السؤال فوراً في القائمة أعلاه ويُربط بهذا الاختبار.
+                    @if ($isEditingQuestion)
+                        بعد الحفظ تُحدَّث قائمة الأسئلة أعلاه مباشرة.
+                    @else
+                        بعد الحفظ يظهر السؤال فوراً في القائمة أعلاه ويُربط بهذا الاختبار.
+                    @endif
                 </p>
                 <div class="flex flex-wrap items-center gap-3">
-                    <button type="reset" class="btn btn-ghost rounded-12px h-12 px-6 font-semibold text-15px text-gray">مسح</button>
+                    @if ($isEditingQuestion)
+                        <a href="{{ route('panel.v1.instructor.quizzes.view', ['id' => $quizId]) }}#add-question"
+                            class="btn btn-ghost rounded-12px h-12 px-6 font-semibold text-15px text-gray">إلغاء</a>
+                    @else
+                        <button type="reset" class="btn btn-ghost rounded-12px h-12 px-6 font-semibold text-15px text-gray">مسح</button>
+                    @endif
                     <button type="submit" class="btn btn-primary rounded-12px h-12 px-8 font-bold text-15px inline-flex items-center gap-2">
                         <span class="icon-[tabler--device-floppy] size-5"></span>
-                        حفظ السؤال في الاختبار
+                        {{ $isEditingQuestion ? 'حفظ تعديلات السؤال' : 'حفظ السؤال في الاختبار' }}
                     </button>
                 </div>
             </div>
@@ -356,6 +403,10 @@
     };
     form.querySelectorAll('input[name="type"]').forEach((el) => el.addEventListener('change', syncType));
     syncType();
+
+    @if (!empty($editQuestion))
+    document.getElementById('add-question')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    @endif
 })();
 </script>
 @endsection

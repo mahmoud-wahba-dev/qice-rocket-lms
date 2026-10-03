@@ -50,7 +50,9 @@
                             $courseMenuItems[] = [
                                 'label' => 'حذف',
                                 'action' => route('panel.v1.instructor.courses.delete', ['id' => $courseId]),
-                                'confirm' => 'تعطيل هذه الدورة؟',
+                                'confirm' => $isDraft
+                                    ? 'حذف هذه المسودة نهائيًا؟ لا يمكن التراجع.'
+                                    : 'حذف هذه الدورة من قائمة دوراتك؟',
                                 'tone' => 'danger',
                             ];
                         }

@@ -25,7 +25,7 @@
             <a href="{{ route('panel.v1.admin.education.quizzes.create') }}"
                 class="inline-flex items-center gap-2 h-12 px-5 rounded-12px bg-color2 text-white font-semibold text-15px hover:opacity-95 transition shrink-0">
                 <span class="icon-[tabler--plus] size-5"></span>
-                إنشاء اختبار جديد
+                إضافة اختبار جديد
             </a>
         @endslot
     @endcomponent
@@ -149,13 +149,13 @@
                                     'id' => 'admin-quiz-actions-' . $quiz->id . '-' . $index,
                                     'items' => [
                                         [
-                                            'label' => 'نتائج الطلاب',
-                                            'url' => route('panel.v1.admin.education.quiz-results', ['quizId' => $quiz->id]),
+                                            'label' => 'إدارة الأسئلة',
+                                            'url' => route('panel.v1.admin.education.quizzes.questions', ['id' => $quiz->id]),
                                             'tone' => 'gray',
                                         ],
                                         [
-                                            'label' => 'تعديل الاختبار',
-                                            'url' => route('panel.v1.admin.education.quizzes.questions', ['id' => $quiz->id]),
+                                            'label' => 'نتائج الطلاب',
+                                            'url' => route('panel.v1.admin.education.quiz-results', ['quizId' => $quiz->id]),
                                             'tone' => 'gray',
                                         ],
                                         [

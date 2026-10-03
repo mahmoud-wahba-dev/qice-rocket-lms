@@ -1043,7 +1043,7 @@ class EducationController extends AdminController
     public function createQuiz(Request $request){
         $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
         $webinars=\App\Models\Webinar::orderBy('id','desc')->limit(100)->get()->map(fn($w)=>['id'=>$w->id,'title'=>$w->title])->all();
-        return $this->renderAdmin($request,'panel_v1.admin.pages.education.quiz-form','إنشاء اختبار',array_merge(AdminMockData::shell('education','quizzes'),[
+        return $this->renderAdmin($request,'panel_v1.admin.pages.education.quiz-form','إضافة اختبار جديد',array_merge(AdminMockData::shell('education','quizzes'),[
             'webinars'=>$webinars,'formAction'=>route('panel.v1.admin.education.quizzes.store'),
         ]));
     }
@@ -1066,7 +1066,9 @@ class EducationController extends AdminController
         $translation->locale='ar';
         $translation->title=$request->input('title');
         $translation->save();
-        return redirect()->route('panel.v1.admin.education.section',['section'=>'quizzes'])->with('toast',['title'=>'تم','msg'=>'تم إنشاء الاختبار','type'=>'success']);
+        return redirect()
+            ->route('panel.v1.admin.education.quizzes.questions', ['id' => $quiz->id])
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم إنشاء الاختبار، أضف الأسئلة الآن', 'type' => 'success']);
     }
     public function deleteQuiz(Request $request,int $id){
         $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
