@@ -1,3 +1,4 @@
+# Block PHP / executables under uploaded store
 <FilesMatch "\.(?:inc|php|php[0-99999999999]?|pht|phpt|phtml|phpx|phar|pl|cgi|py|jsp|asp|aspx|shtml|sh|exe|dll|bat|com|msi|vb|vbs|vbe|wsf|swf|jar|jsx|ts)$">
   <IfModule !mod_authz_core.c>
     Order allow,deny
@@ -14,7 +15,6 @@
     Satisfy All
 </Files>
 
-# Block executable file types as well
 <FilesMatch "\.(?:exe|msi|bin|sh|cmd|bat|vbs|ps1|jar)$">
   <IfModule !mod_authz_core.c>
     Order allow,deny
@@ -25,7 +25,6 @@
   </IfModule>
 </FilesMatch>
 
-# Disable PHP execution completely in this directory
 <IfModule mod_php7.c>
   php_flag engine off
 </IfModule>
@@ -33,14 +32,37 @@
   php_flag engine off
 </IfModule>
 
-# Prevent handling of files with wrong MIME types
 <IfModule mod_mime.c>
   RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .phps
   RemoveType .php .phtml .php3 .php4 .php5 .php7 .phps
+  AddType video/mp4 .mp4 .m4v
+  AddType video/webm .webm
+  AddType video/quicktime .mov
+  AddType audio/mpeg .mp3
 </IfModule>
 
-# Deny access to files without extension
+# Progressive download / seeking: do NOT gzip video (corrupts Range + wastes CPU)
+<IfModule mod_deflate.c>
+  SetEnvIfNoCase Request_URI "\.(?:mp4|m4v|webm|mov|mkv|avi|mp3)$" no-gzip dont-vary
+</IfModule>
+
+# Browser/CDN-friendly caching for lesson media (static filenames under /store)
+<IfModule mod_headers.c>
+  <FilesMatch "\.(?i:mp4|m4v|webm|mov|mkv|avi|mp3)$">
+    Header set Cache-Control "public, max-age=604800, immutable"
+    Header set Accept-Ranges "bytes"
+    Header unset Content-Encoding
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType video/mp4 "access plus 7 days"
+  ExpiresByType video/webm "access plus 7 days"
+  ExpiresByType video/quicktime "access plus 7 days"
+  ExpiresByType audio/mpeg "access plus 7 days"
+</IfModule>
+
 <FilesMatch "^\.">
   Require all denied
 </FilesMatch>
-

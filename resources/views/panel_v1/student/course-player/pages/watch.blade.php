@@ -82,22 +82,29 @@ $mediaMode = $media['mode'] ?? null;
             <div class="font-medium text-15px leading-relaxed prose max-w-none">{!! $media['content'] ?? '' !!}</div>
         </div>
     @else
-    <div class="relative w-full overflow-hidden rounded-16px bg-[#4a4a4a] shadow-sm course-player-media-shell">
+    <div class="relative w-full overflow-hidden rounded-16px bg-[#4a4a4a] shadow-sm course-player-media-shell aspect-video">
         @if ($mediaMode === 'youtube' || $mediaMode === 'vimeo')
             <div class="js-file-player-el plyr__video-embed w-full h-full" id="course-player-media">
                 <iframe
                     src="{{ $media['src'] }}"
+                    class="w-full h-full"
                     allowfullscreen
                     allowtransparency
-                    allow="autoplay"
+                    allow="autoplay; encrypted-media; picture-in-picture"
+                    loading="lazy"
+                    referrerpolicy="strict-origin-when-cross-origin"
                     title="{{ $media['title'] ?? $lessonTitle }}"
                 ></iframe>
             </div>
         @elseif ($mediaMode === 'html5')
-            <video id="course-player-media" class="js-file-player-el plyr-io-video"
-                controls preload="metadata" playsinline width="100%" height="426"
-                @if (!empty($media['poster'])) data-poster="{{ $media['poster'] }}" @endif>
-                <source src="{{ $media['src'] }}" type="video/mp4"/>
+            <video id="course-player-media" class="js-file-player-el plyr-io-video w-full h-full"
+                controls
+                preload="metadata"
+                playsinline
+                controlslist="nodownload noremoteplayback"
+                disablepictureinpicture
+                @if (!empty($media['poster'])) poster="{{ $media['poster'] }}" data-poster="{{ $media['poster'] }}" @endif>
+                <source src="{{ $media['src'] }}" type="{{ $media['mime'] ?? 'video/mp4' }}"/>
             </video>
         @elseif ($mediaMode === 'download')
             <div class="flex h-full flex-col items-center justify-center gap-4 px-6 text-center text-white">
@@ -361,15 +368,36 @@ $mediaMode = $media['mode'] ?? null;
 @push('scripts')
 <script src="/assets/vendors/plyr.io/plyr.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    if (typeof Plyr === 'undefined') return;
-    document.querySelectorAll('.js-file-player-el').forEach(function (el) {
+(function () {
+    function bootPlayer() {
+        if (typeof Plyr === 'undefined') return;
+        var media = document.getElementById('course-player-media');
+        if (!media) return;
         try {
-            // Lock 16:9 so portrait uploads (e.g. 9:16 phone videos) do not stretch the shell
-            new Plyr(el, { ratio: '16:9' });
+            // preload=metadata only — avoids saturating the VPS when the lesson page loads
+            new Plyr(media, {
+                ratio: '16:9',
+                autopause: true,
+                resetOnEnd: false,
+                storage: { enabled: false },
+                seekTime: 10,
+                keyboard: { focused: true, global: false },
+                tooltips: { controls: true, seek: true },
+                controls: [
+                    'play-large', 'play', 'progress', 'current-time', 'mute',
+                    'volume', 'settings', 'fullscreen'
+                ],
+                settings: ['speed'],
+                speed: { selected: 1, options: [0.75, 1, 1.25, 1.5] }
+            });
         } catch (e) {}
-    });
-});
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootPlayer);
+    } else {
+        bootPlayer();
+    }
+})();
 </script>
 @endpush
 @endsection

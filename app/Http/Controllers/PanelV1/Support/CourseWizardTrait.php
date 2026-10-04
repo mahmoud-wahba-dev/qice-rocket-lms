@@ -536,7 +536,9 @@ trait CourseWizardTrait
             }
 
             if ($request->hasFile('video_demo_file')) {
-                $draft->video_demo = '/store/' . ltrim($request->file('video_demo_file')->store('webinars/videos', 'public'), '/');
+                $demoPath = $request->file('video_demo_file')->store('webinars/videos', 'public');
+                \App\Services\Media\VideoFaststart::optimizePublicStorePath($demoPath);
+                $draft->video_demo = '/store/' . ltrim($demoPath, '/');
                 $draft->video_demo_source = 'upload';
             } elseif ($request->filled('video_demo_link')) {
                 $draft->video_demo = $request->input('video_demo_link');

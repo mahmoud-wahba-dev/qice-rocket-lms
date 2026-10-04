@@ -930,16 +930,23 @@ class EducationController extends AdminController
         $request->validate(['chapter_id'=>'required|integer','title'=>'required|string|max:255','upload'=>'required|file|max:5242880']);
         $chapter=\App\Models\WebinarChapter::where('id',$request->input('chapter_id'))->where('webinar_id',$webinar->id)->firstOrFail();
         $path=$request->file('upload')->store('webinars/files','public');
+        $mime=(string)($request->file('upload')->getMimeType() ?: '');
+        $fileType=explode('/',$mime)[0] ?? 'file';
+        $isVideo=$fileType==='video' || preg_match('/\.(mp4|webm|mov|m4v|mkv|avi)$/i',$path);
+        if ($isVideo) {
+            \App\Services\Media\VideoFaststart::optimizePublicStorePath($path);
+            $fileType='video';
+        }
         $file=new \App\Models\File();
         $file->creator_id=$user->id;
         $file->webinar_id=$webinar->id;
         $file->chapter_id=$chapter->id;
         $file->accessibility='paid';
-        $file->downloadable=1;
+        $file->downloadable=$isVideo ? 0 : 1;
         $file->storage='upload';
         $file->file='/store/'.ltrim($path,'/');
         $file->volume=(string)$request->file('upload')->getSize();
-        $file->file_type=explode('/',$request->file('upload')->getMimeType())[0] ?? 'file';
+        $file->file_type=$fileType;
         $file->status='active';
         $file->created_at=time();
         $file->updated_at=time();

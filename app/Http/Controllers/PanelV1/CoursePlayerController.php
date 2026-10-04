@@ -739,7 +739,8 @@ class CoursePlayerController extends Controller
                     'src' => $playSrc,
                     'poster' => $poster,
                     'title' => $this->localizedTitle($model),
-                    'downloadable' => (bool) $model->downloadable,
+                    'downloadable' => false,
+                    'mime' => $this->guessVideoMime((string) $src),
                 ];
             }
 
@@ -777,6 +778,22 @@ class CoursePlayerController extends Controller
         }
 
         return null;
+    }
+
+    private function guessVideoMime(string $src): string
+    {
+        $path = strtolower(parse_url($src, PHP_URL_PATH) ?: $src);
+        if (str_ends_with($path, '.webm')) {
+            return 'video/webm';
+        }
+        if (str_ends_with($path, '.mov')) {
+            return 'video/quicktime';
+        }
+        if (str_ends_with($path, '.ogg') || str_ends_with($path, '.ogv')) {
+            return 'video/ogg';
+        }
+
+        return 'video/mp4';
     }
 
     private function youtubeEmbedUrl(?string $url): string
