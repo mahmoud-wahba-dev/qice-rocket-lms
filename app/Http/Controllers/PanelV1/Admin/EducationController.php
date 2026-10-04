@@ -1726,19 +1726,26 @@ class EducationController extends AdminController
             'meta' => $meta,
         ]);
 
-        if (!empty($data['save_as_defaults'])) {
+        $savedDefaults = false;
+        if ($request->boolean('save_as_defaults')) {
             cache()->forever('qiec_certificate_defaults', [
                 'officer_name' => $data['officer_name'],
                 'director_name' => $data['director_name'],
                 'accreditation_number' => $data['accreditation_number'],
             ]);
+            $savedDefaults = true;
+        }
+
+        $msg = 'تم إنشاء الشهادة ' . $certificate->formatted_number;
+        if ($savedDefaults) {
+            $msg .= ' — وحُفظت أسماء التوقيع ورقم الاعتماد كافتراضي';
         }
 
         return redirect()
             ->route('panel.v1.admin.education.section', ['section' => 'certificates'])
             ->with('toast', [
                 'title' => 'تم',
-                'msg' => 'تم إنشاء الشهادة ' . $certificate->formatted_number,
+                'msg' => $msg,
                 'type' => 'success',
             ]);
     }

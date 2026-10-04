@@ -127,9 +127,22 @@
                     <p class="mt-1 font-medium text-12px text-gray">يظهر أسفل اليمين على الشهادة</p>
                 </div>
             </div>
-            <label class="flex items-center gap-2 font-medium text-13px text-primary">
-                <input type="checkbox" name="save_as_defaults" value="1" class="checkbox checkbox-sm" @checked(old('save_as_defaults', true))>
-                حفظ أسماء التوقيع ورقم الاعتماد كافتراضي للشهادات التالية
+            <style>
+                .cert-default-switch { position:relative; display:inline-flex; width:44px; height:24px; flex-shrink:0; }
+                .cert-default-switch input { position:absolute; inset:0; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; z-index:2; }
+                .cert-default-switch .track { display:block; width:44px; height:24px; border-radius:999px; background:#D1D5DB; transition:background .15s ease; pointer-events:none; }
+                .cert-default-switch .track::after { content:""; position:absolute; top:3px; right:3px; width:18px; height:18px; border-radius:999px; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.15); transition:transform .15s ease; }
+                .cert-default-switch input:checked + .track { background:#0F3D36; }
+                .cert-default-switch input:checked + .track::after { transform:translateX(-20px); }
+            </style>
+            <label class="flex items-center justify-between gap-4 rounded-12px border border-d9 bg-[#FAFAF4] px-4 py-3 cursor-pointer">
+                <span class="font-medium text-13px text-primary leading-relaxed">
+                    حفظ أسماء التوقيع ورقم الاعتماد كافتراضي للشهادات التالية
+                </span>
+                <span class="cert-default-switch">
+                    <input type="checkbox" name="save_as_defaults" value="1" @checked(old('save_as_defaults', '1') == '1')>
+                    <span class="track" aria-hidden="true"></span>
+                </span>
             </label>
         </div>
 
