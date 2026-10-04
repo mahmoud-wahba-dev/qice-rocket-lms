@@ -26,7 +26,7 @@
         'price' => 'السعر',
         'capacity' => 'سعة الطلاب',
         'access_duration' => 'مدة الوصول',
-        'access_days' => 'عدد أيام الوصول',
+        'access_days' => 'الأيام التفاعلية',
         'confirm_rights' => 'تأكيد حقوق الملكية',
         'confirm_terms' => 'الموافقة على الشروط',
     ];

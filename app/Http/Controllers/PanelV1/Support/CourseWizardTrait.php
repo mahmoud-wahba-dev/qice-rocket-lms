@@ -34,7 +34,7 @@ trait CourseWizardTrait
             'price' => 'السعر',
             'capacity' => 'سعة الطلاب',
             'access_duration' => 'مدة الوصول',
-            'access_days' => 'عدد أيام الوصول',
+            'access_days' => 'الأيام التفاعلية',
             'start_date' => 'تاريخ ووقت بدء الدورة',
             'course_duration' => 'مدة الدورة (دقيقة)',
             'timezone' => 'المنطقة الزمنية',
@@ -610,7 +610,7 @@ trait CourseWizardTrait
             $draft->capacity = $request->input('capacity') ?: null;
 
             if ($request->input('access_duration') === 'limited') {
-                $draft->access_days = (int) ($request->input('access_days') ?: 30);
+                $draft->access_days = (int) ($request->input('access_days') ?: 180);
             } else {
                 $draft->access_days = null;
             }

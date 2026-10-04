@@ -41,23 +41,25 @@
         </div>
     </div>
     <div>
-        <p class="font-semibold text-15px sm:text-16px text-primary mb-4 text-start">مدة الوصول للمحتوى</p>
+        <p class="font-semibold text-15px sm:text-16px text-primary mb-4 text-start">الأيام التفاعلية / مدة الوصول</p>
+        <p class="font-medium text-13px text-gray mb-4">تظهر للطالب في صفحة الدورة كـ «X أيام تفاعلية»</p>
         <div class="space-y-3">
             <label class="flex items-center gap-3 cursor-pointer">
                 <input type="radio" name="access_duration" value="lifetime" class="radio radio-primary"
                     {{ $accessDuration === 'lifetime' ? 'checked' : '' }} data-access-duration>
-                <span class="font-medium text-15px text-primary">وصول مدى الحياة</span>
+                <span class="font-medium text-15px text-primary">وصول مدى الحياة (بدون حد أيام)</span>
             </label>
             <label class="flex items-center gap-3 cursor-pointer">
                 <input type="radio" name="access_duration" value="limited" class="radio radio-primary"
                     {{ $accessDuration === 'limited' ? 'checked' : '' }} data-access-duration>
-                <span class="font-medium text-15px text-primary">مدة وصول محدودة</span>
+                <span class="font-medium text-15px text-primary">أيام تفاعلية محدودة</span>
             </label>
         </div>
         <div class="mt-4 {{ $accessDuration === 'limited' ? '' : 'hidden' }}" data-access-days-wrap>
-            <label class="block font-semibold text-14px sm:text-15px text-primary mb-2">عدد أيام الوصول</label>
-            <input type="number" name="access_days" value="{{ old('access_days', $accessDays ?? 30) }}" min="1" max="3650"
-                class="{{ $input }}" data-field-label="عدد أيام الوصول">
+            <label class="block font-semibold text-14px sm:text-15px text-primary mb-2">عدد الأيام التفاعلية</label>
+            <input type="number" name="access_days" value="{{ old('access_days', $accessDays ?? 180) }}" min="1" max="3650"
+                class="{{ $input }}" data-field-label="الأيام التفاعلية" placeholder="مثال: 180" dir="ltr">
+            <p class="mt-2 font-medium text-12px text-gray">مثال: 180 — يظهر في شارة التقويم بصفحة تفاصيل الدورة</p>
             @error('access_days')
                 <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
             @enderror

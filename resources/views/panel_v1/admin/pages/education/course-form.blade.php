@@ -79,6 +79,14 @@
                 </div>
 
                 <div>
+                    <label class="font-semibold text-14px text-primary mb-2 block">الأيام التفاعلية</label>
+                    <input type="number" name="access_days" value="{{ old('access_days', $course->access_days ?? '') }}" min="1" max="3650"
+                        class="input input-bordered w-full h-12 rounded-12px border-d9 text-14px" placeholder="مثال: 180" dir="ltr">
+                    <p class="mt-1 font-medium text-12px text-gray">تظهر في صفحة الدورة كـ «X أيام تفاعلية» وتحدد مدة وصول الطالب بعد الشراء</p>
+                    @error('access_days')<p class="text-red-500 text-12px mt-1">{{ $message }}</p>@enderror
+                </div>
+
+                <div>
                     <label class="font-semibold text-14px text-primary mb-2 block">اللغة</label>
                     <select name="locale" class="select select-bordered w-full h-12 rounded-12px border-d9 text-14px">
                         <option value="ar" @selected(old('locale','ar')=='ar')>العربية</option>

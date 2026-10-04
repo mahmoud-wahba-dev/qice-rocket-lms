@@ -804,6 +804,7 @@ class EducationController extends AdminController
             'status'=>'required|in:active,pending,is_draft,inactive',
             'duration'=>'nullable|numeric|min:1',
             'capacity'=>'nullable|numeric|min:1',
+            'access_days'=>'nullable|numeric|min:1|max:3650',
             'summary'=>'nullable|string|max:1000',
             'description'=>'nullable|string',
         ]);
@@ -815,6 +816,7 @@ class EducationController extends AdminController
             'status'=>$data['status'],
             'duration'=>$data['duration'] ?? $webinar->duration,
             'capacity'=>$data['capacity'] ?? null,
+            'access_days'=> !empty($data['access_days']) ? (int) $data['access_days'] : null,
             'support'=>!empty($data['support']) && $data['support']=='on',
             'certificate'=>!empty($data['certificate']) && $data['certificate']=='on',
             'downloadable'=>!empty($data['downloadable']) && $data['downloadable']=='on',
