@@ -1163,7 +1163,7 @@ class InstructorController extends Controller
             'draft_id' => 'required|integer',
             'chapter_id' => 'required|integer',
             'title' => 'required|string|max:255',
-            'upload' => 'required|file|max:5242880',
+            'upload' => 'required|file',
         ], $this->courseWizardMessages(), $this->courseWizardFieldNames());
 
         $draft = $this->draftOrFail($user, $request->input('draft_id'));

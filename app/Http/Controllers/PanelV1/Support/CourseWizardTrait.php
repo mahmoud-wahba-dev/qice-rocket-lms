@@ -441,7 +441,7 @@ trait CourseWizardTrait
                 'summary' => ($soft ? 'nullable' : 'required') . '|string|max:2000',
                 'description' => 'nullable|string',
                 'video_demo_link' => 'nullable|url|max:2000',
-                'video_demo_file' => 'nullable|file|mimetypes:video/mp4,video/webm,video/quicktime|max:102400',
+                'video_demo_file' => 'nullable|file|mimetypes:video/mp4,video/webm,video/quicktime',
                 'image_thumbnail' => 'nullable|image|max:5120',
                 'image_cover' => 'nullable|image|max:5120',
                 'tags' => 'nullable|string|max:1000',

@@ -20,26 +20,26 @@
 # END cPanel-generated php ini directives, do not edit
 <IfModule php8_module>
    php_flag display_errors On
-   php_value max_execution_time 3600
-   php_value max_input_time 3600
+   php_value max_execution_time 0
+   php_value max_input_time -1
    php_value max_input_vars 1000
    php_value memory_limit 2048M
-   php_value post_max_size 5120M
+   php_value post_max_size 102400M
    php_value session.gc_maxlifetime 1440
    php_value session.save_path "/opt/alt/php81/var/lib/php/session"
-   php_value upload_max_filesize 5120M
+   php_value upload_max_filesize 102400M
    php_flag zlib.output_compression Off
 </IfModule>
 <IfModule lsapi_module>
    php_flag display_errors On
-   php_value max_execution_time 3600
-   php_value max_input_time 3600
+   php_value max_execution_time 0
+   php_value max_input_time -1
    php_value max_input_vars 1000
    php_value memory_limit 2048M
-   php_value post_max_size 5120M
+   php_value post_max_size 102400M
    php_value session.gc_maxlifetime 1440
    php_value session.save_path "/opt/alt/php81/var/lib/php/session"
-   php_value upload_max_filesize 5120M
+   php_value upload_max_filesize 102400M
    php_flag zlib.output_compression Off
 </IfModule>
 # php -- BEGIN cPanel-generated handler, do not edit

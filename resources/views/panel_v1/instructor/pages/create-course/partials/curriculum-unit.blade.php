@@ -183,7 +183,7 @@
                     'name' => 'upload',
                     'accept' => 'video/*,image/*,.pdf,.doc,.docx,.zip',
                     'label' => 'اختر الملف من جهازك',
-                    'hint' => 'فيديو حتى 2 جيجا، صورة، PDF أو مستند',
+                    'hint' => 'فيديو بلا حد حجم من التطبيق (حسب مساحة السيرفر)، صورة، PDF أو مستند',
                     'required' => true,
                     'compact' => true,
                 ])

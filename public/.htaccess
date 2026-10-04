@@ -1,11 +1,10 @@
-# ── Large course video uploads (XAMPP / Apache mod_php) ──
-# Overrides php.ini without requiring an Apache service restart.
-# 5 GB = 5120M
+# ── Course video uploads (XAMPP / Apache mod_php) ──
+# Effectively unlimited for LMS (100 GB ceiling). Mirror in php.ini if needed.
 <IfModule php_module>
-    php_value upload_max_filesize 5120M
-    php_value post_max_size 5120M
-    php_value max_execution_time 3600
-    php_value max_input_time 3600
+    php_value upload_max_filesize 102400M
+    php_value post_max_size 102400M
+    php_value max_execution_time 0
+    php_value max_input_time -1
     php_value memory_limit 2048M
 </IfModule>
 
