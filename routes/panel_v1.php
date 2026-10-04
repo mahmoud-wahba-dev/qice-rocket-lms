@@ -137,6 +137,9 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 ->name('instructor.curriculum.sessions.delete');
             Route::post('/instructor/curriculum/files', [InstructorController::class, 'curriculumFileStore'])
                 ->name('instructor.curriculum.files.store');
+            Route::get('/instructor/curriculum/files/{fileId}/status', [InstructorController::class, 'curriculumFileStatus'])
+                ->whereNumber('fileId')
+                ->name('instructor.curriculum.files.status');
             Route::post('/instructor/curriculum/files/{fileId}/delete', [InstructorController::class, 'curriculumFileDelete'])
                 ->name('instructor.curriculum.files.delete');
             Route::post('/instructor/curriculum/texts', [InstructorController::class, 'curriculumTextStore'])
@@ -380,6 +383,9 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                     ->name('curriculum.sessions.delete');
                 Route::post('/curriculum/files', [InstructorController::class, 'curriculumFileStore'])
                     ->name('curriculum.files.store');
+                Route::get('/curriculum/files/{fileId}/status', [InstructorController::class, 'curriculumFileStatus'])
+                    ->whereNumber('fileId')
+                    ->name('curriculum.files.status');
                 Route::post('/curriculum/files/{fileId}/delete', [InstructorController::class, 'curriculumFileDelete'])
                     ->name('curriculum.files.delete');
                 Route::post('/curriculum/texts', [InstructorController::class, 'curriculumTextStore'])
@@ -675,6 +681,11 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 Route::get('/forums/{id}/edit', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'editForum'])->name('forums.edit');
                 Route::post('/forums/{id}/update', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'updateForum'])->name('forums.update');
                 Route::post('/settings/{id}/save', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'saveSetting'])->name('settings.save')->whereNumber('id');
+
+                Route::get('/youtube', [\App\Http\Controllers\PanelV1\Admin\YoutubeIntegrationController::class, 'show'])->name('youtube.show');
+                Route::get('/youtube/connect', [\App\Http\Controllers\PanelV1\Admin\YoutubeIntegrationController::class, 'connect'])->name('youtube.connect');
+                Route::get('/youtube/callback', [\App\Http\Controllers\PanelV1\Admin\YoutubeIntegrationController::class, 'callback'])->name('youtube.callback');
+                Route::post('/youtube/disconnect', [\App\Http\Controllers\PanelV1\Admin\YoutubeIntegrationController::class, 'disconnect'])->name('youtube.disconnect');
 
                 // Settings form pages (panel_v1 rebuild of legacy admin/settings/*)
                 Route::get('/settings/page/general', [\App\Http\Controllers\PanelV1\Admin\SettingsController::class, 'general'])->name('settings.general');

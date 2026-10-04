@@ -6,7 +6,7 @@
 @endphp
 
 {{-- Curriculum (standalone forms — not nested in wizard store form) --}}
-<section class="{{ $card }}" data-curriculum-root data-course-type="{{ $courseTypeKey }}">
+<section class="{{ $card }}" data-curriculum-root data-course-type="{{ $courseTypeKey }}" data-video-stream-ready="{{ !empty($videoStreamReady) ? '1' : '0' }}">
     <div class="flex flex-wrap items-center justify-between gap-3 mb-5 sm:mb-6">
         <div class="flex items-center gap-3">
             <span class="size-10 rounded-10px bg-primary/10 center shrink-0">
@@ -65,6 +65,7 @@
                 'draftIdValue' => $draftIdValue,
                 'input' => $input,
                 'courseTypeKey' => $courseTypeKey,
+                'videoStreamReady' => $videoStreamReady ?? false,
             ])
         @empty
             <div class="rounded-14px border border-dashed border-d9 px-6 py-10 center flex-col text-center" data-curriculum-empty>
@@ -91,5 +92,6 @@
         'input' => $input,
         'isTemplate' => true,
         'courseTypeKey' => $courseTypeKey,
+        'videoStreamReady' => $videoStreamReady ?? false,
     ])
 </template>

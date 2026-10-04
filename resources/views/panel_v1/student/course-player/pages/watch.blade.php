@@ -84,14 +84,22 @@ $mediaMode = $media['mode'] ?? null;
     @else
     <div class="relative w-full overflow-hidden rounded-16px bg-[#4a4a4a] shadow-sm course-player-media-shell">
         @if ($mediaMode === 'youtube' || $mediaMode === 'vimeo')
-            <div class="js-file-player-el plyr__video-embed w-full h-full" id="course-player-media">
+            <div class="js-file-player-el plyr__video-embed w-full h-full relative" id="course-player-media">
                 <iframe
                     src="{{ $media['src'] }}"
+                    class="w-full h-full min-h-[280px] sm:min-h-[420px]"
                     allowfullscreen
                     allowtransparency
-                    allow="autoplay"
+                    allow="autoplay; encrypted-media; picture-in-picture"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    loading="lazy"
                     title="{{ $media['title'] ?? $lessonTitle }}"
                 ></iframe>
+                @if ($mediaMode === 'youtube' && !empty($authUser))
+                    <div class="pointer-events-none absolute bottom-3 inset-x-3 sm:inset-x-auto sm:start-3 sm:max-w-[70%] rounded-8px bg-black/35 px-3 py-1.5 text-white/80 font-medium text-11px sm:text-12px truncate">
+                        {{ $authUser->full_name ?? $authUser->email ?? '' }}
+                    </div>
+                @endif
             </div>
         @elseif ($mediaMode === 'html5')
             <video id="course-player-media" class="js-file-player-el plyr-io-video"

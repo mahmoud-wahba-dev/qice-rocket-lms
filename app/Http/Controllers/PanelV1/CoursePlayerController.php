@@ -331,6 +331,9 @@ class CoursePlayerController extends Controller
 
             $contentRows = [];
             foreach ($chapter->files->sortBy('order') as $file) {
+                if (($file->status ?? '') !== 'active' || !empty($file->processing_status)) {
+                    continue;
+                }
                 $contentRows[] = ['kind' => 'file', 'model' => $file];
             }
             foreach ($chapter->sessions->sortBy('id') as $session) {
@@ -786,9 +789,21 @@ class CoursePlayerController extends Controller
             return '';
         }
 
-        if (preg_match('~(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([A-Za-z0-9_-]{6,})~', $url, $m)) {
-            return 'https://www.youtube.com/embed/' . $m[1] . '?origin=' . urlencode(url('/'))
-                . '&iv_load_policy=3&modestbranding=1&playsinline=1&showinfo=0&rel=0&enablejsapi=1';
+        if (preg_match('~(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/|youtube-nocookie\.com/embed/)([A-Za-z0-9_-]{6,})~', $url, $m)) {
+            $id = $m[1];
+            $params = http_build_query([
+                'origin' => url('/'),
+                'iv_load_policy' => 3,
+                'modestbranding' => 1,
+                'playsinline' => 1,
+                'rel' => 0,
+                'controls' => 1,
+                'fs' => 1,
+                'disablekb' => 0,
+                'enablejsapi' => 1,
+            ]);
+
+            return 'https://www.youtube-nocookie.com/embed/' . $id . '?' . $params;
         }
 
         return $url;

@@ -46,7 +46,9 @@
 
     <div class="divide-y divide-d9" data-curriculum-lessons>
         @forelse ($unit['lessons'] ?? [] as $lesson)
-            <div class="flex flex-wrap items-center gap-3 px-4 sm:px-5 py-3.5" data-curriculum-lesson="{{ $lesson['id'] }}" data-lesson-kind="{{ $lesson['kind'] }}">
+            <div class="flex flex-wrap items-center gap-3 px-4 sm:px-5 py-3.5" data-curriculum-lesson="{{ $lesson['id'] }}" data-lesson-kind="{{ $lesson['kind'] }}"
+                @if (!empty($lesson['processing_status'])) data-processing-status="{{ $lesson['processing_status'] }}" @endif
+                @if (!empty($lesson['status_url'])) data-status-url="{{ $lesson['status_url'] }}" @endif>
                 @if (($lesson['kind'] ?? '') === 'file' && ($lesson['preview_kind'] ?? '') === 'image' && !empty($lesson['preview_url']))
                     <button type="button"
                         class="size-12 rounded-10px overflow-hidden border border-d9 bg-fa shrink-0"
@@ -70,7 +72,7 @@
                 @endif
                 <div class="min-w-0 flex-1 text-start">
                     <p class="font-semibold text-15px sm:text-16px text-primary truncate">{{ $lesson['title'] }}</p>
-                    <p class="font-medium text-13px text-gray">{{ $lesson['duration'] }}</p>
+                    <p class="font-medium text-13px text-gray" data-lesson-duration>{{ $lesson['duration'] }}</p>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
                     @if (($lesson['kind'] ?? '') === 'file' && !empty($lesson['view_url']))
@@ -179,6 +181,31 @@
                 <input type="hidden" name="draft_id" value="{{ $draftIdValue }}" data-draft-id-input>
                 <input type="hidden" name="chapter_id" value="{{ $unit['id'] }}">
                 <input type="text" name="title" required placeholder="عنوان الملف" class="{{ $input }}" data-field-label="عنوان الملف">
+                @php $streamReady = !empty($videoStreamReady); @endphp
+                <div class="rounded-10px border border-d9 bg-[#FAFAF4] p-3 space-y-2" data-delivery-picker>
+                    <p class="font-semibold text-13px text-primary">طريقة التسليم</p>
+                    <label class="flex items-start gap-2 cursor-pointer">
+                        <input type="radio" name="delivery" value="local" class="radio radio-sm mt-0.5" checked data-delivery-option>
+                        <span class="font-medium text-13px text-primary leading-snug">
+                            تخزين على السيرفر
+                            <span class="block font-medium text-12px text-gray">مناسب للملفات والمستندات والفيديوهات الصغيرة</span>
+                        </span>
+                    </label>
+                    <label class="flex items-start gap-2 {{ $streamReady ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed' }}">
+                        <input type="radio" name="delivery" value="stream" class="radio radio-sm mt-0.5" data-delivery-option
+                            @if(!$streamReady) disabled @endif>
+                        <span class="font-medium text-13px text-primary leading-snug">
+                            بث عبر المنصة
+                            <span class="block font-medium text-12px text-gray">
+                                @if ($streamReady)
+                                    موصى به للفيديوهات الكبيرة — معالجة في الخلفية وتشغيل سلس للطالب
+                                @else
+                                    غير متاح حالياً — يحتاج ربط حساب البث من إعدادات النظام
+                                @endif
+                            </span>
+                        </span>
+                    </label>
+                </div>
                 @include('panel_v1.components.file-upload', [
                     'name' => 'upload',
                     'accept' => 'video/*,image/*,.pdf,.doc,.docx,.zip',

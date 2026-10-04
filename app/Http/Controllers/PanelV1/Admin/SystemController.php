@@ -1189,6 +1189,14 @@ class SystemController extends AdminController
                 'url' => route('panel.v1.admin.system.settings.group', ['group' => 'update-app']),
                 'setting_names' => [],
             ],
+            [
+                'key' => 'video-stream',
+                'title' => 'بث الفيديو',
+                'hint' => 'ربط حساب بث فيديوهات المنهج الكبيرة — الرفع من الداشبورد والمعالجة في الخلفية',
+                'icon' => 'icon-[tabler--video]',
+                'url' => route('panel.v1.admin.system.youtube.show'),
+                'setting_names' => [],
+            ],
         ];
     }
 

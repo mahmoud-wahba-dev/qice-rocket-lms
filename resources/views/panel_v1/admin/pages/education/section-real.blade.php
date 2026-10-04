@@ -424,9 +424,9 @@
                 <a href="{{ route('panel.v1.admin.education.quiz-results.export', ['quizId' => $quiz_id ?? 0]) }}" class="inline-flex items-center gap-2 h-10 px-4 rounded-12px border border-d9 bg-white font-semibold text-13px text-primary hover:bg-[#FAFAF4] transition"><span class="icon-[tabler--file-spreadsheet] size-4"></span> تصدير Excel</a>
             </div>
             <div class="overflow-x-auto">
-                <table class="table w-full text-14px">
+            <table class="table w-full text-14px">
                     <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الطالب</th><th class="px-4 py-3 text-center">الدرجة</th><th class="px-4 py-3 text-center">الحالة</th><th class="px-4 py-3 text-center">التاريخ</th><th class="px-4 py-3 text-center">إجراءات</th></tr></thead>
-                    <tbody>
+                <tbody>
                     @foreach ($quizzesResults as $qr)
                         @php
                             $qrStatusLabel = ($qr->status ?? '') === \App\Models\QuizzesResult::$passed ? 'ناجح' : ((($qr->status ?? '') === \App\Models\QuizzesResult::$failed) ? 'راسب' : 'بانتظار المراجعة');
@@ -438,9 +438,9 @@
                             <td class="px-4 py-3 text-center font-medium text-gray">{{ !empty($qr->created_at) ? date('Y/m/d', (int)$qr->created_at) : '—' }}</td>
                             <td class="px-4 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'edu-qr-'.$qr->id, 'items' => [['label' => 'مراجعة', 'url' => route('panel.v1.admin.education.quiz-results.review',['quizId'=>$quiz_id ?? $qr->quiz_id,'resultId'=>$qr->id]), 'tone' => 'gray'], ['label' => 'حذف', 'action' => route('panel.v1.admin.education.quiz-results.delete',['quizId'=>$quiz_id ?? $qr->quiz_id,'resultId'=>$qr->id]), 'confirm' => 'حذف النتيجة؟', 'tone' => 'danger']]])</td>
                         </tr>
-                    @endforeach
-                    </tbody>
-                </table>
+                @endforeach
+                </tbody>
+            </table>
             </div>
         </div>
     @endif

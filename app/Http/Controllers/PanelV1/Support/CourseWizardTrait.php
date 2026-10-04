@@ -216,14 +216,31 @@ trait CourseWizardTrait
                 }
 
                 foreach ($chapter->files as $file) {
-                    $meta = $this->curriculumFilePreviewMeta($file->file ?? null, $file->file_type ?? null);
-                    $lessons[] = array_merge([
+                    $meta = $this->curriculumFilePreviewMeta($file->file ?? null, $file->file_type ?? null, $file->storage ?? null);
+                    $processing = $file->processing_status ?: null;
+                    $duration = 'ملف';
+                    if ($processing === 'processing') {
+                        $duration = 'قيد المعالجة';
+                    } elseif ($processing === 'failed') {
+                        $duration = 'فشل المعالجة';
+                    } elseif (($file->storage ?? '') === 'youtube') {
+                        $duration = 'فيديو';
+                    }
+
+                    $lesson = array_merge([
                         'kind' => 'file',
                         'id' => $file->id,
                         'title' => $translatedTitle($file),
-                        'duration' => 'ملف',
+                        'duration' => $duration,
                         'delete_url' => route($routes['files.delete'], ['fileId' => $file->id]),
+                        'processing_status' => $processing,
                     ], $meta);
+
+                    if (!empty($processing) && $processing !== 'ready') {
+                        $lesson['status_url'] = route($routes['files.status'], ['fileId' => $file->id]);
+                    }
+
+                    $lessons[] = $lesson;
                 }
 
                 foreach ($chapter->textLessons as $text) {
@@ -264,6 +281,7 @@ trait CourseWizardTrait
                 'sessions.store' => 'panel.v1.admin.education.curriculum.sessions.store',
                 'sessions.delete' => 'panel.v1.admin.education.curriculum.sessions.delete',
                 'files.store' => 'panel.v1.admin.education.curriculum.files.store',
+                'files.status' => 'panel.v1.admin.education.curriculum.files.status',
                 'files.delete' => 'panel.v1.admin.education.curriculum.files.delete',
                 'texts.store' => 'panel.v1.admin.education.curriculum.texts.store',
                 'texts.delete' => 'panel.v1.admin.education.curriculum.texts.delete',
@@ -277,6 +295,7 @@ trait CourseWizardTrait
             'sessions.store' => 'panel.v1.instructor.curriculum.sessions.store',
             'sessions.delete' => 'panel.v1.instructor.curriculum.sessions.delete',
             'files.store' => 'panel.v1.instructor.curriculum.files.store',
+            'files.status' => 'panel.v1.instructor.curriculum.files.status',
             'files.delete' => 'panel.v1.instructor.curriculum.files.delete',
             'texts.store' => 'panel.v1.instructor.curriculum.texts.store',
             'texts.delete' => 'panel.v1.instructor.curriculum.texts.delete',
@@ -290,8 +309,16 @@ trait CourseWizardTrait
         );
     }
 
-    protected function curriculumFilePreviewMeta(?string $path, ?string $fileType = null): array
+    protected function curriculumFilePreviewMeta(?string $path, ?string $fileType = null, ?string $storage = null): array
     {
+        if ($storage === 'youtube' || ($path && preg_match('~(?:youtube\.com|youtu\.be)/~', $path))) {
+            return [
+                'view_url' => null,
+                'preview_kind' => 'video',
+                'preview_url' => null,
+            ];
+        }
+
         $url = $this->curriculumFilePublicUrl($path);
         $kind = 'file';
         if (function_exists('panelV1FileKind')) {
@@ -397,6 +424,11 @@ trait CourseWizardTrait
                 ['key' => 'en', 'label' => 'English'],
             ],
             'curriculumUnits' => $this->curriculumUnitsForWizard($draft, $user),
+            'videoStreamReady' => (function () {
+                $integration = \App\Models\YoutubeIntegration::current();
+
+                return (bool) ($integration && $integration->isConnected());
+            })(),
             'curriculumChapterStoreUrl' => route($this->curriculumRouteNames($user)['chapters.store']),
             'wizardQuizStoreUrl' => route(
                 $user->isAdmin()

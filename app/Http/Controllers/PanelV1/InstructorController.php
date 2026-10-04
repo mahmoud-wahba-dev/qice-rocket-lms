@@ -1159,11 +1159,17 @@ class InstructorController extends Controller
             return $redirect;
         }
 
+        $delivery = (string) $request->input('delivery', 'local');
+        if (!in_array($delivery, ['local', 'stream'], true)) {
+            $delivery = 'local';
+        }
+
         $request->validate([
             'draft_id' => 'required|integer',
             'chapter_id' => 'required|integer',
             'title' => 'required|string|max:255',
             'upload' => 'required|file|max:5242880',
+            'delivery' => 'nullable|in:local,stream',
         ], $this->courseWizardMessages(), $this->courseWizardFieldNames());
 
         $draft = $this->draftOrFail($user, $request->input('draft_id'));
@@ -1172,7 +1178,73 @@ class InstructorController extends Controller
             ->where('webinar_id', $draft->id)
             ->firstOrFail();
 
-        $path = $request->file('upload')->store('webinars/files', 'public');
+        $uploaded = $request->file('upload');
+        $mime = (string) ($uploaded->getMimeType() ?: '');
+        $isVideo = str_starts_with($mime, 'video/')
+            || in_array(strtolower($uploaded->getClientOriginalExtension()), ['mp4', 'webm', 'mov', 'mkv', 'avi', 'm4v'], true);
+
+        if ($delivery === 'stream') {
+            $integration = \App\Models\YoutubeIntegration::current();
+            if (!$integration || !$integration->isConnected()) {
+                return $this->curriculumResponse($request, $draft, 'يجب ربط حساب بث الفيديو من إعدادات النظام أولاً', [], 422);
+            }
+            if (!$isVideo) {
+                return $this->curriculumResponse($request, $draft, 'بث المنصة متاح للفيديوهات فقط', [], 422);
+            }
+
+            $tempDir = trim((string) config('youtube.temp_dir', 'youtube-temp'), '/');
+            $path = $uploaded->store($tempDir, config('youtube.temp_disk', 'local'));
+
+            $file = new \App\Models\File();
+            $file->creator_id = $user->id;
+            $file->webinar_id = $draft->id;
+            $file->chapter_id = $chapter->id;
+            $file->accessibility = 'paid';
+            $file->downloadable = 0;
+            $file->storage = 'upload';
+            $file->file = $path;
+            $file->volume = (string) $uploaded->getSize();
+            $file->file_type = 'video';
+            $file->status = \App\Models\File::$Inactive;
+            $file->processing_status = 'processing';
+            $file->processing_error = null;
+            $file->created_at = time();
+            $file->updated_at = time();
+            $file->save();
+
+            $translation = $file->translateOrNew('ar');
+            $translation->locale = 'ar';
+            $translation->title = $request->input('title');
+            $translation->save();
+            if (app()->getLocale() !== 'ar') {
+                $tEn = $file->translateOrNew(app()->getLocale());
+                $tEn->locale = app()->getLocale();
+                $tEn->title = $request->input('title');
+                $tEn->save();
+            }
+
+            \App\Jobs\UploadCurriculumVideoToYoutube::dispatch($file->id);
+
+            $routes = $this->curriculumRouteNames($user);
+
+            return $this->curriculumResponse($request, $draft, 'تم استلام الفيديو — جاري المعالجة في الخلفية', [
+                'chapter_id' => $chapter->id,
+                'lesson' => [
+                    'kind' => 'file',
+                    'id' => $file->id,
+                    'title' => $request->input('title'),
+                    'duration' => 'قيد المعالجة',
+                    'delete_url' => route($routes['files.delete'], ['fileId' => $file->id]),
+                    'status_url' => route($routes['files.status'], ['fileId' => $file->id]),
+                    'processing_status' => 'processing',
+                    'view_url' => null,
+                    'preview_kind' => 'video',
+                    'preview_url' => null,
+                ],
+            ]);
+        }
+
+        $path = $uploaded->store('webinars/files', 'public');
 
         $file = new \App\Models\File();
         $file->creator_id = $user->id;
@@ -1183,9 +1255,11 @@ class InstructorController extends Controller
         $file->storage = 'upload';
         // Public disk root is public/store → URL prefix /store (not /storage)
         $file->file = '/store/' . ltrim($path, '/');
-        $file->volume = (string) $request->file('upload')->getSize();
-        $file->file_type = explode('/', $request->file('upload')->getMimeType())[0] ?? 'file';
+        $file->volume = (string) $uploaded->getSize();
+        $file->file_type = explode('/', $mime)[0] ?? 'file';
         $file->status = 'active';
+        $file->processing_status = null;
+        $file->processing_error = null;
         $file->created_at = time();
         $file->updated_at = time();
         $file->save();
@@ -1213,6 +1287,45 @@ class InstructorController extends Controller
         ]);
     }
 
+    public function curriculumFileStatus(Request $request, int $fileId)
+    {
+        $user = $request->user();
+        if ($redirect = $this->assertWizardEditor($user)) {
+            return $redirect;
+        }
+
+        $request->validate(['draft_id' => 'required|integer'], $this->courseWizardMessages(), $this->courseWizardFieldNames());
+        $draft = $this->draftOrFail($user, $request->input('draft_id'));
+
+        $file = \App\Models\File::where('id', $fileId)
+            ->where('webinar_id', $draft->id)
+            ->firstOrFail();
+
+        $status = $file->processing_status;
+        if (empty($status) && $file->storage === 'youtube' && $file->status === \App\Models\File::$Active) {
+            $status = 'ready';
+        } elseif (empty($status)) {
+            $status = $file->status === \App\Models\File::$Active ? 'ready' : 'idle';
+        }
+
+        $payload = [
+            'id' => $file->id,
+            'processing_status' => $status,
+            'processing_error' => $file->processing_error,
+            'storage' => $file->storage,
+            'duration' => $status === 'processing' ? 'قيد المعالجة' : ($status === 'failed' ? 'فشل المعالجة' : 'ملف'),
+        ];
+
+        if ($status === 'ready') {
+            $payload = array_merge($payload, $this->curriculumFilePreviewMeta($file->file, $file->file_type));
+        }
+
+        return response()->json([
+            'ok' => true,
+            'file' => $payload,
+        ]);
+    }
+
     public function curriculumFileDelete(Request $request, int $fileId)
     {
         $user = $request->user();
@@ -1223,9 +1336,20 @@ class InstructorController extends Controller
         $request->validate(['draft_id' => 'required|integer'], $this->courseWizardMessages(), $this->courseWizardFieldNames());
         $draft = $this->draftOrFail($user, $request->input('draft_id'));
 
-        \App\Models\File::where('id', $fileId)
+        $file = \App\Models\File::where('id', $fileId)
             ->where('webinar_id', $draft->id)
-            ->delete();
+            ->first();
+
+        if ($file) {
+            $path = (string) ($file->file ?? '');
+            if ($path !== '' && !str_starts_with($path, 'http') && !str_starts_with($path, '/store/')) {
+                $disk = \Illuminate\Support\Facades\Storage::disk(config('youtube.temp_disk', 'local'));
+                if ($disk->exists($path)) {
+                    $disk->delete($path);
+                }
+            }
+            $file->delete();
+        }
 
         return $this->curriculumResponse($request, $draft, 'تم حذف الملف', [
             'deleted' => ['kind' => 'file', 'id' => $fileId],
@@ -1304,14 +1428,18 @@ class InstructorController extends Controller
         ]);
     }
 
-    private function curriculumResponse(Request $request, $draft, string $message, array $payload = [])
+    private function curriculumResponse(Request $request, $draft, string $message, array $payload = [], int $status = 200)
     {
         if ($request->expectsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
             return response()->json(array_merge([
-                'ok' => true,
+                'ok' => $status < 400,
                 'message' => $message,
                 'draft_id' => $draft->id,
-            ], $payload));
+            ], $payload), $status);
+        }
+
+        if ($status >= 400) {
+            return back()->withErrors(['upload' => $message])->withInput();
         }
 
         return $this->backToDraftStep($request, $draft, 2, $message);

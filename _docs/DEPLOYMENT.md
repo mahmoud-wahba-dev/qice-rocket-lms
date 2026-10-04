@@ -333,6 +333,8 @@ npm run optimize:production
 | 500 error after deploy | `.env` or permissions | Check `storage/logs/laravel.log`, fix `storage` permissions |
 | `npm run landing:build` fails | Wrong script name | Use `npm run build:landing` |
 | Admin upload broken (`filemanager is not a function`) | Missing `public/vendor/laravel-filemanager/` | Run `npm run optimize:production` (or full `npm run deploy`) |
+| Video upload fails (~64MB+) with “حد الرفع في PHP” | Nginx `client_max_body_size` + site `PHP_VALUE` still 64M | As root: `bash scripts/hostinger-raise-upload-limits.sh` then retry (videos land in `public/store/webinars/files/`) |
+| Platform stream videos stuck on “قيد المعالجة” | YouTube OAuth not connected or queue worker idle | Super Admin → Settings → بث الفيديو → Connect; set `YOUTUBE_CLIENT_*` in `.env`; run `php artisan queue:work` (prefer `QUEUE_CONNECTION=database`) |
 | Language dropdown flags broken (admin, panel, web) | Missing `public/vendor/blade-country-flags/` | Run `npm run optimize:production` (or full `npm run deploy`) |
 | Reset admin password | Need to change `admin@demo.com` credentials | Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`, then run `php artisan qiec:reset-admin-password` (on Hostinger use `PHP_BIN=$(bash scripts/hostinger-php.sh)` first) |
 | `php artisan` fails over SSH | ionCube not in CLI PHP | Use optimize script; delete `bootstrap/cache/config.php` manually if needed |

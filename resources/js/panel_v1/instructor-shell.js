@@ -1241,6 +1241,12 @@ function buildLessonRow(draftId, lesson) {
     row.className = 'flex flex-wrap items-center gap-3 px-4 sm:px-5 py-3.5';
     row.setAttribute('data-curriculum-lesson', String(lesson.id));
     row.setAttribute('data-lesson-kind', lesson.kind || 'session');
+    if (lesson.processing_status) {
+        row.setAttribute('data-processing-status', lesson.processing_status);
+    }
+    if (lesson.status_url) {
+        row.setAttribute('data-status-url', lesson.status_url);
+    }
 
     const isImage = lesson.kind === 'file' && lesson.preview_kind === 'image' && lesson.preview_url;
     const thumb = isImage
@@ -1274,7 +1280,7 @@ function buildLessonRow(draftId, lesson) {
         ${thumb}
         <div class="min-w-0 flex-1 text-start">
             <p class="font-semibold text-15px sm:text-16px text-primary truncate">${escapeHtml(lesson.title)}</p>
-            <p class="font-medium text-13px text-gray">${escapeHtml(lesson.duration || '')}</p>
+            <p class="font-medium text-13px text-gray" data-lesson-duration>${escapeHtml(lesson.duration || '')}</p>
         </div>
         <div class="flex items-center gap-1.5 shrink-0">
             ${viewBtn}
@@ -1290,6 +1296,60 @@ function buildLessonRow(draftId, lesson) {
             </button>
         </div>`;
     return row;
+}
+
+async function pollLessonProcessing(row, draftId) {
+    const statusUrl = row.getAttribute('data-status-url');
+    if (!statusUrl || !draftId) {
+        return;
+    }
+
+    const durationEl = row.querySelector('[data-lesson-duration]');
+    let attempts = 0;
+    const maxAttempts = 120;
+
+    const tick = async () => {
+        attempts += 1;
+        try {
+            const url = new URL(statusUrl, window.location.origin);
+            url.searchParams.set('draft_id', draftId);
+            const response = await fetch(url.toString(), {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            });
+            const data = await response.json().catch(() => null);
+            const file = data?.file;
+            if (!file) {
+                return;
+            }
+
+            const status = file.processing_status;
+            row.setAttribute('data-processing-status', status || '');
+            if (durationEl && file.duration) {
+                durationEl.textContent = file.duration;
+            }
+
+            if (status === 'ready') {
+                toast('تم', 'اكتملت معالجة الفيديو وأصبح جاهزاً للتشغيل', 'success');
+                return;
+            }
+            if (status === 'failed') {
+                toast('فشل المعالجة', file.processing_error || 'تعذرت معالجة الفيديو', 'error');
+                return;
+            }
+        } catch (_) {
+            // keep polling
+        }
+
+        if (attempts < maxAttempts) {
+            window.setTimeout(tick, 5000);
+        }
+    };
+
+    window.setTimeout(tick, 4000);
 }
 
 function syncUnitLessonCount(unitEl) {
@@ -1784,7 +1844,9 @@ function initCurriculumAjax(wrap) {
             setUploadProgress(form, {
                 percent: 0,
                 label: 'جاري رفع الملف...',
-                meta: 'يرجى الانتظار — قد يستغرق رفع الفيديوهات الكبيرة وقتًا',
+                meta: form.querySelector('input[name="delivery"][value="stream"]:checked')
+                    ? 'بعد الرفع ستبدأ معالجة البث في الخلفية'
+                    : 'يرجى الانتظار — قد يستغرق رفع الفيديوهات الكبيرة وقتًا',
             });
         }
 
@@ -1851,7 +1913,21 @@ function initCurriculumAjax(wrap) {
 
             if ((mode === 'session' || mode === 'file' || mode === 'text') && data?.lesson) {
                 appendLesson(data.chapter_id, data.lesson);
+                if (mode === 'file' && data.lesson.processing_status === 'processing' && data.lesson.status_url) {
+                    const unitEl = document.querySelector(`[data-curriculum-unit="${data.chapter_id}"]`);
+                    const row = unitEl?.querySelector(`[data-curriculum-lesson="${data.lesson.id}"]`);
+                    const draftId = form.querySelector('[name="draft_id"]')?.value
+                        || document.querySelector('[data-draft-id-input]')?.value
+                        || '';
+                    if (row) {
+                        pollLessonProcessing(row, draftId);
+                    }
+                }
                 form.reset();
+                const localDelivery = form.querySelector('input[name="delivery"][value="local"]');
+                if (localDelivery) {
+                    localDelivery.checked = true;
+                }
                 form.querySelectorAll('[data-v1-file-upload]').forEach((rootUpload) => {
                     rootUpload.querySelector('[data-v1-preview]')?.classList.add('hidden');
                     const preview = rootUpload.querySelector('[data-v1-preview]');
@@ -1887,6 +1963,14 @@ function initCurriculumAjax(wrap) {
         } finally {
             setBusy(form, false);
         }
+    });
+
+    const resumeDraftId = wrap.getAttribute('data-draft-id')
+        || root.querySelector('[data-draft-id-input]')?.value
+        || draftId
+        || '';
+    root.querySelectorAll('[data-curriculum-lesson][data-processing-status="processing"][data-status-url]').forEach((row) => {
+        pollLessonProcessing(row, resumeDraftId);
     });
 }
 
