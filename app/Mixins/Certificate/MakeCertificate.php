@@ -335,58 +335,68 @@ class MakeCertificate
         $officer = (string) ($data['officer_name'] ?? '');
         $director = (string) ($data['director_name'] ?? '');
 
-        // --- Certificate numbers: replace [ QEC-0000-000 ] only (keep labels) ---
-        $fill(168, 278, 160, 28);
-        $write('[ ' . $num . ' ]', 248, 284, 13, 'center', false);
-        $fill(990, 278, 130, 28);
-        $write('[ ' . $num . ' ]', 1055, 284, 13, 'center', false);
+        // Bracket helper — Latin-only so [ ] never reverse under Arabic shaping
+        $bracket = static function (string $value): string {
+            $value = trim($value);
+            return $value === '' ? '' : '[' . $value . ']';
+        };
 
-        // --- Trainee names (above tan underlines) ---
-        $fill(72, 430, 463, 36);
-        $fill(759, 430, 464, 36);
+        // --- Certificate numbers: wipe placeholder [ QEC-... ] only; keep labels intact ---
+        // EN: "Certificate no.:" stays; value to the right of the colon
+        $fill(175, 276, 165, 30);
+        $write($bracket($num), 270, 284, 13, 'center', false);
+        // AR: keep full "رقم الشهادة:" on the right; wipe leftover template brackets
+        $fill(985, 276, 130, 30);
+        $write($bracket($num), 1050, 284, 13, 'center', false);
+
+        // --- Trainee names: fully erase [ TRAINER FULL NAME ] placeholder, name only ---
+        $fill(70, 408, 470, 60);
+        $fill(755, 408, 472, 60);
         $write($nameEn, 303, 438, 20, 'center');
         $write($nameAr, 991, 438, 20, 'center', true);
 
         // --- Course titles ---
-        $fill(72, 520, 463, 40);
-        $fill(759, 520, 464, 40);
+        $fill(70, 508, 470, 55);
+        $fill(755, 508, 472, 55);
         $write($courseEn, 303, 530, 17, 'center');
         $write($courseAr, 991, 530, 17, 'center', true);
 
-        // --- Meta lines: wipe full line + rewrite label + value (keeps one page on JPG) ---
-        // EN hours: Duration: [ 00 ] training hours
-        $fill(70, 585, 280, 26);
-        $write('Duration: [ ' . $hours . ' ] training hours', 70, 590, 13, 'left', false);
-        // AR hours: عدد الساعات التدريبية: [ 00 ] ساعة
-        $fill(960, 585, 270, 26);
-        $write('عدد الساعات التدريبية: [ ' . $hours . ' ] ساعة', 1230, 590, 13, 'right', true);
+        // --- Meta EN: clean brackets ---
+        $fill(70, 585, 300, 26);
+        $write('Duration: ' . $bracket($hours) . ' training hours', 70, 590, 13, 'left', false);
 
-        // EN dates
-        $fill(70, 615, 420, 26);
-        $write('Course dates: [ ' . $start . ' ] - [ ' . $end . ' ]', 70, 620, 12, 'left', false);
-        // AR dates
-        $fill(850, 615, 380, 26);
-        $write('فترة الدورة: [ ' . $start . ' ] - [ ' . $end . ' ]', 1230, 620, 12, 'right', true);
+        $fill(70, 615, 430, 26);
+        $write('Course dates: ' . $bracket($start) . ' - ' . $bracket($end), 70, 620, 12, 'left', false);
 
-        // EN issue
         $fill(70, 645, 300, 26);
-        $write('Issue date: [ ' . $issue . ' ]', 70, 650, 12, 'left', false);
-        // AR issue
-        $fill(960, 645, 270, 26);
-        $write('تاريخ الإصدار: [ ' . $issue . ' ]', 1230, 650, 12, 'right', true);
+        $write('Issue date: ' . $bracket($issue), 70, 650, 12, 'left', false);
 
-        // EN accreditation
-        $fill(70, 675, 360, 26);
-        $write('Accreditation Number: [ ' . $acc . ' ]', 70, 680, 12, 'left', false);
-        // AR accreditation
-        $fill(960, 675, 270, 26);
-        $write('رقم الاعتماد: [ ' . $acc . ' ]', 1230, 680, 12, 'right', true);
+        $fill(70, 675, 380, 26);
+        $write('Accreditation Number: ' . $bracket($acc), 70, 680, 12, 'left', false);
 
-        // --- Signature names (between line and [ Name ] label) ---
-        $fill(71, 820, 249, 22);
-        $fill(960, 820, 248, 22);
-        $write($officer, 195, 822, 14, 'center');
-        $write($director, 1084, 822, 14, 'center');
+        // --- Meta AR: Arabic label (RTL) + Latin value (LTR) so brackets stay correct ---
+        $fill(900, 585, 330, 26);
+        $write('عدد الساعات التدريبية:', 1230, 590, 13, 'right', true);
+        $write($bracket($hours), 1095, 590, 13, 'right', false);
+        $write('ساعة', 1045, 590, 13, 'right', true);
+
+        $fill(850, 615, 380, 26);
+        $write('فترة الدورة:', 1230, 620, 12, 'right', true);
+        $write($bracket($start) . ' - ' . $bracket($end), 1100, 620, 12, 'right', false);
+
+        $fill(900, 645, 330, 26);
+        $write('تاريخ الإصدار:', 1230, 650, 12, 'right', true);
+        $write($bracket($issue), 1105, 650, 12, 'right', false);
+
+        $fill(900, 675, 330, 26);
+        $write('رقم الاعتماد:', 1230, 680, 12, 'right', true);
+        $write($bracket($acc), 1105, 680, 12, 'right', false);
+
+        // --- Signatures: erase [ Name ] / [ الاسم ]; write real name only ---
+        $fill(71, 820, 249, 42);
+        $fill(960, 820, 248, 42);
+        $write($officer, 195, 830, 14, 'center');
+        $write($director, 1084, 830, 14, 'center');
 
         // QR bottom-left (validation)
         try {
