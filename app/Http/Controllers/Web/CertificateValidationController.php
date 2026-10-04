@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Mixins\Certificate\MakeCertificate;
 use App\Models\Certificate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -16,22 +17,28 @@ class CertificateValidationController extends Controller
         $pageDescription = !empty($getSeoMetas['description']) ? $getSeoMetas['description'] : trans('site.certificate_validation_page_title');
         $pageRobot = getPageRobot('certificate_validation');
 
-        $prefilledId = $request->query('certificate_id');
+        $rawId = trim((string) $request->query('certificate_id', ''));
+        $prefilledId = '';
         $prefilledResult = null;
-        if (!empty($prefilledId) && is_numeric($prefilledId)) {
-            $cert = Certificate::where('id', (int) $prefilledId)->first();
-            if (!empty($cert)) {
-                $webinarTitle = '-';
-                if ($cert->type == 'quiz' && !empty($cert->quiz) && !empty($cert->quiz->webinar)) {
-                    $webinarTitle = $cert->quiz->webinar->title;
-                } elseif ($cert->type == 'course' && !empty($cert->webinar)) {
-                    $webinarTitle = $cert->webinar->title;
-                } elseif ($cert->type == 'bundle' && !empty($cert->bundle)) {
-                    $webinarTitle = $cert->bundle->title;
+        $autoChecked = false;
+
+        if ($rawId !== '') {
+            $parsedId = MakeCertificate::parseCertificateId($rawId);
+            $autoChecked = true;
+
+            if (!empty($parsedId)) {
+                $cert = Certificate::with(['student', 'webinar', 'quiz.webinar', 'bundle'])->find($parsedId);
+
+                if (!empty($cert)) {
+                    $prefilledResult = $this->buildResultPayload($cert);
+                    $prefilledId = $prefilledResult['number'];
+                } else {
+                    $prefilledResult = ['valid' => false];
+                    $prefilledId = $rawId;
                 }
-                $prefilledResult = ['certificate' => $cert, 'webinarTitle' => $webinarTitle];
             } else {
-                $prefilledResult = [];
+                $prefilledResult = ['valid' => false];
+                $prefilledId = $rawId;
             }
         }
 
@@ -41,21 +48,21 @@ class CertificateValidationController extends Controller
             'pageRobot' => $pageRobot,
             'prefilledId' => $prefilledId,
             'prefilledResult' => $prefilledResult,
+            'autoChecked' => $autoChecked,
+            'sampleCertificateUrl' => asset('assets/panel_v1/img/certificate.jpg'),
         ];
 
-        // landing_v1 is the active theme — compatible with general QIEC theme
         if (view()->exists('landing_v1.pages.certificate-validation')) {
             return view('landing_v1.pages.certificate-validation', $data);
         }
+
         return view('design_1.web.certificate_validation.index', $data);
     }
 
     public function checkValidate(Request $request)
     {
-        $data = $request->all();
-
-        $validator = Validator::make($data, [
-            'certificate_id' => 'required|numeric',
+        $validator = Validator::make($request->all(), [
+            'certificate_id' => 'required|string|max:64',
             'captcha' => 'required|captcha',
         ]);
 
@@ -66,38 +73,53 @@ class CertificateValidationController extends Controller
             ], 422);
         }
 
-        $certificateId = $data['certificate_id'];
+        $parsedId = MakeCertificate::parseCertificateId($request->input('certificate_id'));
+        $certificate = null;
 
-        $certificate = Certificate::where('id', $certificateId)->first();
-
-        $result = [];
-
-        if (!empty($certificate)) {
-            $webinarTitle = "-";
-
-            if ($certificate->type == 'quiz' and !empty($certificate->quiz) and !empty($certificate->quiz->webinar)) {
-                $webinarTitle = $certificate->quiz->webinar->title;
-            } else if ($certificate->type == "course" and !empty($certificate->webinar)) {
-                $webinarTitle = $certificate->webinar->title;
-            } elseif ($certificate->type == 'bundle' && !empty($certificate->bundle)) {
-                $webinarTitle = $certificate->bundle->title;
-            }
-
-            $result = [
-                'certificate' => $certificate,
-                'webinarTitle' => $webinarTitle,
-            ];
+        if (!empty($parsedId)) {
+            $certificate = Certificate::with(['student', 'webinar', 'quiz.webinar', 'bundle'])->find($parsedId);
         }
 
-        // Prefer landing_v1 result partial (Tailwind) — fallback to legacy design_1
+        $payload = !empty($certificate)
+            ? $this->buildResultPayload($certificate)
+            : ['valid' => false];
+
         $viewName = view()->exists('landing_v1.pages.certificate-validation-result')
             ? 'landing_v1.pages.certificate-validation-result'
             : 'design_1.web.certificate_validation.status';
-        $html = (string)view()->make($viewName, $result);
 
         return response()->json([
             'code' => 200,
-            'html' => $html
+            'valid' => !empty($payload['valid']),
+            'number' => $payload['number'] ?? null,
+            'html' => (string) view($viewName, $payload),
         ]);
+    }
+
+    private function buildResultPayload(Certificate $certificate): array
+    {
+        $make = new MakeCertificate();
+        $qiec = $make->buildQiecCertificateData($certificate);
+
+        $typeLabels = [
+            'quiz' => 'اختبار',
+            'bundle' => 'حزمة',
+            'course' => 'إتمام دورة',
+        ];
+        $type = (string) ($certificate->type ?? 'course');
+
+        return [
+            'valid' => true,
+            'number' => $qiec['certificate_number'] ?? $certificate->formatted_number,
+            'trainee' => $qiec['trainee_name_ar'] ?: ($qiec['trainee_name_en'] ?: ($certificate->student->full_name ?? '—')),
+            'course' => $qiec['course_title_ar'] ?: ($qiec['course_title_en'] ?: '—'),
+            'hours' => $qiec['hours'] ?? null,
+            'issue_date' => $qiec['issue_date'] ?? dateTimeFormat($certificate->created_at, 'd/m/Y'),
+            'start_date' => $qiec['start_date'] ?? null,
+            'end_date' => $qiec['end_date'] ?? null,
+            'type' => $type,
+            'type_label' => $typeLabels[$type] ?? 'شهادة',
+            'verify_url' => url('/certificate_validation?certificate_id=' . urlencode($qiec['certificate_number'] ?? $certificate->id)),
+        ];
     }
 }

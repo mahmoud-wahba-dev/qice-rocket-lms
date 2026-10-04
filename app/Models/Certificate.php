@@ -10,6 +10,10 @@ class Certificate extends Model
     public $timestamps = false;
     protected $guarded = ['id'];
 
+    protected $casts = [
+        'meta' => 'array',
+    ];
+
     public function quiz()
     {
         return $this->hasOne('App\Models\Quiz', 'id', 'quiz_id');
@@ -33,5 +37,10 @@ class Certificate extends Model
     public function bundle()
     {
         return $this->belongsTo('App\Models\Bundle', 'bundle_id', 'id');
+    }
+
+    public function getFormattedNumberAttribute(): string
+    {
+        return \App\Mixins\Certificate\MakeCertificate::formatCertificateNumber((int) $this->id);
     }
 }

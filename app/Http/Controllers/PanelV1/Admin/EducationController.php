@@ -329,6 +329,8 @@ class EducationController extends AdminController
                     ['label'=>'حزم','value'=>(string)\App\Models\Certificate::where('type','bundle')->count(),'icon'=>'icon-[tabler--package]'],
                 ];
                 $real['certificateTemplates'] = \App\Models\CertificateTemplate::with('translations')->orderBy('id','desc')->limit(10)->get();
+                $real['qiecCertificatePreview'] = asset('assets/panel_v1/img/certificate.jpg');
+                $real['qiecTemplateReady'] = is_file(public_path('assets/panel_v1/img/certificate.jpg'));
                 $real['stubTitle']=$title;
                 break;
             case 'live':
@@ -1621,12 +1623,165 @@ class EducationController extends AdminController
         return back()->with('toast', ['title' => 'تم', 'msg' => 'تم حذف التقييم', 'type' => 'success']);
     }
 
-    // ===== شهادات — حذف + قوالب (parity مع Admin\CertificateController) =====
+    // ===== شهادات — حذف + قوالب + تنزيل QIEC =====
     public function deleteCertificate(Request $request,int $id){
         $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
         \App\Models\Certificate::where('id',$id)->delete();
         return back()->with('toast',['title'=>'تم','msg'=>'تم حذف الشهادة','type'=>'success']);
     }
+
+    public function createCertificate(Request $request)
+    {
+        $user = $this->resolveAdmin($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $students = \App\User::query()
+            ->where('role_name', \App\Models\Role::$user)
+            ->orderBy('full_name')
+            ->limit(800)
+            ->get(['id', 'full_name', 'email'])
+            ->map(fn ($u) => ['id' => $u->id, 'name' => $u->full_name, 'email' => $u->email])
+            ->all();
+
+        $courses = \App\Models\Webinar::query()
+            ->with('translations')
+            ->orderByDesc('id')
+            ->limit(500)
+            ->get()
+            ->map(function ($c) {
+                $ar = '';
+                $en = '';
+                try { $ar = (string) (($c->translate('ar')->title ?? null) ?: ($c->title ?? '')); } catch (\Throwable $e) { $ar = (string) ($c->title ?? ''); }
+                try { $en = (string) (($c->translate('en')->title ?? null) ?: $ar); } catch (\Throwable $e) { $en = $ar; }
+                $hours = !empty($c->duration) ? max(1, (int) ceil(((int) $c->duration) / 60)) : 8;
+                return [
+                    'id' => $c->id,
+                    'title_ar' => $ar,
+                    'title_en' => $en,
+                    'hours' => $hours,
+                ];
+            })->all();
+
+        $defaults = $this->qiecCertificateDefaults();
+
+        return $this->renderAdmin(
+            $request,
+            'panel_v1.admin.pages.education.certificate-create',
+            'إنشاء شهادة جديدة',
+            array_merge(AdminMockData::shell('education', 'certificates'), [
+                'students' => $students,
+                'courses' => $courses,
+                'defaults' => $defaults,
+            ])
+        );
+    }
+
+    public function storeCertificate(Request $request)
+    {
+        $user = $this->resolveAdmin($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $data = $request->validate([
+            'student_id' => 'required|exists:users,id',
+            'webinar_id' => 'required|exists:webinars,id',
+            'trainee_name_ar' => 'required|string|max:255',
+            'trainee_name_en' => 'nullable|string|max:255',
+            'course_title_ar' => 'required|string|max:255',
+            'course_title_en' => 'nullable|string|max:255',
+            'hours' => 'required|integer|min:1|max:999',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date',
+            'issue_date' => 'required|date',
+            'accreditation_number' => 'required|string|max:120',
+            'officer_name' => 'required|string|max:255',
+            'director_name' => 'required|string|max:255',
+            'save_as_defaults' => 'nullable|in:1',
+        ]);
+
+        $issueTs = strtotime($data['issue_date'] . ' 12:00:00') ?: time();
+
+        $meta = [
+            'trainee_name_ar' => $data['trainee_name_ar'],
+            'trainee_name_en' => $data['trainee_name_en'] ?: $data['trainee_name_ar'],
+            'course_title_ar' => $data['course_title_ar'],
+            'course_title_en' => $data['course_title_en'] ?: $data['course_title_ar'],
+            'hours' => (int) $data['hours'],
+            'start_date' => date('d/m/Y', strtotime($data['start_date'])),
+            'end_date' => date('d/m/Y', strtotime($data['end_date'])),
+            'issue_date' => date('d/m/Y', $issueTs),
+            'accreditation_number' => $data['accreditation_number'],
+            'officer_name' => $data['officer_name'],
+            'director_name' => $data['director_name'],
+        ];
+
+        $certificate = \App\Models\Certificate::create([
+            'student_id' => (int) $data['student_id'],
+            'webinar_id' => (int) $data['webinar_id'],
+            'type' => 'course',
+            'created_at' => $issueTs,
+            'meta' => $meta,
+        ]);
+
+        if (!empty($data['save_as_defaults'])) {
+            cache()->forever('qiec_certificate_defaults', [
+                'officer_name' => $data['officer_name'],
+                'director_name' => $data['director_name'],
+                'accreditation_number' => $data['accreditation_number'],
+            ]);
+        }
+
+        return redirect()
+            ->route('panel.v1.admin.education.section', ['section' => 'certificates'])
+            ->with('toast', [
+                'title' => 'تم',
+                'msg' => 'تم إنشاء الشهادة ' . $certificate->formatted_number,
+                'type' => 'success',
+            ]);
+    }
+
+    private function qiecCertificateDefaults(): array
+    {
+        $cached = cache()->get('qiec_certificate_defaults', []);
+        if (!is_array($cached)) {
+            $cached = [];
+        }
+        $settings = function_exists('getCertificateMainSettings') ? (getCertificateMainSettings() ?: []) : [];
+        if (!is_array($settings)) {
+            $settings = [];
+        }
+
+        return [
+            'hours' => 8,
+            'start_date' => date('Y-m-d'),
+            'end_date' => date('Y-m-d'),
+            'issue_date' => date('Y-m-d'),
+            'accreditation_number' => $cached['accreditation_number'] ?? ($settings['accreditation_number'] ?? 'QIEC-ACC-001'),
+            'officer_name' => $cached['officer_name'] ?? ($settings['officer_name'] ?? 'مسؤول التدريب والاعتماد'),
+            'director_name' => $cached['director_name'] ?? ($settings['director_name'] ?? 'مدير المركز'),
+        ];
+    }
+
+    public function downloadCertificate(Request $request, int $id)
+    {
+        $user = $this->resolveAdmin($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $certificate = \App\Models\Certificate::with([
+            'student', 'webinar', 'quiz.webinar', 'bundle', 'quizzesResult',
+        ])->findOrFail($id);
+
+        $make = new \App\Mixins\Certificate\MakeCertificate();
+        $inline = $request->boolean('view') || $request->routeIs('panel.v1.admin.education.certificates.view');
+
+        return $make->showCertificateByType($certificate, $inline);
+    }
+
     public function createCertificateTemplate(Request $request){
         $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
         return $this->renderAdmin($request,'panel_v1.admin.pages.education.certificate-template-form','إنشاء قالب شهادة',array_merge(AdminMockData::shell('education','certificates'),[

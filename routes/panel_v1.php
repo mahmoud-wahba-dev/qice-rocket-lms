@@ -421,7 +421,11 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 Route::post('/reviews/{id}/approve', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'approveReview'])->name('reviews.approve');
                 Route::post('/reviews/{id}/reject', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'rejectReview'])->name('reviews.reject');
                 Route::post('/reviews/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'deleteReview'])->name('reviews.delete');
+                Route::get('/certificates/create', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'createCertificate'])->name('certificates.create');
+                Route::post('/certificates', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'storeCertificate'])->name('certificates.store');
                 Route::post('/certificates/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'deleteCertificate'])->name('certificates.delete');
+                Route::get('/certificates/{id}/download', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'downloadCertificate'])->name('certificates.download');
+                Route::get('/certificates/{id}/view', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'downloadCertificate'])->name('certificates.view');
                 Route::post('/live/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'deleteLive'])->name('live.delete');
                 Route::get('/events/create', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'createEvent'])->name('events.create');
                 Route::post('/events', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'storeEvent'])->name('events.store');

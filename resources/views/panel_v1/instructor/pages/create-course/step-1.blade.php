@@ -307,20 +307,39 @@
     </div>
 </section>
 
-{{-- Description --}}
+{{-- About + Description (landing: نبذة عن الدورة + محتوى الدورة) --}}
 <section class="{{ $card }}">
     <div class="flex items-center gap-3 mb-5 sm:mb-6">
         <span class="size-10 rounded-10px bg-primary/10 center shrink-0">
             <span class="icon-[tabler--file-description] size-5 text-primary"></span>
         </span>
-        <h2 class="font-bold text-18px sm:text-20px text-primary">الوصف التفصيلي للدورة</h2>
+        <h2 class="font-bold text-18px sm:text-20px text-primary">نبذة ومحتوى الدورة</h2>
     </div>
+
+    <div class="mb-6">
+        <label class="block font-semibold text-14px sm:text-15px text-primary mb-2">
+            نبذة عن الدورة <span class="text-red-500">*</span>
+        </label>
+        <p class="font-medium text-13px text-gray mb-2">تظهر في قسم «نبذة عن الدورة» بصفحة الدورة العامة</p>
+        <textarea rows="4" name="summary"
+            class="{{ $textarea }} {{ $errors->has('summary') ? 'border-[#FECACA]' : '' }}"
+            placeholder="اكتب نبذة قصيرة وواضحة عن الدورة..."
+            maxlength="2000">{{ old('summary', $draft['summary'] ?? '') }}</textarea>
+        @error('summary')
+            <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+        @enderror
+    </div>
+
+    <div>
+        <label class="block font-semibold text-14px sm:text-15px text-primary mb-2">محتوى الدورة</label>
+        <p class="font-medium text-13px text-gray mb-2">الوصف التفصيلي يظهر في قسم «محتوى الدورة» بصفحة الدورة</p>
         @include('panel_v1.components.rich-editor', [
             'name' => 'description',
             'value' => old('description', $draft['description'] ?? ''),
-            'placeholder' => 'اكتب وصف الدورة التفصيلي هنا...',
+            'placeholder' => 'اكتب محتوى الدورة التفصيلي هنا...',
             'id' => 'course-description-editor',
         ])
+    </div>
 </section>
 
 {{-- Extra settings --}}

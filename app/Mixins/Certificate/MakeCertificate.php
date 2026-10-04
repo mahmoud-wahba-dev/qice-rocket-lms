@@ -19,6 +19,11 @@ class MakeCertificate
     {
         $this->inlineCertificate = $inline;
 
+        // Prefer QIEC bilingual JPG template when available.
+        if ($this->qiecTemplateAvailable()) {
+            return $this->renderQiecCertificate($certificate);
+        }
+
         if ($certificate->type == "quiz") {
             $quizResult = $certificate->quizzesResult;
 
@@ -31,6 +36,399 @@ class MakeCertificate
             return $this->makeCourseCertificate($certificate);
         } else if ($certificate->type == "bundle") {
             return $this->makeBundleCertificate($certificate);
+        }
+    }
+
+    public static function formatCertificateNumber(int $id): string
+    {
+        $prefix = trim((string) (getCertificateMainSettings('certificate_id') ?: 'QEC'));
+        if ($prefix === '' || strtoupper($prefix) === 'CR') {
+            $prefix = 'QEC';
+        }
+
+        return strtoupper($prefix) . '-' . str_pad((string) intdiv($id, 1000), 4, '0', STR_PAD_LEFT)
+            . '-' . str_pad((string) ($id % 1000), 3, '0', STR_PAD_LEFT);
+    }
+
+    public static function parseCertificateId($raw): ?int
+    {
+        $raw = trim((string) $raw);
+        if ($raw === '') {
+            return null;
+        }
+
+        // Strip brackets / decorative wrappers printed on the certificate: [ QEC-0000-027 ]
+        $raw = trim($raw, " \t\n\r\0\x0B[]");
+        $raw = preg_replace('/\s+/', '', $raw) ?: $raw;
+        $raw = strtoupper($raw);
+
+        if (ctype_digit($raw)) {
+            return (int) $raw;
+        }
+
+        // QEC-0000-028 or CR-0000-028
+        if (preg_match('/^[A-Z]+-(\d+)-(\d+)$/', $raw, $m)) {
+            return ((int) $m[1]) * 1000 + (int) $m[2];
+        }
+
+        if (preg_match('/(\d+)$/', $raw, $m)) {
+            return (int) $m[1];
+        }
+
+        return null;
+    }
+
+    public function qiecTemplateAvailable(): bool
+    {
+        return is_file(public_path('assets/panel_v1/img/certificate.jpg'));
+    }
+
+    public function buildQiecCertificateData($certificate): array
+    {
+        $certificate->loadMissing(['student.userMetas', 'webinar.translations', 'webinar.teacher', 'quiz.webinar.translations', 'quiz.webinar.teacher', 'bundle.translations', 'bundle.teacher']);
+
+        $meta = [];
+        if (!empty($certificate->meta)) {
+            $meta = is_array($certificate->meta) ? $certificate->meta : (json_decode((string) $certificate->meta, true) ?: []);
+        }
+
+        $student = $certificate->student;
+        $traineeName = (string) ($student->full_name ?? '');
+        $course = null;
+        $durationMinutes = null;
+
+        if (($certificate->type ?? '') === 'course') {
+            $course = $certificate->webinar;
+        } elseif (($certificate->type ?? '') === 'quiz') {
+            $course = $certificate->quiz->webinar ?? null;
+        } elseif (($certificate->type ?? '') === 'bundle') {
+            $course = $certificate->bundle;
+        }
+
+        $titleAr = '';
+        $titleEn = '';
+        if (!empty($course)) {
+            try {
+                $titleAr = (string) (($course->translate('ar')->title ?? null) ?: ($course->title ?? ''));
+            } catch (\Throwable $e) {
+                $titleAr = (string) ($course->title ?? '');
+            }
+            try {
+                $titleEn = (string) (($course->translate('en')->title ?? null) ?: $titleAr);
+            } catch (\Throwable $e) {
+                $titleEn = $titleAr;
+            }
+            $durationMinutes = $course->duration ?? null;
+        }
+        if ($titleAr === '' && !empty($certificate->quiz)) {
+            $titleAr = (string) ($certificate->quiz->title ?? 'اختبار');
+            $titleEn = $titleAr;
+        }
+
+        $hours = '00';
+        if (!empty($durationMinutes) && (int) $durationMinutes > 0) {
+            $hours = (string) max(1, (int) ceil(((int) $durationMinutes) / 60));
+        }
+
+        $issueTs = (int) ($certificate->created_at ?? time());
+        if ($issueTs <= 0 || $issueTs > 2000000000) {
+            $issueTs = time();
+        }
+        $issueDate = date('d/m/Y', $issueTs);
+
+        $startDate = $issueDate;
+        $endDate = $issueDate;
+        if (!empty($course?->start_date)) {
+            $startDate = date('d/m/Y', (int) $course->start_date);
+            $endTs = (int) $course->start_date + ((int) ($durationMinutes ?: 0) * 60);
+            $endDate = date('d/m/Y', $endTs > (int) $course->start_date ? $endTs : (int) $course->start_date);
+        }
+
+        $settings = function_exists('getCertificateMainSettings') ? (getCertificateMainSettings() ?: []) : [];
+        if (!is_array($settings)) {
+            $settings = [];
+        }
+        $cachedDefaults = cache()->get('qiec_certificate_defaults', []);
+        if (!is_array($cachedDefaults)) {
+            $cachedDefaults = [];
+        }
+
+        $defaultOfficer = (string) ($cachedDefaults['officer_name'] ?? $settings['officer_name'] ?? $settings['certificate_officer_name'] ?? 'مسؤول التدريب والاعتماد');
+        $defaultDirector = (string) ($cachedDefaults['director_name'] ?? $settings['director_name'] ?? $settings['certificate_director_name'] ?? 'مدير المركز');
+        $defaultAcc = (string) ($cachedDefaults['accreditation_number'] ?? $settings['accreditation_number'] ?? $settings['certificate_accreditation'] ?? 'QIEC-ACC-001');
+
+        $data = [
+            'certificate_number' => self::formatCertificateNumber((int) $certificate->id),
+            'trainee_name' => $traineeName,
+            'trainee_name_ar' => $traineeName,
+            'trainee_name_en' => $traineeName,
+            'course_title' => $titleAr ?: $titleEn,
+            'course_title_ar' => $titleAr ?: $titleEn,
+            'course_title_en' => $titleEn ?: $titleAr,
+            'hours' => str_pad($hours, 2, '0', STR_PAD_LEFT),
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'issue_date' => $issueDate,
+            'accreditation_number' => $defaultAcc,
+            'officer_name' => $defaultOfficer,
+            'director_name' => $defaultDirector,
+            'certificate_id' => (int) $certificate->id,
+            'type' => (string) ($certificate->type ?? 'course'),
+        ];
+
+        // Per-certificate form overrides
+        foreach ([
+            'trainee_name_ar', 'trainee_name_en', 'course_title_ar', 'course_title_en',
+            'hours', 'start_date', 'end_date', 'issue_date',
+            'accreditation_number', 'officer_name', 'director_name',
+        ] as $key) {
+            if (isset($meta[$key]) && trim((string) $meta[$key]) !== '') {
+                $data[$key] = is_numeric($meta[$key]) && $key === 'hours'
+                    ? str_pad((string) ((int) $meta[$key]), 2, '0', STR_PAD_LEFT)
+                    : (string) $meta[$key];
+            }
+        }
+        $data['trainee_name'] = $data['trainee_name_ar'] ?: $data['trainee_name_en'];
+        $data['course_title'] = $data['course_title_ar'] ?: $data['course_title_en'];
+
+        // QR for HTML template — encode QEC number so validation page can parse it
+        $data['qr_html'] = '';
+        try {
+            $url = url('/certificate_validation?certificate_id=' . urlencode($data['certificate_number']));
+            try {
+                $png = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')->size(120)->margin(0)->generate($url);
+                $data['qr_html'] = '<img src="data:image/png;base64,' . base64_encode($png) . '" width="78" height="78" alt="QR" />';
+            } catch (\Throwable $e) {
+                $svg = (string) \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(120)->margin(0)->generate($url);
+                $data['qr_html'] = '<img src="data:image/svg+xml;base64,' . base64_encode($svg) . '" width="78" height="78" alt="QR" />';
+            }
+        } catch (\Throwable $e) {
+            $data['qr_html'] = '';
+        }
+
+        return $data;
+    }
+
+    public function renderQiecCertificate($certificate)
+    {
+        $data = $this->buildQiecCertificateData($certificate);
+
+        try {
+            $pngBinary = $this->composeQiecCertificatePng($data);
+            $fileBase = 'QIEC-certificate-' . ($certificate->id ?? 'x');
+            $dataUri = 'data:image/png;base64,' . base64_encode($pngBinary);
+
+            // One landscape page = the filled certificate.jpg image only (points ≈ 1280×905 @ 96dpi).
+            $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+                @page{margin:0;size:960pt 679pt;}
+                *{margin:0;padding:0;}
+                html,body{width:960pt;height:679pt;overflow:hidden;background:#fff;}
+                img{display:block;width:960pt;height:679pt;border:0;}
+            </style></head><body><img src="' . $dataUri . '" alt="certificate"></body></html>';
+
+            $pdf = Pdf::loadHTML($html)
+                ->setPaper([0, 0, 960, 679])
+                ->setOption('isRemoteEnabled', true)
+                ->setOption('chroot', public_path());
+
+            if ($this->inlineCertificate) {
+                return $pdf->stream($fileBase . '.pdf');
+            }
+
+            return $pdf->download($fileBase . '.pdf');
+        } catch (\Throwable $e) {
+            // Fallback: HTML overlay on the same JPG, still one page.
+            $bgPath = public_path('assets/panel_v1/img/certificate.jpg');
+            $html = (string) view('panel_v1.certificates.qiec-template', [
+                'data' => $data,
+                'backgroundUrl' => $this->pathToFileUrl($bgPath),
+                'width' => 1280,
+                'height' => 905,
+            ]);
+
+            return $this->localQiecCertificateDownload($certificate, $html);
+        }
+    }
+
+    /**
+     * Draw dynamic fields onto certificate.jpg (1280×905) — one image, one page.
+     */
+    private function composeQiecCertificatePng(array $data): string
+    {
+        $bgPath = public_path('assets/panel_v1/img/certificate.jpg');
+        $img = Image::make($bgPath)->resize(1280, 905);
+
+        $paper = '#FAF9F4';
+        $ink = '#0A3D38';
+
+        $fill = function (int $x, int $y, int $w, int $h) use ($img, $paper) {
+            $img->rectangle($x, $y, $x + $w, $y + $h, function ($draw) use ($paper) {
+                $draw->background($paper);
+            });
+        };
+
+        $fontEn = public_path('assets/default/fonts/Montserrat-Medium.ttf');
+        if (!is_file($fontEn)) {
+            $fontEn = public_path('assets/default/fonts/vazir/Vazir-Medium.ttf');
+        }
+        $fontAr = public_path('assets/default/fonts/vazir/Vazir-Medium.ttf');
+        if (!is_file($fontAr)) {
+            $fontAr = $fontEn;
+        }
+
+        $arabic = null;
+        try {
+            if (class_exists(\I18N_Arabic::class) || class_exists('I18N_Arabic')) {
+                $arabic = new \I18N_Arabic('Glyphs');
+            }
+        } catch (\Throwable $e) {
+            $arabic = null;
+        }
+
+        $hasAr = static function (string $text): bool {
+            return (bool) preg_match('/[\x{0600}-\x{06FF}]/u', $text);
+        };
+
+        $shapeAr = function (string $text) use ($arabic, $hasAr): string {
+            $text = trim($text);
+            if ($text === '' || empty($arabic) || !$hasAr($text)) {
+                return $text;
+            }
+            try {
+                return (string) $arabic->utf8Glyphs($text);
+            } catch (\Throwable $e) {
+                return $text;
+            }
+        };
+
+        $write = function (string $text, int $x, int $y, int $size, string $align = 'left', ?bool $rtl = null) use ($img, $fontEn, $fontAr, $shapeAr, $hasAr, $ink) {
+            $text = trim($text);
+            if ($text === '') {
+                return;
+            }
+            $rtl = $rtl ?? $hasAr($text);
+            if ($rtl) {
+                $text = $shapeAr($text);
+            }
+            $img->text($text, $x, $y, function ($font) use ($size, $align, $rtl, $fontEn, $fontAr, $ink) {
+                $file = $rtl ? $fontAr : $fontEn;
+                if (is_file($file)) {
+                    $font->file($file);
+                }
+                $font->size($size);
+                $font->color($ink);
+                $font->align($align);
+                $font->valign('top');
+            });
+        };
+
+        $num = (string) ($data['certificate_number'] ?? '');
+        $nameEn = (string) ($data['trainee_name_en'] ?? '');
+        $nameAr = (string) ($data['trainee_name_ar'] ?? '');
+        $courseEn = (string) ($data['course_title_en'] ?? '');
+        $courseAr = (string) ($data['course_title_ar'] ?? '');
+        $hours = str_pad((string) ((int) ($data['hours'] ?? 0)), 2, '0', STR_PAD_LEFT);
+        $start = (string) ($data['start_date'] ?? '');
+        $end = (string) ($data['end_date'] ?? '');
+        $issue = (string) ($data['issue_date'] ?? '');
+        $acc = (string) ($data['accreditation_number'] ?? '');
+        $officer = (string) ($data['officer_name'] ?? '');
+        $director = (string) ($data['director_name'] ?? '');
+
+        // --- Certificate numbers: replace [ QEC-0000-000 ] only (keep labels) ---
+        $fill(168, 278, 160, 28);
+        $write('[ ' . $num . ' ]', 248, 284, 13, 'center', false);
+        $fill(990, 278, 130, 28);
+        $write('[ ' . $num . ' ]', 1055, 284, 13, 'center', false);
+
+        // --- Trainee names (above tan underlines) ---
+        $fill(72, 430, 463, 36);
+        $fill(759, 430, 464, 36);
+        $write($nameEn, 303, 438, 20, 'center');
+        $write($nameAr, 991, 438, 20, 'center', true);
+
+        // --- Course titles ---
+        $fill(72, 520, 463, 40);
+        $fill(759, 520, 464, 40);
+        $write($courseEn, 303, 530, 17, 'center');
+        $write($courseAr, 991, 530, 17, 'center', true);
+
+        // --- Meta lines: wipe full line + rewrite label + value (keeps one page on JPG) ---
+        // EN hours: Duration: [ 00 ] training hours
+        $fill(70, 585, 280, 26);
+        $write('Duration: [ ' . $hours . ' ] training hours', 70, 590, 13, 'left', false);
+        // AR hours: عدد الساعات التدريبية: [ 00 ] ساعة
+        $fill(960, 585, 270, 26);
+        $write('عدد الساعات التدريبية: [ ' . $hours . ' ] ساعة', 1230, 590, 13, 'right', true);
+
+        // EN dates
+        $fill(70, 615, 420, 26);
+        $write('Course dates: [ ' . $start . ' ] - [ ' . $end . ' ]', 70, 620, 12, 'left', false);
+        // AR dates
+        $fill(850, 615, 380, 26);
+        $write('فترة الدورة: [ ' . $start . ' ] - [ ' . $end . ' ]', 1230, 620, 12, 'right', true);
+
+        // EN issue
+        $fill(70, 645, 300, 26);
+        $write('Issue date: [ ' . $issue . ' ]', 70, 650, 12, 'left', false);
+        // AR issue
+        $fill(960, 645, 270, 26);
+        $write('تاريخ الإصدار: [ ' . $issue . ' ]', 1230, 650, 12, 'right', true);
+
+        // EN accreditation
+        $fill(70, 675, 360, 26);
+        $write('Accreditation Number: [ ' . $acc . ' ]', 70, 680, 12, 'left', false);
+        // AR accreditation
+        $fill(960, 675, 270, 26);
+        $write('رقم الاعتماد: [ ' . $acc . ' ]', 1230, 680, 12, 'right', true);
+
+        // --- Signature names (between line and [ Name ] label) ---
+        $fill(71, 820, 249, 22);
+        $fill(960, 820, 248, 22);
+        $write($officer, 195, 822, 14, 'center');
+        $write($director, 1084, 822, 14, 'center');
+
+        // QR bottom-left (validation)
+        try {
+            $url = url('/certificate_validation?certificate_id=' . urlencode((string) ($data['certificate_number'] ?? $data['certificate_id'] ?? '')));
+            $qrPng = null;
+            try {
+                $qrPng = (string) QrCode::format('png')->size(140)->margin(0)->generate($url);
+            } catch (\Throwable $e) {
+            }
+            if (!empty($qrPng)) {
+                $qr = Image::make($qrPng)->resize(72, 72);
+                $img->insert($qr, 'top-left', 40, 800);
+            }
+        } catch (\Throwable $e) {
+        }
+
+        return (string) $img->encode('png');
+    }
+
+    private function localQiecCertificateDownload($certificate, string $html)
+    {
+        $fileBase = 'QIEC-certificate-' . ($certificate->id ?? 'x');
+        $html = $this->prepareCertificateHtmlForPdf($html, 1280, 905);
+
+        try {
+            $pdf = Pdf::loadHTML($html)
+                ->setPaper([0, 0, 1280, 905])
+                ->setOption('isHtml5ParserEnabled', true)
+                ->setOption('isRemoteEnabled', true)
+                ->setOption('isFontSubsettingEnabled', true)
+                ->setOption('defaultFont', 'DejaVu Sans')
+                ->setOption('chroot', public_path());
+
+            if ($this->inlineCertificate) {
+                return $pdf->stream($fileBase . '.pdf');
+            }
+
+            return $pdf->download($fileBase . '.pdf');
+        } catch (\Throwable $e) {
+            return response($html)
+                ->header('Content-Type', 'text/html; charset=UTF-8')
+                ->header('Content-Disposition', ($this->inlineCertificate ? 'inline' : 'attachment') . '; filename="' . $fileBase . '.html"');
         }
     }
 
@@ -211,7 +609,7 @@ class MakeCertificate
     /**
      * Make certificate HTML DomPDF-safe: local/data-uri images, Arabic glyphs, Unicode fonts.
      */
-    private function prepareCertificateHtmlForPdf(string $html): string
+    private function prepareCertificateHtmlForPdf(string $html, int $width = 930, int $height = 600): string
     {
         $html = $this->rewriteCertificateAssetUrls($html);
 
@@ -237,9 +635,10 @@ class MakeCertificate
 
         $vazir = public_path('assets/default/fonts/vazir/Vazir-Medium.ttf');
         $extraCss = 'body{margin:0;padding:0;}'
-            . '.certificate-template-container{width:930px;height:600px;position:relative;background-repeat:no-repeat;background-size:100% 100%;border:0;}'
+            . '.certificate-template-container{width:' . $width . 'px;height:' . $height . 'px;position:relative;background-repeat:no-repeat;background-size:100% 100%;border:0;}'
             . '.certificate-template-container .draggable-element{position:absolute !important;display:block;white-space:pre-wrap;}'
-            . '.certificate-template-container img{max-width:100%;max-height:100%;}';
+            . '.certificate-template-container img{max-width:100%;max-height:100%;}'
+            . '.sheet{width:' . $width . 'px;height:' . $height . 'px;}';
 
         if (is_file($vazir)) {
             $fontUrl = $this->pathToFileUrl($vazir);
@@ -354,7 +753,7 @@ class MakeCertificate
 
         $url = url('/certificate_validation');
         if (!empty($certificate?->id)) {
-            $url = url('/certificate_validation?certificate_id=' . $certificate->id);
+            $url = url('/certificate_validation?certificate_id=' . urlencode(self::formatCertificateNumber((int) $certificate->id)));
         }
 
         try {

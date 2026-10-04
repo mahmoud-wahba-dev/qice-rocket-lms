@@ -17,7 +17,8 @@ trait CourseWizardTrait
             'category_id' => 'التصنيف الرئيسي',
             'course_type' => 'نوع الدورة',
             'seo_description' => 'الوصف المختصر',
-            'description' => 'الوصف التفصيلي',
+            'summary' => 'نبذة عن الدورة',
+            'description' => 'محتوى الدورة',
             'video_demo_link' => 'رابط الفيديو الترويجي',
             'video_demo_file' => 'ملف الفيديو الترويجي',
             'image_thumbnail' => 'الصورة المصغرة',
@@ -45,7 +46,7 @@ trait CourseWizardTrait
             'date' => 'تاريخ الجلسة',
             'duration' => 'مدة الجلسة',
             'upload' => 'الملف',
-            'summary' => 'ملخص الدرس',
+            'lesson_summary' => 'ملخص الدرس',
         ];
     }
 
@@ -336,11 +337,13 @@ trait CourseWizardTrait
             : [];
         $draftLocaleTitle = null;
         $draftLocaleSeo = null;
+        $draftLocaleSummary = null;
         $draftLocaleDescription = null;
         if ($draft) {
             $tr = $draft->translate('ar') ?: $draft->translate(app()->getLocale()) ?: $draft->translations->first();
             $draftLocaleTitle = $tr->title ?? null;
             $draftLocaleSeo = $tr->seo_description ?? null;
+            $draftLocaleSummary = $tr->summary ?? null;
             $draftLocaleDescription = $tr->description ?? null;
         }
 
@@ -361,6 +364,7 @@ trait CourseWizardTrait
                 'course_type' => $typeReverse[$draft->type] ?? 'recorded',
                 'locale' => 'ar',
                 'seo_description' => $draftLocaleSeo,
+                'summary' => $draftLocaleSummary,
                 'description' => $draftLocaleDescription,
                 'video_demo_link' => $draft->video_demo_source === 'external_link' ? $draft->video_demo : null,
                 'tags' => implode(',', $tagTitles),
@@ -434,6 +438,7 @@ trait CourseWizardTrait
                 'category_id' => 'nullable|exists:categories,id',
                 'course_type' => ($soft ? 'nullable' : 'required') . '|in:recorded,live,text',
                 'seo_description' => ($soft ? 'nullable' : 'required') . '|string|max:160',
+                'summary' => ($soft ? 'nullable' : 'required') . '|string|max:2000',
                 'description' => 'nullable|string',
                 'video_demo_link' => 'nullable|url|max:2000',
                 'video_demo_file' => 'nullable|file|mimetypes:video/mp4,video/webm,video/quicktime|max:102400',
@@ -548,6 +553,7 @@ trait CourseWizardTrait
                 $translation->locale = $loc;
                 $translation->title = $title;
                 $translation->seo_description = $request->input('seo_description');
+                $translation->summary = $request->input('summary');
                 $translation->description = $request->input('description');
                 $translation->save();
             }

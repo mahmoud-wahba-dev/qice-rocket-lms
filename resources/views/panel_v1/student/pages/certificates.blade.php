@@ -44,7 +44,7 @@
                             $type = 'إتمام دورة';
                             $category = $webinar->category->title ?? '';
                         }
-                        $validationUrl = url('/certificate_validation?certificate_id=' . $certificate->id);
+                        $validationUrl = url('/certificate_validation?certificate_id=' . urlencode($certificate->formatted_number));
                     @endphp
                     <article class="rounded-16px border border-d9 bg-white p-6 flex flex-col gap-5 hover:shadow-md transition">
                         <div class="bg-primary h-44 rounded-12px center relative overflow-hidden">

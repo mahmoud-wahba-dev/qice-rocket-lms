@@ -149,6 +149,39 @@
         @if (!empty($certificateStats))
             @include('panel_v1.admin.components.stats-cards', ['stats' => $certificateStats])
         @endif
+
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden mb-4">
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-0">
+                <div class="lg:col-span-2 bg-[#0F3D36] p-5 flex items-center justify-center">
+                    <img src="{{ $qiecCertificatePreview ?? asset('assets/panel_v1/img/certificate.jpg') }}"
+                        alt="قالب شهادة QIEC"
+                        class="w-full max-w-md rounded-10px border border-white/20 shadow-lg">
+                </div>
+                <div class="lg:col-span-3 p-5 sm:p-6 space-y-3">
+                    <h3 class="font-bold text-18px text-primary">قالب شهادة QIEC الثنائية اللغة</h3>
+                    <p class="font-medium text-13px text-gray leading-relaxed">
+                        الشهادات تُطبع على قالب QIEC مع بيانات ديناميكية: رقم الشهادة، اسم المتدرب، الدورة، الساعات، التواريخ، رقم الاعتماد، مدير المركز، ومسؤول التدريب والاعتماد + QR.
+                    </p>
+                    <div class="flex flex-wrap gap-2 pt-1">
+                        <a href="{{ route('panel.v1.admin.education.certificates.create') }}"
+                            class="h-10 px-4 rounded-10px bg-primary text-white text-13px font-bold center gap-1.5 hover:opacity-95">
+                            <span class="icon-[tabler--plus] size-4"></span> إنشاء شهادة جديدة
+                        </a>
+                        <a href="{{ url('/certificate_validation') }}" target="_blank"
+                            class="h-10 px-4 rounded-10px border border-d9 bg-white text-13px font-semibold text-primary center gap-1.5 hover:bg-[#FAFAF4]">
+                            <span class="icon-[tabler--shield-check] size-4"></span> صفحة التحقق
+                        </a>
+                        @if (!empty($certificates->first()))
+                            <a href="{{ route('panel.v1.admin.education.certificates.view', ['id' => $certificates->first()->id]) }}" target="_blank"
+                                class="h-10 px-4 rounded-10px border border-d9 bg-white text-13px font-semibold text-primary center gap-1.5 hover:bg-[#FAFAF4]">
+                                <span class="icon-[tabler--eye] size-4"></span> معاينة أحدث شهادة
+                            </a>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="px-2 sm:px-0 mb-3 flex flex-wrap gap-2">
             <form method="GET" action="{{ url()->current() }}" class="flex flex-wrap gap-2 items-center">
                 @foreach (request()->except(['type','page']) as $k=>$v) @if(!is_array($v))<input type="hidden" name="{{ $k }}" value="{{ $v }}">@endif @endforeach
@@ -158,51 +191,43 @@
                     <option value="quiz" @selected(request('type')=='quiz')>اختبار</option>
                     <option value="bundle" @selected(request('type')=='bundle')>حزمة</option>
                 </select>
-                <a href="{{ url('/certificate_validation') }}" target="_blank" class="h-9 px-3 rounded-10px border border-d9 bg-white text-12px font-semibold text-primary center gap-1"><span class="icon-[tabler--shield-check] size-4"></span> صفحة التحقق</a>
             </form>
         </div>
-        <div class="border border-d9 rounded-14px bg-white overflow-hidden mb-4">
-            <div class="px-4 py-3 bg-[#FAFAF4] border-b border-d9 flex items-center justify-between">
-                <h3 class="font-bold text-14px text-primary">قوالب الشهادات</h3>
-                <a href="{{ route('panel.v1.admin.education.certificates.templates.create') }}" class="h-9 px-4 rounded-10px bg-primary text-white font-bold text-12px center">+ قالب جديد</a>
-            </div>
-            @if (!empty($certificateTemplates) && $certificateTemplates->count())
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
-                    @foreach($certificateTemplates as $tmpl)
-                        <div class="rounded-12px border border-d9 p-3 flex items-center gap-3">
-                            <div class="size-10 rounded-8px bg-primary/10 center shrink-0"><span class="icon-[tabler--certificate] size-5 text-primary"></span></div>
-                            <div class="flex-1 min-w-0">
-                                <p class="font-bold text-13px text-primary truncate">{{ $tmpl->title ?? 'قالب #' . $tmpl->id }}</p>
-                                <p class="font-medium text-11px text-gray">{{ $tmpl->type ?? '' }} — {{ $tmpl->status ?? '' }}</p>
-                            </div>
-                            <div class="shrink-0">
-                                @include('panel_v1.components.actions-dropdown', ['id' => 'edu-cert-tmpl-'.$tmpl->id, 'items' => [['label' => 'تعديل', 'url' => route('panel.v1.admin.education.certificates.templates.edit',['id'=>$tmpl->id]), 'tone' => 'gray'], ['label' => 'حذف', 'action' => route('panel.v1.admin.education.certificates.templates.delete',['id'=>$tmpl->id]), 'confirm' => 'حذف القالب؟', 'tone' => 'danger']]])
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            @else
-                <p class="font-medium text-13px text-gray text-center py-8">لا توجد قوالب — أنشئ أول قالب شهادة</p>
-            @endif
-        </div>
+
         <div class="border border-d9 rounded-14px bg-white overflow-hidden">
             <table class="table w-full text-13px">
-                <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-3 py-3 text-start">الشهادة</th><th class="px-3 py-3">النوع</th><th class="px-3 py-3">الطالب</th><th class="px-3 py-3">الدورة/الاختبار</th><th class="px-3 py-3">التاريخ</th><th class="px-3 py-3">تحقق</th><th class="px-3 py-3 text-center">إجراءات</th></tr></thead>
+                <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-3 py-3 text-start">رقم الشهادة</th><th class="px-3 py-3">النوع</th><th class="px-3 py-3">الطالب</th><th class="px-3 py-3">الدورة/الاختبار</th><th class="px-3 py-3">التاريخ</th><th class="px-3 py-3">تحقق</th><th class="px-3 py-3 text-center">إجراءات</th></tr></thead>
                 <tbody>
                 @foreach ($certificates as $c)
                     @php
-                        $cTitle = $c->type==='quiz' ? ($c->quiz->title ?? 'اختبار #'.$c->quiz_id) : ($c->type==='bundle' ? ($c->bundle->title ?? 'حزمة #'.$c->bundle_id) : ($c->webinar->title ?? '—'));
+                        $cTitle = $c->type==='quiz' ? ($c->quiz->webinar->title ?? $c->quiz->title ?? 'اختبار #'.$c->quiz_id) : ($c->type==='bundle' ? ($c->bundle->title ?? 'حزمة #'.$c->bundle_id) : ($c->webinar->title ?? '—'));
+                        if (!empty($c->meta['course_title_ar'])) {
+                            $cTitle = $c->meta['course_title_ar'];
+                        }
                         $typeLabel = $c->type==='quiz' ? 'اختبار' : ($c->type==='bundle' ? 'حزمة' : 'إتمام');
-                        $validUrl = url('/certificate_validation?certificate_id='.$c->id);
+                        $validUrl = url('/certificate_validation?certificate_id='.urlencode($c->formatted_number));
+                        $formatted = $c->formatted_number;
                     @endphp
                     <tr class="border-b border-d9 last:border-0">
-                        <td class="px-3 py-3 font-bold text-primary font-mono">#{{ $c->id }}</td>
+                        <td class="px-3 py-3">
+                            <p class="font-bold text-primary font-mono text-12px">{{ $formatted }}</p>
+                            <p class="font-medium text-11px text-gray">#{{ $c->id }}</p>
+                        </td>
                         <td class="px-3 py-3 text-center"><span class="inline-flex rounded-full px-2 py-1 font-bold text-11px {{ $c->type==='quiz' ? 'bg-[#EDE9FE] text-[#6D28D9]' : ($c->type==='bundle' ? 'bg-[#FEF3C7] text-[#92400E]' : 'bg-[#D1FAE5] text-[#065F46]') }}">{{ $typeLabel }}</span></td>
-                        <td class="px-3 py-3 text-center">{{ $c->student->full_name ?? '' }}<br><span class="text-11px text-gray">{{ $c->student->email ?? '' }}</span></td>
+                        <td class="px-3 py-3 text-center">{{ $c->meta['trainee_name_ar'] ?? ($c->student->full_name ?? '') }}<br><span class="text-11px text-gray">{{ $c->student->email ?? '' }}</span></td>
                         <td class="px-3 py-3 text-center truncate max-w-[14rem]">{{ $cTitle }}</td>
                         <td class="px-3 py-3 text-center whitespace-nowrap">{{ date('Y/m/d', (int)$c->created_at) }}</td>
                         <td class="px-3 py-3 text-center"><a href="{{ $validUrl }}" target="_blank" class="inline-flex items-center gap-1 font-bold text-11px text-primary hover:underline"><span class="icon-[tabler--qrcode] size-3.5"></span> تحقق</a></td>
-                        <td class="px-3 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'edu-cert-'.$c->id, 'items' => [['label' => 'حذف', 'action' => route('panel.v1.admin.education.certificates.delete',['id'=>$c->id]), 'confirm' => 'حذف الشهادة #'.$c->id.'؟', 'tone' => 'danger']]])</td>
+                        <td class="px-3 py-3 text-center">
+                            @include('panel_v1.components.actions-dropdown', [
+                                'id' => 'edu-cert-'.$c->id,
+                                'items' => [
+                                    ['label' => 'معاينة PDF', 'url' => route('panel.v1.admin.education.certificates.view', ['id' => $c->id]), 'tone' => 'gray'],
+                                    ['label' => 'تنزيل PDF', 'url' => route('panel.v1.admin.education.certificates.download', ['id' => $c->id]), 'tone' => 'gray'],
+                                    ['label' => 'حذف', 'action' => route('panel.v1.admin.education.certificates.delete',['id'=>$c->id]), 'confirm' => 'حذف الشهادة '.$formatted.'؟', 'tone' => 'danger'],
+                                ],
+                            ])
+                        </td>
                     </tr>
                 @endforeach
                 </tbody>
