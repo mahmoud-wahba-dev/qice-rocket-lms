@@ -16,6 +16,7 @@ use App\Models\Translation\WebinarAssignmentTranslation;
 use App\Models\Translation\WebinarChapterTranslation;
 use App\Models\Webinar;
 use App\Models\WebinarAssignment;
+use App\Models\WebinarAssignmentAttachment;
 use App\Models\WebinarAssignmentHistory;
 use App\Models\WebinarChapter;
 use App\Models\WebinarChapterItem;
@@ -1984,9 +1985,11 @@ class InstructorController extends Controller
                 'review_url' => $reviewUrl,
                 'course_assignments_url' => $courseAssignmentsUrl,
                 'preview_url' => $courseAssignmentsUrl,
-                'edit_url' => $slug
+                'course_watch_url' => $slug
                     ? route('panel.v1.instructor.courses.watch', ['slug' => $slug])
                     : route('panel.v1.instructor.courses'),
+                'edit_url' => route('panel.v1.instructor.assignments.edit', ['id' => $assignment->id]),
+                'delete_url' => route('panel.v1.instructor.assignments.delete', ['id' => $assignment->id]),
             ];
         })->values()->all();
 
@@ -2018,9 +2021,11 @@ class InstructorController extends Controller
                 'status_tone' => ($assignment->status ?? 'active') === 'active' ? 'success' : 'muted',
                 'pending_url' => $pendingUrl,
                 'course_assignments_url' => $courseAssignmentsUrl,
-                'edit_url' => $slug
+                'course_watch_url' => $slug
                     ? route('panel.v1.instructor.courses.watch', ['slug' => $slug])
                     : route('panel.v1.instructor.courses'),
+                'edit_url' => route('panel.v1.instructor.assignments.edit', ['id' => $assignment->id]),
+                'delete_url' => route('panel.v1.instructor.assignments.delete', ['id' => $assignment->id]),
                 'course_url' => $slug
                     ? route('panel.v1.instructor.courses.performance', ['slug' => $slug])
                     : route('panel.v1.instructor.courses'),
@@ -2104,12 +2109,15 @@ class InstructorController extends Controller
             'pass_grade' => 'required|integer|min:0|max:1000',
             'deadline' => 'nullable|integer|min:1|max:365',
             'attempts' => 'nullable|integer|min:1|max:50',
+            'attachment' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,zip,jpg,jpeg,png,webp|max:20480',
         ], [
             'webinar_id.required' => 'اختر الدورة',
             'title.required' => 'عنوان التكليف مطلوب',
             'description.required' => 'وصف التكليف مطلوب',
             'grade.required' => 'الدرجة العظمى مطلوبة',
             'pass_grade.required' => 'درجة النجاح مطلوبة',
+            'attachment.mimes' => 'صيغة الملف غير مدعومة',
+            'attachment.max' => 'حجم الملف يتجاوز 20 ميجابايت',
         ]);
 
         if ((int) $data['pass_grade'] > (int) $data['grade']) {
@@ -2118,46 +2126,8 @@ class InstructorController extends Controller
             ]);
         }
 
-        $webinar = Webinar::where('id', $data['webinar_id'])
-            ->where('teacher_id', $user->id)
-            ->firstOrFail();
-
-        $chapterId = !empty($data['chapter_id']) ? (int) $data['chapter_id'] : null;
-        if ($chapterId) {
-            $chapter = WebinarChapter::where('id', $chapterId)
-                ->where('webinar_id', $webinar->id)
-                ->first();
-            if (empty($chapter)) {
-                throw ValidationException::withMessages([
-                    'chapter_id' => 'الوحدة المحددة غير صحيحة',
-                ]);
-            }
-        } else {
-            $chapter = WebinarChapter::where('webinar_id', $webinar->id)
-                ->orderBy('order')
-                ->orderBy('id')
-                ->first();
-
-            if (empty($chapter)) {
-                $chapter = WebinarChapter::create([
-                    'user_id' => $user->id,
-                    'webinar_id' => $webinar->id,
-                    'order' => 1,
-                    'status' => WebinarChapter::$chapterActive,
-                    'created_at' => time(),
-                ]);
-
-                WebinarChapterTranslation::updateOrCreate(
-                    [
-                        'webinar_chapter_id' => $chapter->id,
-                        'locale' => mb_strtolower(app()->getLocale() ?: getDefaultLocale()),
-                    ],
-                    ['title' => 'الوحدة الأولى']
-                );
-            }
-
-            $chapterId = (int) $chapter->id;
-        }
+        $webinar = $this->teacherOwnedWebinarOrFail($user, (int) $data['webinar_id']);
+        $chapterId = $this->resolveTeacherChapterIdForWebinar($user, $webinar, $data['chapter_id'] ?? null);
 
         $assignment = WebinarAssignment::create([
             'creator_id' => $user->id,
@@ -2173,16 +2143,10 @@ class InstructorController extends Controller
             'created_at' => time(),
         ]);
 
-        WebinarAssignmentTranslation::updateOrCreate(
-            [
-                'webinar_assignment_id' => $assignment->id,
-                'locale' => mb_strtolower(app()->getLocale() ?: getDefaultLocale()),
-            ],
-            [
-                'title' => $data['title'],
-                'description' => $data['description'],
-            ]
-        );
+        $this->syncTranslatedField($assignment, 'title', (string) $data['title']);
+        $this->syncTranslatedField($assignment, 'description', (string) $data['description']);
+
+        $this->storeAssignmentAttachment($request, $user, $webinar, $assignment);
 
         WebinarChapterItem::makeItem($user->id, $chapterId, $assignment->id, WebinarChapterItem::$chapterAssignment);
 
@@ -2195,6 +2159,139 @@ class InstructorController extends Controller
                 'msg' => 'تم إنشاء التكليف بنجاح',
                 'type' => 'success',
             ]);
+    }
+
+    public function editAssignment(Request $request, int $id)
+    {
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $assignment = $this->teacherAssignmentOrFail($user, $id);
+        $assignment->load(['webinar', 'attachments', 'chapter']);
+
+        $chapters = WebinarChapter::where('webinar_id', $assignment->webinar_id)
+            ->orderBy('order')
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($chapter) => [
+                'id' => $chapter->id,
+                'title' => $chapter->title ?: ('وحدة #' . $chapter->id),
+            ])
+            ->values()
+            ->all();
+
+        $attach = $assignment->attachments->first();
+
+        return $this->render($request, 'panel_v1.instructor.pages.assignment-form', 'تعديل التكليف', [
+            'assignment' => $assignment,
+            'chapters' => $chapters,
+            'existingAttachment' => $attach ? [
+                panelV1FilePreviewItem(
+                    $attach->getDownloadUrl(),
+                    $attach->title ?: basename((string) $attach->attach),
+                    $attach->getFileSize()
+                ),
+            ] : [],
+        ]);
+    }
+
+    public function updateAssignment(Request $request, int $id)
+    {
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $assignment = $this->teacherAssignmentOrFail($user, $id);
+        $webinar = $this->teacherOwnedWebinarOrFail($user, (int) $assignment->webinar_id);
+
+        $data = $request->validate([
+            'chapter_id' => 'nullable|integer',
+            'title' => 'required|string|max:255',
+            'description' => 'required|string|max:5000',
+            'grade' => 'required|integer|min:1|max:1000',
+            'pass_grade' => 'required|integer|min:0|max:1000',
+            'deadline' => 'nullable|integer|min:1|max:365',
+            'attempts' => 'nullable|integer|min:1|max:50',
+            'status' => 'required|in:active,inactive',
+            'attachment' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,zip,jpg,jpeg,png,webp|max:20480',
+            'remove_attachment' => 'nullable|boolean',
+        ], [
+            'title.required' => 'عنوان التكليف مطلوب',
+            'description.required' => 'وصف التكليف مطلوب',
+            'grade.required' => 'الدرجة العظمى مطلوبة',
+            'pass_grade.required' => 'درجة النجاح مطلوبة',
+        ]);
+
+        if ((int) $data['pass_grade'] > (int) $data['grade']) {
+            throw ValidationException::withMessages([
+                'pass_grade' => 'درجة النجاح لا يمكن أن تتجاوز الدرجة العظمى',
+            ]);
+        }
+
+        $oldChapterId = $assignment->chapter_id ? (int) $assignment->chapter_id : null;
+        $chapterId = $this->resolveTeacherChapterIdForWebinar($user, $webinar, $data['chapter_id'] ?? $oldChapterId);
+
+        $assignment->chapter_id = $chapterId;
+        $assignment->grade = (int) $data['grade'];
+        $assignment->pass_grade = (int) $data['pass_grade'];
+        $assignment->deadline = !empty($data['deadline']) ? (int) $data['deadline'] : null;
+        $assignment->attempts = !empty($data['attempts']) ? (int) $data['attempts'] : null;
+        $assignment->status = $data['status'];
+        $assignment->save();
+
+        $this->syncTranslatedField($assignment, 'title', (string) $data['title']);
+        $this->syncTranslatedField($assignment, 'description', (string) $data['description']);
+
+        if ($oldChapterId && $oldChapterId !== $chapterId) {
+            WebinarChapterItem::changeChapter(
+                $user->id,
+                $oldChapterId,
+                $chapterId,
+                $assignment->id,
+                WebinarChapterItem::$chapterAssignment
+            );
+        } else {
+            WebinarChapterItem::makeItem($user->id, $chapterId, $assignment->id, WebinarChapterItem::$chapterAssignment);
+        }
+
+        if ($request->boolean('remove_attachment') && !$request->hasFile('attachment')) {
+            $this->deleteAssignmentAttachments($assignment);
+        }
+
+        if ($request->hasFile('attachment')) {
+            $this->deleteAssignmentAttachments($assignment);
+            $this->storeAssignmentAttachment($request, $user, $webinar, $assignment);
+        }
+
+        $webinar->update(['updated_at' => time()]);
+
+        return redirect()
+            ->route('panel.v1.instructor.assignments')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم تحديث التكليف', 'type' => 'success']);
+    }
+
+    public function deleteAssignment(Request $request, int $id)
+    {
+        $user = $this->resolveInstructor($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $assignment = $this->teacherAssignmentOrFail($user, $id);
+
+        WebinarChapterItem::where('item_id', $assignment->id)
+            ->where('type', WebinarChapterItem::$chapterAssignment)
+            ->delete();
+
+        $this->deleteAssignmentAttachments($assignment);
+        $assignment->delete();
+
+        return redirect()
+            ->route('panel.v1.instructor.assignments')
+            ->with('toast', ['title' => 'تم', 'msg' => 'تم حذف التكليف', 'type' => 'success']);
     }
 
     public function assignmentReview(Request $request, int $id)
@@ -5807,6 +5904,60 @@ class InstructorController extends Controller
                 'chapters' => $chapters,
             ];
         })->values()->all();
+    }
+
+    private function teacherAssignmentOrFail($user, int $id): WebinarAssignment
+    {
+        $assignment = WebinarAssignment::with(['webinar'])->findOrFail($id);
+        $this->teacherOwnedWebinarOrFail($user, (int) $assignment->webinar_id);
+
+        return $assignment;
+    }
+
+    private function storeAssignmentAttachment(Request $request, $user, Webinar $webinar, WebinarAssignment $assignment): void
+    {
+        if (!$request->hasFile('attachment')) {
+            return;
+        }
+
+        $file = $request->file('attachment');
+        $path = $this->uploadFile(
+            $file,
+            "webinars/{$webinar->id}/assignments",
+            'assignment_' . $assignment->id . '_' . time(),
+            $user->id
+        );
+
+        if (empty($path)) {
+            throw ValidationException::withMessages([
+                'attachment' => 'تعذر رفع الملف، جرّب صيغة أخرى',
+            ]);
+        }
+
+        WebinarAssignmentAttachment::create([
+            'creator_id' => $user->id,
+            'assignment_id' => $assignment->id,
+            'title' => $file->getClientOriginalName(),
+            'attach' => $path,
+        ]);
+    }
+
+    private function deleteAssignmentAttachments(WebinarAssignment $assignment): void
+    {
+        $attachments = WebinarAssignmentAttachment::where('assignment_id', $assignment->id)->get();
+        foreach ($attachments as $attachment) {
+            if (!empty($attachment->attach)) {
+                try {
+                    $this->removeFile($attachment->attach);
+                } catch (\Throwable $e) {
+                }
+                $publicPath = public_path(ltrim((string) $attachment->attach, '/'));
+                if (is_file($publicPath)) {
+                    @unlink($publicPath);
+                }
+            }
+            $attachment->delete();
+        }
     }
 
     /**

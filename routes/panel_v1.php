@@ -161,6 +161,15 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
             Route::get('/instructor/assignments', [InstructorController::class, 'assignments'])->name('instructor.assignments');
             Route::post('/instructor/assignments', [InstructorController::class, 'storeAssignment'])
                 ->name('instructor.assignments.store');
+            Route::get('/instructor/assignments/{id}/edit', [InstructorController::class, 'editAssignment'])
+                ->whereNumber('id')
+                ->name('instructor.assignments.edit');
+            Route::post('/instructor/assignments/{id}/update', [InstructorController::class, 'updateAssignment'])
+                ->whereNumber('id')
+                ->name('instructor.assignments.update');
+            Route::post('/instructor/assignments/{id}/delete', [InstructorController::class, 'deleteAssignment'])
+                ->whereNumber('id')
+                ->name('instructor.assignments.delete');
             Route::get('/instructor/assignments/{id}/review', [InstructorController::class, 'assignmentReview'])
                 ->name('instructor.assignments.review');
             Route::post('/instructor/assignments/{id}/grade', [InstructorController::class, 'gradeAssignment'])

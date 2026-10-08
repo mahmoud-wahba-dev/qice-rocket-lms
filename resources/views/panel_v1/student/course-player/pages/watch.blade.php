@@ -266,6 +266,18 @@ $mediaMode = $media['mode'] ?? null;
                         {{ $assignmentCard['description'] ?? '' }}
                     </p>
 
+                    @if (!empty($assignmentCard['file_url']))
+                        <a href="{{ $assignmentCard['file_url'] }}" target="_blank" rel="noopener noreferrer"
+                            class="mb-4 inline-flex items-center gap-2 rounded-12px border border-d9 bg-[#F8FAFC] px-4 py-3 font-semibold text-14px text-primary hover:bg-fa transition">
+                            <span class="icon-[tabler--paperclip] size-5"></span>
+                            <span>{{ $assignmentCard['file_name'] ?: 'ملف التكليف' }}</span>
+                            @if (!empty($assignmentCard['file_size']))
+                                <span class="font-medium text-12px text-gray">({{ $assignmentCard['file_size'] }})</span>
+                            @endif
+                            <span class="icon-[tabler--download] size-4 ms-1"></span>
+                        </a>
+                    @endif
+
                     @if (!empty($assignmentCard['status_label']))
                         <p class="font-semibold text-13px text-primary mb-4 text-start">
                             الحالة: {{ $assignmentCard['status_label'] }}

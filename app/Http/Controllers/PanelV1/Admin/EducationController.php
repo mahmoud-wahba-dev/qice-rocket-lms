@@ -1491,18 +1491,32 @@ class EducationController extends AdminController
         $chapters=\App\Models\WebinarChapter::with(['webinar'])->orderBy('id','desc')->limit(200)->get()->map(fn($ch)=>['id'=>$ch->id,'title'=>($ch->title ?: 'وحدة #'.$ch->id).' — '.($ch->webinar->title ?? '')])->all();
         return $this->renderAdmin($request,'panel_v1.admin.pages.education.assignment-form','إنشاء تكليف',array_merge(AdminMockData::shell('education','assignments'),[
             'webinars'=>$webinars,'chapters'=>$chapters,'assignment'=>null,
+            'existingAttachment' => [],
             'formAction'=>route('panel.v1.admin.education.assignments.store'),
             'formTitle'=>'إنشاء تكليف جديد','submitLabel'=>'إنشاء التكليف',
         ]));
     }
     public function storeAssignment(Request $request){
         $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
-        $request->validate(['webinar_id'=>'required|exists:webinars,id','chapter_id'=>'required|exists:webinar_chapters,id','title'=>'required|string|max:255','grade'=>'required|integer|min:0','pass_grade'=>'required|integer|min:0','attempts'=>'nullable|integer|min:1','deadline'=>'nullable|integer|min:1','status'=>'required|in:active,inactive']);
+        $request->validate([
+            'webinar_id'=>'required|exists:webinars,id',
+            'chapter_id'=>'required|exists:webinar_chapters,id',
+            'title'=>'required|string|max:255',
+            'grade'=>'required|integer|min:0',
+            'pass_grade'=>'required|integer|min:0',
+            'attempts'=>'nullable|integer|min:1',
+            'deadline'=>'nullable|integer|min:1',
+            'status'=>'required|in:active,inactive',
+            'attachment' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,zip,jpg,jpeg,png,webp|max:20480',
+        ], [
+            'attachment.mimes' => 'صيغة الملف غير مدعومة',
+            'attachment.max' => 'حجم الملف يتجاوز 20 ميجابايت',
+        ]);
         $webinar=\App\Models\Webinar::findOrFail($request->input('webinar_id'));
         $a=new \App\Models\WebinarAssignment();
         $a->webinar_id=$webinar->id;
         $a->chapter_id=$request->input('chapter_id');
-        $a->creator_id=$webinar->teacher_id;
+        $a->creator_id=$webinar->teacher_id ?: $user->id;
         $a->grade=$request->input('grade');
         $a->pass_grade=$request->input('pass_grade');
         $a->attempts=$request->input('attempts');
@@ -1510,11 +1524,11 @@ class EducationController extends AdminController
         $a->status=$request->input('status','active');
         $a->created_at=time();
         $a->save();
-        $translation=$a->translateOrNew('ar');
-        $translation->locale='ar';
-        $translation->title=$request->input('title');
-        $translation->description=$request->input('description');
-        $translation->save();
+        $this->syncAssignmentTranslations($a, (string) $request->input('title'), (string) ($request->input('description') ?? ''));
+        $this->storeAdminAssignmentAttachment($request, $user, $webinar, $a);
+        if (!empty($a->chapter_id)) {
+            \App\Models\WebinarChapterItem::makeItem($a->creator_id, $a->chapter_id, $a->id, \App\Models\WebinarChapterItem::$chapterAssignment);
+        }
         return redirect()->route('panel.v1.admin.education.section',['section'=>'assignments'])->with('toast',['title'=>'تم','msg'=>'تم إنشاء التكليف','type'=>'success']);
     }
 
@@ -1525,7 +1539,7 @@ class EducationController extends AdminController
             return $user;
         }
 
-        $assignment = \App\Models\WebinarAssignment::with(['webinar'])->findOrFail($id);
+        $assignment = \App\Models\WebinarAssignment::with(['webinar', 'attachments'])->findOrFail($id);
         $webinars = \App\Models\Webinar::orderBy('id', 'desc')->limit(100)->get()
             ->map(fn ($w) => ['id' => $w->id, 'title' => $w->title])->all();
         $chapters = \App\Models\WebinarChapter::with(['webinar'])->orderBy('id', 'desc')->limit(200)->get()
@@ -1533,6 +1547,15 @@ class EducationController extends AdminController
                 'id' => $ch->id,
                 'title' => ($ch->title ?: 'وحدة #'.$ch->id).' — '.($ch->webinar->title ?? ''),
             ])->all();
+
+        $attach = $assignment->attachments->first();
+        $existingAttachment = $attach ? [
+            panelV1FilePreviewItem(
+                $attach->getDownloadUrl(),
+                $attach->title ?: basename((string) $attach->attach),
+                $attach->getFileSize()
+            ),
+        ] : [];
 
         return $this->renderAdmin(
             $request,
@@ -1542,6 +1565,7 @@ class EducationController extends AdminController
                 'webinars' => $webinars,
                 'chapters' => $chapters,
                 'assignment' => $assignment,
+                'existingAttachment' => $existingAttachment,
                 'formAction' => route('panel.v1.admin.education.assignments.update', ['id' => $assignment->id]),
                 'formTitle' => 'تعديل التكليف',
                 'submitLabel' => 'حفظ التعديلات',
@@ -1566,24 +1590,57 @@ class EducationController extends AdminController
             'attempts' => 'nullable|integer|min:1',
             'deadline' => 'nullable|integer|min:1',
             'status' => 'required|in:active,inactive',
+            'attachment' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,zip,jpg,jpeg,png,webp|max:20480',
+            'remove_attachment' => 'nullable|boolean',
+        ], [
+            'attachment.mimes' => 'صيغة الملف غير مدعومة',
+            'attachment.max' => 'حجم الملف يتجاوز 20 ميجابايت',
         ]);
 
         $webinar = \App\Models\Webinar::findOrFail($request->input('webinar_id'));
+        $oldChapterId = $assignment->chapter_id ? (int) $assignment->chapter_id : null;
+        $chapterId = (int) $request->input('chapter_id');
+
         $assignment->webinar_id = $webinar->id;
-        $assignment->chapter_id = $request->input('chapter_id');
+        $assignment->chapter_id = $chapterId;
         $assignment->grade = $request->input('grade');
         $assignment->pass_grade = $request->input('pass_grade');
         $assignment->attempts = $request->input('attempts');
         $assignment->deadline = $request->input('deadline');
         $assignment->status = $request->input('status', 'active');
-        $assignment->updated_at = time();
         $assignment->save();
 
-        $translation = $assignment->translateOrNew('ar');
-        $translation->locale = 'ar';
-        $translation->title = $request->input('title');
-        $translation->description = $request->input('description');
-        $translation->save();
+        $this->syncAssignmentTranslations(
+            $assignment,
+            (string) $request->input('title'),
+            (string) ($request->input('description') ?? '')
+        );
+
+        if ($oldChapterId && $oldChapterId !== $chapterId) {
+            \App\Models\WebinarChapterItem::changeChapter(
+                $assignment->creator_id ?: $user->id,
+                $oldChapterId,
+                $chapterId,
+                $assignment->id,
+                \App\Models\WebinarChapterItem::$chapterAssignment
+            );
+        } elseif ($chapterId) {
+            \App\Models\WebinarChapterItem::makeItem(
+                $assignment->creator_id ?: $user->id,
+                $chapterId,
+                $assignment->id,
+                \App\Models\WebinarChapterItem::$chapterAssignment
+            );
+        }
+
+        if ($request->boolean('remove_attachment') && !$request->hasFile('attachment')) {
+            $this->deleteAdminAssignmentAttachments($assignment);
+        }
+
+        if ($request->hasFile('attachment')) {
+            $this->deleteAdminAssignmentAttachments($assignment);
+            $this->storeAdminAssignmentAttachment($request, $user, $webinar, $assignment);
+        }
 
         return redirect()
             ->route('panel.v1.admin.education.section', ['section' => 'assignments'])
@@ -1592,8 +1649,77 @@ class EducationController extends AdminController
 
     public function deleteAssignment(Request $request,int $id){
         $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
-        \App\Models\WebinarAssignment::where('id',$id)->delete();
+        $assignment = \App\Models\WebinarAssignment::findOrFail($id);
+        \App\Models\WebinarChapterItem::where('item_id', $assignment->id)
+            ->where('type', \App\Models\WebinarChapterItem::$chapterAssignment)
+            ->delete();
+        $this->deleteAdminAssignmentAttachments($assignment);
+        $assignment->delete();
         return back()->with('toast',['title'=>'تم','msg'=>'تم الحذف','type'=>'success']);
+    }
+
+    private function syncAssignmentTranslations(\App\Models\WebinarAssignment $assignment, string $title, string $description): void
+    {
+        $locales = array_values(array_unique(array_filter([
+            'ar',
+            'en',
+            mb_strtolower((string) (app()->getLocale() ?: '')),
+            mb_strtolower((string) (function_exists('getDefaultLocale') ? getDefaultLocale() : 'ar')),
+        ])));
+
+        foreach ($locales as $locale) {
+            $translation = $assignment->translateOrNew($locale);
+            $translation->locale = $locale;
+            $translation->title = $title;
+            $translation->description = $description;
+            $translation->save();
+        }
+    }
+
+    private function storeAdminAssignmentAttachment(Request $request, $user, \App\Models\Webinar $webinar, \App\Models\WebinarAssignment $assignment): void
+    {
+        if (!$request->hasFile('attachment')) {
+            return;
+        }
+
+        $file = $request->file('attachment');
+        $path = $this->uploadFile(
+            $file,
+            "webinars/{$webinar->id}/assignments",
+            'assignment_' . $assignment->id . '_' . time(),
+            $user->id
+        );
+
+        if (empty($path)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'attachment' => 'تعذر رفع الملف، جرّب صيغة أخرى',
+            ]);
+        }
+
+        \App\Models\WebinarAssignmentAttachment::create([
+            'creator_id' => $user->id,
+            'assignment_id' => $assignment->id,
+            'title' => $file->getClientOriginalName(),
+            'attach' => $path,
+        ]);
+    }
+
+    private function deleteAdminAssignmentAttachments(\App\Models\WebinarAssignment $assignment): void
+    {
+        $attachments = \App\Models\WebinarAssignmentAttachment::where('assignment_id', $assignment->id)->get();
+        foreach ($attachments as $attachment) {
+            if (!empty($attachment->attach)) {
+                try {
+                    $this->removeFile($attachment->attach);
+                } catch (\Throwable $e) {
+                }
+                $publicPath = public_path(ltrim((string) $attachment->attach, '/'));
+                if (is_file($publicPath)) {
+                    @unlink($publicPath);
+                }
+            }
+            $attachment->delete();
+        }
     }
 
     // ===== تقييمات الدورات — WebinarReview =====

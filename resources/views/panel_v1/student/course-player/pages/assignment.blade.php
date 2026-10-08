@@ -44,6 +44,20 @@
                     <span>{{ $point }}</span>@if (!$loop->last)<span class="mx-2 text-[#94A3B8]">▪</span>@endif
                 @endforeach
             </p>
+
+            @if (!empty($instructorAttachmentUrl))
+                <div class="mt-5 pe-7">
+                    <a href="{{ $instructorAttachmentUrl }}" target="_blank" rel="noopener noreferrer"
+                        class="inline-flex items-center gap-2 rounded-12px border border-[#CBD5E1] bg-white px-4 py-3 font-semibold text-14px text-primary hover:bg-[#F8FAFC] transition">
+                        <span class="icon-[tabler--paperclip] size-5"></span>
+                        <span>{{ $instructorAttachmentName ?: 'تحميل ملف التكليف من المدرب' }}</span>
+                        @if (!empty($instructorAttachmentSize))
+                            <span class="font-medium text-12px text-gray">({{ $instructorAttachmentSize }})</span>
+                        @endif
+                        <span class="icon-[tabler--download] size-4"></span>
+                    </a>
+                </div>
+            @endif
         </div>
 
         {{-- Dotted divider --}}

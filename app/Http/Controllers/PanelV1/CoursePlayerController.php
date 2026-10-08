@@ -547,7 +547,7 @@ class CoursePlayerController extends Controller
             $assignment = \App\Models\WebinarAssignment::where('webinar_id', $webinar->id)
                 ->where('status', 'active')
                 ->where('chapter_id', $activeChapterId)
-                ->orderBy('id')
+                ->orderByDesc('id')
                 ->first();
         }
         if ($assignment) {
@@ -566,6 +566,16 @@ class CoursePlayerController extends Controller
                 };
             }
 
+            $attachUrl = null;
+            $attachName = '';
+            $attachSize = '';
+            if ($attach) {
+                $attachName = $attach->title ?: basename((string) $attach->attach);
+                $attachSize = (string) ($attach->getFileSize() ?: '');
+                // Auth-aware download (checks course access).
+                $attachUrl = $attach->getDownloadUrl();
+            }
+
             $lectureAssignment = [
                 'id' => $assignment->id,
                 'title' => $this->localizedTitle($assignment) ?: ($assignment->title ?: 'تكليف الدورة'),
@@ -577,8 +587,9 @@ class CoursePlayerController extends Controller
                 'description' => strip_tags((string) ($this->localizedDescription($assignment) ?: ($assignment->description ?? ''))),
                 'status_label' => $statusLabel,
                 'submitted' => !empty($history),
-                'file_name' => $attach->title ?? '',
-                'file_size' => '',
+                'file_name' => $attachName,
+                'file_size' => $attachSize,
+                'file_url' => $attachUrl,
             ];
         }
 
@@ -1007,6 +1018,9 @@ class CoursePlayerController extends Controller
             'assignment' => $assignment,
             'existingHistory' => $existing,
             'assignmentExistingFiles' => $existingFiles,
+            'instructorAttachmentUrl' => $card['file_url'] ?? null,
+            'instructorAttachmentName' => $card['file_name'] ?? null,
+            'instructorAttachmentSize' => $card['file_size'] ?? null,
         ]));
     }
 

@@ -10,6 +10,7 @@
     <div class="modal-dialog overlay-open:opacity-100 max-w-[640px] w-[92vw]">
         <form method="POST"
             action="{{ route('panel.v1.instructor.assignments.store') }}"
+            enctype="multipart/form-data"
             class="modal-content relative rounded-20px border border-d9 p-0 overflow-hidden bg-white"
             id="instructor-assignment-create-form">
             @csrf
@@ -94,6 +95,18 @@
                             <input id="assign-attempts" name="attempts" type="number" min="1" max="50"
                                 value="{{ old('attempts', 2) }}" class="{{ $inputClass }}" placeholder="اختياري">
                         </div>
+                    </div>
+
+                    <div>
+                        <label class="{{ $labelClass }}">ملف مرفق للتكليف (اختياري)</label>
+                        @include('panel_v1.components.file-upload', [
+                            'name' => 'attachment',
+                            'accept' => '.pdf,.doc,.docx,.ppt,.pptx,.zip,image/*',
+                            'label' => 'اضغط أو اسحب ملف التعليمات / النموذج هنا',
+                            'hint' => 'PDF أو Word أو صورة — يظهر للطالب مع التكليف',
+                            'required' => false,
+                            'compact' => true,
+                        ])
                     </div>
                 @endif
             </div>

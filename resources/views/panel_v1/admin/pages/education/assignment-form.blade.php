@@ -3,6 +3,7 @@
 @php
     $assignment = $assignment ?? null;
     $isEdit = !empty($assignment);
+    $existingAttachment = $existingAttachment ?? [];
 @endphp
 <div class="space-y-6 pb-8 max-w-3xl mx-auto">
     @include('panel_v1.admin.components.page-header', [
@@ -10,12 +11,12 @@
         'subtitle' => $isEdit ? ('#'.$assignment->id) : 'أدخل بيانات التكليف ثم احفظ',
     ])
     <div class="border border-d9 rounded-14px bg-white p-6 sm:p-8">
-        <form method="POST" action="{{ $formAction }}" class="space-y-5">
+        <form method="POST" action="{{ $formAction }}" enctype="multipart/form-data" class="space-y-5">
             @csrf
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="sm:col-span-2">
                     <label class="font-semibold text-14px text-primary mb-2 block">عنوان التكليف *</label>
-                    <input type="text" name="title" value="{{ old('title', $assignment->title ?? '') }}" required
+                    <input type="text" name="title" value="{{ old('title', optional($assignment?->translate('ar'))->title ?: ($assignment->title ?? '')) }}" required
                         class="input input-bordered w-full h-12 rounded-12px border-d9 text-14px focus:border-primary focus:outline-none"
                         placeholder="مثال: واجب الوحدة الأولى">
                     @error('title')<p class="text-red-500 text-12px mt-1">{{ $message }}</p>@enderror
@@ -67,7 +68,28 @@
                 <div class="sm:col-span-2">
                     <label class="font-semibold text-14px text-primary mb-2 block">الوصف</label>
                     <textarea name="description" rows="3"
-                        class="textarea textarea-bordered w-full rounded-12px border-d9 text-14px p-3">{{ old('description', $assignment->description ?? '') }}</textarea>
+                        class="textarea textarea-bordered w-full rounded-12px border-d9 text-14px p-3">{{ old('description', optional($assignment?->translate('ar'))->description ?: ($assignment->description ?? '')) }}</textarea>
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="font-semibold text-14px text-primary mb-2 block">ملف مرفق للتكليف (اختياري)</label>
+                    @include('panel_v1.components.file-upload', [
+                        'name' => 'attachment',
+                        'accept' => '.pdf,.doc,.docx,.ppt,.pptx,.zip,image/*',
+                        'label' => $isEdit ? 'رفع ملف جديد (يستبدل الحالي)' : 'اضغط أو اسحب ملف التعليمات / النموذج هنا',
+                        'hint' => 'PDF أو Word أو صورة — يظهر للطالب مع التكليف',
+                        'required' => false,
+                        'existing' => $existingAttachment,
+                        'existingLabel' => 'الملف الحالي للطالب',
+                        'compact' => true,
+                    ])
+                    @error('attachment')<p class="text-red-500 text-12px mt-1">{{ $message }}</p>@enderror
+                    @if ($isEdit && !empty($existingAttachment))
+                        <label class="mt-3 inline-flex items-center gap-2 font-medium text-14px text-gray cursor-pointer">
+                            <input type="checkbox" name="remove_attachment" value="1" class="checkbox checkbox-sm checkbox-primary"
+                                @checked(old('remove_attachment'))>
+                            حذف الملف المرفق الحالي
+                        </label>
+                    @endif
                 </div>
                 <div>
                     <label class="font-semibold text-14px text-primary mb-2 block">الحالة *</label>

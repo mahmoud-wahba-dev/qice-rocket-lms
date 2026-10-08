@@ -73,9 +73,16 @@
                             @include('panel_v1.components.actions-dropdown', [
                                 'id' => 'assign-card-menu-' . $index,
                                 'items' => [
+                                    ['label' => 'تعديل التكليف', 'url' => $item['edit_url'], 'tone' => 'primary'],
                                     ['label' => 'عرض التسليمات', 'url' => $item['review_url']],
                                     ['label' => 'جميع التسليمات', 'url' => $item['course_assignments_url']],
-                                    ['label' => 'عرض الدورة', 'url' => $item['edit_url']],
+                                    ['label' => 'عرض الدورة', 'url' => $item['course_watch_url']],
+                                    [
+                                        'label' => 'حذف التكليف',
+                                        'action' => $item['delete_url'],
+                                        'confirm' => 'هل أنت متأكد من حذف هذا التكليف؟',
+                                        'tone' => 'danger',
+                                    ],
                                 ],
                                 'class' => 'shrink-0',
                             ])
@@ -187,10 +194,17 @@
                                     @include('panel_v1.components.actions-dropdown', [
                                         'id' => 'assign-row-menu-' . $index,
                                         'items' => [
+                                            ['label' => 'تعديل التكليف', 'url' => $row['edit_url'], 'tone' => 'primary'],
                                             ['label' => 'التسليمات بانتظار المراجعة', 'url' => $row['pending_url']],
                                             ['label' => 'جميع التسليمات', 'url' => $row['course_assignments_url']],
-                                            ['label' => 'عرض الدورة', 'url' => $row['edit_url']],
+                                            ['label' => 'عرض الدورة', 'url' => $row['course_watch_url']],
                                             ['label' => 'أداء الدورة', 'url' => $row['course_url']],
+                                            [
+                                                'label' => 'حذف التكليف',
+                                                'action' => $row['delete_url'],
+                                                'confirm' => 'هل أنت متأكد من حذف هذا التكليف؟',
+                                                'tone' => 'danger',
+                                            ],
                                         ],
                                     ])
                                 </td>
