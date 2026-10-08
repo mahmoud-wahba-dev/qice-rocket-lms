@@ -4,7 +4,8 @@
     $certUrl = $certificateUrl ?? null;
 @endphp
 
-<header class="sticky top-0 z-50 bg-primary text-white shadow-sm">
+<header class="sticky top-0 z-50 bg-primary text-white shadow-sm flex flex-col">
+    @include('panel_v1.components.impersonation-banner')
     <div class="flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 h-[4.5rem]">
         <div class="flex items-center gap-2 sm:gap-4 min-w-0">
             <button type="button"

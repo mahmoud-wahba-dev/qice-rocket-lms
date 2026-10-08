@@ -708,9 +708,65 @@ class SystemController extends AdminController
             ]);
         }
 
-        session()->put(['impersonated' => $target->id]);
+        $returnTab = match ((string) $target->role_name) {
+            \App\Models\Role::$teacher => 'teachers',
+            \App\Models\Role::$organization => 'organizations',
+            \App\Models\Role::$user => 'students',
+            default => 'all',
+        };
 
-        return redirect(panelV1HomeUrl($target));
+        session()->put([
+            'impersonated' => $target->id,
+            'impersonator_id' => $admin->id,
+            'impersonation_return_tab' => $returnTab,
+        ]);
+
+        $roleLabel = match ((string) $target->role_name) {
+            \App\Models\Role::$teacher => 'مدرب',
+            \App\Models\Role::$organization => 'منظمة',
+            \App\Models\Role::$user => 'طالب',
+            default => 'مستخدم',
+        };
+
+        return redirect(panelV1HomeUrl($target))->with('toast', [
+            'title' => 'وضع الاختبار',
+            'msg' => 'أنت الآن تعرض النظام كـ' . $roleLabel . ': ' . ($target->full_name ?: $target->email),
+            'type' => 'success',
+        ]);
+    }
+
+    /**
+     * Exit login-as (student / instructor / organization) and restore the admin session.
+     */
+    public function leaveImpersonation(Request $request)
+    {
+        $adminId = (int) session()->get('impersonator_id', 0);
+        $returnTab = (string) session()->get('impersonation_return_tab', 'all');
+        if (!in_array($returnTab, ['all', 'students', 'teachers', 'organizations', 'staff'], true)) {
+            $returnTab = 'all';
+        }
+
+        // onceUsingId never replaced the session login — admin is still the session user.
+        // Do not loginUsingId() here: it regenerates the session and can force a re-login.
+        session()->forget(['impersonated', 'impersonator_id', 'impersonation_return_tab']);
+
+        $admin = auth()->user();
+        if ((!$admin || !$admin->isAdmin()) && $adminId > 0) {
+            \Illuminate\Support\Facades\Auth::loginUsingId($adminId);
+            $admin = auth()->user();
+        }
+
+        if ($admin && $admin->isAdmin()) {
+            return redirect()
+                ->route('panel.v1.admin.system.home', ['tab' => $returnTab])
+                ->with('toast', [
+                    'title' => 'تم',
+                    'msg' => 'عدت إلى حساب المشرف',
+                    'type' => 'success',
+                ]);
+        }
+
+        return redirect('/login');
     }
 
     public function approveInstructorRequest(Request $request, int $id)

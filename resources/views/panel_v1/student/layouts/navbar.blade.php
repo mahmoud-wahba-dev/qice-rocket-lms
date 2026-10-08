@@ -1,6 +1,7 @@
-<nav class="fixed inset-x-0 top-0 z-50 w-full">
+<nav class="fixed inset-x-0 top-0 z-50 w-full flex flex-col">
+    @include('panel_v1.components.impersonation-banner')
     <div
-        class="navbar rounded-box flex w-full items-center justify-between gap-2 shadow-[0px_4px_34.5px_-3px_#0000000D] mx-auto [@media(min-width:1600px)]:container">
+        class="navbar rounded-box flex w-full items-center justify-between gap-2 shadow-[0px_4px_34.5px_-3px_#0000000D] mx-auto [@media(min-width:1600px)]:container bg-white">
     <div class="navbar-start max-xl:w-1/4">
         <a class="link link-neutral text-xl font-semibold no-underline" href="{{ route('landing.v1.index') }}">
             <img src="{{ asset('assets/landing_v1/logo_nav.svg') }}" alt="QIEC Training" class="h-16" width="auto"

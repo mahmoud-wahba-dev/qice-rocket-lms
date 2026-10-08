@@ -101,9 +101,10 @@
                                         $userMenuItems = [];
                                         if ($canImpersonate) {
                                             $userMenuItems[] = [
-                                                'label' => 'تسجيل الدخول',
+                                                'label' => 'تسجيل الدخول كـ',
                                                 'url' => route('panel.v1.admin.system.users.impersonate', ['id' => $row['id']]),
-                                                'tone' => 'gray',
+                                                'tone' => 'primary',
+                                                'target' => '_blank',
                                             ];
                                         }
                                         $userMenuItems[] = [

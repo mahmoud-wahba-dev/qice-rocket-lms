@@ -50,8 +50,9 @@
             })();
         </script>
 
-        {{-- ---------- HEADER ---------- --}}
-        <div class="instructor-shell-header bg-white border-[#E8E8E8] sticky top-0 z-50 flex border-b">
+        {{-- ---------- HEADER / NAVBAR ---------- --}}
+        <div class="instructor-shell-header bg-white border-[#E8E8E8] sticky top-0 z-50 flex flex-col border-b">
+            @include('panel_v1.components.impersonation-banner')
             <div class="mx-auto w-full">
                 @include('panel_v1.instructor.components.header')
             </div>

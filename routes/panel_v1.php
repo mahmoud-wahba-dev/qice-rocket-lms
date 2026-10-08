@@ -18,6 +18,12 @@ use App\Http\Controllers\PanelV1\OrganizationController;
 
 Route::prefix('v1')->name('panel.v1.')->group(function () {
 
+    // Exit "login as" — must NOT use `panel` (that middleware rejects admins).
+    // Impersonate middleware skips onceUsingId here so Auth stays the real admin.
+    Route::middleware(['impersonate', 'share', 'check_maintenance'])
+        ->get('/leave-impersonation', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'leaveImpersonation'])
+        ->name('leave-impersonation');
+
     Route::middleware(['impersonate', 'panel', 'share', 'check_maintenance', 'check_restriction'])
         ->group(function () {
             Route::get('/student', [StudentController::class, 'home'])->name('student.home');

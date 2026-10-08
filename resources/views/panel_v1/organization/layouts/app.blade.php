@@ -30,8 +30,9 @@
 <body>
     <div id="landing-v1-app" class="bg-[#F9FAF5] flex min-h-screen flex-col panel-v1-instructor">
 
-        {{-- ---------- HEADER ---------- --}}
-        <div class="bg-white border-[#E8E8E8] sticky top-0 z-50 flex border-b lg:ps-[280px]">
+        {{-- ---------- HEADER / NAVBAR ---------- --}}
+        <div class="bg-white border-[#E8E8E8] sticky top-0 z-50 flex flex-col border-b lg:ps-[280px]">
+            @include('panel_v1.components.impersonation-banner')
             <div class="mx-auto w-full">
                 @include('panel_v1.instructor.components.header')
             </div>

@@ -30,12 +30,14 @@
 
 <body>
     {{-- #landing-v1-app required: Tailwind/FlyonUI utilities are scoped to this id --}}
-    <div id="landing-v1-app" class="min-h-screen panel-v1-student">
+    <div id="landing-v1-app" class="min-h-screen panel-v1-student {{ !empty($isImpersonating) ? 'has-impersonation-banner' : '' }}">
         @include('panel_v1.student.layouts.navbar')
-        @include('components.v1.flash')
-        @yield('content')
-        @include('landing_v1.components.prefooter-cta')
-        @include('panel_v1.student.layouts.footer')
+        <div class="{{ !empty($isImpersonating) ? 'pt-[7.5rem]' : 'pt-[4.5rem]' }}">
+            @include('components.v1.flash')
+            @yield('content')
+            @include('landing_v1.components.prefooter-cta')
+            @include('panel_v1.student.layouts.footer')
+        </div>
     </div>
     @stack('scripts')
 </body>

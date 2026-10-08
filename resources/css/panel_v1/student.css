@@ -119,6 +119,17 @@
     cursor: pointer;
 }
 
+/* Admin login-as banner (student fixed navbar) */
+#landing-v1-app .impersonation-banner {
+    background-color: #0F3D36 !important;
+    color: #fff !important;
+    width: 100%;
+    flex-shrink: 0;
+}
+#landing-v1-app .impersonation-banner a {
+    color: #fff !important;
+}
+
 /* Toast above every overlay / modal / drawer */
 #landing-v1-app #cart-toast,
 #landing-v1-app #v1-flash-toast-fallback {
