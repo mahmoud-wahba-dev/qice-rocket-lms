@@ -96,6 +96,8 @@
 
                                 @if (($item['type'] ?? '') === 'video')
                                     <span class="icon-[tabler--player-play] size-5 shrink-0 {{ ($isActive || $itemDone) ? 'text-primary' : 'text-black' }}"></span>
+                                @elseif (($item['type'] ?? '') === 'quiz')
+                                    <span class="icon-[tabler--clipboard-list] size-5 shrink-0 {{ ($isActive || $itemDone) ? 'text-primary' : 'text-black' }}"></span>
                                 @else
                                     <span class="icon-[tabler--file-text] size-5 shrink-0 {{ ($isActive || $itemDone) ? 'text-primary' : 'text-black' }}"></span>
                                 @endif

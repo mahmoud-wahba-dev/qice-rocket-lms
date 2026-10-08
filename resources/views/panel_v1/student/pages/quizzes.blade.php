@@ -13,12 +13,16 @@
                 <h3 class="font-bold text-18px text-primary mb-4">اختبارات بانتظار المحاولة ({{ $pendingQuizzes->count() }})</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     @foreach ($pendingQuizzes as $quiz)
+                        @php
+                            $quizTitle = optional($quiz->translate('ar'))->title
+                                ?: (optional($quiz->translate('en'))->title ?: ($quiz->title ?: 'اختبار'));
+                        @endphp
                         <div class="bg-white rounded-12px border border-d9 px-5 py-4 flex items-center justify-between gap-3">
                             <div class="min-w-0">
-                                <p class="font-bold text-16px text-primary truncate">{{ $quiz->title }}</p>
+                                <p class="font-bold text-16px text-primary truncate">{{ $quizTitle }}</p>
                                 <p class="font-medium text-13px text-gray">{{ $quiz->webinar->title ?? '' }}</p>
                             </div>
-                            <a href="{{ route('panel.v1.student.course.quiz', ['slug' => $quiz->webinar->slug ?? 'demo']) }}" class="btn btn-primary btn-sm rounded-8px font-bold text-13px shrink-0">ابدأ</a>
+                            <a href="{{ route('panel.v1.student.course.quiz', ['slug' => $quiz->webinar->slug ?? 'demo', 'quiz' => $quiz->id]) }}" class="btn btn-primary btn-sm rounded-8px font-bold text-13px shrink-0">ابدأ</a>
                         </div>
                     @endforeach
                 </div>

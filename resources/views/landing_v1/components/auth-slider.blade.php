@@ -25,7 +25,7 @@
                             {{ $slideText }}
                         </p>
                         <div class="absolute top-8 left-6 w-48 h-16">
-                            <img src="{{ $sliderImg }}/logo-footer.svg" alt="logo" class="size-full object-cover">
+                            <img src="{{ $sliderImg }}/logo-footer.webp" alt="logo" class="size-full object-contain">
                         </div>
                     </div>
                 @endforeach

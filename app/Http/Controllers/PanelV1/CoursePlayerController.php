@@ -29,7 +29,11 @@ class CoursePlayerController extends Controller
         }
 
         $lesson = $player['currentLesson'] ?? ['title' => $this->localizedTitle($webinar) ?: $webinar->title];
-        $hasQuiz = !empty($player['lectureQuiz']);
+        $lectureQuizzes = $player['lectureQuizzes'] ?? [];
+        if (empty($lectureQuizzes) && !empty($player['lectureQuiz'])) {
+            $lectureQuizzes = [$player['lectureQuiz']];
+        }
+        $hasQuiz = !empty($lectureQuizzes);
         $hasAssignment = !empty($player['lectureAssignment']);
         $files = $player['files'] ?? collect();
         $hasFiles = $files->isNotEmpty();
@@ -62,7 +66,8 @@ class CoursePlayerController extends Controller
                     'downloadable' => $isDownloadable,
                 ];
             })->all(),
-            'lectureQuiz' => $player['lectureQuiz'] ?? null,
+            'lectureQuiz' => $lectureQuizzes[0] ?? null,
+            'lectureQuizzes' => $lectureQuizzes,
             'lectureAssignment' => $player['lectureAssignment'] ?? null,
             'hasComments' => true,
             'courseComments' => $this->courseCommentsForStudent($webinar, $user),
@@ -412,6 +417,38 @@ class CoursePlayerController extends Controller
                 ];
             }
 
+            $chapterQuizzes = \App\Models\Quiz::where('webinar_id', $webinar->id)
+                ->where('status', 'active')
+                ->where('chapter_id', $chapter->id)
+                ->orderByDesc('id')
+                ->get();
+
+            foreach ($chapterQuizzes as $quizModel) {
+                $quizKey = 'quiz_' . $quizModel->id;
+                $quizTitle = $this->localizedTitle($quizModel) ?: ($quizModel->title ?: 'اختبار');
+                $quizDone = QuizzesResult::where('quiz_id', $quizModel->id)
+                    ->where('user_id', $user->id)
+                    ->where('status', QuizzesResult::$passed)
+                    ->exists();
+                if ($quizDone) {
+                    $completedInChapter++;
+                }
+
+                $items[] = [
+                    'title' => $quizTitle,
+                    'type' => 'quiz',
+                    'kind' => 'quiz',
+                    'active' => $requestedItem !== '' && $requestedItem === $quizKey,
+                    'completed' => $quizDone,
+                    'id' => $quizModel->id,
+                    'key' => $quizKey,
+                    'url' => route('panel.v1.student.course.quiz', [
+                        'slug' => $webinar->slug,
+                        'quiz' => $quizModel->id,
+                    ]),
+                ];
+            }
+
             $isExpanded = $activeChapterId
                 ? ((int) $activeChapterId === (int) $chapter->id)
                 : ($chapterIndex === 0);
@@ -476,16 +513,22 @@ class CoursePlayerController extends Controller
             $files = $filesQuery->limit(10)->get();
         }
 
-        $lectureQuiz = null;
+        $lectureQuizzes = [];
         if (!empty($activeChapterId)) {
-            $quiz = \App\Models\Quiz::where('webinar_id', $webinar->id)
+            // Chapter quizzes first (newest), then legacy course-level (null chapter_id).
+            $quizzes = \App\Models\Quiz::where('webinar_id', $webinar->id)
                 ->where('status', 'active')
-                ->where('chapter_id', $activeChapterId)
-                ->orderBy('id')
-                ->first();
-            if ($quiz) {
+                ->where(function ($q) use ($activeChapterId) {
+                    $q->where('chapter_id', $activeChapterId)
+                        ->orWhereNull('chapter_id');
+                })
+                ->orderByRaw('CASE WHEN chapter_id IS NULL THEN 1 ELSE 0 END')
+                ->orderByDesc('id')
+                ->get();
+
+            foreach ($quizzes as $quiz) {
                 $qCount = \App\Models\QuizzesQuestion::where('quiz_id', $quiz->id)->count();
-                $lectureQuiz = [
+                $lectureQuizzes[] = [
                     'id' => $quiz->id,
                     'title' => $this->localizedTitle($quiz) ?: ($quiz->title ?: 'اختبار المحاضرة'),
                     'subtitle' => $this->localizedTitle($webinar) ?: $webinar->title,
@@ -496,6 +539,7 @@ class CoursePlayerController extends Controller
                 ];
             }
         }
+        $lectureQuiz = $lectureQuizzes[0] ?? null;
 
         $lectureAssignment = null;
         $assignment = null;
@@ -557,6 +601,7 @@ class CoursePlayerController extends Controller
             'currentMedia' => $currentMedia,
             'files' => $files,
             'lectureQuiz' => $lectureQuiz,
+            'lectureQuizzes' => $lectureQuizzes,
             'lectureAssignment' => $lectureAssignment,
             'certificateLocked' => $certificateLocked,
             'certificateUrl' => $certificateUrl,
@@ -1154,12 +1199,24 @@ class CoursePlayerController extends Controller
         ]);
 
         if ((int) $request->input('quiz_id') !== (int) $quiz->id) {
-            abort(422);
+            return redirect()
+                ->route('panel.v1.student.course.quiz.take', [
+                    'slug' => $slug,
+                    'quiz' => (int) $request->input('quiz_id'),
+                    'q' => max(1, (int) $request->input('q', 1)),
+                ])
+                ->with('toast', ['title' => 'تنبيه', 'msg' => 'تعذر حفظ الإجابة، حاول مرة أخرى', 'type' => 'error']);
         }
 
         $question = QuizzesQuestion::where('id', $request->input('question_id'))
             ->where('quiz_id', $quiz->id)
-            ->firstOrFail();
+            ->first();
+
+        if (empty($question)) {
+            return redirect()
+                ->route('panel.v1.student.course.quiz.take', ['slug' => $slug, 'quiz' => $quiz->id, 'q' => 1])
+                ->with('toast', ['title' => 'تنبيه', 'msg' => 'السؤال غير موجود في هذا الاختبار', 'type' => 'error']);
+        }
 
         $questionsCount = QuizzesQuestion::where('quiz_id', $quiz->id)->count();
         $current = max(1, min($questionsCount, (int) $request->input('q')));
@@ -1297,7 +1354,8 @@ class CoursePlayerController extends Controller
         }
 
         $quiz = null;
-        $quizId = (int) $request->get('quiz', 0);
+        // GET uses ?quiz=; POST answer form sends quiz_id in the body.
+        $quizId = (int) ($request->input('quiz') ?: $request->input('quiz_id') ?: 0);
         if ($quizId > 0) {
             $quiz = Quiz::where('webinar_id', $webinar->id)
                 ->where('id', $quizId)
@@ -1320,11 +1378,22 @@ class CoursePlayerController extends Controller
             }
             if (!empty($chapterId)) {
                 $quiz = Quiz::where('webinar_id', $webinar->id)
-                    ->where('chapter_id', $chapterId)
                     ->where('status', 'active')
+                    ->where(function ($q) use ($chapterId) {
+                        $q->where('chapter_id', $chapterId)
+                            ->orWhereNull('chapter_id');
+                    })
+                    ->orderByRaw('CASE WHEN chapter_id IS NULL THEN 1 ELSE 0 END')
                     ->orderBy('id')
                     ->first();
             }
+        }
+
+        if (empty($quiz)) {
+            $quiz = Quiz::where('webinar_id', $webinar->id)
+                ->where('status', 'active')
+                ->orderBy('id')
+                ->first();
         }
 
         if (empty($quiz)) {

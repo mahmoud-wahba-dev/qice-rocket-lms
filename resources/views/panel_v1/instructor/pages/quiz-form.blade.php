@@ -49,16 +49,17 @@
 
         @if (!$isEdit)
             <div>
-                <label class="block font-semibold text-14px text-primary mb-2">اختر الدورة <span class="text-[#E11D48]">*</span></label>
-                <select name="webinar_id" required
+                <label for="quiz-webinar-id" class="block font-semibold text-14px text-primary mb-2">اختر الدورة <span class="text-[#E11D48]">*</span></label>
+                <select id="quiz-webinar-id" name="webinar_id" required
                     class="select select-bordered w-full h-12 rounded-10px border-d9 font-medium text-15px text-primary">
                     <option value="">— اختر الدورة —</option>
                     @foreach ($webinars ?? [] as $webinar)
                         <option value="{{ $webinar['id'] }}" @selected(old('webinar_id') == $webinar['id'])>
-                            {{ $webinar['title'] }}
+                            {{ $webinar['title'] }}{{ (($webinar['price'] ?? 0) > 0) ? '' : ' (مجانية)' }}
                         </option>
                     @endforeach
                 </select>
+                <p class="font-medium text-12px text-gray mt-1.5">يمكنك ربط الاختبار بأي دورة تملكها — مجانية أو مدفوعة. يظهر للطالب بعد التسجيل/الشراء.</p>
             </div>
         @else
             <div class="rounded-12px bg-[#F8FAFC] border border-d9 px-4 py-3">
@@ -66,6 +67,16 @@
                 <p class="font-semibold text-15px text-primary">{{ $quiz->webinar->title ?? '—' }}</p>
             </div>
         @endif
+
+        <div>
+            <label for="quiz-chapter-id" class="block font-semibold text-14px text-primary mb-2">الوحدة / المحاضرة</label>
+            <select id="quiz-chapter-id" name="chapter_id"
+                class="select select-bordered w-full h-12 rounded-10px border-d9 font-medium text-15px text-primary"
+                @disabled(!$isEdit && empty(old('webinar_id')))>
+                <option value="">تُنشأ وحدة تلقائياً إن لزم</option>
+            </select>
+            <p class="font-medium text-12px text-gray mt-1.5">الاختبار يظهر للطالب داخل مشغّل الدورة عند فتح هذه الوحدة.</p>
+        </div>
 
         <div>
             <label class="block font-semibold text-14px text-primary mb-2">عنوان الاختبار <span class="text-[#E11D48]">*</span></label>
@@ -119,4 +130,40 @@
         </div>
     </form>
 </div>
+
+<script>
+(() => {
+    const courses = @json($webinars ?? []);
+    const webinarSelect = document.getElementById('quiz-webinar-id');
+    const chapterSelect = document.getElementById('quiz-chapter-id');
+    if (!chapterSelect) return;
+
+    const oldChapterId = @json(old('chapter_id', $isEdit ? ($quiz->chapter_id ?? null) : null));
+    const editWebinarId = @json($isEdit ? ($quiz->webinar_id ?? null) : null);
+
+    const fillChapters = (webinarId, preferredChapterId = null) => {
+        const course = courses.find((c) => String(c.id) === String(webinarId));
+        chapterSelect.innerHTML = '<option value="">تُنشأ وحدة تلقائياً إن لزم</option>';
+        chapterSelect.disabled = !webinarId && !editWebinarId;
+        (course?.chapters || []).forEach((chapter) => {
+            const opt = document.createElement('option');
+            opt.value = chapter.id;
+            opt.textContent = chapter.title;
+            if (preferredChapterId && String(preferredChapterId) === String(chapter.id)) {
+                opt.selected = true;
+            }
+            chapterSelect.appendChild(opt);
+        });
+    };
+
+    if (webinarSelect) {
+        webinarSelect.addEventListener('change', () => fillChapters(webinarSelect.value));
+        if (webinarSelect.value) {
+            fillChapters(webinarSelect.value, oldChapterId);
+        }
+    } else if (editWebinarId) {
+        fillChapters(editWebinarId, oldChapterId);
+    }
+})();
+</script>
 @endsection

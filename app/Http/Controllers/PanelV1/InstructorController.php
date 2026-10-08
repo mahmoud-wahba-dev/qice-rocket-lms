@@ -1109,10 +1109,7 @@ class InstructorController extends Controller
         $quiz->updated_at = time();
         $quiz->save();
 
-        $translation = $quiz->translateOrNew('ar');
-        $translation->locale = 'ar';
-        $translation->title = $request->input('title');
-        $translation->save();
+        $this->syncTranslatedField($quiz, 'title', (string) $request->input('title'));
 
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
@@ -3485,9 +3482,7 @@ class InstructorController extends Controller
             'اختبار جديد',
             [
                 'quiz' => null,
-                'webinars' => $this->teacherWebinars($guardUser)->map(function ($webinar) {
-                    return ['id' => $webinar->id, 'title' => $webinar->title];
-                })->all(),
+                'webinars' => $this->teacherQuizCourseOptions($guardUser),
             ]
         );
     }
@@ -3501,19 +3496,27 @@ class InstructorController extends Controller
 
         $request->validate([
             'webinar_id' => 'required|exists:webinars,id',
+            'chapter_id' => 'nullable|integer',
             'title' => 'required|string|max:255',
             'pass_mark' => 'required|integer|min:0',
             'time' => 'nullable|integer|min:0',
             'attempt' => 'nullable|integer|min:1',
             'status' => 'required|in:active,inactive',
+        ], [
+            'webinar_id.required' => 'اختر الدورة',
+            'title.required' => 'عنوان الاختبار مطلوب',
         ]);
 
-        $webinar = \App\Models\Webinar::where('id', $request->input('webinar_id'))
-            ->where('teacher_id', $guardUser->id)
-            ->firstOrFail();
+        $webinar = $this->teacherOwnedWebinarOrFail($guardUser, (int) $request->input('webinar_id'));
+        $chapterId = $this->resolveTeacherChapterIdForWebinar(
+            $guardUser,
+            $webinar,
+            $request->input('chapter_id')
+        );
 
         $quiz = new \App\Models\Quiz();
         $quiz->webinar_id = $webinar->id;
+        $quiz->chapter_id = $chapterId;
         $quiz->creator_id = $guardUser->id;
         $quiz->pass_mark = $request->input('pass_mark');
         $quiz->time = $request->input('time', 0);
@@ -3524,10 +3527,10 @@ class InstructorController extends Controller
         $quiz->updated_at = time();
         $quiz->save();
 
-        $translation = $quiz->translateOrNew('ar');
-        $translation->locale = 'ar';
-        $translation->title = $request->input('title');
-        $translation->save();
+        $this->syncTranslatedField($quiz, 'title', (string) $request->input('title'));
+
+        WebinarChapterItem::makeItem($guardUser->id, $chapterId, $quiz->id, WebinarChapterItem::$chapterQuiz);
+        $webinar->update(['updated_at' => time()]);
 
         return redirect()
             ->route('panel.v1.instructor.quizzes.view', ['id' => $quiz->id])
@@ -3550,9 +3553,7 @@ class InstructorController extends Controller
             'تعديل الاختبار',
             [
                 'quiz' => $quiz,
-                'webinars' => $this->teacherWebinars($guardUser)->map(function ($webinar) {
-                    return ['id' => $webinar->id, 'title' => $webinar->title];
-                })->all(),
+                'webinars' => $this->teacherQuizCourseOptions($guardUser),
             ]
         );
     }
@@ -3567,6 +3568,7 @@ class InstructorController extends Controller
         $quiz = $this->teacherQuizOrFail($guardUser, $id);
 
         $request->validate([
+            'chapter_id' => 'nullable|integer',
             'title' => 'required|string|max:255',
             'pass_mark' => 'required|integer|min:0',
             'time' => 'nullable|integer|min:0',
@@ -3574,6 +3576,15 @@ class InstructorController extends Controller
             'status' => 'required|in:active,inactive',
         ]);
 
+        $webinar = $this->teacherOwnedWebinarOrFail($guardUser, (int) $quiz->webinar_id);
+        $oldChapterId = $quiz->chapter_id ? (int) $quiz->chapter_id : null;
+        $chapterId = $this->resolveTeacherChapterIdForWebinar(
+            $guardUser,
+            $webinar,
+            $request->input('chapter_id', $oldChapterId)
+        );
+
+        $quiz->chapter_id = $chapterId;
         $quiz->pass_mark = $request->input('pass_mark');
         $quiz->time = $request->input('time', 0);
         $quiz->attempt = $request->input('attempt');
@@ -3581,10 +3592,21 @@ class InstructorController extends Controller
         $quiz->updated_at = time();
         $quiz->save();
 
-        $translation = $quiz->translateOrNew('ar');
-        $translation->locale = 'ar';
-        $translation->title = $request->input('title');
-        $translation->save();
+        $this->syncTranslatedField($quiz, 'title', (string) $request->input('title'));
+
+        if ($oldChapterId && $oldChapterId !== $chapterId) {
+            WebinarChapterItem::changeChapter(
+                $guardUser->id,
+                $oldChapterId,
+                $chapterId,
+                $quiz->id,
+                WebinarChapterItem::$chapterQuiz
+            );
+        } else {
+            WebinarChapterItem::makeItem($guardUser->id, $chapterId, $quiz->id, WebinarChapterItem::$chapterQuiz);
+        }
+
+        $webinar->update(['updated_at' => time()]);
 
         return redirect()
             ->route('panel.v1.instructor.quizzes.view', ['id' => $quiz->id])
@@ -3599,6 +3621,14 @@ class InstructorController extends Controller
         }
 
         $quiz = $this->teacherQuizOrFail($guardUser, $id);
+
+        if (!empty($quiz->chapter_id)) {
+            WebinarChapterItem::where('chapter_id', $quiz->chapter_id)
+                ->where('item_id', $quiz->id)
+                ->where('type', WebinarChapterItem::$chapterQuiz)
+                ->delete();
+        }
+
         $quiz->delete();
 
         return redirect()
@@ -3666,13 +3696,10 @@ class InstructorController extends Controller
         $question->updated_at = time();
         $question->save();
 
-        $translation = $question->translateOrNew('ar');
-        $translation->locale = 'ar';
-        $translation->title = $data['title'];
+        $this->syncTranslatedField($question, 'title', (string) $data['title']);
         if ($type === 'descriptive') {
-            $translation->correct = $request->input('correct');
+            $this->syncTranslatedField($question, 'correct', (string) ($request->input('correct') ?? ''));
         }
-        $translation->save();
 
         if ($type === 'multiple') {
             $correctOption = (int) $request->input('correct_option', 0);
@@ -3685,10 +3712,7 @@ class InstructorController extends Controller
                 $answer->updated_at = time();
                 $answer->save();
 
-                $answerTranslation = $answer->translateOrNew('ar');
-                $answerTranslation->locale = 'ar';
-                $answerTranslation->title = mb_substr($optionTitle, 0, 1000);
-                $answerTranslation->save();
+                $this->syncTranslatedField($answer, 'title', mb_substr($optionTitle, 0, 1000));
             }
         }
 
@@ -3752,11 +3776,12 @@ class InstructorController extends Controller
         $question->updated_at = time();
         $question->save();
 
-        $translation = $question->translateOrNew('ar');
-        $translation->locale = 'ar';
-        $translation->title = $data['title'];
-        $translation->correct = $type === 'descriptive' ? $request->input('correct') : null;
-        $translation->save();
+        $this->syncTranslatedField($question, 'title', (string) $data['title']);
+        $this->syncTranslatedField(
+            $question,
+            'correct',
+            $type === 'descriptive' ? (string) ($request->input('correct') ?? '') : ''
+        );
 
         \App\Models\QuizzesQuestionsAnswer::where('question_id', $question->id)->delete();
         if ($type === 'multiple') {
@@ -3770,10 +3795,7 @@ class InstructorController extends Controller
                 $answer->updated_at = time();
                 $answer->save();
 
-                $answerTranslation = $answer->translateOrNew('ar');
-                $answerTranslation->locale = 'ar';
-                $answerTranslation->title = mb_substr($optionTitle, 0, 1000);
-                $answerTranslation->save();
+                $this->syncTranslatedField($answer, 'title', mb_substr($optionTitle, 0, 1000));
             }
         }
 
@@ -5759,6 +5781,99 @@ class InstructorController extends Controller
             ->orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")
             ->orderBy('id', 'desc')
             ->get();
+    }
+
+    /**
+     * Courses + chapters for quiz create/edit forms (free and paid).
+     */
+    private function teacherQuizCourseOptions($user): array
+    {
+        return $this->teacherWebinars($user)->map(function ($webinar) {
+            $chapters = WebinarChapter::where('webinar_id', $webinar->id)
+                ->orderBy('order')
+                ->orderBy('id')
+                ->get()
+                ->map(fn ($chapter) => [
+                    'id' => $chapter->id,
+                    'title' => $chapter->title ?: ('وحدة #' . $chapter->id),
+                ])
+                ->values()
+                ->all();
+
+            return [
+                'id' => $webinar->id,
+                'title' => $webinar->title ?: ('دورة #' . $webinar->id),
+                'price' => (float) ($webinar->price ?? 0),
+                'chapters' => $chapters,
+            ];
+        })->values()->all();
+    }
+
+    /**
+     * Persist translation for ar + en (+ current/default locale) so student UI (locale=en) can resolve titles.
+     */
+    private function syncTranslatedField($model, string $field, string $value): void
+    {
+        $locales = array_values(array_unique(array_filter([
+            'ar',
+            'en',
+            mb_strtolower((string) (app()->getLocale() ?: '')),
+            mb_strtolower((string) (function_exists('getDefaultLocale') ? getDefaultLocale() : 'ar')),
+        ])));
+
+        foreach ($locales as $locale) {
+            $translation = $model->translateOrNew($locale);
+            $translation->locale = $locale;
+            $translation->{$field} = $value;
+            $translation->save();
+        }
+    }
+
+    /**
+     * Resolve chapter for quiz/assignment attachment; auto-create first chapter if needed.
+     */
+    private function resolveTeacherChapterIdForWebinar($user, Webinar $webinar, $chapterIdInput): int
+    {
+        $chapterId = !empty($chapterIdInput) ? (int) $chapterIdInput : null;
+
+        if ($chapterId) {
+            $chapter = WebinarChapter::where('id', $chapterId)
+                ->where('webinar_id', $webinar->id)
+                ->first();
+
+            if (empty($chapter)) {
+                throw ValidationException::withMessages([
+                    'chapter_id' => 'الوحدة المحددة غير صحيحة',
+                ]);
+            }
+
+            return (int) $chapter->id;
+        }
+
+        $chapter = WebinarChapter::where('webinar_id', $webinar->id)
+            ->orderBy('order')
+            ->orderBy('id')
+            ->first();
+
+        if (empty($chapter)) {
+            $chapter = WebinarChapter::create([
+                'user_id' => $user->id,
+                'webinar_id' => $webinar->id,
+                'order' => 1,
+                'status' => WebinarChapter::$chapterActive,
+                'created_at' => time(),
+            ]);
+
+            WebinarChapterTranslation::updateOrCreate(
+                [
+                    'webinar_chapter_id' => $chapter->id,
+                    'locale' => mb_strtolower(app()->getLocale() ?: getDefaultLocale()),
+                ],
+                ['title' => 'الوحدة الأولى']
+            );
+        }
+
+        return (int) $chapter->id;
     }
 
     private function homeData($user): array

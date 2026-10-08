@@ -12,7 +12,10 @@ $showQuiz = $hasLectureQuiz ?? false;
 $showAssignment = $hasLectureAssignment ?? false;
 $showComments = $hasComments ?? false;
 $showFiles = $hasFiles ?? false;
-$quizCard = $lectureQuiz ?? [];
+$quizCards = $lectureQuizzes ?? [];
+if (empty($quizCards) && !empty($lectureQuiz)) {
+    $quizCards = [$lectureQuiz];
+}
 $assignmentCard = $lectureAssignment ?? [];
 $fileRows = $files ?? [];
 $media = $currentMedia ?? null;
@@ -172,43 +175,47 @@ $mediaMode = $media['mode'] ?? null;
     <div>
         <div id="lesson-tabs-1" role="tabpanel" aria-labelledby="lesson-tabs-item-1">
             @if ($showQuiz)
-            <div class="border border-d9 rounded-20px bg-white px-5 sm:px-8 py-7">
-                <div class="flex items-start gap-3 mb-6">
-                    <span class="size-11 rounded-12px bg-primary/10 center shrink-0">
-                        <span class="icon-[tabler--clipboard-list] size-6 text-primary"></span>
-                    </span>
-                    <div>
-                        <h2 class="font-bold text-20px sm:text-24px text-primary mb-1">{{ $quizCard['title'] ?? '' }}</h2>
-                        <p class="font-medium text-14px text-gray">{{ $quizCard['subtitle'] ?? '' }}</p>
+            <div class="space-y-5">
+                @foreach ($quizCards as $quizCard)
+                <div class="border border-d9 rounded-20px bg-white px-5 sm:px-8 py-7">
+                    <div class="flex items-start gap-3 mb-6">
+                        <span class="size-11 rounded-12px bg-primary/10 center shrink-0">
+                            <span class="icon-[tabler--clipboard-list] size-6 text-primary"></span>
+                        </span>
+                        <div>
+                            <h2 class="font-bold text-20px sm:text-24px text-primary mb-1">{{ $quizCard['title'] ?? '' }}</h2>
+                            <p class="font-medium text-14px text-gray">{{ $quizCard['subtitle'] ?? '' }}</p>
+                        </div>
                     </div>
-                </div>
 
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-7">
-                    <div class="rounded-12px bg-[#F8FAFC] border border-[#E2E8F0] px-4 py-3 flex items-center justify-between gap-8">
-                        <p class="font-bold text-12px text-[#64748B]">وقت الاختبار</p>
-                        <p class="font-bold text-13px text-[#0F172A]">{{ $quizCard['duration'] ?? '' }}</p>
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-7">
+                        <div class="rounded-12px bg-[#F8FAFC] border border-[#E2E8F0] px-4 py-3 flex items-center justify-between gap-8">
+                            <p class="font-bold text-12px text-[#64748B]">وقت الاختبار</p>
+                            <p class="font-bold text-13px text-[#0F172A]">{{ $quizCard['duration'] ?? '' }}</p>
+                        </div>
+                        <div class="rounded-12px bg-[#F8FAFC] border border-[#E2E8F0] px-4 py-3 flex items-center justify-between gap-8">
+                            <p class="font-bold text-12px text-[#64748B]">عدد الأسئلة</p>
+                            <p class="font-bold text-13px text-[#0F172A]">{{ $quizCard['questions_count'] ?? '' }}</p>
+                        </div>
+                        <div class="rounded-12px bg-[#F8FAFC] border border-[#E2E8F0] px-4 py-3 flex items-center justify-between gap-8">
+                            <p class="font-bold text-12px text-[#64748B]">درجة النجاح</p>
+                            <p class="font-bold text-13px text-[#0F172A]">{{ $quizCard['pass_score'] ?? '' }}</p>
+                        </div>
+                        <div class="rounded-12px bg-[#F8FAFC] border border-[#E2E8F0] px-4 py-3 flex items-center justify-between gap-8">
+                            <p class="font-bold text-12px text-[#64748B]">المحاولات</p>
+                            <p class="font-bold text-13px text-[#0F172A]">{{ $quizCard['attempts'] ?? '' }}</p>
+                        </div>
                     </div>
-                    <div class="rounded-12px bg-[#F8FAFC] border border-[#E2E8F0] px-4 py-3 flex items-center justify-between gap-8">
-                        <p class="font-bold text-12px text-[#64748B]">عدد الأسئلة</p>
-                        <p class="font-bold text-13px text-[#0F172A]">{{ $quizCard['questions_count'] ?? '' }}</p>
-                    </div>
-                    <div class="rounded-12px bg-[#F8FAFC] border border-[#E2E8F0] px-4 py-3 flex items-center justify-between gap-8">
-                        <p class="font-bold text-12px text-[#64748B]">درجة النجاح</p>
-                        <p class="font-bold text-13px text-[#0F172A]">{{ $quizCard['pass_score'] ?? '' }}</p>
-                    </div>
-                    <div class="rounded-12px bg-[#F8FAFC] border border-[#E2E8F0] px-4 py-3 flex items-center justify-between gap-8">
-                        <p class="font-bold text-12px text-[#64748B]">المحاولات</p>
-                        <p class="font-bold text-13px text-[#0F172A]">{{ $quizCard['attempts'] ?? '' }}</p>
-                    </div>
-                </div>
 
-                <div class="flex justify-end">
-                    <a href="{{ route('panel.v1.student.course.quiz', ['slug' => $courseSlug, 'quiz' => $quizCard['id'] ?? null]) }}"
-                        class="btn btn-primary rounded-10px h-12 px-6 font-bold text-15px gap-2">
-                        <span class="icon-[tabler--arrow-left] size-5"></span>
-                        ابدأ الاختبار الآن
-                    </a>
+                    <div class="flex justify-end">
+                        <a href="{{ route('panel.v1.student.course.quiz', ['slug' => $courseSlug, 'quiz' => $quizCard['id'] ?? null]) }}"
+                            class="btn btn-primary rounded-10px h-12 px-6 font-bold text-15px gap-2">
+                            <span class="icon-[tabler--arrow-left] size-5"></span>
+                            ابدأ الاختبار الآن
+                        </a>
+                    </div>
                 </div>
+                @endforeach
             </div>
             @else
             @include('panel_v1.student.course-player.components.empty-state', [

@@ -311,6 +311,20 @@ class StudentController extends Controller
             ->limit(10)
             ->get();
 
+        $pendingQuizzes = collect();
+        $purchasedIds = $user->getPurchasedCoursesIds();
+        if (!empty($purchasedIds)) {
+            $pendingQuizzes = \App\Models\Quiz::with('webinar')
+                ->whereIn('webinar_id', $purchasedIds)
+                ->where('status', 'active')
+                ->whereDoesntHave('quizResults', function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                })
+                ->orderByDesc('id')
+                ->limit(8)
+                ->get();
+        }
+
         // Issue course certificates for finished purchased courses (progress 100%)
         $this->syncFinishedCourseCertificates($user);
 
@@ -352,6 +366,7 @@ class StudentController extends Controller
             'pendingAssignments' => $pendingAssignments,
             'submittedHistories' => $submittedHistories,
             'quizResults' => $quizResults,
+            'pendingQuizzes' => $pendingQuizzes,
             'certificates' => $certificates,
             'comments' => $comments,
             'calendarEvents' => $calendarEvents,
@@ -1284,7 +1299,8 @@ class StudentController extends Controller
         $purchasedIds = $user->getPurchasedCoursesIds();
         $pendingQuizzes = collect();
         if (!empty($purchasedIds)) {
-            $pendingQuizzes = \App\Models\Quiz::whereIn('webinar_id', $purchasedIds)
+            $pendingQuizzes = \App\Models\Quiz::with('webinar')
+                ->whereIn('webinar_id', $purchasedIds)
                 ->where('status', 'active')
                 ->whereDoesntHave('quizResults', function ($q) use ($user) {
                     $q->where('user_id', $user->id);

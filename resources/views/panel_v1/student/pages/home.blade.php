@@ -595,10 +595,37 @@
                 <div class="flex justify-end mb-4">
                     <a href="{{ route('panel.v1.student.quizzes') }}" class="font-bold text-14px text-primary hover:underline">عرض كل الاختبارات ←</a>
                 </div>
+
+                @if (($pendingQuizzes ?? collect())->isNotEmpty())
+                    <div class="mb-8">
+                        <h3 class="font-bold text-16px text-primary mb-4">اختبارات بانتظار المحاولة</h3>
+                        <div class="space-y-4">
+                            @foreach ($pendingQuizzes as $pendingQuiz)
+                                @php
+                                    $pendingTitle = optional($pendingQuiz->translate('ar'))->title
+                                        ?: (optional($pendingQuiz->translate('en'))->title
+                                        ?: ($pendingQuiz->title ?: 'اختبار'));
+                                    $pendingSlug = $pendingQuiz->webinar->slug ?? null;
+                                @endphp
+                                <div class="border border-[#F5D9A8] bg-[#FEF6E7] rounded-10px px-7 py-5 flex items-center justify-between gap-6">
+                                    <div class="min-w-0">
+                                        <p class="font-bold text-18px text-primary truncate">{{ $pendingTitle }}</p>
+                                        <p class="font-medium text-12px text-primary">{{ $pendingQuiz->webinar->title ?? '' }}</p>
+                                    </div>
+                                    @if ($pendingSlug)
+                                        <a href="{{ route('panel.v1.student.course.quiz', ['slug' => $pendingSlug, 'quiz' => $pendingQuiz->id]) }}"
+                                            class="btn btn-primary btn-sm rounded-8px font-bold text-13px shrink-0">ابدأ</a>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
                 @forelse ($quizResults ?? [] as $quizResult)
                     <div class="border border-d9 rounded-10px px-7 py-6 flex items-center justify-between mb-8 gap-16">
                         <div>
-                            <p class="font-bold text-18px text-primary">{{ $quizResult->quiz->title ?? '' }}</p>
+                            <p class="font-bold text-18px text-primary">{{ $quizResult->quiz->title ?? ($quizResult->quiz->translate('ar')->title ?? '') }}</p>
                             <p class="font-medium text-12px text-primary">{{ $quizResult->quiz->webinar->title ?? '' }}</p>
                         </div>
                         <div class="flex items-center gap-8">
@@ -613,22 +640,24 @@
                         </div>
                     </div>
                 @empty
-                    <div class="py-14 center flex-col text-center">
-                        <div class="w-[260px] h-[180px] rounded-[16px] bg-[#F3F4F6] border border-[#E5E7EB] center mb-6 overflow-hidden">
-                            <div class="text-center">
-                                <div class="mx-auto size-20 rounded-full bg-white border border-[#E5E7EB] center mb-3">
-                                    <span class="icon-[tabler--checklist] size-10 text-[#9CA3AF]"></span>
-                                </div>
-                                <div class="flex justify-center gap-1.5">
-                                    <span class="size-8 rounded-[8px] bg-[#E5E7EB]"></span>
-                                    <span class="size-8 rounded-[8px] bg-[#E5E7EB]"></span>
-                                    <span class="size-8 rounded-[8px] bg-[#C99C69]/20"></span>
+                    @if (($pendingQuizzes ?? collect())->isEmpty())
+                        <div class="py-14 center flex-col text-center">
+                            <div class="w-[260px] h-[180px] rounded-[16px] bg-[#F3F4F6] border border-[#E5E7EB] center mb-6 overflow-hidden">
+                                <div class="text-center">
+                                    <div class="mx-auto size-20 rounded-full bg-white border border-[#E5E7EB] center mb-3">
+                                        <span class="icon-[tabler--checklist] size-10 text-[#9CA3AF]"></span>
+                                    </div>
+                                    <div class="flex justify-center gap-1.5">
+                                        <span class="size-8 rounded-[8px] bg-[#E5E7EB]"></span>
+                                        <span class="size-8 rounded-[8px] bg-[#E5E7EB]"></span>
+                                        <span class="size-8 rounded-[8px] bg-[#C99C69]/20"></span>
+                                    </div>
                                 </div>
                             </div>
+                            <p class="font-bold text-[18px] text-[#0F3D36]">لا يوجد لديك اختبار بعد</p>
+                            <p class="font-medium text-[13px] text-[#9CA3AF] mt-1">ستظهر هنا اختبارات دوراتك.</p>
                         </div>
-                        <p class="font-bold text-[18px] text-[#0F3D36]">لا يوجد لديك اختبار بعد</p>
-                        <p class="font-medium text-[13px] text-[#9CA3AF] mt-1">ستظهر هنا اختبارات دوراتك.</p>
-                    </div>
+                    @endif
                 @endforelse
             </div>
             <div id="tabs-large-5" class="hidden" role="tabpanel" aria-labelledby="tabs-large-item-5">

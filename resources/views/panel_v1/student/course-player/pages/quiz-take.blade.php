@@ -20,7 +20,7 @@
         </p>
     </div>
 
-    <form method="POST" action="{{ route('panel.v1.student.course.quiz.answer', ['slug' => $courseSlug]) }}">
+    <form method="POST" action="{{ route('panel.v1.student.course.quiz.answer', ['slug' => $courseSlug, 'quiz' => $take['quiz_id'] ?? null]) }}">
         @csrf
         <input type="hidden" name="quiz_id" value="{{ $take['quiz_id'] ?? '' }}">
         <input type="hidden" name="question_id" value="{{ $take['question_id'] ?? '' }}">
@@ -49,7 +49,7 @@
         @endif
     </div>
 
-    <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
+    <div class="flex flex-col-reverse mt-6 sm:flex-row items-stretch sm:items-center justify-between gap-3">
         @if (($take['current'] ?? 1) > 1)
             <a href="{{ route('panel.v1.student.course.quiz.take', ['slug' => $courseSlug, 'quiz' => $take['quiz_id'] ?? null, 'q' => ($take['current'] ?? 1) - 1]) }}"
                 class="btn btn-ghost rounded-12px h-12 px-6 font-semibold text-15px text-gray border border-d9">
