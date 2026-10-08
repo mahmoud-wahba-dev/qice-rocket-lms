@@ -179,25 +179,96 @@
                 <input type="hidden" name="draft_id" value="{{ $draftIdValue }}" data-draft-id-input>
                 <input type="hidden" name="chapter_id" value="{{ $unit['id'] }}">
                 <input type="text" name="title" required placeholder="عنوان الملف" class="{{ $input }}" data-field-label="عنوان الملف">
-                @include('panel_v1.components.file-upload', [
-                    'name' => 'upload',
-                    'accept' => 'video/*,image/*,.pdf,.doc,.docx,.zip',
-                    'label' => 'اختر الملف من جهازك',
-                    'hint' => 'فيديو بلا حد حجم من التطبيق (حسب مساحة السيرفر)، صورة، PDF أو مستند',
-                    'required' => true,
-                    'compact' => true,
-                ])
-                <div class="hidden rounded-10px border border-d9 bg-[#FAFAF4] px-4 py-3" data-upload-progress>
-                    <div class="flex items-center justify-between gap-3 mb-2">
-                        <span class="font-semibold text-13px text-primary" data-upload-progress-label>جاري الرفع...</span>
-                        <span class="font-bold text-13px text-primary tabular-nums" data-upload-progress-percent>0%</span>
+                @php
+                    $driveClient = app(\App\Services\GoogleDrive\GoogleDriveClient::class);
+                    $driveConfigured = $driveClient->isConfigured();
+                    $driveFolderUrl = $driveClient->folderUrl();
+                    $driveSettingsUrl = route('panel.v1.admin.system.google-drive.show');
+                    $isAdminUser = auth()->check() && method_exists(auth()->user(), 'isAdmin') && auth()->user()->isAdmin();
+                @endphp
+                <div class="rounded-10px border border-d9 bg-[#FAFAF4] p-3 space-y-3" data-delivery-picker>
+                    <p class="font-semibold text-13px text-primary">طريقة التسليم</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <label class="relative flex cursor-pointer">
+                            <input type="radio" name="delivery" value="local" class="peer sr-only" checked data-delivery-option="local">
+                            <span class="flex-1 rounded-10px border border-d9 bg-white px-3 py-3 peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:ring-1 peer-checked:ring-primary/30 transition">
+                                <span class="block font-bold text-13px text-primary">رفع من الجهاز</span>
+                                <span class="block font-medium text-12px text-gray mt-0.5">تخزين على السيرفر</span>
+                            </span>
+                        </label>
+                        <label class="relative flex cursor-pointer">
+                            <input type="radio" name="delivery" value="drive" class="peer sr-only" data-delivery-option="drive">
+                            <span class="flex-1 rounded-10px border border-d9 bg-white px-3 py-3 peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:ring-1 peer-checked:ring-primary/30 transition">
+                                <span class="block font-bold text-13px text-primary">Google Drive</span>
+                                <span class="block font-medium text-12px text-gray mt-0.5">
+                                    {{ $driveConfigured ? 'موصى به للفيديوهات الكبيرة' : 'يحتاج إعداد أولاً' }}
+                                </span>
+                            </span>
+                        </label>
                     </div>
-                    <div class="h-2.5 rounded-full bg-white overflow-hidden border border-d9">
-                        <div class="h-full rounded-full bg-primary transition-[width] duration-150" style="width: 0%" data-upload-progress-bar></div>
-                    </div>
-                    <p class="mt-2 font-medium text-12px text-gray" data-upload-progress-meta></p>
+                    @if (!$driveConfigured)
+                        <div class="rounded-10px border border-amber-200 bg-amber-50 px-3 py-2.5 text-13px text-amber-950">
+                            <p class="font-semibold mb-1">Google Drive غير مفعّل بعد</p>
+                            @if ($isAdminUser)
+                                <a href="{{ $driveSettingsUrl }}" class="inline-flex items-center gap-1.5 font-bold text-primary underline underline-offset-2">
+                                    افتح إعدادات Google Drive وأكمل الربط
+                                    <span class="icon-[tabler--external-link] size-4"></span>
+                                </a>
+                            @else
+                                <p class="font-medium text-12px">اطلب من الإدارة تفعيل Google Drive من الإعدادات.</p>
+                            @endif
+                        </div>
+                    @endif
                 </div>
-                <button type="submit" class="inline-flex items-center justify-center h-12 sm:h-14 px-5 rounded-10px bg-primary text-white font-bold text-15px hover:opacity-90 transition">رفع</button>
+                <div class="space-y-2 hidden" data-delivery-panel="drive">
+                    @if ($driveConfigured)
+                        <div class="flex flex-wrap gap-2">
+                            <a href="{{ $driveFolderUrl }}" target="_blank" rel="noopener"
+                                class="inline-flex items-center gap-2 h-11 px-4 rounded-10px border border-d9 bg-white font-semibold text-13px text-primary hover:bg-[#FAFAF4] transition">
+                                <span class="icon-[tabler--brand-google-drive] size-4"></span>
+                                فتح مجلد Drive
+                            </a>
+                            @if ($isAdminUser)
+                                <a href="{{ $driveSettingsUrl }}"
+                                    class="inline-flex items-center gap-2 h-11 px-4 rounded-10px border border-d9 bg-white font-semibold text-13px text-primary hover:bg-[#FAFAF4] transition">
+                                    <span class="icon-[tabler--settings] size-4"></span>
+                                    إعدادات Drive
+                                </a>
+                            @endif
+                        </div>
+                        <input type="text" name="drive_url" placeholder="الصق رابط الفيديو من Drive هنا"
+                            class="{{ $input }}" data-field-label="رابط Google Drive" data-drive-url-input>
+                        <p class="font-medium text-12px text-gray">بعد الرفع على Drive: مشاركة الملف ← نسخ الرابط ← لصقه هنا</p>
+                    @else
+                        <p class="font-medium text-13px text-gray">فعّل Google Drive من الإعدادات أولاً ثم عد لهذه الصفحة.</p>
+                        @if ($isAdminUser)
+                            <a href="{{ $driveSettingsUrl }}" class="inline-flex items-center gap-2 h-11 px-4 rounded-10px bg-primary text-white font-bold text-13px">
+                                الذهاب لإعدادات Google Drive
+                            </a>
+                        @endif
+                    @endif
+                </div>
+                <div data-delivery-panel="local">
+                    @include('panel_v1.components.file-upload', [
+                        'name' => 'upload',
+                        'accept' => 'video/*,image/*,.pdf,.doc,.docx,.zip',
+                        'label' => 'اختر الملف من جهازك',
+                        'hint' => 'فيديو بلا حد حجم من التطبيق (حسب مساحة السيرفر)، صورة، PDF أو مستند',
+                        'required' => false,
+                        'compact' => true,
+                    ])
+                    <div class="hidden rounded-10px border border-d9 bg-[#FAFAF4] px-4 py-3 mt-3" data-upload-progress>
+                        <div class="flex items-center justify-between gap-3 mb-2">
+                            <span class="font-semibold text-13px text-primary" data-upload-progress-label>جاري الرفع...</span>
+                            <span class="font-bold text-13px text-primary tabular-nums" data-upload-progress-percent>0%</span>
+                        </div>
+                        <div class="h-2.5 rounded-full bg-white overflow-hidden border border-d9">
+                            <div class="h-full rounded-full bg-primary transition-[width] duration-150" style="width: 0%" data-upload-progress-bar></div>
+                        </div>
+                        <p class="mt-2 font-medium text-12px text-gray" data-upload-progress-meta></p>
+                    </div>
+                </div>
+                <button type="submit" class="inline-flex items-center justify-center h-12 sm:h-14 px-5 rounded-10px bg-primary text-white font-bold text-15px hover:opacity-90 transition">إضافة</button>
             </form>
             <p class="hidden px-4 pb-3 font-medium text-13px text-[#B91C1C]" data-curriculum-form-error></p>
         </details>

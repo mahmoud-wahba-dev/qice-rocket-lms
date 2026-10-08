@@ -69,6 +69,43 @@ class CoursePlayerController extends Controller
         ]));
     }
 
+    /**
+     * Auth-gated Google Drive media proxy — never exposes a permanent Drive URL.
+     */
+    public function streamDriveFile(Request $request, string $slug, string $fileId)
+    {
+        $resolved = $this->resolveCourse($request, $slug);
+        if ($resolved instanceof \Illuminate\Http\RedirectResponse) {
+            abort(403);
+        }
+        [$user, $webinar] = $resolved;
+
+        $fileId = \App\Services\GoogleDrive\GoogleDriveClient::extractFileId($fileId) ?: $fileId;
+
+        $owned = \App\Models\File::where('webinar_id', $webinar->id)
+            ->where('storage', 'google_drive')
+            ->where(function ($q) use ($fileId) {
+                $q->where('file', $fileId)
+                    ->orWhere('file', 'like', '%' . $fileId . '%');
+            })
+            ->exists();
+
+        if (!$owned) {
+            abort(404);
+        }
+
+        try {
+            $drive = app(\App\Services\GoogleDrive\GoogleDriveClient::class);
+            if (!$drive->isConfigured()) {
+                abort(503, 'Drive غير معد');
+            }
+
+            return $drive->streamToResponse($fileId, $request->header('Range'));
+        } catch (\Throwable $e) {
+            abort(502, 'تعذر بث الفيديو');
+        }
+    }
+
     public function storeComment(Request $request, string $slug)
     {
         $resolved = $this->resolveCourse($request, $slug);
@@ -351,6 +388,7 @@ class CoursePlayerController extends Controller
                     ? (($model->file_type === 'video'
                         || $model->storage === 'youtube'
                         || $model->storage === 'vimeo'
+                        || $model->storage === 'google_drive'
                         || (method_exists($model, 'isVideo') && $model->isVideo())
                         || preg_match('/\.(mp4|webm|mov|m4v|mkv|avi)$/i', (string) ($model->file ?? ''))
                     ) ? 'video' : 'file')
@@ -707,6 +745,22 @@ class CoursePlayerController extends Controller
                     'poster' => $poster,
                     'title' => $this->localizedTitle($model),
                     'downloadable' => false,
+                ];
+            }
+
+            if ($storage === 'google_drive') {
+                $fileId = \App\Services\GoogleDrive\GoogleDriveClient::extractFileId((string) $src) ?: (string) $src;
+
+                return [
+                    'mode' => 'html5',
+                    'src' => route('panel.v1.student.course.drive.stream', [
+                        'slug' => $webinar->slug,
+                        'fileId' => $fileId,
+                    ]),
+                    'poster' => $poster,
+                    'title' => $this->localizedTitle($model),
+                    'downloadable' => false,
+                    'mime' => 'video/mp4',
                 ];
             }
 

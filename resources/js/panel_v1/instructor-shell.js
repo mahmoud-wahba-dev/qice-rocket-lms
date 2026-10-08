@@ -1236,6 +1236,41 @@ function lessonIcon(kind) {
     return 'icon-[tabler--player-play]';
 }
 
+function syncCurriculumDeliveryPanels(form) {
+    if (!form) {
+        return;
+    }
+    const selected = form.querySelector('input[name="delivery"]:checked')?.value || 'local';
+    form.querySelectorAll('[data-delivery-panel]').forEach((panel) => {
+        const key = panel.getAttribute('data-delivery-panel');
+        panel.classList.toggle('hidden', key !== selected);
+    });
+    const uploadInput = form.querySelector('input[type="file"][name="upload"]');
+    const driveInput = form.querySelector('[data-drive-url-input], input[name="drive_url"]');
+    if (uploadInput) {
+        uploadInput.required = selected === 'local';
+        if (selected !== 'local') {
+            uploadInput.value = '';
+        }
+    }
+    if (driveInput) {
+        driveInput.required = selected === 'drive';
+    }
+}
+
+function bindCurriculumDeliveryPickers(root) {
+    root.querySelectorAll('form[data-curriculum-ajax="file"]').forEach((form) => {
+        if (form.dataset.deliveryBound === '1') {
+            return;
+        }
+        form.dataset.deliveryBound = '1';
+        form.querySelectorAll('input[name="delivery"]').forEach((radio) => {
+            radio.addEventListener('change', () => syncCurriculumDeliveryPanels(form));
+        });
+        syncCurriculumDeliveryPanels(form);
+    });
+}
+
 function buildLessonRow(draftId, lesson) {
     const row = document.createElement('div');
     row.className = 'flex flex-wrap items-center gap-3 px-4 sm:px-5 py-3.5';
@@ -1379,6 +1414,8 @@ function initCurriculumAjax(wrap) {
         return;
     }
 
+    bindCurriculumDeliveryPickers(root);
+
     const draftId = wrap.getAttribute('data-draft-id') || '';
     const unitsWrap = root.querySelector('[data-curriculum-units]');
     const unitTemplate = document.getElementById('curriculum-unit-template');
@@ -1454,6 +1491,7 @@ function initCurriculumAjax(wrap) {
             }
             unitsWrap.appendChild(node);
             initPanelV1FileUploads(node);
+            bindCurriculumDeliveryPickers(node);
         }
     };
 
@@ -1756,21 +1794,36 @@ function initCurriculumAjax(wrap) {
         }
 
         if (mode === 'file') {
-            const fileInput = form.querySelector('input[type="file"][name="upload"], input[type="file"]');
-            const file = fileInput?.files?.[0];
-            if (!file) {
-                const msg = 'يرجى اختيار ملف للرفع';
-                if (errorEl) {
-                    errorEl.textContent = msg;
-                    errorEl.classList.remove('hidden');
+            const delivery = form.querySelector('input[name="delivery"]:checked')?.value || 'local';
+            if (delivery === 'drive') {
+                const driveUrl = (form.querySelector('input[name="drive_url"]')?.value || '').trim();
+                if (!driveUrl) {
+                    const msg = 'الصق رابط الفيديو من Google Drive أولاً (أو أكمل إعداد Drive من الإعدادات)';
+                    if (errorEl) {
+                        errorEl.textContent = msg;
+                        errorEl.classList.remove('hidden');
+                    }
+                    toast('خطأ في الحقل', msg, 'error');
+                    return;
                 }
-                toast('خطأ في الحقل', msg, 'error');
-                return;
+            } else {
+                const fileInput = form.querySelector('input[type="file"][name="upload"], input[type="file"]');
+                const file = fileInput?.files?.[0];
+                if (!file) {
+                    const msg = 'يرجى اختيار ملف للرفع';
+                    if (errorEl) {
+                        errorEl.textContent = msg;
+                        errorEl.classList.remove('hidden');
+                    }
+                    toast('خطأ في الحقل', msg, 'error');
+                    return;
+                }
             }
         }
 
         setBusy(form, true);
-        if (mode === 'file') {
+        const fileDelivery = form.querySelector('input[name="delivery"]:checked')?.value || 'local';
+        if (mode === 'file' && fileDelivery === 'local') {
             setUploadProgress(form, {
                 percent: 0,
                 label: 'جاري رفع الملف...',
@@ -1780,7 +1833,7 @@ function initCurriculumAjax(wrap) {
 
         try {
             const result = await postCurriculumForm(form, {
-                onProgress: mode === 'file'
+                onProgress: (mode === 'file' && fileDelivery === 'local')
                     ? ({ percent, loaded, total }) => {
                         setUploadProgress(form, {
                             percent,

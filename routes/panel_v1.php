@@ -77,6 +77,9 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
 
             Route::prefix('student/courses/{slug}')->name('student.course.')->group(function () {
                 Route::get('/watch', [CoursePlayerController::class, 'watch'])->name('watch');
+                Route::get('/drive/{fileId}/stream', [CoursePlayerController::class, 'streamDriveFile'])
+                    ->where('fileId', '[A-Za-z0-9_-]+')
+                    ->name('drive.stream');
                 Route::post('/comments', [CoursePlayerController::class, 'storeComment'])->name('comments.store');
                 Route::post('/reviews/course', [CoursePlayerController::class, 'storeCourseReview'])->name('reviews.course');
                 Route::post('/reviews/instructor', [CoursePlayerController::class, 'storeInstructorReview'])->name('reviews.instructor');
@@ -675,6 +678,10 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 Route::get('/forums/{id}/edit', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'editForum'])->name('forums.edit');
                 Route::post('/forums/{id}/update', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'updateForum'])->name('forums.update');
                 Route::post('/settings/{id}/save', [\App\Http\Controllers\PanelV1\Admin\SystemController::class, 'saveSetting'])->name('settings.save')->whereNumber('id');
+
+                Route::get('/google-drive', [\App\Http\Controllers\PanelV1\Admin\GoogleDriveSettingsController::class, 'show'])->name('google-drive.show');
+                Route::post('/google-drive/folder', [\App\Http\Controllers\PanelV1\Admin\GoogleDriveSettingsController::class, 'saveFolder'])->name('google-drive.folder');
+                Route::post('/google-drive/credentials', [\App\Http\Controllers\PanelV1\Admin\GoogleDriveSettingsController::class, 'uploadCredentials'])->name('google-drive.credentials');
 
                 // Settings form pages (panel_v1 rebuild of legacy admin/settings/*)
                 Route::get('/settings/page/general', [\App\Http\Controllers\PanelV1\Admin\SettingsController::class, 'general'])->name('settings.general');

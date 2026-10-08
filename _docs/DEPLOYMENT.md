@@ -335,6 +335,7 @@ npm run optimize:production
 | Admin upload broken (`filemanager is not a function`) | Missing `public/vendor/laravel-filemanager/` | Run `npm run optimize:production` (or full `npm run deploy`) |
 | Lesson video slow to start / seek jumps | MP4 moov atom at end, or gzip on video | New uploads run `VideoFaststart` when `ffmpeg` exists (`FFMPEG_PATH` optional). Ensure `public/store/.htaccess` is deployed (no gzip on mp4; Accept-Ranges) |
 | Course video upload fails (413 / PHP size) | nginx/`client_max_body_size` or PHP still capped | Deploy `public/.user.ini` + root `.htaccess` (100 GB). As root: `bash scripts/hostinger-raise-upload-limits.sh`. App has no curriculum size cap — disk is the limit. |
+| Google Drive curriculum “غير معد” / stream 502 | Missing SA JSON or folder not shared | Set `GOOGLE_DRIVE_FOLDER_ID` + `GOOGLE_DRIVE_CREDENTIALS`; share folder with SA `client_email`; files must stay private (not anyone-with-link) |
 | Language dropdown flags broken (admin, panel, web) | Missing `public/vendor/blade-country-flags/` | Run `npm run optimize:production` (or full `npm run deploy`) |
 | Reset admin password | Need to change `admin@demo.com` credentials | Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`, then run `php artisan qiec:reset-admin-password` (on Hostinger use `PHP_BIN=$(bash scripts/hostinger-php.sh)` first) |
 | `php artisan` fails over SSH | ionCube not in CLI PHP | Use optimize script; delete `bootstrap/cache/config.php` manually if needed |

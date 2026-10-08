@@ -1189,6 +1189,14 @@ class SystemController extends AdminController
                 'url' => route('panel.v1.admin.system.settings.group', ['group' => 'update-app']),
                 'setting_names' => [],
             ],
+            [
+                'key' => 'google-drive',
+                'title' => 'Google Drive',
+                'hint' => 'مجلد فيديوهات المنهج الخاص — افتح Drive والصق معرّف الملف في الدورة',
+                'icon' => 'icon-[tabler--brand-google-drive]',
+                'url' => route('panel.v1.admin.system.google-drive.show'),
+                'setting_names' => [],
+            ],
         ];
     }
 

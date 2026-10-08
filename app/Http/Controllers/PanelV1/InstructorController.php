@@ -1159,18 +1159,97 @@ class InstructorController extends Controller
             return $redirect;
         }
 
-        $request->validate([
+        $delivery = (string) $request->input('delivery', 'local');
+        if (!in_array($delivery, ['local', 'drive'], true)) {
+            $delivery = 'local';
+        }
+
+        $rules = [
             'draft_id' => 'required|integer',
             'chapter_id' => 'required|integer',
             'title' => 'required|string|max:255',
-            'upload' => 'required|file',
-        ], $this->courseWizardMessages(), $this->courseWizardFieldNames());
+            'delivery' => 'nullable|in:local,drive',
+        ];
+        if ($delivery === 'drive') {
+            $rules['drive_url'] = 'required|string|max:2000';
+        } else {
+            $rules['upload'] = 'required|file';
+        }
+
+        $request->validate($rules, $this->courseWizardMessages(), $this->courseWizardFieldNames());
 
         $draft = $this->draftOrFail($user, $request->input('draft_id'));
 
         $chapter = \App\Models\WebinarChapter::where('id', $request->input('chapter_id'))
             ->where('webinar_id', $draft->id)
             ->firstOrFail();
+
+        if ($delivery === 'drive') {
+            $drive = app(\App\Services\GoogleDrive\GoogleDriveClient::class);
+            if (!$drive->isConfigured()) {
+                return $this->curriculumResponse($request, $draft, 'Google Drive غير معد من إعدادات النظام', [], 422);
+            }
+
+            $fileId = \App\Services\GoogleDrive\GoogleDriveClient::extractFileId($request->input('drive_url'));
+            if (!$fileId) {
+                return $this->curriculumResponse($request, $draft, 'رابط أو معرّف ملف Drive غير صالح', [], 422);
+            }
+
+            try {
+                $meta = $drive->getFileMeta($fileId);
+            } catch (\Throwable $e) {
+                return $this->curriculumResponse(
+                    $request,
+                    $draft,
+                    'تعذر التحقق من الملف على Drive. تأكد أن الملف داخل مجلد المنصة ومشارك مع حساب الخدمة.',
+                    [],
+                    422
+                );
+            }
+
+            $mime = (string) ($meta['mimeType'] ?? '');
+            $isVideo = str_starts_with($mime, 'video/') || $mime === 'application/vnd.google-apps.video';
+
+            $file = new \App\Models\File();
+            $file->creator_id = $user->id;
+            $file->webinar_id = $draft->id;
+            $file->chapter_id = $chapter->id;
+            $file->accessibility = 'paid';
+            $file->downloadable = 0;
+            $file->storage = 'google_drive';
+            $file->file = $fileId;
+            $file->volume = (string) ($meta['size'] ?? '');
+            $file->file_type = $isVideo ? 'video' : (explode('/', $mime)[0] ?? 'file');
+            $file->status = 'active';
+            $file->created_at = time();
+            $file->updated_at = time();
+            $file->save();
+
+            $translation = $file->translateOrNew('ar');
+            $translation->locale = 'ar';
+            $translation->title = $request->input('title');
+            $translation->save();
+            if (app()->getLocale() !== 'ar') {
+                $tEn = $file->translateOrNew(app()->getLocale());
+                $tEn->locale = app()->getLocale();
+                $tEn->title = $request->input('title');
+                $tEn->save();
+            }
+
+            return $this->curriculumResponse($request, $draft, 'تمت إضافة فيديو Drive', [
+                'chapter_id' => $chapter->id,
+                'lesson' => [
+                    'kind' => 'file',
+                    'id' => $file->id,
+                    'title' => $request->input('title'),
+                    'duration' => 'فيديو Drive',
+                    'delete_url' => route($this->curriculumRouteNames($user)['files.delete'], ['fileId' => $file->id]),
+                    'view_url' => null,
+                    'preview_kind' => 'video',
+                    'preview_url' => null,
+                ],
+            ]);
+        }
 
         $path = $request->file('upload')->store('webinars/files', 'public');
         $mime = (string) ($request->file('upload')->getMimeType() ?: '');
@@ -1314,14 +1393,18 @@ class InstructorController extends Controller
         ]);
     }
 
-    private function curriculumResponse(Request $request, $draft, string $message, array $payload = [])
+    private function curriculumResponse(Request $request, $draft, string $message, array $payload = [], int $status = 200)
     {
         if ($request->expectsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
             return response()->json(array_merge([
-                'ok' => true,
+                'ok' => $status < 400,
                 'message' => $message,
                 'draft_id' => $draft->id,
-            ], $payload));
+            ], $payload), $status);
+        }
+
+        if ($status >= 400) {
+            return back()->withErrors(['upload' => $message])->withInput();
         }
 
         return $this->backToDraftStep($request, $draft, 2, $message);

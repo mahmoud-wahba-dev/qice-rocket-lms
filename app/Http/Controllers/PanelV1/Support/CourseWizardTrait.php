@@ -216,12 +216,16 @@ trait CourseWizardTrait
                 }
 
                 foreach ($chapter->files as $file) {
-                    $meta = $this->curriculumFilePreviewMeta($file->file ?? null, $file->file_type ?? null);
+                    $meta = $this->curriculumFilePreviewMeta($file->file ?? null, $file->file_type ?? null, $file->storage ?? null);
+                    $duration = 'ملف';
+                    if (($file->storage ?? '') === 'google_drive') {
+                        $duration = 'فيديو Drive';
+                    }
                     $lessons[] = array_merge([
                         'kind' => 'file',
                         'id' => $file->id,
                         'title' => $translatedTitle($file),
-                        'duration' => 'ملف',
+                        'duration' => $duration,
                         'delete_url' => route($routes['files.delete'], ['fileId' => $file->id]),
                     ], $meta);
                 }
@@ -290,8 +294,16 @@ trait CourseWizardTrait
         );
     }
 
-    protected function curriculumFilePreviewMeta(?string $path, ?string $fileType = null): array
+    protected function curriculumFilePreviewMeta(?string $path, ?string $fileType = null, ?string $storage = null): array
     {
+        if ($storage === 'google_drive' || $storage === 'youtube') {
+            return [
+                'view_url' => null,
+                'preview_kind' => 'video',
+                'preview_url' => null,
+            ];
+        }
+
         $url = $this->curriculumFilePublicUrl($path);
         $kind = 'file';
         if (function_exists('panelV1FileKind')) {
