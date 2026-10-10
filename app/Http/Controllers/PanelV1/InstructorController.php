@@ -2143,8 +2143,7 @@ class InstructorController extends Controller
             'created_at' => time(),
         ]);
 
-        $this->syncTranslatedField($assignment, 'title', (string) $data['title']);
-        $this->syncTranslatedField($assignment, 'description', (string) $data['description']);
+        $this->syncAssignmentTranslation($assignment, (string) $data['title'], (string) $data['description']);
 
         $this->storeAssignmentAttachment($request, $user, $webinar, $assignment);
 
@@ -2242,8 +2241,7 @@ class InstructorController extends Controller
         $assignment->status = $data['status'];
         $assignment->save();
 
-        $this->syncTranslatedField($assignment, 'title', (string) $data['title']);
-        $this->syncTranslatedField($assignment, 'description', (string) $data['description']);
+        $this->syncAssignmentTranslation($assignment, (string) $data['title'], (string) $data['description']);
 
         if ($oldChapterId && $oldChapterId !== $chapterId) {
             WebinarChapterItem::changeChapter(
@@ -5957,6 +5955,27 @@ class InstructorController extends Controller
                 }
             }
             $attachment->delete();
+        }
+    }
+
+    /**
+     * Persist assignment translation (title + description together) for ar + en so both fields
+     * are written in one INSERT/UPDATE, avoiding NOT NULL constraint on description.
+     */
+    private function syncAssignmentTranslation(WebinarAssignment $assignment, string $title, string $description): void
+    {
+        $locales = array_values(array_unique(array_filter([
+            'ar',
+            'en',
+            mb_strtolower((string) (app()->getLocale() ?: '')),
+            mb_strtolower((string) (function_exists('getDefaultLocale') ? getDefaultLocale() : 'ar')),
+        ])));
+
+        foreach ($locales as $locale) {
+            WebinarAssignmentTranslation::updateOrCreate(
+                ['webinar_assignment_id' => $assignment->id, 'locale' => $locale],
+                ['title' => $title, 'description' => $description]
+            );
         }
     }
 
