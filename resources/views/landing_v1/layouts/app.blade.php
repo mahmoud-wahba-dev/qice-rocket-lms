@@ -31,6 +31,7 @@
         @include('components.v1.flash')
         @yield('content')
         @include('landing_v1.layouts.footer')
+        @include('landing_v1.components.floating-whatsapp')
     </div>
     @stack('scripts')
 </body>

@@ -131,7 +131,7 @@
 
                         </a>
 
-                        <a href="" class=" size-9 center rounded-full">
+                        <a href="{{ config('landing_v1.whatsapp_url', 'https://api.whatsapp.com/send/?phone=966503976186&text&type=phone_number&app_absent=0') }}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" class="size-9 center rounded-full hover:scale-110 transition-transform">
                             <svg width="24" height="23" viewBox="0 0 24 23" fill="none"
                                 xmlns="http://www.w3.org/2000/svg">
                                 <path
@@ -165,8 +165,8 @@
                         <div class="flex items-center gap-4">
                             <a href="tel:+1234567890" class="font-normal text-17px text-black link link-animated">+1
                                 (234) 567-890</a>
-                            <a href="tel:+966 56 273 0122"
-                                class="font-normal text-17px text-black link link-animated">+966 56 273 0122</a>
+                            <a href="tel:+966503976186"
+                                class="font-normal text-17px text-black link link-animated" dir="ltr">+966 50 397 6186</a>
                         </div>
                     </div>
 

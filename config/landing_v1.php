@@ -40,6 +40,15 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | WhatsApp Contact (Landing V1)
+    |--------------------------------------------------------------------------
+    */
+    'whatsapp_url' => 'https://api.whatsapp.com/send/?phone=966503976186&text&type=phone_number&app_absent=0',
+    'whatsapp_number' => '+966 50 397 6186',
+    'whatsapp_phone' => '966503976186',
+
+    /*
+    |--------------------------------------------------------------------------
     | Footer social links (Landing V1)
     |--------------------------------------------------------------------------
     |
@@ -56,7 +65,7 @@ return [
         [
             'icon' => 'whatsapp',
             'label' => 'WhatsApp',
-            'url' => 'https://wa.me/966562730122',
+            'url' => 'https://api.whatsapp.com/send/?phone=966503976186&text&type=phone_number&app_absent=0',
         ],
         [
             'icon' => 'instagram',

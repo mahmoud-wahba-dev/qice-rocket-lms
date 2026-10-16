@@ -46,7 +46,7 @@
 
                         </a>
 
-                        <a href="https://wa.me/966562730122" target="_blank" rel="noopener noreferrer"
+                        <a href="{{ config('landing_v1.whatsapp_url', 'https://api.whatsapp.com/send/?phone=966503976186&text&type=phone_number&app_absent=0') }}" target="_blank" rel="noopener noreferrer"
                             class="btn btn-outline btn-primary gap-3 h-12 xl:h-16 font-medium text-16px xl:text-20px hover:border-[#25D366] hover:text-[#25D366] transition-colors">
                             تواصل معنا على الواتساب
                             <x-whatsapp-bol-icon class="text-[#25D366] shrink-0" width="22px" height="22px" />
@@ -380,7 +380,7 @@
                         <div class="carousel-body  h-full opacity-0 overflow-visible gap-4 xl:gap-8">
                             @forelse ($paidCourses as $course)
                                 <div class="carousel-slide">
-                                    <x-landing_v1::course-card :title="$course->title" :description="$course->description" :teacherName="$course->teacher->full_name ?? ''"
+                                    <x-landing_v1::course-card :title="$course->title" :description="$course->seo_description ?? ($course->summary ?? $course->description)" :teacherName="$course->teacher->full_name ?? ''"
                                         :teacherAvatar="!empty($course->teacher) ? $course->teacher->getAvatar() : null" :price="$course->price > 0 ? handlePrice($course->price) : 'مجاناً'" :image="$course->image_cover ??
                                             ($course->thumbnail ?? asset('assets/landing_v1/img/home/course.webp'))" :categoryTitle="$course->category->title ?? ''"
                                         :slug="$course->slug" />

@@ -2,7 +2,7 @@
     @forelse ($courses as $course)
         <x-landing_v1::course-card
             :title="$course->title"
-            :description="$course->description"
+            :description="$course->seo_description ?? ($course->summary ?? $course->description)"
             :teacherName="$course->teacher->full_name ?? ''"
             :teacherAvatar="!empty($course->teacher) ? $course->teacher->getAvatar() : null"
             :price="($course->price > 0) ? handlePrice($course->price) : 'مجاناً'"
