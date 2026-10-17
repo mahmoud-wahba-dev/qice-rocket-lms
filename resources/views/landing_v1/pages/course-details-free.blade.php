@@ -21,10 +21,10 @@
         $totalReviewsCount = $totalReviewsCount ?? 0;
         $sessionCount = $course->chapters->sum(fn($chapter) => $chapter->sessions->count());
         $heroDaysLabel = !empty($course->access_days)
-            ? $course->access_days . ' أيام تفاعلية'
+            ? $course->access_days . ' أيام وصول'
             : ($course->chapters->count() > 0
                 ? $course->chapters->count() . ' وحدات تدريبية'
-                : '7 أيام تفاعلية');
+                : '7 أيام وصول');
         $heroHoursLabel = !empty($course->duration)
             ? convertMinutesToHourAndMinute($course->duration) . ' ' . trans('home.hours') . ' تدريبية معتمدة'
             : ($sessionCount > 0
@@ -41,7 +41,7 @@
             <div class="container">
                 <div class="grid grid-cols-1 lg:grid-cols-12 lg:gap-16 gap-8 items-center">
                     <div class="lg:col-span-7">
-                        <p class="font-semibold text-20px text-primary mb-12">دورة مجانية تماماً</p>
+                        <p class="font-semibold text-20px text-primary mb-12">برنامج مجاني تماماً</p>
                         <h1 class="font-bold  xl:text-64px mb-6 text-primary leading-tight xl:w-[90%]">
                             {{ $course->title }}
                         </h1>
@@ -55,11 +55,11 @@
                                 <img src="{{ $courseDetailsImg }}/calendar.webp" alt="calendar" class="size-6 shrink-0">
                                 <span class="font-semibold text-14px text-primary whitespace-nowrap">{{ $heroDaysLabel }}</span>
                             </div>
-                            <div
+                            <!-- <div
                                 class="flex items-center gap-2 px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap">
                                 <img src="{{ $courseDetailsImg }}/clock.webp" alt="clock" class="size-6 shrink-0">
                                 <span class="font-medium text-14px text-primary whitespace-nowrap">{{ $heroHoursLabel }}</span>
-                            </div>
+                            </div> -->
                             <div
                                 class="flex items-center gap-2 px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap">
                                 <img src="{{ $courseDetailsImg }}/waiting-room.webp" alt="waiting-room"
@@ -85,14 +85,14 @@
                                     </button>
                                 </form>
                             @endif
-                            <p class="font-bold text-18px text-primary">الدورة مجانية تماماً</p>
+                            <p class="font-bold text-18px text-primary">البرنامج مجاني تماماً</p>
                         </div>
                     </div>
 
-                    <div class="lg:col-span-5">
+                    <!-- <div class="lg:col-span-5">
                         <x-landing_v1::workshop-card :title="$course->title" :summary="$courseTeaser" :categoryTitle="$course->category->title ?? ''"
                             :slug="$course->slug" buttonUrl="#about-course" />
-                    </div>
+                    </div> -->
                 </div>
             </div>
         </header>
@@ -103,10 +103,10 @@
                     <nav data-scrollspy="#course-content-scrollspy"
                         class="course-scrollspy-nav course-scrollspy-nav--free" style="--scrollspy-offset: 168px">
                         <a href="#about-course" class="course-scrollspy-link" aria-current="false">
-                            نبذة عن الدورة
+                            نبذة عن البرنامج
                         </a>
                         <a href="#course-curriculum" class="course-scrollspy-link" aria-current="false">
-                            محتوى الدورة
+                            محتوى البرنامج
                         </a>
                         @if (!empty($course->teacher))
                             <a href="#course-instructor" class="course-scrollspy-link" aria-current="false">
@@ -133,7 +133,7 @@
 
                     {{-- About --}}
                     <div id="about-course" class="course-scrollspy-section mb-16">
-                        <h3 class="font-medium text-36px text-primary mb-10">نبذة عن الدورة</h3>
+                        <h3 class="font-medium text-36px text-primary mb-10">نبذة عن البرنامج</h3>
                         <div class="border border-primary px-6 lg:px-8 py-8 lg:py-11 rounded-10px bg-white shadow-sm">
                             <p class="font-normal lg:text-24px text-primary leading-relaxed">
                                 {{ $courseAboutText }}
@@ -143,15 +143,14 @@
 
                     {{-- Curriculum --}}
                     <div id="course-curriculum" class="course-scrollspy-section mb-16">
-                        <h3 class="font-medium text-32px lg:text-36px text-primary mb-6">محتوى الدورة</h3>
+                        <h3 class="font-medium text-32px lg:text-36px text-primary mb-6">محتوى البرنامج</h3>
                         <div class="border border-primary px-6 lg:px-8 py-2 lg:py-4 rounded-10px bg-white shadow-sm">
                             @if (!empty($course->description))
                                 <div class="course-description course-description--rich py-5 leading-relaxed">
                                     {!! $course->description !!}
                                 </div>
                             @else
-                                <div class="py-5 font-medium text-18px lg:text-24px text-primary/70">لا يوجد وصف لهذه
-                                    الدورة بعد.</div>
+                                <div class="py-5 font-medium text-18px lg:text-24px text-primary/70">لا يوجد وصف لهذا البرنامج بعد.</div>
                             @endif
                         </div>
                     </div>

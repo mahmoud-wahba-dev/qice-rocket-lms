@@ -10,6 +10,12 @@
                 aria-label="{{ $social['label'] ?? 'Social' }}"
                 class="flex size-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition-all duration-200 hover:border-gold hover:bg-white/20 hover:text-gold">
                 @switch($social['icon'] ?? '')
+                    @case('facebook')
+                        <span class="icon-[tabler--brand-facebook] size-5"></span>
+                        @break
+                    @case('tiktok')
+                        <span class="icon-[tabler--brand-tiktok] size-5"></span>
+                        @break
                     @case('telegram')
                         <span class="icon-[tabler--brand-telegram] size-5"></span>
                         @break

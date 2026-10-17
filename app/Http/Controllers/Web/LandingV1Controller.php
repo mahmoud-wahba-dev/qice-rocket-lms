@@ -403,7 +403,7 @@ class LandingV1Controller extends Controller
         $rating = is_numeric($instructor->rating) ? (float) $instructor->rating : 0;
         $studentsCount = (int) ($instructor->students_count ?? 0);
         $coursesCount = (int) ($instructor->courses_count ?? 0);
-        $aboutText = trim(strip_tags($instructor->about ?? $instructor->bio ?? ''));
+        $aboutText = trim($instructor->about ?? $instructor->bio ?? '');
         $headline = trim((string) ($instructor->headline ?? ''));
 
         $statCards = [];

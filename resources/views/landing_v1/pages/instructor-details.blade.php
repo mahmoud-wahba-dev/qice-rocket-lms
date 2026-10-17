@@ -115,9 +115,9 @@
             <div data-profile-panel="about" class="{{ $defaultTab === 'about' ? '' : 'hidden' }}" role="tabpanel">
                 <div class="rounded-20px border border-[#00000014] bg-white p-5 sm:p-7 shadow-sm">
                     <h2 class="font-bold text-22px sm:text-24px text-primary mb-4 text-start">نبذة عني</h2>
-                    <p class="font-medium text-15px sm:text-16px text-primary/80 leading-relaxed text-start whitespace-pre-line">
-                        {{ $aboutText }}
-                    </p>
+                    <div class="font-medium text-15px sm:text-16px text-primary/80 leading-relaxed text-start prose prose-sm max-w-none [&_p]:mb-3 last:[&_p]:mb-0">
+                        {!! clean($aboutText) !!}
+                    </div>
                 </div>
             </div>
         @endif

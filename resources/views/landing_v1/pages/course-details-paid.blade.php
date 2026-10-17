@@ -106,7 +106,7 @@
                                 <img src="{{ $courseDetailsImg }}/calendar.webp" alt="calendar" class="size-6 shrink-0">
                                 <span
                                     class="font-semibold text-14px text-white whitespace-nowrap">{{ $course->access_days }}
-                                    أيام تفاعلية</span>
+                                    أيام وصول</span>
                             </div>
                         @elseif ($course->chapters->count() > 0)
                             <div
