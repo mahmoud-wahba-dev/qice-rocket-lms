@@ -329,8 +329,8 @@ class EducationController extends AdminController
                     ['label'=>'حزم','value'=>(string)\App\Models\Certificate::where('type','bundle')->count(),'icon'=>'icon-[tabler--package]'],
                 ];
                 $real['certificateTemplates'] = \App\Models\CertificateTemplate::with('translations')->orderBy('id','desc')->limit(10)->get();
-                $real['qiecCertificatePreview'] = asset('assets/panel_v1/img/certificate.jpg');
-                $real['qiecTemplateReady'] = is_file(public_path('assets/panel_v1/img/certificate.jpg'));
+                $real['qiecCertificatePreview'] = asset('assets/panel_v1/img/certificate_new.jpg');
+                $real['qiecTemplateReady'] = is_file(public_path('assets/panel_v1/img/certificate_new.jpg'));
                 $real['stubTitle']=$title;
                 break;
             case 'live':
@@ -419,11 +419,63 @@ class EducationController extends AdminController
                 break;
             case 'attendance':
                 $title='الحضور والغياب';
-                $q = \App\Models\SessionAttendance::with(['session.webinar'])->orderBy('id','desc');
-                if($search !== '') $q->where('id',$search);
-                $real['attendances']=$q->paginate(15)->withQueryString();
-                $real['paginator']=$real['attendances'];
-                $real['stubTitle']=$title;
+                $time = time();
+                $q = \App\Models\Session::query()
+                    ->where('enable_attendance', true)
+                    ->where('status', 'active')
+                    ->where(function ($sq) use ($time) {
+                        $sq->whereHas('agoraHistory', fn ($h) => $h->whereNotNull('end_at'))
+                           ->orWhereRaw('? > ((sessions.duration * 60) + sessions.date)', [$time]);
+                    })
+                    ->with(['webinar', 'attendances', 'creator:id,username,full_name,email,avatar,avatar_settings,role_name'])
+                    ->withCount([
+                        'attendances as present_count' => fn ($sq) => $sq->where('status', 'present'),
+                        'attendances as late_count'    => fn ($sq) => $sq->where('status', 'late'),
+                    ])
+                    ->orderBy('date', 'desc');
+
+                if ($search !== '') {
+                    $q->where(function ($sq) use ($search) {
+                        $sq->where('id', $search)
+                           ->orWhereHas('webinar.translations', fn ($t) => $t->where('title', 'like', "%{$search}%"));
+                    });
+                }
+
+                $sessions = $q->paginate(15)->withQueryString();
+
+                // compute total_students and absent_count per session
+                foreach ($sessions as $session) {
+                    try {
+                        $allIds = $session->webinar ? $session->webinar->getStudentsIds() : [];
+                    } catch (\Throwable $e) {
+                        $allIds = [];
+                    }
+                    $session->total_students = count($allIds);
+                    $absent = $session->total_students - ((int) $session->present_count + (int) $session->late_count);
+                    $session->absent_count = max(0, $absent);
+                }
+
+                // top stats (across ALL filtered sessions for summary)
+                $allSessions = $q->get();
+                $totalStudents  = 0; $totalPresent = 0; $totalLate = 0; $totalAbsent = 0;
+                foreach ($allSessions as $s) {
+                    try { $cnt = $s->webinar ? count($s->webinar->getStudentsIds()) : 0; } catch (\Throwable $e) { $cnt = 0; }
+                    $absent = max(0, $cnt - ((int) $s->present_count + (int) $s->late_count));
+                    $totalStudents += $cnt;
+                    $totalPresent  += (int) $s->present_count;
+                    $totalLate     += (int) $s->late_count;
+                    $totalAbsent   += $absent;
+                }
+
+                $real['attendanceSessions'] = $sessions;
+                $real['paginator']          = $sessions;
+                $real['attendanceStats']    = [
+                    ['label' => 'إجمالي المتدربين', 'value' => $totalStudents, 'icon' => 'icon-[tabler--users]', 'iconBg' => 'bg-[#EFF6FF]', 'iconColor' => 'text-[#2563EB]'],
+                    ['label' => 'حاضر',             'value' => $totalPresent,  'icon' => 'icon-[tabler--check]',  'iconBg' => 'bg-[#D1FAE5]', 'iconColor' => 'text-[#059669]'],
+                    ['label' => 'متأخر',            'value' => $totalLate,     'icon' => 'icon-[tabler--clock]',  'iconBg' => 'bg-[#FEF3C7]', 'iconColor' => 'text-[#D97706]'],
+                    ['label' => 'غائب',             'value' => $totalAbsent,   'icon' => 'icon-[tabler--x]',      'iconBg' => 'bg-[#FEE2E2]', 'iconColor' => 'text-[#DC2626]'],
+                ];
+                $real['stubTitle'] = $title;
                 break;
             case 'filters':
                 $title='الفلاتر'; $q=\App\Models\Filter::with('category')->orderBy('id','desc'); if($search!=='') $q->whereHas('translations',fn($t)=>$t->where('title','like',"%{$search}%")); $real['filters']=$q->paginate(15)->withQueryString(); $real['paginator']=$real['filters']; $real['stubTitle']=$title; break;
@@ -1969,6 +2021,112 @@ class EducationController extends AdminController
     // ===== عام — حذف لكل جداول التعليم المتبقية =====
     public function deleteLive(Request $request,int $id){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; \App\Models\Session::where('id',$id)->delete(); return back()->with('toast',['title'=>'تم','msg'=>'تم حذف الجلسة','type'=>'success']); }
     public function deleteAttendance(Request $request,int $id){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; \App\Models\SessionAttendance::where('id',$id)->delete(); return back()->with('toast',['title'=>'تم','msg'=>'تم حذف الحضور','type'=>'success']); }
+
+    public function attendanceDetails(Request $request, int $sessionId)
+    {
+        $u = $this->resolveAdmin($request);
+        if ($u instanceof \Illuminate\Http\RedirectResponse) return $u;
+
+        $time = time();
+        $session = \App\Models\Session::where('id', $sessionId)
+            ->where('enable_attendance', true)
+            ->where('status', 'active')
+            ->with(['webinar', 'attendances', 'creator:id,username,full_name,email,avatar,avatar_settings,role_name'])
+            ->firstOrFail();
+
+        try {
+            $allStudentsIds = $session->webinar ? $session->webinar->getStudentsIds() : [];
+        } catch (\Throwable $e) {
+            $allStudentsIds = [];
+        }
+
+        $search  = trim((string) $request->input('search', ''));
+        $status  = $request->input('status', '');
+
+        $query = \App\User::query()
+            ->select('users.*', \Illuminate\Support\Facades\DB::raw('session_attendance.joined_at as joined_date'))
+            ->whereIn('users.id', $allStudentsIds ?: [0])
+            ->leftJoin('session_attendance', function ($join) use ($sessionId) {
+                $join->on('session_attendance.student_id', '=', 'users.id')
+                     ->where('session_attendance.session_id', '=', $sessionId);
+            })
+            ->groupBy('users.id');
+
+        if ($search !== '') {
+            $query->where('users.full_name', 'like', "%{$search}%");
+        }
+
+        if ($status === 'present') {
+            $query->whereHas('sessionAttendance', fn ($q) => $q->where('session_id', $sessionId)->where('status', 'present'));
+        } elseif ($status === 'late') {
+            $query->whereHas('sessionAttendance', fn ($q) => $q->where('session_id', $sessionId)->where('status', 'late'));
+        } elseif ($status === 'absent') {
+            $query->whereDoesntHave('sessionAttendance', fn ($q) => $q->where('session_id', $sessionId)->whereIn('status', ['present', 'late']));
+        }
+
+        $query->orderBy('joined_date', 'desc');
+        $students = $query->paginate(15)->withQueryString();
+
+        foreach ($students as $student) {
+            $studentAttendance = $session->attendances->where('student_id', $student->id)->first();
+            $student->attendance = $studentAttendance;
+            $student->joined_at  = $studentAttendance ? $studentAttendance->joined_at : null;
+        }
+
+        $totalPresent = $session->attendances->where('status', 'present')->count();
+        $totalLate    = $session->attendances->where('status', 'late')->count();
+        $totalAll     = count($allStudentsIds);
+        $totalAbsent  = max(0, $totalAll - $totalPresent - $totalLate);
+
+        return $this->renderAdmin($request,
+            'panel_v1.admin.pages.education.attendance-details',
+            'تفاصيل الحضور — ' . ($session->title ?? 'جلسة #' . $sessionId),
+            array_merge(\App\Http\Controllers\PanelV1\Support\AdminMockData::shell('education', 'attendance'), [
+                'session'        => $session,
+                'students'       => $students,
+                'paginator'      => $students,
+                'totalAll'       => $totalAll,
+                'totalPresent'   => $totalPresent,
+                'totalLate'      => $totalLate,
+                'totalAbsent'    => $totalAbsent,
+                'statusFilter'   => $status,
+                'searchQuery'    => $search,
+            ])
+        );
+    }
+
+    public function changeAttendanceStatus(Request $request, int $sessionId, int $studentId, string $status)
+    {
+        $u = $this->resolveAdmin($request);
+        if ($u instanceof \Illuminate\Http\RedirectResponse) return $u;
+
+        if (!in_array($status, ['present', 'absent', 'late'], true)) {
+            abort(422, 'حالة غير صالحة');
+        }
+
+        $session = \App\Models\Session::where('id', $sessionId)
+            ->where('enable_attendance', true)
+            ->where('status', 'active')
+            ->firstOrFail();
+
+        $attendance = \App\Models\SessionAttendance::where('session_id', $sessionId)
+            ->where('student_id', $studentId)
+            ->first();
+
+        if ($attendance) {
+            $attendance->update(['status' => $status, 'edited_at' => time()]);
+        } else {
+            \App\Models\SessionAttendance::create([
+                'session_id' => $sessionId,
+                'student_id' => $studentId,
+                'status'     => $status,
+                'joined_at'  => time(),
+                'edited_at'  => time(),
+            ]);
+        }
+
+        return back()->with('toast', ['title' => 'تم', 'msg' => 'تم تحديث حالة الحضور', 'type' => 'success']);
+    }
 
     // ===== فعاليات — نسخة حرفية من Admin\EventsController (CRUD كامل) =====
     public function createEvent(Request $request)

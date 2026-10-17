@@ -80,7 +80,7 @@ class MakeCertificate
 
     public function qiecTemplateAvailable(): bool
     {
-        return is_file(public_path('assets/panel_v1/img/certificate.jpg'));
+        return is_file(public_path('assets/panel_v1/img/certificate_new.jpg'));
     }
 
     public function buildQiecCertificateData($certificate): array
@@ -238,7 +238,7 @@ class MakeCertificate
             return $pdf->download($fileBase . '.pdf');
         } catch (\Throwable $e) {
             // Fallback: HTML overlay on the same JPG, still one page.
-            $bgPath = public_path('assets/panel_v1/img/certificate.jpg');
+            $bgPath = public_path('assets/panel_v1/img/certificate_new.jpg');
             $html = (string) view('panel_v1.certificates.qiec-template', [
                 'data' => $data,
                 'backgroundUrl' => $this->pathToFileUrl($bgPath),
@@ -255,7 +255,7 @@ class MakeCertificate
      */
     private function composeQiecCertificatePng(array $data): string
     {
-        $bgPath = public_path('assets/panel_v1/img/certificate.jpg');
+        $bgPath = public_path('assets/panel_v1/img/certificate_new.jpg');
         $img = Image::make($bgPath)->resize(1280, 905);
 
         $paper = '#FAF9F4';
@@ -342,61 +342,65 @@ class MakeCertificate
         };
 
         // --- Certificate numbers: wipe placeholder [ QEC-... ] only; keep labels intact ---
-        // EN: "Certificate no.:" stays; value to the right of the colon
-        $fill(175, 276, 165, 30);
-        $write($bracket($num), 270, 284, 13, 'center', false);
-        // AR: keep full "رقم الشهادة:" on the right; wipe leftover template brackets
-        $fill(985, 276, 130, 30);
-        $write($bracket($num), 1050, 284, 13, 'center', false);
+        $fill(140, 272, 210, 32);
+        $write($bracket($num), 245, 280, 13, 'center', false);
+        $fill(960, 272, 210, 32);
+        $write($bracket($num), 1065, 280, 13, 'center', false);
 
         // --- Trainee names: fully erase [ TRAINER FULL NAME ] placeholder, name only ---
-        $fill(70, 408, 470, 60);
-        $fill(755, 408, 472, 60);
-        $write($nameEn, 303, 438, 20, 'center');
-        $write($nameAr, 991, 438, 20, 'center', true);
+        $fill(65, 405, 480, 65);
+        $fill(748, 405, 480, 65);
+        $write($nameEn, 305, 435, 20, 'center', false);
+        $write($nameAr, 988, 435, 20, 'center', true);
 
         // --- Course titles ---
-        $fill(70, 508, 470, 55);
-        $fill(755, 508, 472, 55);
-        $write($courseEn, 303, 530, 17, 'center');
-        $write($courseAr, 991, 530, 17, 'center', true);
+        $fill(65, 505, 480, 58);
+        $fill(748, 505, 480, 58);
+        $write($courseEn, 305, 527, 17, 'center', false);
+        $write($courseAr, 988, 527, 17, 'center', true);
 
-        // --- Meta EN: clean brackets ---
-        $fill(70, 585, 300, 26);
-        $write('Duration: ' . $bracket($hours) . ' training hours', 70, 590, 13, 'left', false);
+        // ── Meta rows: erase full row then write label + value ──────────────────
+        // EN side (left)
+        $fill(65, 582, 440, 28);
+        $write('Duration: ' . $bracket($hours) . ' training hrs', 68, 587, 12, 'left', false);
 
-        $fill(70, 615, 430, 26);
-        $write('Course dates: ' . $bracket($start) . ' - ' . $bracket($end), 70, 620, 12, 'left', false);
+        $fill(65, 612, 440, 28);
+        $write('Course dates: ' . $bracket($start) . ' - ' . $bracket($end), 68, 617, 12, 'left', false);
 
-        $fill(70, 645, 300, 26);
-        $write('Issue date: ' . $bracket($issue), 70, 650, 12, 'left', false);
+        $fill(65, 642, 440, 28);
+        $write('Issue date: ' . $bracket($issue), 68, 647, 12, 'left', false);
 
-        $fill(70, 675, 380, 26);
-        $write('Accreditation Number: ' . $bracket($acc), 70, 680, 12, 'left', false);
+        $fill(65, 672, 440, 28);
+        $write('Accreditation No.: ' . $bracket($acc), 68, 677, 12, 'left', false);
 
-        // --- Meta AR: Arabic label (RTL) + Latin value (LTR) so brackets stay correct ---
-        $fill(900, 585, 330, 26);
-        $write('عدد الساعات التدريبية:', 1230, 590, 13, 'right', true);
-        $write($bracket($hours), 1095, 590, 13, 'right', false);
-        $write('ساعة', 1045, 590, 13, 'right', true);
+        // AR side (right) — label RTL, value LTR
+        $fill(778, 582, 440, 28);
+        $write('عدد الساعات:', 1215, 587, 12, 'right', true);
+        $write($bracket($hours) . ' ساعة', 1170, 587, 12, 'right', false);
 
-        $fill(850, 615, 380, 26);
-        $write('فترة الدورة:', 1230, 620, 12, 'right', true);
-        $write($bracket($start) . ' - ' . $bracket($end), 1100, 620, 12, 'right', false);
+        $fill(778, 612, 440, 28);
+        $write('فترة الدورة:', 1215, 617, 12, 'right', true);
+        $write($bracket($start) . ' - ' . $bracket($end), 1140, 617, 12, 'right', false);
 
-        $fill(900, 645, 330, 26);
-        $write('تاريخ الإصدار:', 1230, 650, 12, 'right', true);
-        $write($bracket($issue), 1105, 650, 12, 'right', false);
+        $fill(778, 642, 440, 28);
+        $write('تاريخ الإصدار:', 1215, 647, 12, 'right', true);
+        $write($bracket($issue), 1140, 647, 12, 'right', false);
 
-        $fill(900, 675, 330, 26);
-        $write('رقم الاعتماد:', 1230, 680, 12, 'right', true);
-        $write($bracket($acc), 1105, 680, 12, 'right', false);
+        $fill(778, 672, 440, 28);
+        $write('رقم الاعتماد:', 1215, 677, 12, 'right', true);
+        $write($bracket($acc), 1140, 677, 12, 'right', false);
 
-        // --- Signatures: erase [ Name ] / [ الاسم ]; write real name only ---
-        $fill(71, 820, 249, 42);
-        $fill(960, 820, 248, 42);
-        $write($officer, 195, 830, 14, 'center');
-        $write($director, 1084, 830, 14, 'center');
+        // ── Signature labels + names ─────────────────────────────────────────────
+        // Officer (EN left) — label line + name line
+        $fill(60, 800, 280, 68);
+        $write('Training & Accreditation', 200, 804, 10, 'center', false);
+        $write('Officer', 200, 818, 10, 'center', false);
+        $write($officer ?: 'مسؤول التدريب والاعتماد', 200, 836, 13, 'center', false);
+
+        // Director (AR right) — label line + name line
+        $fill(960, 800, 280, 68);
+        $write('مدير المركز', 1100, 804, 12, 'center', true);
+        $write($director ?: 'مدير المركز', 1100, 824, 13, 'center', false);
 
         // QR bottom-left (validation)
         try {

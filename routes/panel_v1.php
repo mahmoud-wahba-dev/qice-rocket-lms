@@ -454,6 +454,8 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 Route::post('/events/{id}/speakers', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'storeEventSpeaker'])->name('events.speakers.store');
                 Route::post('/events/speakers/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'deleteEventSpeaker'])->name('events.speakers.delete');
                 Route::post('/attendances/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'deleteAttendance'])->name('attendances.delete');
+                Route::get('/attendances/{sessionId}/details', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'attendanceDetails'])->name('attendances.details');
+                Route::post('/attendances/{sessionId}/details/{studentId}/status/{status}', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'changeAttendanceStatus'])->name('attendances.status');
                 // Quiz Results (Admin)
                 Route::get('/quizzes/{quizId}/results', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'quizResults'])->name('quiz-results');
                 Route::get('/quizzes/{quizId}/results/{resultId}/review', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'quizResultReview'])->name('quiz-results.review');

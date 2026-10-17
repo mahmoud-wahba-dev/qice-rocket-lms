@@ -153,7 +153,7 @@
         <div class="border border-d9 rounded-14px bg-white overflow-hidden mb-4">
             <div class="grid grid-cols-1 lg:grid-cols-5 gap-0">
                 <div class="lg:col-span-2 bg-[#0F3D36] p-5 flex items-center justify-center">
-                    <img src="{{ $qiecCertificatePreview ?? asset('assets/panel_v1/img/certificate.jpg') }}"
+                    <img src="{{ $qiecCertificatePreview ?? asset('assets/panel_v1/img/certificate_new.jpg') }}"
                         alt="قالب شهادة QIEC"
                         class="w-full max-w-md rounded-10px border border-white/20 shadow-lg">
                 </div>
@@ -469,9 +469,77 @@
         </div>
     @endif
 
-    @if (!empty($attendances))
+    @if (!empty($attendanceSessions))
+        {{-- Top stats --}}
+        @if (!empty($attendanceStats))
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                @foreach ($attendanceStats as $stat)
+                    <div class="border border-d9 rounded-14px bg-white p-4 flex items-center justify-between gap-3 shadow-sm">
+                        <div>
+                            <p class="font-bold text-22px text-primary leading-none mb-1">{{ $stat['value'] }}</p>
+                            <p class="font-medium text-12px text-gray">{{ $stat['label'] }}</p>
+                        </div>
+                        <span class="size-11 rounded-full center shrink-0 {{ $stat['iconBg'] }}">
+                            <span class="{{ $stat['icon'] }} size-5 {{ $stat['iconColor'] }}"></span>
+                        </span>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+
         <div class="border border-d9 rounded-14px bg-white overflow-hidden">
-            <table class="table w-full text-14px"><thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الجلسة</th><th class="px-4 py-3">الطالب</th><th class="px-4 py-3">الحالة</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead><tbody>@foreach($attendances as $a)<tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $a->session->title ?? 'جلسة #'.$a->session_id }}</td><td class="px-4 py-3 text-center">{{ $a->student->full_name ?? '' }}</td><td class="px-4 py-3 text-center">{{ $a->status }}</td><td class="px-4 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'edu-att-'.$a->id, 'items' => [['label' => 'حذف', 'action' => route('panel.v1.admin.education.attendances.delete',['id'=>$a->id]), 'confirm' => 'حذف؟', 'tone' => 'danger']]])</td></tr>@endforeach</tbody></table>
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex items-center justify-between flex-wrap gap-3">
+                <h2 class="font-bold text-16px text-primary">سجل الحضور — {{ $attendanceSessions->total() }} جلسة</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table w-full text-14px">
+                    <thead>
+                        <tr class="bg-fa border-b border-d9 text-gray">
+                            <th class="px-4 py-3 text-start">الجلسة / الدورة</th>
+                            <th class="px-4 py-3 text-start">المدرب</th>
+                            <th class="px-4 py-3 text-center">تاريخ البدء</th>
+                            <th class="px-4 py-3 text-center">إجمالي</th>
+                            <th class="px-4 py-3 text-center">حاضر</th>
+                            <th class="px-4 py-3 text-center">متأخر</th>
+                            <th class="px-4 py-3 text-center">غائب</th>
+                            <th class="px-4 py-3 text-center">إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($attendanceSessions as $sess)
+                            <tr class="border-b border-d9 last:border-0 hover:bg-[#FAFAF4] transition-colors">
+                                <td class="px-4 py-3">
+                                    <p class="font-bold text-14px text-primary leading-snug">{{ $sess->title ?? 'جلسة #'.$sess->id }}</p>
+                                    <p class="font-medium text-12px text-gray truncate max-w-[18rem]">{{ $sess->webinar->title ?? '—' }}</p>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <p class="font-medium text-13px text-primary">{{ $sess->creator->full_name ?? '—' }}</p>
+                                </td>
+                                <td class="px-4 py-3 text-center font-medium text-13px text-gray whitespace-nowrap">
+                                    {{ !empty($sess->date) ? date('Y/m/d H:i', (int) $sess->date) : '—' }}
+                                </td>
+                                <td class="px-4 py-3 text-center font-bold text-primary">{{ $sess->total_students }}</td>
+                                <td class="px-4 py-3 text-center">
+                                    <span class="inline-flex rounded-full px-2.5 py-1 font-semibold text-11px bg-[#D1FAE5] text-[#059669]">{{ $sess->present_count }}</span>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <span class="inline-flex rounded-full px-2.5 py-1 font-semibold text-11px bg-[#FEF3C7] text-[#D97706]">{{ $sess->late_count }}</span>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <span class="inline-flex rounded-full px-2.5 py-1 font-semibold text-11px bg-[#FEE2E2] text-[#DC2626]">{{ $sess->absent_count }}</span>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <a href="{{ route('panel.v1.admin.education.attendances.details', ['sessionId' => $sess->id]) }}"
+                                       class="inline-flex items-center gap-1.5 h-9 px-4 rounded-10px bg-primary text-white font-semibold text-12px hover:opacity-90 transition">
+                                        <span class="icon-[tabler--list-details] size-4"></span>
+                                        التفاصيل
+                                    </a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         </div>
     @endif
 
@@ -654,7 +722,7 @@
         </div>
     @endif
 
-    @if (!empty($stats) && empty($courses) && empty($bundles) && empty($assignments) && empty($quizzes) && empty($certificates) && empty($lives) && empty($events) && empty($reviews) && empty($courseReviews) && empty($departments) && empty($attendances) && empty($filters) && empty($trends) && empty($sales) && empty($upcomingCourses) && empty($waitlists) && empty($waitlistItems) && empty($noticeboards) && empty($quizzesResults) && empty($relatedCourses))
+    @if (!empty($stats) && empty($courses) && empty($bundles) && empty($assignments) && empty($quizzes) && empty($certificates) && empty($lives) && empty($events) && empty($reviews) && empty($courseReviews) && empty($departments) && empty($attendanceSessions) && empty($filters) && empty($trends) && empty($sales) && empty($upcomingCourses) && empty($waitlists) && empty($waitlistItems) && empty($noticeboards) && empty($quizzesResults) && empty($relatedCourses))
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach($stats as $st)
                 <div class="border border-d9 rounded-14px bg-white p-6 text-center">
@@ -665,7 +733,7 @@
         </div>
     @endif
 
-    @if (empty($courses) && empty($bundles) && empty($assignments) && empty($quizzes) && empty($certificates) && empty($lives) && empty($events) && empty($reviews) && empty($courseReviews) && empty($departments) && empty($attendances) && empty($filters) && empty($trends) && empty($sales) && empty($upcomingCourses) && empty($waitlists) && empty($waitlistItems) && empty($noticeboards) && empty($quizzesResults) && empty($relatedCourses) && empty($stats))
+    @if (empty($courses) && empty($bundles) && empty($assignments) && empty($quizzes) && empty($certificates) && empty($lives) && empty($events) && empty($reviews) && empty($courseReviews) && empty($departments) && empty($attendanceSessions) && empty($filters) && empty($trends) && empty($sales) && empty($upcomingCourses) && empty($waitlists) && empty($waitlistItems) && empty($noticeboards) && empty($quizzesResults) && empty($relatedCourses) && empty($stats))
         @include('panel_v1.admin.components.empty-stub')
     @endif
 

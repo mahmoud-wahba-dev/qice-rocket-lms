@@ -1166,6 +1166,30 @@ class CoursePlayerController extends Controller
                 ->with('toast', ['title' => 'تنبيه', 'msg' => 'لا توجد أسئلة في هذا الاختبار بعد', 'type' => 'error']);
         }
 
+        // ── Timer: record start time on first visit, enforce on subsequent visits ──
+        $timeLimitSeconds = !empty($quiz->time) ? (int) $quiz->time * 60 : 0;
+        $startKey = $this->quizStartTimeKey($quiz->id);
+        $startedAt = session()->get($startKey);
+
+        if ($timeLimitSeconds > 0) {
+            if (empty($startedAt)) {
+                // First time entering the quiz — record now
+                $startedAt = time();
+                session()->put($startKey, $startedAt);
+            } else {
+                // Already started — check if time expired server-side
+                $elapsed = time() - (int) $startedAt;
+                if ($elapsed >= $timeLimitSeconds) {
+                    // Time's up — auto-finish with whatever answers were saved
+                    return $this->finishQuiz($user, $quiz, $slug, true);
+                }
+            }
+        }
+
+        $deadlineTs = ($timeLimitSeconds > 0 && $startedAt)
+            ? ((int) $startedAt + $timeLimitSeconds)
+            : 0;
+
         $index = max(1, min($questions->count(), (int) $request->get('q', 1)));
         $question = $questions[$index - 1];
         $saved = session()->get($this->quizSessionKey($quiz->id), []);
@@ -1178,20 +1202,23 @@ class CoursePlayerController extends Controller
             'webinar' => $webinar,
             'courseTitle' => $webinar->title,
             'quizTake' => [
-                'quiz_id' => $quiz->id,
-                'question_id' => $question->id,
-                'quiz_title' => $quiz->title,
-                'current' => $index,
-                'total' => $questions->count(),
-                'question_title' => $question->title,
-                'instruction' => $question->type === 'descriptive' ? 'اكتب إجابتك في المساحة المخصصة' : 'اختر الإجابة الصحيحة',
-                'is_descriptive' => $question->type === 'descriptive',
-                'is_last' => $index >= $questions->count(),
-                'saved_option' => $saved[$question->id]['answer'] ?? null,
-                'saved_text' => $saved[$question->id]['text'] ?? null,
-                'options' => $question->quizzesQuestionsAnswers->map(function ($answer) {
+                'quiz_id'          => $quiz->id,
+                'question_id'      => $question->id,
+                'quiz_title'       => $quiz->title,
+                'current'          => $index,
+                'total'            => $questions->count(),
+                'question_title'   => $question->title,
+                'instruction'      => $question->type === 'descriptive' ? 'اكتب إجابتك في المساحة المخصصة' : 'اختر الإجابة الصحيحة',
+                'is_descriptive'   => $question->type === 'descriptive',
+                'is_last'          => $index >= $questions->count(),
+                'saved_option'     => $saved[$question->id]['answer'] ?? null,
+                'saved_text'       => $saved[$question->id]['text'] ?? null,
+                'options'          => $question->quizzesQuestionsAnswers->map(function ($answer) {
                     return ['id' => $answer->id, 'text' => $answer->title];
                 })->all(),
+                // Timer data (0 = no limit)
+                'time_limit_seconds' => $timeLimitSeconds,
+                'deadline_ts'        => $deadlineTs,
             ],
         ]));
     }
@@ -1211,6 +1238,15 @@ class CoursePlayerController extends Controller
             'question_id' => 'required|integer',
             'q' => 'required|integer|min:1',
         ]);
+
+        // ── Server-side timer guard ──
+        $timeLimitSeconds = !empty($quiz->time) ? (int) $quiz->time * 60 : 0;
+        if ($timeLimitSeconds > 0) {
+            $startedAt = session()->get($this->quizStartTimeKey($quiz->id));
+            if (!empty($startedAt) && (time() - (int) $startedAt) >= $timeLimitSeconds) {
+                return $this->finishQuiz($user, $quiz, $slug, true);
+            }
+        }
 
         if ((int) $request->input('quiz_id') !== (int) $quiz->id) {
             return redirect()
@@ -1257,7 +1293,7 @@ class CoursePlayerController extends Controller
         return redirect()->route('panel.v1.student.course.quiz.take', ['slug' => $slug, 'quiz' => $quiz->id, 'q' => $current + 1]);
     }
 
-    private function finishQuiz($user, $quiz, string $slug)
+    private function finishQuiz($user, $quiz, string $slug, bool $timedOut = false)
     {
         $answers = session()->get($this->quizSessionKey($quiz->id), []);
         $questions = QuizzesQuestion::where('quiz_id', $quiz->id)->get();
@@ -1299,12 +1335,16 @@ class CoursePlayerController extends Controller
         }
 
         QuizzesResult::create([
-            'quiz_id' => $quiz->id,
-            'user_id' => $user->id,
-            'results' => json_encode($results),
+            'quiz_id'    => $quiz->id,
+            'user_id'    => $user->id,
+            'results'    => json_encode($results),
             'user_grade' => max(0, $totalMark),
-            'status' => $status,
+            'status'     => $status,
             'created_at' => time(),
+            'start_time' => session()->get($this->quizStartTimeKey($quiz->id)) ?: null,
+            'time_spent' => session()->has($this->quizStartTimeKey($quiz->id))
+                ? max(0, time() - (int) session()->get($this->quizStartTimeKey($quiz->id)))
+                : null,
         ]);
 
         $result = QuizzesResult::where('quiz_id', $quiz->id)
@@ -1328,19 +1368,29 @@ class CoursePlayerController extends Controller
         }
 
         session()->forget($this->quizSessionKey($quiz->id));
+        session()->forget($this->quizStartTimeKey($quiz->id));
+
+        $toastMsg = $timedOut
+            ? 'انتهى وقت الاختبار — تم إرسال إجاباتك تلقائياً'
+            : ($status === 'waiting' ? 'تم إرسال إجاباتك وهي بانتظار التصحيح' : ('درجتك: ' . max(0, $totalMark)));
 
         return redirect()
             ->route('panel.v1.student.course.quiz', ['slug' => $slug, 'quiz' => $quiz->id])
             ->with('toast', [
-                'title' => $status === 'passed' ? 'أحسنت!' : 'تم',
-                'msg' => $status === 'waiting' ? 'تم إرسال إجاباتك وهي بانتظار التصحيح' : ('درجتك: ' . max(0, $totalMark)),
-                'type' => $status === 'failed' ? 'error' : 'success',
+                'title' => $timedOut ? 'انتهى الوقت' : ($status === 'passed' ? 'أحسنت!' : 'تم'),
+                'msg'   => $toastMsg,
+                'type'  => ($timedOut || $status === 'failed') ? 'error' : 'success',
             ]);
     }
 
     private function quizSessionKey(int $quizId): string
     {
         return 'v1_quiz_answers_' . $quizId;
+    }
+
+    private function quizStartTimeKey(int $quizId): string
+    {
+        return 'v1_quiz_started_at_' . $quizId;
     }
 
     /**

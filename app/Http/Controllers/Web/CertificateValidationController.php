@@ -49,7 +49,7 @@ class CertificateValidationController extends Controller
             'prefilledId' => $prefilledId,
             'prefilledResult' => $prefilledResult,
             'autoChecked' => $autoChecked,
-            'sampleCertificateUrl' => asset('assets/panel_v1/img/certificate.jpg'),
+            'sampleCertificateUrl' => asset('assets/panel_v1/img/certificate_new.jpg'),
         ];
 
         if (view()->exists('landing_v1.pages.certificate-validation')) {

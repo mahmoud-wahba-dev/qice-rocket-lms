@@ -12,7 +12,7 @@
         'subtitle' => ($quiz->title ?? 'اختبار').' — '.($quizResult->user->full_name ?? ''),
     ])
 
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
         <div class="border border-d9 rounded-14px bg-white p-4 text-center">
             <p class="font-bold text-20px text-primary leading-none mb-1">{{ $quizResult->user_grade ?? 0 }}/{{ $questionsSumGrade ?? 0 }}</p>
             <p class="font-semibold text-12px text-gray">الدرجة</p>
@@ -28,6 +28,16 @@
         <div class="border border-d9 rounded-14px bg-white p-4 text-center">
             <p class="font-bold text-14px text-primary leading-none mb-1">{{ !empty($quizResult->created_at) ? date('Y/m/d', (int)$quizResult->created_at) : '—' }}</p>
             <p class="font-semibold text-12px text-gray mt-1">التاريخ</p>
+        </div>
+        <div class="border border-d9 rounded-14px bg-white p-4 text-center">
+            @php
+                $ts = $quizResult->time_spent ?? null;
+                $tsLabel = $ts !== null
+                    ? (floor($ts / 60) . ':' . str_pad($ts % 60, 2, '0', STR_PAD_LEFT) . ' دقيقة')
+                    : '—';
+            @endphp
+            <p class="font-bold text-14px text-primary leading-none mb-1">{{ $tsLabel }}</p>
+            <p class="font-semibold text-12px text-gray mt-1">الوقت المستغرق</p>
         </div>
     </div>
 
