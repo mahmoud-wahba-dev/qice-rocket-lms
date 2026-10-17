@@ -38,71 +38,72 @@
     $nameAr   = $d['trainee_name_ar']  ?? '';
     $courseEn = $d['course_title_en']  ?? '';
     $courseAr = $d['course_title_ar']  ?? '';
+    $accByEn  = $d['accredited_by_en'] ?? 'Quality & Excellence Center';
+    $accByAr  = $d['accredited_by_ar'] ?? 'مركز الجودة والتميز';
 @endphp
 <div class="sheet">
     <img class="sheet-bg" src="{{ $backgroundUrl }}" width="1280" height="905" alt="">
 
     {{-- ── Certificate numbers ── --}}
-    <div class="mask" style="left:140px;top:272px;width:210px;height:32px;"></div>
-    <div class="field cen" style="left:140px;top:280px;width:210px;font-size:13px;">[ {{ $num }} ]</div>
+    <div class="mask" style="left:186px;top:280px;width:140px;height:24px;"></div>
+    <div class="field en" style="left:188px;top:284px;width:140px;font-size:12px;">[ {{ $num }} ]</div>
 
-    <div class="mask" style="left:960px;top:272px;width:210px;height:32px;"></div>
-    <div class="field cen" style="left:960px;top:280px;width:210px;font-size:13px;">[ {{ $num }} ]</div>
+    <div class="mask" style="left:988px;top:278px;width:124px;height:24px;"></div>
+    <div class="field en" style="left:988px;top:284px;width:120px;text-align:right;font-size:12px;">[ {{ $num }} ]</div>
 
     {{-- ── Trainee names ── --}}
-    <div class="mask" style="left:65px;top:405px;width:480px;height:65px;"></div>
-    <div class="field cen" style="left:65px;top:435px;width:480px;font-size:20px;">{{ $nameEn }}</div>
+    <div class="mask" style="left:70px;top:424px;width:480px;height:38px;"></div>
+    <div class="field en" style="left:74px;top:430px;width:480px;font-size:20px;text-transform:uppercase;">{{ $nameEn }}</div>
 
-    <div class="mask" style="left:748px;top:405px;width:480px;height:65px;"></div>
-    <div class="field car" style="left:748px;top:435px;width:480px;font-size:20px;">{{ $nameAr }}</div>
+    <div class="mask" style="left:730px;top:420px;width:500px;height:40px;"></div>
+    <div class="field ar" style="left:730px;top:426px;width:490px;font-size:20px;">{{ $nameAr }}</div>
 
     {{-- ── Course titles ── --}}
-    <div class="mask" style="left:65px;top:505px;width:480px;height:58px;"></div>
-    <div class="field cen" style="left:65px;top:527px;width:480px;font-size:17px;">{{ $courseEn }}</div>
+    <div class="mask" style="left:70px;top:520px;width:480px;height:34px;"></div>
+    <div class="field en" style="left:74px;top:524px;width:480px;font-size:16px;">{{ $courseEn }}</div>
 
-    <div class="mask" style="left:748px;top:505px;width:480px;height:58px;"></div>
-    <div class="field car" style="left:748px;top:527px;width:480px;font-size:17px;">{{ $courseAr }}</div>
+    <div class="mask" style="left:730px;top:518px;width:500px;height:36px;"></div>
+    <div class="field ar" style="left:730px;top:522px;width:490px;font-size:16px;">{{ $courseAr }}</div>
 
     {{-- ── Meta rows — EN left ── --}}
-    <div class="mask" style="left:65px;top:582px;width:440px;height:28px;"></div>
-    <div class="field en" style="left:68px;top:587px;width:440px;font-size:12px;">Duration: [ {{ $hours }} ] training hrs</div>
+    <div class="mask" style="left:147px;top:590px;width:53px;height:18px;"></div>
+    <div class="field en" style="left:149px;top:592px;width:60px;font-size:11px;font-weight:normal;">[ {{ $hours }} ]</div>
 
-    <div class="mask" style="left:65px;top:612px;width:440px;height:28px;"></div>
-    <div class="field en" style="left:68px;top:617px;width:440px;font-size:12px;">Course dates: [ {{ $start }} ] - [ {{ $end }} ]</div>
+    <div class="mask" style="left:180px;top:620px;width:270px;height:18px;"></div>
+    <div class="field en" style="left:182px;top:622px;width:270px;font-size:11px;font-weight:normal;">[ {{ $start }} ] – [ {{ $end }} ]</div>
 
-    <div class="mask" style="left:65px;top:642px;width:440px;height:28px;"></div>
-    <div class="field en" style="left:68px;top:647px;width:440px;font-size:12px;">Issue date: [ {{ $issue }} ]</div>
+    <div class="mask" style="left:156px;top:652px;width:130px;height:18px;"></div>
+    <div class="field en" style="left:158px;top:654px;width:130px;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
 
-    <div class="mask" style="left:65px;top:672px;width:440px;height:28px;"></div>
-    <div class="field en" style="left:68px;top:677px;width:440px;font-size:12px;">Accreditation No.: [ {{ $acc }} ]</div>
+    <div class="mask" style="left:250px;top:684px;width:130px;height:18px;"></div>
+    <div class="field en" style="left:252px;top:686px;width:130px;font-size:11px;font-weight:normal;">[ {{ $accByEn }} ]</div>
+
+    <div class="mask" style="left:250px;top:716px;width:130px;height:18px;"></div>
+    <div class="field en" style="left:252px;top:718px;width:130px;font-size:11px;font-weight:normal;">[ {{ $acc }} ]</div>
 
     {{-- ── Meta rows — AR right ── --}}
-    <div class="mask" style="left:778px;top:582px;width:440px;height:28px;"></div>
-    <div class="field ar" style="left:778px;top:587px;width:440px;font-size:12px;">عدد الساعات: [ {{ $hours }} ] ساعة</div>
+    <div class="mask" style="left:1006px;top:588px;width:52px;height:20px;"></div>
+    <div class="field en" style="left:1006px;top:590px;width:50px;text-align:right;font-size:11px;font-weight:normal;">[ {{ $hours }} ]</div>
 
-    <div class="mask" style="left:778px;top:612px;width:440px;height:28px;"></div>
-    <div class="field ar" style="left:778px;top:617px;width:440px;font-size:12px;">فترة الدورة: [ {{ $start }} ] - [ {{ $end }} ]</div>
+    <div class="mask" style="left:900px;top:620px;width:237px;height:18px;"></div>
+    <div class="field en" style="left:900px;top:622px;width:230px;text-align:right;font-size:11px;font-weight:normal;">[ {{ $start }} ] - [ {{ $end }} ]</div>
 
-    <div class="mask" style="left:778px;top:642px;width:440px;height:28px;"></div>
-    <div class="field ar" style="left:778px;top:647px;width:440px;font-size:12px;">تاريخ الإصدار: [ {{ $issue }} ]</div>
+    <div class="mask" style="left:1008px;top:652px;width:118px;height:18px;"></div>
+    <div class="field en" style="left:1008px;top:654px;width:114px;text-align:right;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
 
-    <div class="mask" style="left:778px;top:672px;width:440px;height:28px;"></div>
-    <div class="field ar" style="left:778px;top:677px;width:440px;font-size:12px;">رقم الاعتماد: [ {{ $acc }} ]</div>
+    <div class="mask" style="left:1012px;top:684px;width:75px;height:18px;"></div>
+    <div class="field en" style="left:1012px;top:686px;width:72px;text-align:right;font-size:11px;font-weight:normal;">[ {{ $accByAr }} ]</div>
 
-    {{-- ── Signature area — Officer (left) ── --}}
-    <div class="mask" style="left:60px;top:800px;width:280px;height:68px;"></div>
-    <div class="field cen" style="left:60px;top:804px;width:280px;font-size:10px;">Training &amp; Accreditation Officer</div>
-    <div class="field cen" style="left:60px;top:836px;width:280px;font-size:13px;">{{ $officer }}</div>
+    <div class="mask" style="left:1012px;top:716px;width:112px;height:18px;"></div>
+    <div class="field en" style="left:1012px;top:718px;width:108px;text-align:right;font-size:11px;font-weight:normal;">[ {{ $acc }} ]</div>
 
-    {{-- ── Signature area — Director (right) ── --}}
-    <div class="mask" style="left:960px;top:800px;width:280px;height:68px;"></div>
-    <div class="field car" style="left:960px;top:804px;width:280px;font-size:12px;">مدير المركز</div>
-    <div class="field cen" style="left:960px;top:824px;width:280px;font-size:13px;">{{ $director }}</div>
+    {{-- ── Signature area (placeholders only) ── --}}
+    <div class="mask" style="left:80px;top:846px;width:240px;height:20px;"></div>
+    <div class="field cen" style="left:80px;top:846px;width:240px;font-size:13px;">{{ $officer }}</div>
 
-    {{-- ── QR code ── --}}
-    @if (!empty($d['qr_html']))
-        <div class="qr">{!! $d['qr_html'] !!}</div>
-    @endif
+    <div class="mask" style="left:980px;top:846px;width:240px;height:20px;"></div>
+    <div class="field car" style="left:980px;top:846px;width:240px;font-size:13px;">{{ $director }}</div>
 </div>
+
 </body>
 </html>

@@ -156,6 +156,8 @@ class MakeCertificate
         $defaultOfficer = (string) ($cachedDefaults['officer_name'] ?? $settings['officer_name'] ?? $settings['certificate_officer_name'] ?? 'مسؤول التدريب والاعتماد');
         $defaultDirector = (string) ($cachedDefaults['director_name'] ?? $settings['director_name'] ?? $settings['certificate_director_name'] ?? 'مدير المركز');
         $defaultAcc = (string) ($cachedDefaults['accreditation_number'] ?? $settings['accreditation_number'] ?? $settings['certificate_accreditation'] ?? 'QIEC-ACC-001');
+        $defaultAccreditedByAr = (string) ($cachedDefaults['accredited_by_ar'] ?? $settings['accredited_by_ar'] ?? 'مركز الجودة والتميز');
+        $defaultAccreditedByEn = (string) ($cachedDefaults['accredited_by_en'] ?? $settings['accredited_by_en'] ?? 'Quality & Excellence Center');
 
         $data = [
             'certificate_number' => self::formatCertificateNumber((int) $certificate->id),
@@ -170,6 +172,8 @@ class MakeCertificate
             'end_date' => $endDate,
             'issue_date' => $issueDate,
             'accreditation_number' => $defaultAcc,
+            'accredited_by_ar' => $defaultAccreditedByAr,
+            'accredited_by_en' => $defaultAccreditedByEn,
             'officer_name' => $defaultOfficer,
             'director_name' => $defaultDirector,
             'certificate_id' => (int) $certificate->id,
@@ -180,7 +184,7 @@ class MakeCertificate
         foreach ([
             'trainee_name_ar', 'trainee_name_en', 'course_title_ar', 'course_title_en',
             'hours', 'start_date', 'end_date', 'issue_date',
-            'accreditation_number', 'officer_name', 'director_name',
+            'accreditation_number', 'accredited_by_ar', 'accredited_by_en', 'officer_name', 'director_name',
         ] as $key) {
             if (isset($meta[$key]) && trim((string) $meta[$key]) !== '') {
                 $data[$key] = is_numeric($meta[$key]) && $key === 'hours'
@@ -251,7 +255,7 @@ class MakeCertificate
     }
 
     /**
-     * Draw dynamic fields onto certificate.jpg (1280×905) — one image, one page.
+     * Draw dynamic fields onto certificate_new.jpg (1280×905) — pixel-perfect matching of template.
      */
     private function composeQiecCertificatePng(array $data): string
     {
@@ -259,7 +263,7 @@ class MakeCertificate
         $img = Image::make($bgPath)->resize(1280, 905);
 
         $paper = '#FAF9F4';
-        $ink = '#0A3D38';
+        $ink = '#103E36';
 
         $fill = function (int $x, int $y, int $w, int $h) use ($img, $paper) {
             $img->rectangle($x, $y, $x + $w, $y + $h, function ($draw) use ($paper) {
@@ -268,12 +272,16 @@ class MakeCertificate
         };
 
         $fontEn = public_path('assets/default/fonts/Montserrat-Medium.ttf');
-        if (!is_file($fontEn)) {
-            $fontEn = public_path('assets/default/fonts/vazir/Vazir-Medium.ttf');
+        $fontArBold = public_path('assets/default/fonts/vazir/Vazir-Bold.ttf');
+        $fontArMed = public_path('assets/default/fonts/vazir/Vazir-Medium.ttf');
+        if (!is_file($fontArBold)) {
+            $fontArBold = public_path('assets/admin/fonts/vazir/Vazir-Bold.ttf');
         }
-        $fontAr = public_path('assets/default/fonts/vazir/Vazir-Medium.ttf');
-        if (!is_file($fontAr)) {
-            $fontAr = $fontEn;
+        if (!is_file($fontArMed)) {
+            $fontArMed = $fontArBold;
+        }
+        if (!is_file($fontEn)) {
+            $fontEn = $fontArMed;
         }
 
         $arabic = null;
@@ -301,25 +309,37 @@ class MakeCertificate
             }
         };
 
-        $write = function (string $text, int $x, int $y, int $size, string $align = 'left', ?bool $rtl = null) use ($img, $fontEn, $fontAr, $shapeAr, $hasAr, $ink) {
+        $write = function (string $text, int $x, int $y, int $size, string $align = 'left', bool $bold = false) use ($img, $fontEn, $fontArBold, $fontArMed, $shapeAr, $hasAr, $ink) {
             $text = trim($text);
             if ($text === '') {
                 return;
             }
-            $rtl = $rtl ?? $hasAr($text);
-            if ($rtl) {
+            $isAr = $hasAr($text);
+            if ($isAr) {
                 $text = $shapeAr($text);
+                $fontFile = $bold ? $fontArBold : $fontArMed;
+            } else {
+                $fontFile = $bold && is_file($fontArBold) ? $fontArBold : $fontEn;
             }
-            $img->text($text, $x, $y, function ($font) use ($size, $align, $rtl, $fontEn, $fontAr, $ink) {
-                $file = $rtl ? $fontAr : $fontEn;
-                if (is_file($file)) {
-                    $font->file($file);
+
+            $img->text($text, $x, $y, function ($font) use ($size, $align, $fontFile, $ink) {
+                if (is_file($fontFile)) {
+                    $font->file($fontFile);
                 }
                 $font->size($size);
                 $font->color($ink);
                 $font->align($align);
                 $font->valign('top');
             });
+        };
+
+        $fitSize = function (string $text, int $defaultSize, int $maxChars, int $minSize = 11): int {
+            $len = mb_strlen(trim($text));
+            if ($len <= $maxChars) {
+                return $defaultSize;
+            }
+            $ratio = $maxChars / $len;
+            return max($minSize, (int) round($defaultSize * $ratio));
         };
 
         $num = (string) ($data['certificate_number'] ?? '');
@@ -332,93 +352,100 @@ class MakeCertificate
         $end = (string) ($data['end_date'] ?? '');
         $issue = (string) ($data['issue_date'] ?? '');
         $acc = (string) ($data['accreditation_number'] ?? '');
+        $accreditedByEn = (string) ($data['accredited_by_en'] ?? 'Quality & Excellence Center');
+        $accreditedByAr = (string) ($data['accredited_by_ar'] ?? 'مركز الجودة والتميز');
         $officer = (string) ($data['officer_name'] ?? '');
         $director = (string) ($data['director_name'] ?? '');
 
         // Bracket helper — Latin-only so [ ] never reverse under Arabic shaping
         $bracket = static function (string $value): string {
             $value = trim($value);
-            return $value === '' ? '' : '[' . $value . ']';
+            return $value === '' ? '' : '[ ' . $value . ' ]';
         };
 
-        // --- Certificate numbers: wipe placeholder [ QEC-... ] only; keep labels intact ---
-        $fill(140, 272, 210, 32);
-        $write($bracket($num), 245, 280, 13, 'center', false);
-        $fill(960, 272, 210, 32);
-        $write($bracket($num), 1065, 280, 13, 'center', false);
+        // 1. Certificate numbers
+        // Left EN: "Certificate no.: [ QEC-0000-000 ]"
+        // Label ends before x=186. Placeholder is x=188 to 320.
+        $fill(186, 280, 140, 24);
+        $write($bracket($num), 188, 284, 12, 'left', false);
 
-        // --- Trainee names: fully erase [ TRAINER FULL NAME ] placeholder, name only ---
-        $fill(65, 405, 480, 65);
-        $fill(748, 405, 480, 65);
-        $write($nameEn, 305, 435, 20, 'center', false);
-        $write($nameAr, 988, 435, 20, 'center', true);
+        // Right AR: "[ QEC-0000-000 ] :رقم الشهادة"
+        // Placeholder is x=990 to 1110. Label starts at x=1116.
+        $fill(988, 278, 124, 24);
+        $write($bracket($num), 1110, 284, 12, 'right', false);
 
-        // --- Course titles ---
-        $fill(65, 505, 480, 58);
-        $fill(748, 505, 480, 58);
-        $write($courseEn, 305, 527, 17, 'center', false);
-        $write($courseAr, 988, 527, 17, 'center', true);
+        // 2. Trainee Names
+        // Left EN: Under "Quality & Excellence Center for Training to:" (left aligned, bold)
+        $fill(70, 424, 480, 38);
+        $write(strtoupper($nameEn), 74, 430, $fitSize($nameEn, 20, 26, 13), 'left', true);
 
-        // ── Meta rows: erase full row then write label + value ──────────────────
-        // EN side (left)
-        $fill(65, 582, 440, 28);
-        $write('Duration: ' . $bracket($hours) . ' training hrs', 68, 587, 12, 'left', false);
+        // Right AR: Under "إلى :" (right aligned, bold)
+        $fill(730, 420, 500, 40);
+        $write($nameAr, 1220, 426, $fitSize($nameAr, 20, 26, 13), 'right', true);
 
-        $fill(65, 612, 440, 28);
-        $write('Course dates: ' . $bracket($start) . ' - ' . $bracket($end), 68, 617, 12, 'left', false);
+        // 3. Course Titles
+        // Left EN: Under "in recognition of successfully completing the training course:"
+        $fill(70, 520, 480, 34);
+        $write($courseEn, 74, 524, $fitSize($courseEn, 16, 36, 11), 'left', true);
 
-        $fill(65, 642, 440, 28);
-        $write('Issue date: ' . $bracket($issue), 68, 647, 12, 'left', false);
+        // Right AR: Under "وذلك لإتمامه/ا بنجاح الدورة التدريبية:"
+        $fill(730, 518, 500, 36);
+        $write($courseAr, 1220, 522, $fitSize($courseAr, 16, 36, 11), 'right', true);
 
-        $fill(65, 672, 440, 28);
-        $write('Accreditation No.: ' . $bracket($acc), 68, 677, 12, 'left', false);
+        // 4. Meta Rows EN (Left)
+        // Row 0 EN: Duration: [ 00 ] training hours
+        $fill(147, 590, 53, 18);
+        $write($bracket($hours), 149, 592, 11, 'left', false);
 
-        // AR side (right) — label RTL, value LTR
-        $fill(778, 582, 440, 28);
-        $write('عدد الساعات:', 1215, 587, 12, 'right', true);
-        $write($bracket($hours) . ' ساعة', 1170, 587, 12, 'right', false);
+        // Row 1 EN: Course dates: [ DD/MM/YYYY ] – [ DD/MM/YYYY ]
+        $fill(180, 620, 270, 18);
+        $write($bracket($start) . ' – ' . $bracket($end), 182, 622, 11, 'left', false);
 
-        $fill(778, 612, 440, 28);
-        $write('فترة الدورة:', 1215, 617, 12, 'right', true);
-        $write($bracket($start) . ' - ' . $bracket($end), 1140, 617, 12, 'right', false);
+        // Row 2 EN: Issue date: [ DD/MM/YYYY ]
+        $fill(156, 652, 130, 18);
+        $write($bracket($issue), 158, 654, 11, 'left', false);
 
-        $fill(778, 642, 440, 28);
-        $write('تاريخ الإصدار:', 1215, 647, 12, 'right', true);
-        $write($bracket($issue), 1140, 647, 12, 'right', false);
+        // Row 3 EN: Accreditation Number: [ DD/MM/YYYY ] (Accredited by)
+        $fill(250, 684, 130, 18);
+        $write($bracket($accreditedByEn), 252, 686, 11, 'left', false);
 
-        $fill(778, 672, 440, 28);
-        $write('رقم الاعتماد:', 1215, 677, 12, 'right', true);
-        $write($bracket($acc), 1140, 677, 12, 'right', false);
+        // Row 4 EN: Accreditation Number: [ DD/MM/YYYY ] (Accreditation No)
+        $fill(250, 716, 130, 18);
+        $write($bracket($acc), 252, 718, 11, 'left', false);
 
-        // ── Signature labels + names ─────────────────────────────────────────────
-        // Officer (EN left) — label line + name line
-        $fill(60, 800, 280, 68);
-        $write('Training & Accreditation', 200, 804, 10, 'center', false);
-        $write('Officer', 200, 818, 10, 'center', false);
-        $write($officer ?: 'مسؤول التدريب والاعتماد', 200, 836, 13, 'center', false);
+        // 5. Meta Rows AR (Right)
+        // Row 0 AR: عدد الساعات التدريبية: [ 00 ] ساعة
+        $fill(1006, 588, 52, 20);
+        $write($bracket($hours), 1056, 590, 11, 'right', false);
 
-        // Director (AR right) — label line + name line
-        $fill(960, 800, 280, 68);
-        $write('مدير المركز', 1100, 804, 12, 'center', true);
-        $write($director ?: 'مدير المركز', 1100, 824, 13, 'center', false);
+        // Row 1 AR: فترة الدورة: [ 00/00/0000 ] - [ 00/00/0000 ]
+        $fill(900, 620, 237, 18);
+        $write($bracket($start) . ' - ' . $bracket($end), 1130, 622, 11, 'right', false);
 
-        // QR bottom-left (validation)
-        try {
-            $url = url('/certificate_validation?certificate_id=' . urlencode((string) ($data['certificate_number'] ?? $data['certificate_id'] ?? '')));
-            $qrPng = null;
-            try {
-                $qrPng = (string) QrCode::format('png')->size(140)->margin(0)->generate($url);
-            } catch (\Throwable $e) {
-            }
-            if (!empty($qrPng)) {
-                $qr = Image::make($qrPng)->resize(72, 72);
-                $img->insert($qr, 'top-left', 40, 800);
-            }
-        } catch (\Throwable $e) {
-        }
+        // Row 2 AR: تاريخ الإصدار: [ 00/00/0000 ]
+        $fill(1008, 652, 118, 18);
+        $write($bracket($issue), 1122, 654, 11, 'right', false);
+
+        // Row 3 AR: الدورة معتمدة من: [ --------- ]
+        $fill(1012, 684, 75, 18);
+        $write($bracket($accreditedByAr), 1084, 686, 11, 'right', false);
+
+        // Row 4 AR: رقم الاعتماد: [ 00/00/0000 ]
+        $fill(1012, 716, 112, 18);
+        $write($bracket($acc), 1120, 718, 11, 'right', false);
+
+        // 6. Signatures (Replace placeholders [ Name ] and [ الاسم ] only)
+        // Left EN: Under "Training & Accreditation Officer"
+        $fill(80, 846, 240, 20);
+        $write($officer, 200, 846, $fitSize($officer, 13, 24, 10), 'center', true);
+
+        // Right AR: Under "مدير المركز"
+        $fill(980, 846, 240, 20);
+        $write($director, 1100, 846, $fitSize($director, 13, 24, 10), 'center', true);
 
         return (string) $img->encode('png');
     }
+
 
     private function localQiecCertificateDownload($certificate, string $html)
     {
