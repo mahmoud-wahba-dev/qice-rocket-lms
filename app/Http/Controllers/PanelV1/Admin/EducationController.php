@@ -329,8 +329,9 @@ class EducationController extends AdminController
                     ['label'=>'حزم','value'=>(string)\App\Models\Certificate::where('type','bundle')->count(),'icon'=>'icon-[tabler--package]'],
                 ];
                 $real['certificateTemplates'] = \App\Models\CertificateTemplate::with('translations')->orderBy('id','desc')->limit(10)->get();
-                $real['qiecCertificatePreview'] = asset('assets/panel_v1/img/certificate_new.jpg');
-                $real['qiecTemplateReady'] = is_file(public_path('assets/panel_v1/img/certificate_new.jpg'));
+                $qiecMake = new \App\Mixins\Certificate\MakeCertificate();
+                $real['qiecCertificatePreview'] = $qiecMake->qiecTemplatePublicUrl();
+                $real['qiecTemplateReady'] = $qiecMake->qiecTemplateAvailable();
                 $real['stubTitle']=$title;
                 break;
             case 'live':

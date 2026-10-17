@@ -78,9 +78,59 @@ class MakeCertificate
         return null;
     }
 
+    /**
+     * Canonical QIEC bilingual template (tracked under resources/ — public/assets is gitignored).
+     */
+    public function qiecTemplatePath(): ?string
+    {
+        $candidates = [
+            resource_path('certificate/certificate_new.jpg'),
+            public_path('assets/panel_v1/img/certificate_new.jpg'),
+        ];
+
+        foreach ($candidates as $path) {
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
     public function qiecTemplateAvailable(): bool
     {
-        return is_file(public_path('assets/panel_v1/img/certificate_new.jpg'));
+        return $this->qiecTemplatePath() !== null;
+    }
+
+    /**
+     * Keep a public copy for <img> previews (deploy may only ship resources/).
+     */
+    public function ensurePublicQiecTemplate(): ?string
+    {
+        $src = $this->qiecTemplatePath();
+        if ($src === null) {
+            return null;
+        }
+
+        $dst = public_path('assets/panel_v1/img/certificate_new.jpg');
+        if (!is_file($dst) || filesize($dst) !== filesize($src)) {
+            $dir = dirname($dst);
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0755, true);
+            }
+            @copy($src, $dst);
+        }
+
+        return is_file($dst) ? $dst : $src;
+    }
+
+    public function qiecTemplatePublicUrl(): ?string
+    {
+        if ($this->ensurePublicQiecTemplate() === null) {
+            return null;
+        }
+
+        return asset('assets/panel_v1/img/certificate_new.jpg');
     }
 
     public function buildQiecCertificateData($certificate): array
@@ -242,10 +292,15 @@ class MakeCertificate
             return $pdf->download($fileBase . '.pdf');
         } catch (\Throwable $e) {
             // Fallback: HTML overlay on the same JPG, still one page.
-            $bgPath = public_path('assets/panel_v1/img/certificate_new.jpg');
+            $bgPath = $this->qiecTemplatePath();
+            if ($bgPath === null) {
+                throw $e;
+            }
+            // Embed as data-URI so DomPDF does not depend on public/assets deploy.
+            $backgroundUrl = 'data:image/jpeg;base64,' . base64_encode((string) file_get_contents($bgPath));
             $html = (string) view('panel_v1.certificates.qiec-template', [
                 'data' => $data,
-                'backgroundUrl' => $this->pathToFileUrl($bgPath),
+                'backgroundUrl' => $backgroundUrl,
                 'width' => 1280,
                 'height' => 905,
             ]);
@@ -259,7 +314,10 @@ class MakeCertificate
      */
     private function composeQiecCertificatePng(array $data): string
     {
-        $bgPath = public_path('assets/panel_v1/img/certificate_new.jpg');
+        $bgPath = $this->qiecTemplatePath();
+        if ($bgPath === null) {
+            throw new \RuntimeException('QIEC certificate template image is missing.');
+        }
         $img = Image::make($bgPath)->resize(1280, 905);
 
         $paper = '#FAF9F4';
