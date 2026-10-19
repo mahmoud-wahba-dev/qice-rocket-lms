@@ -22,10 +22,10 @@ Compare local vs production `.env` before go-live and after any server edit.
 |-----|--------|
 | `MAIL_HOST` | `smtp.hostinger.com` |
 | `MAIL_PORT` | `465` |
-| `MAIL_USERNAME` | `contact@training.qiec.sa` |
+| `MAIL_USERNAME` | `info@qiec.sa` (qiec.sa Business Email — not contact@training.qiec.sa) |
 | `MAIL_PASSWORD` | Same mailbox password — **see quoting rules below** |
 | `MAIL_ENCRYPTION` | `ssl` (lowercase) |
-| `MAIL_FROM_ADDRESS` | Same as `MAIL_USERNAME` |
+| `MAIL_FROM_ADDRESS` | Same as `MAIL_USERNAME` (`info@qiec.sa`) |
 
 ## Cosmetic only
 
@@ -90,7 +90,7 @@ rm -f ~/domains/training.qiec.sa/public_html/bootstrap/cache/config.php
 
 ### 6. Admin **Site email** must match SMTP user
 
-Admin → Settings → General → **Site email** = `contact@training.qiec.sa`
+Admin → Settings → General → **Site email** = `info@qiec.sa`
 
 ---
 

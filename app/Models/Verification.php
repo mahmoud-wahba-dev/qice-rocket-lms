@@ -38,14 +38,38 @@ class Verification extends Model
     public function sendEmailCode()
     {
         if ($this->shouldSendVerificationEmail()) {
-            try {
-                $this->notify(new SendVerificationEmailCode($this));
-                session()->forget('verification_mail_failed');
-            } catch (\Throwable $e) {
-                \Log::error('Verification email failed: ' . $e->getMessage(), [
+            $mailer = (string) (env('MAIL_MAILER', config('mail.default')) ?: '');
+            $host = (string) (env('MAIL_HOST', config('mail.mailers.smtp.host')) ?: '');
+            $user = (string) (env('MAIL_USERNAME', config('mail.mailers.smtp.username')) ?: '');
+            $password = (string) (env('MAIL_PASSWORD', config('mail.mailers.smtp.password')) ?: '');
+
+            if ($mailer === 'smtp' && (empty($host) || empty($user) || empty($password))) {
+                \Log::error('Verification email skipped: incomplete SMTP config', [
                     'email' => $this->email,
+                    'mailer' => $mailer,
+                    'host_set' => $host !== '',
+                    'user_set' => $user !== '',
+                    'password_set' => $password !== '',
                 ]);
                 session()->flash('verification_mail_failed', true);
+            } else {
+                try {
+                    $this->notify(new SendVerificationEmailCode($this));
+                    session()->forget('verification_mail_failed');
+                    \Log::info('Verification email sent', [
+                        'email' => $this->email,
+                        'mailer' => $mailer,
+                        'host' => $host,
+                    ]);
+                } catch (\Throwable $e) {
+                    \Log::error('Verification email failed: ' . $e->getMessage(), [
+                        'email' => $this->email,
+                        'mailer' => $mailer,
+                        'host' => $host,
+                        'user' => $user,
+                    ]);
+                    session()->flash('verification_mail_failed', true);
+                }
             }
         } else {
             session()->flash('verification_mail_failed', true);

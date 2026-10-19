@@ -46,7 +46,7 @@
                         </p>
                     @elseif (session('verification_mail_failed') && $isEmail)
                         <p class="font-medium text-13px text-red-700 bg-red-50 border border-red-200 rounded-8px px-4 py-3 mb-6">
-                            تعذّر إرسال رمز التحقق إلى بريدك. تحقق من إعدادات البريد على السيرفر (<code class="text-12px">MAIL_*</code> في ملف <code class="text-12px">.env</code>) أو جرّب إعادة الإرسال بعد دقائق. راجع <code class="text-12px">_docs/PRODUCTION_MAIL.md</code> على السيرفر.
+                            تعذّر إرسال رمز التحقق إلى بريدك حالياً. جرّب «إعادة إرسال الرمز» بعد قليل، أو تواصل مع الدعم إذا استمرّت المشكلة.
                         </p>
                     @endif
 

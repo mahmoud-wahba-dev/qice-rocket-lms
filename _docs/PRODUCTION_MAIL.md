@@ -30,16 +30,18 @@ APP_DEBUG=false
 MAIL_MAILER=smtp
 MAIL_HOST=smtp.hostinger.com
 MAIL_PORT=465
-MAIL_USERNAME=contact@training.qiec.sa
+MAIL_USERNAME=info@qiec.sa
 MAIL_PASSWORD='your-email-password-here'
 MAIL_ENCRYPTION=ssl
-MAIL_FROM_ADDRESS=contact@training.qiec.sa
+MAIL_FROM_ADDRESS=info@qiec.sa
 MAIL_FROM_NAME="QIEC Training"
 ```
 
+> OTP mail uses the **qiec.sa** Hostinger Business Email mailbox (`info@qiec.sa`), not `contact@training.qiec.sa`.
+
 ### Hostinger email password
 
-1. hPanel → **Emails** → `contact@training.qiec.sa` → **Manage**
+1. hPanel → **Emails** → domain **`qiec.sa`** → `info@qiec.sa` → **Manage**
 2. **Reset password** if unsure
 3. Paste into `MAIL_PASSWORD` in `.env`
 4. If the password contains `$`, use **single quotes** — double quotes break dotenv (see [ENV_PRODUCTION_CHECKLIST.md](ENV_PRODUCTION_CHECKLIST.md))
@@ -103,7 +105,13 @@ grep -i "verification email" ~/domains/training.qiec.sa/public_html/storage/logs
 535 5.7.8 Error: authentication failed
 ```
 
-**Fix:** Wrong `MAIL_PASSWORD` — reset in hPanel and update `.env`.
+**Fix:** Wrong `MAIL_PASSWORD` — reset in hPanel and update `.env` on **both** local and production if they share the same mailbox.
+
+Also ensure:
+1. `MAIL_FROM_ADDRESS` = `MAIL_USERNAME` = the Hostinger mailbox (e.g. `contact@training.qiec.sa`)
+2. Admin → Settings → General → **Site email** matches that mailbox
+3. After `.env` edit: delete `bootstrap/cache/config.php` (or `php artisan config:clear`)
+4. Re-test: `php artisan qiec:test-mail your@gmail.com`
 
 ---
 
