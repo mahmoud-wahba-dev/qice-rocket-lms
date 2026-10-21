@@ -2741,9 +2741,12 @@ class EducationController extends AdminController
         $attachment = $studentMessages->first(fn ($msg) => filled($msg->file_path) || filled($msg->file_title));
         $attachmentUrl = null;
         if ($attachment && filled($attachment->file_path)) {
-            $publicPath = public_path($attachment->file_path);
+            $normalizedPath = function_exists('panelV1NormalizeStorePath')
+                ? (panelV1NormalizeStorePath($attachment->file_path) ?: $attachment->file_path)
+                : $attachment->file_path;
+            $publicPath = public_path($normalizedPath);
             $attachmentUrl = is_file($publicPath)
-                ? asset($attachment->file_path)
+                ? asset(ltrim($normalizedPath, '/'))
                 : url($attachment->getDownloadUrl($history->assignment_id));
         }
 

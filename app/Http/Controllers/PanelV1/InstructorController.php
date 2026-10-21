@@ -2322,9 +2322,12 @@ class InstructorController extends Controller
         $attachmentUrl = null;
         $attachmentSize = null;
         if ($attachment && filled($attachment->file_path)) {
-            $publicPath = public_path($attachment->file_path);
+            $normalizedPath = function_exists('panelV1NormalizeStorePath')
+                ? (panelV1NormalizeStorePath($attachment->file_path) ?: $attachment->file_path)
+                : $attachment->file_path;
+            $publicPath = public_path($normalizedPath);
             if (is_file($publicPath)) {
-                $attachmentUrl = asset($attachment->file_path);
+                $attachmentUrl = asset(ltrim($normalizedPath, '/'));
                 $bytes = filesize($publicPath);
                 if ($bytes !== false) {
                     $attachmentSize = $bytes >= 1048576

@@ -7,6 +7,7 @@ use App\Models\PaymentChannel;
 use App\PaymentChannels\BasePaymentChannel;
 use App\PaymentChannels\IChannel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class Channel extends BasePaymentChannel implements IChannel
 {
@@ -40,6 +41,8 @@ class Channel extends BasePaymentChannel implements IChannel
         $data = [
             "InvoiceValue" => $price,
             "CustomerName" => $order->user->name ?? 'Customer',
+            "CustomerReference" => (string) $order->id,
+            "UserDefinedField" => (string) $order->id,
             "NotificationOption" => "ALL",
             "InvoiceItems" => [
                 [
@@ -73,37 +76,51 @@ class Channel extends BasePaymentChannel implements IChannel
         $status = $data['status'] ?? null;
         $paymentId = $request->input('paymentId');
 
-        $order_id = session()->get($this->order_session_key, null);
+        $sessionOrderId = session()->get($this->order_session_key, null);
         session()->forget($this->order_session_key);
 
-        $user = auth()->user();
+        $order = null;
 
-        $order = Order::where('id', $order_id)
-            ->where('user_id', $user->id)
-            ->first();
-
-        if ($status == 'success' && !empty($paymentId) && !empty($order)) {
-            $apiData = [
-                "Key" => $paymentId,
-                "KeyType" => "PaymentId"
-            ];
-
+        // Prefer gateway API + CustomerReference over fragile browser session after redirect.
+        if ($status == 'success' && !empty($paymentId)) {
             try {
-                $response = $this->callApi("/v2/GetPaymentStatus", $apiData);
+                $response = $this->callApi("/v2/GetPaymentStatus", [
+                    "Key" => $paymentId,
+                    "KeyType" => "PaymentId",
+                ]);
+
+                $invoiceData = $response['Data'] ?? null;
+                $orderId = $this->resolveOrderIdFromInvoice($invoiceData, $sessionOrderId);
+
+                if (!empty($orderId)) {
+                    $order = Order::where('id', $orderId)->first();
+                }
 
                 if (
-                    isset($response['Data']['InvoiceStatus']) &&
-                    $response['Data']['InvoiceStatus'] === 'Paid'
+                    !empty($order) &&
+                    isset($invoiceData['InvoiceStatus']) &&
+                    $invoiceData['InvoiceStatus'] === 'Paid'
                 ) {
+                    if (!Auth::check() || (int) Auth::id() !== (int) $order->user_id) {
+                        Auth::loginUsingId($order->user_id);
+                    }
+
                     $order->update([
-                        'status' => Order::$paying
+                        'status' => Order::$paying,
                     ]);
 
                     return $order;
                 }
             } catch (\Exception $e) {
-                // handle failure silently returning logic below.
+                // Fall through to session/auth fallback below.
             }
+        }
+
+        // Legacy fallback: session + authenticated user (pre-hardening path).
+        if (empty($order) && !empty($sessionOrderId) && Auth::check()) {
+            $order = Order::where('id', $sessionOrderId)
+                ->where('user_id', Auth::id())
+                ->first();
         }
 
         if (!empty($order)) {
@@ -111,6 +128,26 @@ class Channel extends BasePaymentChannel implements IChannel
         }
 
         return $order;
+    }
+
+    /**
+     * Resolve local order id from MyFatoorah invoice payload, then session.
+     */
+    private function resolveOrderIdFromInvoice($invoiceData, $sessionOrderId)
+    {
+        if (!empty($invoiceData) && is_array($invoiceData)) {
+            foreach (['CustomerReference', 'UserDefinedField'] as $key) {
+                if (!empty($invoiceData[$key]) && is_numeric($invoiceData[$key])) {
+                    return (int) $invoiceData[$key];
+                }
+            }
+        }
+
+        if (!empty($sessionOrderId) && is_numeric($sessionOrderId)) {
+            return (int) $sessionOrderId;
+        }
+
+        return null;
     }
 
     private function callApi($endpoint, $data)

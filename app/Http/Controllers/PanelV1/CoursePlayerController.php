@@ -983,7 +983,7 @@ class CoursePlayerController extends Controller
                 ->first();
             if ($msgWithFile && !empty($msgWithFile->file_path)) {
                 $existingFiles[] = panelV1FilePreviewItem(
-                    $msgWithFile->file_path,
+                    panelV1PublicUrl($msgWithFile->file_path) ?: $msgWithFile->file_path,
                     $msgWithFile->file_title ?: basename($msgWithFile->file_path)
                 );
             }
@@ -1049,7 +1049,8 @@ class CoursePlayerController extends Controller
             'assignment_id' => $assignment->id,
             'student_id' => $user->id,
         ]);
-        $history->instructor_id = $webinar->teacher_id;
+        // Match legacy downloadAttach / getAssignmentHistory (creator_id); fall back to teacher_id.
+        $history->instructor_id = $assignment->creator_id ?: $webinar->teacher_id;
         $history->status = 'pending';
         $history->grade = null;
         $history->created_at = $history->created_at ?? time();
@@ -1062,7 +1063,8 @@ class CoursePlayerController extends Controller
         $message->created_at = time();
 
         if ($request->hasFile('upload')) {
-            $message->file_path = '/storage/' . $request->file('upload')->store('assignments', 'public');
+            // Public disk root is public/store → URL prefix /store (not /storage)
+            $message->file_path = '/store/' . ltrim($request->file('upload')->store('assignments', 'public'), '/');
             $message->file_title = $request->file('upload')->getClientOriginalName();
         }
 

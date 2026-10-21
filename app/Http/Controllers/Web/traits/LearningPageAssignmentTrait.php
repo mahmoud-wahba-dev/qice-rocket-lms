@@ -27,7 +27,10 @@ trait LearningPageAssignmentTrait
                     ->first();
 
                 if (!empty($attach)) {
-                    $filePath = public_path($attach->attach);
+                    $normalizedPath = function_exists('panelV1NormalizeStorePath')
+                        ? (panelV1NormalizeStorePath($attach->attach) ?: $attach->attach)
+                        : $attach->attach;
+                    $filePath = public_path($normalizedPath);
 
                     if (file_exists($filePath)) {
                         $fileInfo = pathinfo($filePath);
@@ -43,6 +46,8 @@ trait LearningPageAssignmentTrait
 
                         return response()->download($filePath, $fileName, $headers);
                     }
+
+                    abort(404);
                 }
             }
 

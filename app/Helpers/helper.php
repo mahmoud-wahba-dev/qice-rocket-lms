@@ -2716,6 +2716,39 @@ if (!function_exists('panelV1HomeUrl')) {
     }
 }
 
+if (!function_exists('panelV1NormalizeStorePath')) {
+    /**
+     * Normalize a public disk-relative path for this LMS.
+     * Public disk root is public/store (URL /store), not Laravel's /storage symlink.
+     * Rewrites mistaken /storage/{folder}/... to /store/{folder}/...
+     */
+    function panelV1NormalizeStorePath(?string $path): ?string
+    {
+        if ($path === null || $path === '') {
+            return null;
+        }
+
+        $normalized = str_replace('\\', '/', ltrim($path, '/'));
+
+        if (str_starts_with($normalized, 'storage/')) {
+            $rest = substr($normalized, strlen('storage/'));
+            if (preg_match('#^(webinars|panel_v1|uploads|users|certificates|assignments)/#', $rest)) {
+                $normalized = 'store/' . $rest;
+            }
+        }
+
+        if (
+            !str_starts_with($normalized, 'store/') &&
+            !str_starts_with($normalized, 'storage/') &&
+            preg_match('#^(webinars|panel_v1|uploads|users|certificates|assignments)/#', $normalized)
+        ) {
+            $normalized = 'store/' . $normalized;
+        }
+
+        return '/' . $normalized;
+    }
+}
+
 if (!function_exists('panelV1PublicUrl')) {
     function panelV1PublicUrl(?string $path): ?string
     {
@@ -2732,26 +2765,9 @@ if (!function_exists('panelV1PublicUrl')) {
             return $path;
         }
 
-        $normalized = str_replace('\\', '/', ltrim($path, '/'));
+        $normalized = panelV1NormalizeStorePath($path);
 
-        // This LMS public disk is public/store (URL /store), not Laravel's /storage symlink.
-        // Rewrite mistaken /storage/webinars/... paths saved by curriculum upload.
-        if (str_starts_with($normalized, 'storage/')) {
-            $rest = substr($normalized, strlen('storage/'));
-            if (preg_match('#^(webinars|panel_v1|uploads|users|certificates)/#', $rest)) {
-                $normalized = 'store/' . $rest;
-            }
-        }
-
-        if (
-            !str_starts_with($normalized, 'store/') &&
-            !str_starts_with($normalized, 'storage/') &&
-            preg_match('#^(webinars|panel_v1|uploads|users|certificates)/#', $normalized)
-        ) {
-            $normalized = 'store/' . $normalized;
-        }
-
-        return url('/' . $normalized);
+        return $normalized ? url($normalized) : null;
     }
 }
 

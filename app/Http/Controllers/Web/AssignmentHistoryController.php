@@ -232,14 +232,15 @@ class AssignmentHistoryController extends Controller
             if (!empty($webinar) and $webinar->checkUserHasBought($user)) {
                 $allow = ($webinar->creator_id == $user->id or $webinar->teacher_id == $user->id or $user->isAdmin());
 
-                $assignmentHistory = WebinarAssignmentHistory::where('instructor_id', $assignment->creator_id)
-                    ->where('id', $historyId)
+                // historyId + assignmentId is enough; do not require instructor_id match
+                // (panel_v1 submit may store teacher_id while legacy uses creator_id).
+                $assignmentHistory = WebinarAssignmentHistory::where('id', $historyId)
+                    ->where('assignment_id', $assignment->id)
                     ->where(function ($query) use ($allow, $user) {
                         if (!$allow) {
                             $query->where('student_id', $user->id);
                         }
                     })
-                    ->where('assignment_id', $assignment->id)
                     ->with([
                         'messages' => function ($query) {
                             $query->orderBy('created_at', 'desc');
@@ -250,12 +251,19 @@ class AssignmentHistoryController extends Controller
                         }
                     ])->first();
 
+                if (empty($assignmentHistory)) {
+                    abort(403);
+                }
+
                 $message = WebinarAssignmentHistoryMessage::where('id', $messageId)
                     ->where('assignment_history_id', $assignmentHistory->id)
                     ->first();
 
                 if (!empty($message) and !empty($message->file_path)) {
-                    $filePath = public_path($message->file_path);
+                    $normalizedPath = function_exists('panelV1NormalizeStorePath')
+                        ? (panelV1NormalizeStorePath($message->file_path) ?: $message->file_path)
+                        : $message->file_path;
+                    $filePath = public_path($normalizedPath);
                     $fileTitle = $message->file_title ?? 'attachment';
 
                     if (file_exists($filePath)) {
@@ -272,6 +280,8 @@ class AssignmentHistoryController extends Controller
 
                         return response()->download($filePath, $fileName, $headers);
                     }
+
+                    abort(404);
                 }
             }
         }
