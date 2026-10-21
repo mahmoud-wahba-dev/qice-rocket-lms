@@ -2713,6 +2713,125 @@ class EducationController extends AdminController
         ]);
     }
 
+    public function assignmentStudents(Request $request, int $id)
+    {
+        $u = $this->resolveAdmin($request);
+        if ($u instanceof \Illuminate\Http\RedirectResponse) {
+            return $u;
+        }
+
+        $assignment = \App\Models\WebinarAssignment::with(['webinar'])->findOrFail($id);
+        $webinar = $assignment->webinar;
+        $maxGrade = (int) ($assignment->grade ?? 0);
+        $maxAttempts = $assignment->attempts ?? null;
+
+        $histories = \App\Models\WebinarAssignmentHistory::with(['student', 'messages'])
+            ->where('assignment_id', $assignment->id)
+            ->where('status', '!=', \App\Models\WebinarAssignmentHistory::$notSubmitted)
+            ->orderByDesc('id')
+            ->get();
+
+        $submittedStudentIds = $histories->pluck('student_id')->filter()->unique()->all();
+
+        $rows = $histories->map(function ($history) use ($assignment, $maxGrade, $maxAttempts) {
+            $latestMessageAt = $history->messages->max('created_at');
+            $attemptCount = max(1, $history->messages->where('sender_id', $history->student_id)->count());
+            [$statusLabel, $statusTone] = $this->adminAssignmentStatusMeta($history->status);
+
+            return [
+                'history_id' => $history->id,
+                'student_id' => $history->student_id,
+                'name' => $history->student->full_name ?? 'طالب',
+                'email' => $history->student->email ?? '',
+                'submitted_at' => $this->adminFormatAssignmentDate($latestMessageAt ?: $history->created_at),
+                'attempts' => $attemptCount . ' / ' . ($maxAttempts ?: '—'),
+                'grade' => $history->grade !== null
+                    ? ((int) $history->grade) . ' / ' . $maxGrade
+                    : '— / ' . $maxGrade,
+                'status' => $statusLabel,
+                'status_tone' => $statusTone,
+                'review_url' => route('panel.v1.admin.education.assignments.review', ['id' => $history->id]),
+                'can_review' => true,
+            ];
+        })->values();
+
+        // Enrolled buyers who have not submitted yet
+        if (!empty($webinar)) {
+            $enrolledBuyerIds = \App\Models\Sale::query()
+                ->where('webinar_id', $webinar->id)
+                ->whereNull('refund_at')
+                ->whereNotNull('buyer_id')
+                ->distinct()
+                ->pluck('buyer_id')
+                ->all();
+
+            $missingIds = array_values(array_diff($enrolledBuyerIds, $submittedStudentIds));
+            if (!empty($missingIds)) {
+                $missingUsers = \App\User::query()->whereIn('id', $missingIds)->get()->keyBy('id');
+                foreach ($missingIds as $buyerId) {
+                    $buyer = $missingUsers->get($buyerId);
+                    $rows->push([
+                        'history_id' => null,
+                        'student_id' => $buyerId,
+                        'name' => $buyer->full_name ?? 'طالب',
+                        'email' => $buyer->email ?? '',
+                        'submitted_at' => '—',
+                        'attempts' => '0 / ' . ($maxAttempts ?: '—'),
+                        'grade' => '— / ' . $maxGrade,
+                        'status' => 'لم يُسلّم بعد',
+                        'status_tone' => 'muted',
+                        'review_url' => null,
+                        'can_review' => false,
+                    ]);
+                }
+            }
+        }
+
+        $total = $histories->count();
+        $pending = $histories->where('status', \App\Models\WebinarAssignmentHistory::$pending)->count();
+        $passed = $histories->where('status', \App\Models\WebinarAssignmentHistory::$passed)->count();
+        $failed = $histories->where('status', \App\Models\WebinarAssignmentHistory::$notPassed)->count();
+
+        return $this->renderAdmin(
+            $request,
+            'panel_v1.admin.pages.education.assignment-students',
+            'قائمة طلاب التكليف',
+            array_merge(AdminMockData::shell('education', 'assignments'), [
+                'assignment' => $assignment,
+                'assignmentId' => $assignment->id,
+                'assignmentTitle' => $assignment->title ?: ('تكليف #' . $assignment->id),
+                'courseTitle' => $webinar->title ?? '—',
+                'backUrl' => route('panel.v1.admin.education.section', ['section' => 'assignments']),
+                'editUrl' => route('panel.v1.admin.education.assignments.edit', ['id' => $assignment->id]),
+                'summaryCards' => [
+                    ['label' => 'إجمالي التسليمات', 'value' => (string) $total, 'edge' => '#0f4c45', 'valueClass' => 'text-primary'],
+                    ['label' => 'بانتظار التصحيح', 'value' => (string) $pending, 'edge' => '#F59E0B', 'valueClass' => 'text-[#F59E0B]'],
+                    ['label' => 'ناجح', 'value' => (string) $passed, 'edge' => '#0FC787', 'valueClass' => 'text-[#0FC787]'],
+                    ['label' => 'راسب', 'value' => (string) $failed, 'edge' => '#DC2626', 'valueClass' => 'text-[#DC2626]'],
+                ],
+                'rows' => $rows->all(),
+            ])
+        );
+    }
+
+    private function adminAssignmentStatusMeta(?string $status): array
+    {
+        return match ($status) {
+            \App\Models\WebinarAssignmentHistory::$pending => ['بانتظار التصحيح', 'warning'],
+            \App\Models\WebinarAssignmentHistory::$passed => ['ناجح', 'success'],
+            \App\Models\WebinarAssignmentHistory::$notPassed => ['راسب', 'danger'],
+            \App\Models\WebinarAssignmentHistory::$notSubmitted => ['لم يُسلّم بعد', 'muted'],
+            default => [$status ?: '—', 'muted'],
+        };
+    }
+
+    private function adminFormatAssignmentDate($timestamp): string
+    {
+        $ts = is_numeric($timestamp) ? (int) $timestamp : 0;
+
+        return $ts > 0 ? date('Y/m/d H:i', $ts) : '—';
+    }
+
     public function assignmentReview(Request $request, int $id)
     {
         $u = $this->resolveAdmin($request);

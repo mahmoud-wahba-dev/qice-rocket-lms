@@ -428,6 +428,9 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 Route::post('/quizzes/questions/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'deleteQuizQuestion'])->name('quizzes.questions.delete');
                 Route::get('/assignments/create', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'createAssignment'])->name('assignments.create');
                 Route::post('/assignments', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'storeAssignment'])->name('assignments.store');
+                Route::get('/assignments/{id}/students', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'assignmentStudents'])
+                    ->whereNumber('id')
+                    ->name('assignments.students');
                 Route::get('/assignments/{id}/edit', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'editAssignment'])->name('assignments.edit');
                 Route::post('/assignments/{id}/update', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'updateAssignment'])->name('assignments.update');
                 Route::post('/assignments/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'deleteAssignment'])->name('assignments.delete');

@@ -77,7 +77,11 @@ class CoursePerformanceBuilder
             $remindParams
         ) {
             $buyer = $sale->buyer;
-            $buyerId = (int) $sale->buyer_id;
+            $buyerId = (int) ($sale->buyer_id ?? 0);
+            // Orphan sales (deleted user / missing buyer relation) must be skipped.
+            if ($buyerId < 1 || empty($buyer)) {
+                return null;
+            }
             $progress = self::studentProgressPercent($webinar, $buyer);
 
             $passedExams = $quizIds->isEmpty()
@@ -123,7 +127,7 @@ class CoursePerformanceBuilder
                 'id' => $buyerId,
                 'name' => $buyer->full_name ?? 'طالب',
                 'email' => $buyer->email ?? '',
-                'avatar' => method_exists($buyer, 'getAvatar') ? $buyer->getAvatar() : null,
+                'avatar' => is_object($buyer) && method_exists($buyer, 'getAvatar') ? $buyer->getAvatar() : null,
                 'progress' => $progress,
                 'progress_label' => number_format((float) $progress, 1) . '%',
                 'activity' => $activity,
@@ -138,15 +142,15 @@ class CoursePerformanceBuilder
                 'remind_url' => $remindUrl,
                 'has_pending' => !empty($pendingAssignment),
             ];
-        });
+        })->filter()->values();
 
         $progressFilter = (string) ($request?->get('progress', '') ?? '');
         if ($progressFilter === 'low') {
-            $students = $students->filter(fn ($row) => (int) $row['progress'] < 40);
+            $students = $students->filter(fn ($row) => (int) ($row['progress'] ?? 0) < 40);
         } elseif ($progressFilter === 'mid') {
-            $students = $students->filter(fn ($row) => (int) $row['progress'] >= 40 && (int) $row['progress'] < 80);
+            $students = $students->filter(fn ($row) => (int) ($row['progress'] ?? 0) >= 40 && (int) ($row['progress'] ?? 0) < 80);
         } elseif ($progressFilter === 'high') {
-            $students = $students->filter(fn ($row) => (int) $row['progress'] >= 80);
+            $students = $students->filter(fn ($row) => (int) ($row['progress'] ?? 0) >= 80);
         }
 
         $students = $students->values();

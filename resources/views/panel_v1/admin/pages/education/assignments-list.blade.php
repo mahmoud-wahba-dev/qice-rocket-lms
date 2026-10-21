@@ -93,7 +93,7 @@
                             $submitted = (int) ($a->submissions_count ?? 0);
                             $enrolled = (int) ($enrolledMap[$a->webinar_id] ?? 0);
                             $isActive = ($a->status ?? '') === 'active';
-                            $studentsUrl = route('panel.v1.admin.education.enrollment.history', ['search' => $a->webinar_id]);
+                            $studentsUrl = route('panel.v1.admin.education.assignments.students', ['id' => $a->id]);
                             $editUrl = route('panel.v1.admin.education.assignments.edit', ['id' => $a->id]);
                         @endphp
                         <tr class="border-b border-d9 last:border-0 hover:bg-[#FAFAF4]/40">
@@ -101,7 +101,7 @@
                                 <p class="font-bold text-primary leading-snug">{{ $a->title ?? ('تكليف #'.$a->id) }}</p>
                                 <p class="font-medium text-12px text-gray mt-0.5">{{ $a->webinar->title ?? '—' }}</p>
                             </td>
-                            <td class="px-3 py-4 font-medium text-primary whitespace-nowrap">{{ $submitted }} / {{ $enrolled }}</td>
+                            <td class="px-3 py-4 font-medium text-primary whitespace-nowrap">{{ $submitted }} تسليم / {{ $enrolled }} مسجل</td>
                             <td class="px-3 py-4 font-medium text-primary whitespace-nowrap">{{ $a->grade ?? '—' }}</td>
                             <td class="px-3 py-4 font-medium text-primary whitespace-nowrap">{{ $a->pass_grade ?? '—' }}</td>
                             <td class="px-3 py-4 text-center">
