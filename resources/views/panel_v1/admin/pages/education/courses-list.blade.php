@@ -78,7 +78,7 @@
                             <option value="active" @selected(request('status')=='active')>نشط</option>
                             <option value="pending" @selected(request('status')=='pending')>معلقة</option>
                             <option value="is_draft" @selected(request('status')=='is_draft')>مسودة</option>
-                            <option value="inactive" @selected(request('status')=='inactive')>مرفوض</option>
+                            <option value="inactive" @selected(request('status')=='inactive')>غير نشط</option>
                         </select>
                     </div>
                     <a href="{{ url()->current() }}" class="inline-flex items-center h-11 px-4 rounded-10px border border-d9 bg-white text-13px font-medium text-primary hover:bg-[#FAFAF4]">مسح الفلتر</a>
@@ -112,7 +112,7 @@
                                 'active' => ['label' => 'نشط', 'class' => 'bg-[#D1FAE5] text-[#059669]'],
                                 'pending' => ['label' => 'معلقة', 'class' => 'bg-[#FEE2E2] text-[#B91C1C]'],
                                 'is_draft' => ['label' => 'مسودة', 'class' => 'bg-[#EFF6FF] text-[#2563EB]'],
-                                'inactive' => ['label' => 'مرفوض', 'class' => 'bg-[#FEE2E2] text-[#DC2626]'],
+                                'inactive' => ['label' => 'غير نشط', 'class' => 'bg-[#FEE2E2] text-[#DC2626]'],
                                 default => ['label' => $c->status ?: '—', 'class' => 'bg-[#F1F5F9] text-gray'],
                             };
                             $menuId = 'course-actions-' . $c->id . '-' . $index;
@@ -180,6 +180,25 @@
                                             <a href="{{ route('panel.v1.admin.education.courses.edit', ['id' => $c->id]) }}"
                                                 class="dropdown-item px-4 py-2.5 font-medium text-14px text-gray hover:bg-[#FAFAF4]">تعديل</a>
                                         </li>
+                                        @if ($c->status === 'active')
+                                            <li>
+                                                <form method="POST" action="{{ route('panel.v1.admin.education.courses.deactivate', ['id' => $c->id]) }}">
+                                                    @csrf
+                                                    <button type="submit"
+                                                        class="dropdown-item w-full text-start px-4 py-2.5 font-semibold text-14px text-[#D97706] hover:bg-[#FFFBEB]"
+                                                        title="إخفاء الدورة من صفحة الدورات">تعطيل</button>
+                                                </form>
+                                            </li>
+                                        @else
+                                            <li>
+                                                <form method="POST" action="{{ route('panel.v1.admin.education.courses.approve', ['id' => $c->id]) }}">
+                                                    @csrf
+                                                    <button type="submit"
+                                                        class="dropdown-item w-full text-start px-4 py-2.5 font-semibold text-14px text-[#16A34A] hover:bg-[#F0FDF4]"
+                                                        title="إظهار الدورة في صفحة الدورات">تفعيل</button>
+                                                </form>
+                                            </li>
+                                        @endif
                                         <li>
                                             <form method="POST" action="{{ route('panel.v1.admin.education.courses.delete', ['id' => $c->id]) }}"
                                                 onsubmit="return confirm('حذف الدورة؟');">

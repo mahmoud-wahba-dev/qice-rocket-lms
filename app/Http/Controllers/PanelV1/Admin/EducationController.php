@@ -71,7 +71,7 @@ class EducationController extends AdminController
             'active' => ['label' => 'نشط', 'tone' => 'success'],
             'pending' => ['label' => 'بانتظار المراجعة', 'tone' => 'warning'],
             'is_draft' => ['label' => 'مسودة', 'tone' => 'info'],
-            'inactive' => ['label' => 'مرفوض', 'tone' => 'danger'],
+            'inactive' => ['label' => 'غير نشط', 'tone' => 'danger'],
             default => ['label' => $status ?: '—', 'tone' => 'info'],
         };
     }
@@ -1029,7 +1029,11 @@ class EducationController extends AdminController
         $user = $this->resolveAdmin($request);
         if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
         \App\Models\Webinar::where('id',$id)->update(['status'=>'active','updated_at'=>time()]);
-        return back()->with('toast',['title'=>'تم','msg'=>'تمت الموافقة','type'=>'success']);
+        return back()->with('toast',[
+            'title'=>'تم',
+            'msg'=>'تم تفعيل الدورة وستظهر في صفحة الدورات',
+            'type'=>'success',
+        ]);
     }
 
     public function rejectCourse(Request $request, int $id)
@@ -1038,6 +1042,25 @@ class EducationController extends AdminController
         if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
         \App\Models\Webinar::where('id',$id)->update(['status'=>'inactive','updated_at'=>time()]);
         return back()->with('toast',['title'=>'تم','msg'=>'تم الرفض','type'=>'success']);
+    }
+
+    public function deactivateCourse(Request $request, int $id)
+    {
+        $user = $this->resolveAdmin($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        \App\Models\Webinar::where('id', $id)->update([
+            'status' => 'inactive',
+            'updated_at' => time(),
+        ]);
+
+        return back()->with('toast', [
+            'title' => 'تم',
+            'msg' => 'تم تعطيل الدورة ولن تظهر في صفحة الدورات',
+            'type' => 'success',
+        ]);
     }
 
     public function exportCourses(Request $request)

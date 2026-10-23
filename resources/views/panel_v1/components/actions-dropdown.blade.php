@@ -8,7 +8,7 @@
     - action (string, optional POST form action)
     - method (string, default POST) — only for form items
     - confirm (string, optional onsubmit confirm)
-    - tone: gray|primary|success|danger (default gray)
+    - tone: gray|primary|success|warning|danger (default gray)
     - disabled (bool)
 --}}
 @php
@@ -19,6 +19,7 @@
         'gray' => 'font-medium text-14px text-gray hover:bg-[#FAFAF4]',
         'primary' => 'font-medium text-14px text-primary hover:bg-[#FAFAF4]',
         'success' => 'font-semibold text-14px text-[#16A34A] hover:bg-[#F0FDF4]',
+        'warning' => 'font-semibold text-14px text-[#D97706] hover:bg-[#FFFBEB]',
         'danger' => 'font-semibold text-14px text-[#DC2626] hover:bg-[#FEF2F2]',
     ];
 @endphp

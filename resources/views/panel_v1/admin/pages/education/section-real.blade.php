@@ -60,7 +60,7 @@
                                     'active' => 'نشط',
                                     'pending' => 'بانتظار المراجعة',
                                     'is_draft' => 'مسودة',
-                                    'inactive' => 'مرفوض',
+                                    'inactive' => 'غير نشط',
                                     default => $c->status ?: '—',
                                 };
                             @endphp
@@ -73,11 +73,14 @@
                                         ['label' => 'المنهج', 'url' => route('panel.v1.admin.education.courses.curriculum',['id'=>$c->id]), 'tone' => 'gray'],
                                         ['label' => 'إشعار الطلاب', 'url' => route('panel.v1.admin.education.courses.notify',['id'=>$c->id]), 'tone' => 'gray'],
                                     ];
-                                    if ($c->status !== 'active') {
+                                    if ($c->status === 'pending') {
                                         $courseActionItems[] = ['label' => 'موافقة', 'action' => route('panel.v1.admin.education.courses.approve',['id'=>$c->id]), 'tone' => 'success'];
-                                    }
-                                    if ($c->status !== 'inactive') {
                                         $courseActionItems[] = ['label' => 'رفض', 'action' => route('panel.v1.admin.education.courses.reject',['id'=>$c->id]), 'tone' => 'danger'];
+                                    }
+                                    if ($c->status === 'active') {
+                                        $courseActionItems[] = ['label' => 'تعطيل', 'action' => route('panel.v1.admin.education.courses.deactivate',['id'=>$c->id]), 'tone' => 'warning'];
+                                    } else {
+                                        $courseActionItems[] = ['label' => 'تفعيل', 'action' => route('panel.v1.admin.education.courses.approve',['id'=>$c->id]), 'tone' => 'success'];
                                     }
                                     $courseActionItems[] = ['label' => 'حذف', 'action' => route('panel.v1.admin.education.courses.delete',['id'=>$c->id]), 'confirm' => 'حذف الدورة؟', 'tone' => 'danger'];
                                 @endphp
