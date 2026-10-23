@@ -160,7 +160,7 @@
                 <div class="lg:col-span-3 p-5 sm:p-6 space-y-3">
                     <h3 class="font-bold text-18px text-primary">قالب شهادة QIEC الثنائية اللغة</h3>
                     <p class="font-medium text-13px text-gray leading-relaxed">
-                        الشهادات تُطبع على قالب QIEC مع بيانات ديناميكية: رقم الشهادة، اسم المتدرب، الدورة، الساعات، التواريخ، رقم الاعتماد، مدير المركز، ومسؤول التدريب والاعتماد + QR.
+                        الشهادات تُطبع على قالب QIEC مع بيانات ديناميكية: رقم الشهادة، اسم المتدرب، الدورة، الساعات، التواريخ، جهة الاعتماد، رقم الاعتماد، مدير المركز، ومسؤول التدريب والاعتماد + QR.
                     </p>
                     <div class="flex flex-wrap gap-2 pt-1">
                         <a href="{{ route('panel.v1.admin.education.certificates.create') }}"

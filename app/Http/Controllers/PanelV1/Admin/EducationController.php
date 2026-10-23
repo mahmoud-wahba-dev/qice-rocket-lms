@@ -1885,12 +1885,16 @@ class EducationController extends AdminController
             'end_date' => 'required|date',
             'issue_date' => 'required|date',
             'accreditation_number' => 'required|string|max:120',
+            'accredited_by_ar' => 'required|string|max:255',
+            'accredited_by_en' => 'nullable|string|max:255',
             'officer_name' => 'required|string|max:255',
             'director_name' => 'required|string|max:255',
             'save_as_defaults' => 'nullable|in:1',
         ]);
 
         $issueTs = strtotime($data['issue_date'] . ' 12:00:00') ?: time();
+        $accreditedByAr = $data['accredited_by_ar'];
+        $accreditedByEn = $data['accredited_by_en'] ?: 'Quality & Excellence Center';
 
         $meta = [
             'trainee_name_ar' => $data['trainee_name_ar'],
@@ -1902,6 +1906,8 @@ class EducationController extends AdminController
             'end_date' => date('d/m/Y', strtotime($data['end_date'])),
             'issue_date' => date('d/m/Y', $issueTs),
             'accreditation_number' => $data['accreditation_number'],
+            'accredited_by_ar' => $accreditedByAr,
+            'accredited_by_en' => $accreditedByEn,
             'officer_name' => $data['officer_name'],
             'director_name' => $data['director_name'],
         ];
@@ -1920,13 +1926,15 @@ class EducationController extends AdminController
                 'officer_name' => $data['officer_name'],
                 'director_name' => $data['director_name'],
                 'accreditation_number' => $data['accreditation_number'],
+                'accredited_by_ar' => $accreditedByAr,
+                'accredited_by_en' => $accreditedByEn,
             ]);
             $savedDefaults = true;
         }
 
         $msg = 'تم إنشاء الشهادة ' . $certificate->formatted_number;
         if ($savedDefaults) {
-            $msg .= ' — وحُفظت أسماء التوقيع ورقم الاعتماد كافتراضي';
+            $msg .= ' — وحُفظت أسماء التوقيع ورقم الاعتماد وجهة الاعتماد كافتراضي';
         }
 
         return redirect()
@@ -1955,6 +1963,8 @@ class EducationController extends AdminController
             'end_date' => date('Y-m-d'),
             'issue_date' => date('Y-m-d'),
             'accreditation_number' => $cached['accreditation_number'] ?? ($settings['accreditation_number'] ?? 'QIEC-ACC-001'),
+            'accredited_by_ar' => $cached['accredited_by_ar'] ?? ($settings['accredited_by_ar'] ?? 'مركز الجودة والتميز'),
+            'accredited_by_en' => $cached['accredited_by_en'] ?? ($settings['accredited_by_en'] ?? 'Quality & Excellence Center'),
             'officer_name' => $cached['officer_name'] ?? ($settings['officer_name'] ?? 'مسؤول التدريب والاعتماد'),
             'director_name' => $cached['director_name'] ?? ($settings['director_name'] ?? 'مدير المركز'),
         ];

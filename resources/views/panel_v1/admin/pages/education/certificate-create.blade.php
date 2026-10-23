@@ -99,6 +99,16 @@
                     <input type="text" name="accreditation_number" value="{{ old('accreditation_number', $defaults['accreditation_number'] ?? 'QIEC-ACC-001') }}" required class="{{ $input }}">
                 </div>
                 <div>
+                    <label class="{{ $label }}">جهة الاعتماد (عربي) *</label>
+                    <input type="text" name="accredited_by_ar" value="{{ old('accredited_by_ar', $defaults['accredited_by_ar'] ?? 'مركز الجودة والتميز') }}" required class="{{ $input }}" placeholder="مركز الجودة والتميز">
+                    <p class="mt-1 font-medium text-12px text-gray">يظهر بعد: الدورة معتمدة من [ … ]</p>
+                </div>
+                <div>
+                    <label class="{{ $label }}">Accredited by (English)</label>
+                    <input type="text" name="accredited_by_en" value="{{ old('accredited_by_en', $defaults['accredited_by_en'] ?? 'Quality & Excellence Center') }}" class="{{ $input }}" dir="ltr" placeholder="Quality &amp; Excellence Center">
+                    <p class="mt-1 font-medium text-12px text-gray">Appears after: Accredited by [ … ]</p>
+                </div>
+                <div>
                     <label class="{{ $label }}">تاريخ بداية الدورة *</label>
                     <input type="date" name="start_date" value="{{ old('start_date', $defaults['start_date'] ?? date('Y-m-d')) }}" required class="{{ $input }}">
                 </div>
@@ -137,7 +147,7 @@
             </style>
             <label class="flex items-center justify-between gap-4 rounded-12px border border-d9 bg-[#FAFAF4] px-4 py-3 cursor-pointer">
                 <span class="font-medium text-13px text-primary leading-relaxed">
-                    حفظ أسماء التوقيع ورقم الاعتماد كافتراضي للشهادات التالية
+                    حفظ أسماء التوقيع ورقم الاعتماد وجهة الاعتماد كافتراضي للشهادات التالية
                 </span>
                 <span class="cert-default-switch">
                     <input type="checkbox" name="save_as_defaults" value="1" @checked(old('save_as_defaults', '1') == '1')>

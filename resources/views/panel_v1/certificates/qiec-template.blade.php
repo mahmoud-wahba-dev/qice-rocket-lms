@@ -75,8 +75,8 @@
     <div class="mask" style="left:156px;top:652px;width:130px;height:18px;"></div>
     <div class="field en" style="left:158px;top:654px;width:130px;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
 
-    <div class="mask" style="left:250px;top:684px;width:130px;height:18px;"></div>
-    <div class="field en" style="left:252px;top:686px;width:130px;font-size:11px;font-weight:normal;">[ {{ $accByEn }} ]</div>
+    <div class="mask" style="left:200px;top:684px;width:280px;height:18px;"></div>
+    <div class="field en" style="left:202px;top:686px;width:280px;font-size:11px;font-weight:normal;">[ {{ $accByEn }} ]</div>
 
     <div class="mask" style="left:250px;top:716px;width:130px;height:18px;"></div>
     <div class="field en" style="left:252px;top:718px;width:130px;font-size:11px;font-weight:normal;">[ {{ $acc }} ]</div>
@@ -91,8 +91,8 @@
     <div class="mask" style="left:1008px;top:652px;width:118px;height:18px;"></div>
     <div class="field en" style="left:1008px;top:654px;width:114px;text-align:right;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
 
-    <div class="mask" style="left:1012px;top:684px;width:75px;height:18px;"></div>
-    <div class="field en" style="left:1012px;top:686px;width:72px;text-align:right;font-size:11px;font-weight:normal;">[ {{ $accByAr }} ]</div>
+    <div class="mask" style="left:820px;top:684px;width:267px;height:18px;"></div>
+    <div class="field ar" style="left:820px;top:686px;width:260px;font-size:11px;font-weight:normal;">[ {{ $accByAr }} ]</div>
 
     <div class="mask" style="left:1012px;top:716px;width:112px;height:18px;"></div>
     <div class="field en" style="left:1012px;top:718px;width:108px;text-align:right;font-size:11px;font-weight:normal;">[ {{ $acc }} ]</div>
