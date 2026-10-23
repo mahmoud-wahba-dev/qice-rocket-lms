@@ -32,6 +32,7 @@
                 : '35 ساعة تدريبية معتمدة');
         $courseTeaser = $course->seo_description ?? ($course->summary ?? Str::limit(strip_tags(html_entity_decode($course->description)), 160));
         $courseAboutText = $course->summary ?? Str::limit(strip_tags(html_entity_decode($course->description)), 300);
+        $programDateLabel = landingProgramDate($course);
     @endphp
 
     <main>
@@ -50,16 +51,18 @@
                         </p>
 
                         <div class="flex items-center gap-3 lg:gap-4 flex-wrap xl:flex-nowrap mb-10">
+                            @if (!empty($programDateLabel))
+                                <div
+                                    class="flex items-center gap-2 px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap">
+                                    <img src="{{ $courseDetailsImg }}/calendar.webp" alt="calendar" class="size-6 shrink-0">
+                                    <span class="font-semibold text-14px text-primary whitespace-nowrap">تاريخ البرنامج: {{ $programDateLabel }}</span>
+                                </div>
+                            @endif
                             <div
                                 class="flex items-center gap-2 px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap">
                                 <img src="{{ $courseDetailsImg }}/calendar.webp" alt="calendar" class="size-6 shrink-0">
                                 <span class="font-semibold text-14px text-primary whitespace-nowrap">{{ $heroDaysLabel }}</span>
                             </div>
-                            <!-- <div
-                                class="flex items-center gap-2 px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap">
-                                <img src="{{ $courseDetailsImg }}/clock.webp" alt="clock" class="size-6 shrink-0">
-                                <span class="font-medium text-14px text-primary whitespace-nowrap">{{ $heroHoursLabel }}</span>
-                            </div> -->
                             <div
                                 class="flex items-center gap-2 px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap">
                                 <img src="{{ $courseDetailsImg }}/waiting-room.webp" alt="waiting-room"

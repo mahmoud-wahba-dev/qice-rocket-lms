@@ -2,6 +2,7 @@
     'title' => '',
     'summary' => '',
     'categoryTitle' => '',
+    'programDate' => null,
     'slug' => null,
     'buttonText' => 'تفاصيل الورشة',
     'buttonUrl' => null,
@@ -36,7 +37,15 @@
         {{ Str::limit(strip_tags(html_entity_decode($summary)), 120) }}
     </p>
     @if (!empty($categoryTitle))
-        <p class="font-normal text-15px text-primary mb-6">{{ $categoryTitle }}</p>
+        <p class="font-normal text-15px text-primary mb-2">{{ $categoryTitle }}</p>
+    @endif
+    @if (!empty($programDate))
+        <p class="font-medium text-13px text-primary/70 mb-6 inline-flex items-center gap-1.5">
+            <span class="icon-[tabler--calendar-event] size-4 shrink-0"></span>
+            <span>تاريخ البرنامج: {{ $programDate }}</span>
+        </p>
+    @else
+        <div class="mb-6"></div>
     @endif
     <div>
         <a class="btn btn-outline btn-primary whitespace-nowrap h-12 btn-block font-medium text-16px {{ $isSectionLink ? 'js-scroll-to-course-section' : '' }}" href="{{ $detailUrl }}">

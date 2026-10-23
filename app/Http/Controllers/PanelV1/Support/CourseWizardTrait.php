@@ -408,7 +408,114 @@ trait CourseWizardTrait
             'draftCapacity' => $draft->capacity ?? null,
             'draftCertificate' => (bool) ($draft->certificate ?? false),
             'draftAccessDays' => $draft->access_days ?? null,
+            'courseFaqs' => $this->wizardFaqsForView($draft),
         ];
+    }
+
+    /**
+     * Existing FAQ rows for the wizard editor (optional section).
+     */
+    protected function wizardFaqsForView($draft): array
+    {
+        if (empty($draft) || empty($draft->id)) {
+            return [];
+        }
+
+        return \App\Models\Faq::query()
+            ->where('webinar_id', $draft->id)
+            ->with('translations')
+            ->orderBy('order')
+            ->orderBy('id')
+            ->get()
+            ->map(function ($faq) {
+                $title = trim((string) getTranslateAttributeValue($faq, 'title', 'ar'));
+                $answer = trim((string) getTranslateAttributeValue($faq, 'answer', 'ar'));
+                if ($title === '' && $faq->relationLoaded('translations')) {
+                    $tr = $faq->translations->firstWhere('locale', 'ar') ?? $faq->translations->first();
+                    $title = trim((string) ($tr->title ?? ''));
+                    $answer = trim((string) ($tr->answer ?? ''));
+                }
+
+                return [
+                    'id' => (int) $faq->id,
+                    'title' => $title,
+                    'answer' => $answer,
+                ];
+            })
+            ->filter(fn ($row) => $row['title'] !== '' || $row['answer'] !== '')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Sync optional FAQ rows from wizard/admin forms. Empty rows are skipped; omitted filled rows are deleted.
+     */
+    protected function syncWizardFaqs(Request $request, $draft, $user): void
+    {
+        if (empty($draft) || empty($draft->id) || !$request->has('faqs')) {
+            return;
+        }
+
+        $items = $request->input('faqs', []);
+        if (!is_array($items)) {
+            $items = [];
+        }
+
+        $keepIds = [];
+        $order = 1;
+        $locale = mb_strtolower((string) ($request->input('locale') ?: 'ar'));
+
+        foreach ($items as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $title = trim((string) ($row['title'] ?? ''));
+            $answer = trim((string) ($row['answer'] ?? ''));
+
+            // Incomplete optional rows are ignored (not required).
+            if ($title === '' || $answer === '') {
+                continue;
+            }
+
+            $faqId = !empty($row['id']) ? (int) $row['id'] : 0;
+            $faq = $faqId > 0
+                ? \App\Models\Faq::where('id', $faqId)->where('webinar_id', $draft->id)->first()
+                : null;
+
+            if (empty($faq)) {
+                $faq = \App\Models\Faq::create([
+                    'creator_id' => $user->id,
+                    'webinar_id' => $draft->id,
+                    'order' => $order,
+                    'created_at' => time(),
+                ]);
+            } else {
+                $faq->order = $order;
+                $faq->updated_at = time();
+                $faq->save();
+            }
+
+            \App\Models\Translation\FaqTranslation::updateOrCreate(
+                [
+                    'faq_id' => $faq->id,
+                    'locale' => $locale,
+                ],
+                [
+                    'title' => mb_substr($title, 0, 255),
+                    'answer' => $answer,
+                ]
+            );
+
+            $keepIds[] = (int) $faq->id;
+            $order++;
+        }
+
+        $deleteQuery = \App\Models\Faq::where('webinar_id', $draft->id);
+        if (!empty($keepIds)) {
+            $deleteQuery->whereNotIn('id', $keepIds);
+        }
+        $deleteQuery->delete();
     }
 
     /**
@@ -619,6 +726,18 @@ trait CourseWizardTrait
 
             $draft->updated_at = time();
             $draft->save();
+        }
+
+        if (!empty($draft) && $step === 5) {
+            // Optional FAQs — never required; incomplete rows are skipped in syncWizardFaqs.
+            $request->validate([
+                'faqs' => 'nullable|array',
+                'faqs.*.id' => 'nullable|integer',
+                'faqs.*.title' => 'nullable|string|max:255',
+                'faqs.*.answer' => 'nullable|string|max:5000',
+            ], $this->courseWizardMessages(), $attrs);
+
+            $this->syncWizardFaqs($request, $draft, $user);
         }
 
         $goNext = $request->input('go_next');

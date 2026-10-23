@@ -3,6 +3,11 @@
     $textarea = 'textarea textarea-bordered w-full rounded-10px border-d9 font-medium text-15px sm:text-16px text-black focus:outline-none focus:border-primary min-h-36 resize-y';
 @endphp
 
+@include('panel_v1.components.course-faqs-editor', [
+    'faqs' => $courseFaqs ?? [],
+    'card' => $card,
+])
+
 <section class="{{ $card }}">
     <div class="flex items-start gap-3 mb-5">
         <span class="size-11 rounded-12px bg-primary/10 center shrink-0">

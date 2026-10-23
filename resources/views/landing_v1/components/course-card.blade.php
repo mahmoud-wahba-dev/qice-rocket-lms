@@ -8,6 +8,7 @@
     'buttonText' => 'سجّل الآن',
     'slug' => null,
     'categoryTitle' => '',
+    'programDate' => null,
 ])
 
 @php($landingImg = asset('assets/landing_v1/img'))
@@ -26,8 +27,14 @@
             <p class="font-normal text-12px text-7a mb-2">{{ $categoryTitle }}</p>
         @endif
         @if (!empty($description))
-            <p class="font-normal text-13px text-7a mb-3 line-clamp-2">
+            <p class="font-normal text-13px text-7a mb-2 line-clamp-2">
                 {{ Str::limit(strip_tags(html_entity_decode($description)), 80) }}
+            </p>
+        @endif
+        @if (!empty($programDate))
+            <p class="font-medium text-12px text-primary/70 mb-3 inline-flex items-center gap-1.5">
+                <span class="icon-[tabler--calendar-event] size-3.5 shrink-0"></span>
+                <span>تاريخ البرنامج: {{ $programDate }}</span>
             </p>
         @endif
         <div class="flex items-center gap-1.5 mb-5 border-t border-card-border pt-4 ">

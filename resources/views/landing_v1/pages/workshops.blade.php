@@ -15,6 +15,7 @@
                             :title="$workshop->title"
                             :summary="$workshop->summary ?? $workshop->description"
                             :categoryTitle="$workshop->category->title ?? ''"
+                            :programDate="landingProgramDate($workshop)"
                             :slug="$workshop->slug"
                         />
                     @empty

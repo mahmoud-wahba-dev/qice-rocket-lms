@@ -31,6 +31,7 @@
         $effectivePrice = $course->getPrice();
         $hasDiscount = $effectivePrice < $course->price;
         $sessionCount = $course->chapters->sum(fn($chapter) => $chapter->sessions->count());
+        $programDateLabel = landingProgramDate($course, !empty($course->start_date) && ($course->type ?? '') === 'webinar' ? 'j F Y — H:i' : 'j F Y');
     @endphp
 
     <main>
@@ -100,6 +101,13 @@
                     </p>
 
                     <div class="flex items-center gap-3 lg:gap-4 flex-wrap xl:flex-nowrap mb-10">
+                        @if (!empty($programDateLabel))
+                            <div
+                                class="flex items-center gap-2  px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap">
+                                <img src="{{ $courseDetailsImg }}/calendar.webp" alt="calendar" class="size-6 shrink-0">
+                                <span class="font-semibold text-14px text-white whitespace-nowrap">تاريخ البرنامج: {{ $programDateLabel }}</span>
+                            </div>
+                        @endif
                         @if (!empty($course->access_days))
                             <div
                                 class="flex items-center gap-2  px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap">
@@ -207,7 +215,7 @@
                         @if (!empty($faqItems))
                         <a href="#course-faq"
                             class="course-scrollspy-link flex items-center justify-center py-[1.375rem] lg:py-6 px-2 font-medium text-20px lg:text-24px text-center whitespace-nowrap text-white border-b-[3px] border-b-transparent -mb-px transition-[border-color] duration-200 hover:text-white [&.active]:border-b-white"
-                            aria-current="false">استفساراتك</a>
+                            aria-current="false">الأسئلة الشائعة</a>
                         @endif
                     </nav>
                 </div>
@@ -353,17 +361,16 @@
 
         {{-- FAQ (التعليمات from admin) --}}
         @if (!empty($faqItems))
-        <section id="course-faq" class="course-scrollspy-section bg-[#165554] py-16 lg:py-24 my-0 text-white">
+        <section id="course-faq" class="course-scrollspy-section bg-[#165554] py-4 my-0 text-white">
             <div class="container">
                 <h3 class="font-bold text-32px lg:text-48px mb-15 text-center">
-                    <span class="text-white ">إجابات</span>
-                    <span class="text-[#FFD343]">لاستفساراتك</span>
-
+                    <span class="text-white">الأسئلة</span>
+                    <span class="text-[#FFD343]">الشائعة</span>
                 </h3>
                 <div class="max-w-4xl mx-auto">
                     <div class="accordion accordion-shadow">
                         @foreach ($faqItems as $index => $faq)
-                            <div class="accordion-item {{ $index === 0 ? 'active' : '' }} bg-transparent border-b border-[#1D293D]"
+                            <div class="accordion-item {{ $index === 0 ? 'active' : '' }} bg-transparent border-b border-[#1D293D] last:mb-0"
                                 id="paid-faq-{{ $index + 1 }}">
                                 <button
                                     class="accordion-toggle shadow-none bg-transparent inline-flex items-center gap-x-4 px-0 py-6 text-start w-full hover:bg-white/5 transition-all duration-300 text-white"

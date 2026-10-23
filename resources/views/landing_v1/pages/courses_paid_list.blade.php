@@ -8,6 +8,7 @@
             :price="($course->price > 0) ? handlePrice($course->price) : 'مجاناً'"
             :image="$course->image_cover ?? $course->thumbnail ?? asset('assets/landing_v1/img/home/course.webp')"
             :categoryTitle="$course->category->title ?? ''"
+            :programDate="landingProgramDate($course)"
             :slug="$course->slug"
         />
     @empty

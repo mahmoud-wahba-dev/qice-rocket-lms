@@ -239,6 +239,7 @@ class LandingV1DemoDataSeeder extends Seeder
                 'price' => null,
                 'status' => Webinar::$active,
                 'private' => false,
+                'start_date' => strtotime('+' . (7 + $index) . ' days 10:00:00') ?: time(),
                 'created_at' => time(),
                 'updated_at' => time(),
             ]);
@@ -341,6 +342,7 @@ class LandingV1DemoDataSeeder extends Seeder
                 'price' => $data['price'],
                 'status' => Webinar::$active,
                 'private' => false,
+                'start_date' => strtotime('+' . (10 + ($index * 2)) . ' days 18:00:00') ?: time(),
                 'created_at' => time(),
                 'updated_at' => time(),
             ]);

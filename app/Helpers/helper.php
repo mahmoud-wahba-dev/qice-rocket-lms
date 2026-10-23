@@ -2681,6 +2681,29 @@ function getAvailableUploadFileSources()
     return $sources;
 }
 
+if (!function_exists('landingProgramDate')) {
+    /**
+     * Program date label for landing cards/details.
+     * Prefers webinars.start_date (live schedule / program date), falls back to created_at.
+     */
+    function landingProgramDate($webinar, string $format = 'j F Y'): ?string
+    {
+        if (empty($webinar)) {
+            return null;
+        }
+
+        $timestamp = !empty($webinar->start_date)
+            ? (int) $webinar->start_date
+            : (!empty($webinar->created_at) ? (int) $webinar->created_at : null);
+
+        if (empty($timestamp)) {
+            return null;
+        }
+
+        return dateTimeFormat($timestamp, $format);
+    }
+}
+
 if (!function_exists('panelV1HomeUrl')) {
     /**
      * Role-based home URL for the redesigned (V1) panels.

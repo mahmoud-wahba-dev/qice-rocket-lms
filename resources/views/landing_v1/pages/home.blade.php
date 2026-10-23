@@ -280,6 +280,7 @@
                             @forelse ($freeWorkshops as $workshop)
                                 <div class="carousel-slide">
                                     <x-landing_v1::workshop-card :title="$workshop->title" :summary="$workshop->summary ?? $workshop->description" :categoryTitle="$workshop->category->title ?? ''"
+                                        :programDate="landingProgramDate($workshop)"
                                         :slug="$workshop->slug" />
                                 </div>
                             @empty
@@ -383,6 +384,7 @@
                                     <x-landing_v1::course-card :title="$course->title" :description="$course->seo_description ?? ($course->summary ?? $course->description)" :teacherName="$course->teacher->full_name ?? ''"
                                         :teacherAvatar="!empty($course->teacher) ? $course->teacher->getAvatar() : null" :price="$course->price > 0 ? handlePrice($course->price) : 'مجاناً'" :image="$course->image_cover ??
                                             ($course->thumbnail ?? asset('assets/landing_v1/img/home/course.webp'))" :categoryTitle="$course->category->title ?? ''"
+                                        :programDate="landingProgramDate($course)"
                                         :slug="$course->slug" />
                                 </div>
                             @empty
