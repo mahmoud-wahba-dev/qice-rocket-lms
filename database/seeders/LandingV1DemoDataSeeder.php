@@ -10,6 +10,7 @@ use App\Models\Translation\BlogCategoryTranslation;
 use App\Models\Translation\BlogTranslation;
 use App\Models\Translation\CategoryTranslation;
 use App\Models\Translation\WebinarTranslation;
+use App\Models\UserMeta;
 use App\Models\Webinar;
 use App\User;
 use Illuminate\Database\Seeder;
@@ -76,48 +77,96 @@ class LandingV1DemoDataSeeder extends Seeder
                 'email' => self::USER_PREFIX . 'm-abu-haisha@qiec.local',
                 'full_name' => 'د. محمد أبو هيشة',
                 'headline' => 'استشاري الإدارة الصحية',
-                'bio' => 'استشاري الإدارة الصحية',
+                'bio' => 'استشاري الإدارة الصحية والمستشفيات بخبرة قيادية تمتد لعقود في القطاع الصحي.',
                 'about' => 'دكتوراه في الإدارة والتخطيط الصحي. استشاري الإدارة الصحية والمستشفيات. عمل مديرًا عامًا لعدة إدارات عامة بوزارة الصحة لمدة 30 سنة.',
+                'educations' => [
+                    'دكتوراه في الإدارة والتخطيط الصحي',
+                    'ماجستير في إدارة المستشفيات',
+                ],
+                'experiences' => [
+                    'مدير عام لعدة إدارات عامة بوزارة الصحة — 30 سنة',
+                    'استشاري الإدارة الصحية والمستشفيات',
+                ],
             ],
             [
                 'username' => self::USER_PREFIX . 'a-alqahtani',
                 'email' => self::USER_PREFIX . 'a-alqahtani@qiec.local',
                 'full_name' => 'د. عبدالله القحطاني',
                 'headline' => 'خبير الحوكمة والتطوير المؤسسي',
-                'bio' => 'خبير الحوكمة المؤسسية',
+                'bio' => 'خبير في الحوكمة والتطوير المؤسسي وبرامج التميز المؤسسي المعتمدة.',
                 'about' => 'دكتوراه في إدارة الأعمال. خبير في الحوكمة والتطوير المؤسسي. مدرب معتمد في برامج التميز المؤسسي.',
+                'educations' => [
+                    'دكتوراه في إدارة الأعمال',
+                    'شهادة مدرب معتمد في برامج التميز المؤسسي',
+                ],
+                'experiences' => [
+                    'خبير الحوكمة والتطوير المؤسسي',
+                    'مدرب معتمد في برامج التميز المؤسسي',
+                ],
             ],
             [
                 'username' => self::USER_PREFIX . 's-alotaibi',
                 'email' => self::USER_PREFIX . 's-alotaibi@qiec.local',
                 'full_name' => 'د. سارة العتيبي',
                 'headline' => 'استشارية الجودة والاعتماد',
-                'bio' => 'استشارية الجودة الصحية',
+                'bio' => 'استشارية في نظم الجودة الصحية والاعتماد المؤسسي مع خبرة تتجاوز 20 عامًا.',
                 'about' => 'دكتوراه في الجودة والاعتماد المؤسسي. استشارية في نظم الجودة الصحية. خبرة تتجاوز 20 عامًا في التدريب والتطوير.',
+                'educations' => [
+                    'دكتوراه في الجودة والاعتماد المؤسسي',
+                    'شهادة استشارية نظم الجودة الصحية',
+                ],
+                'experiences' => [
+                    'استشارية نظم الجودة الصحية والاعتماد',
+                    'خبرة تتجاوز 20 عامًا في التدريب والتطوير',
+                ],
             ],
             [
                 'username' => self::USER_PREFIX . 'k-alshammari',
                 'email' => self::USER_PREFIX . 'k-alshammari@qiec.local',
                 'full_name' => 'د. خالد الشمري',
                 'headline' => 'مستشار الامتثال والحوكمة',
-                'bio' => 'مستشار الامتثال والحوكمة',
+                'bio' => 'مستشار في الامتثال والحوكمة ومدرب في القيادة والإدارة الاستراتيجية.',
                 'about' => 'ماجستير في القانون الإداري. مستشار في الامتثال والحوكمة. مدرب في برامج القيادة والإدارة الاستراتيجية.',
+                'educations' => [
+                    'ماجستير في القانون الإداري',
+                    'شهادة تخصص في الامتثال والحوكمة',
+                ],
+                'experiences' => [
+                    'مستشار الامتثال والحوكمة',
+                    'مدرب برامج القيادة والإدارة الاستراتيجية',
+                ],
             ],
             [
                 'username' => self::USER_PREFIX . 'n-aldosari',
                 'email' => self::USER_PREFIX . 'n-aldosari@qiec.local',
                 'full_name' => 'د. نورة الدوسري',
                 'headline' => 'خبيرة التخطيط الاستراتيجي',
-                'bio' => 'خبيرة التخطيط الاستراتيجي',
+                'bio' => 'خبيرة في التخطيط الاستراتيجي وتطوير الكفاءات القيادية والتطوير المهني.',
                 'about' => 'دكتوراه في التخطيط الاستراتيجي. خبيرة في تطوير الكفاءات القيادية. مدربة معتمدة في برامج التطوير المهني.',
+                'educations' => [
+                    'دكتوراه في التخطيط الاستراتيجي',
+                    'شهادة مدربة معتمدة في التطوير المهني',
+                ],
+                'experiences' => [
+                    'خبيرة تطوير الكفاءات القيادية',
+                    'مدربة معتمدة في برامج التطوير المهني',
+                ],
             ],
             [
                 'username' => self::USER_PREFIX . 'f-alharbi',
                 'email' => self::USER_PREFIX . 'f-alharbi@qiec.local',
                 'full_name' => 'د. فهد الحربي',
                 'headline' => 'مدرب التميز المؤسسي',
-                'bio' => 'مدرب التميز المؤسسي',
+                'bio' => 'مدرب معتمد في نماذج التميز الحكومي والخاص مع خبرة واسعة في الاستشارات المؤسسية.',
                 'about' => 'ماجستير في إدارة الجودة الشاملة. مدرب معتمد في نماذج التميز الحكومي والخاص. خبرة 15 عامًا في الاستشارات المؤسسية.',
+                'educations' => [
+                    'ماجستير في إدارة الجودة الشاملة',
+                    'شهادة مدرب معتمد في نماذج التميز الحكومي والخاص',
+                ],
+                'experiences' => [
+                    'مدرب معتمد في نماذج التميز المؤسسي',
+                    'خبرة 15 عامًا في الاستشارات المؤسسية',
+                ],
             ],
         ];
 
@@ -128,6 +177,19 @@ class LandingV1DemoDataSeeder extends Seeder
                 ->first();
 
             if ($existing) {
+                $existing->fill([
+                    'headline' => $data['headline'],
+                    'bio' => $data['bio'],
+                    'about' => $data['about'],
+                    'status' => 'active',
+                ])->save();
+
+                $this->syncInstructorProfileMetas(
+                    $existing->id,
+                    $data['educations'] ?? [],
+                    $data['experiences'] ?? []
+                );
+
                 $teacherIds[] = $existing->id;
                 $skipped++;
                 continue;
@@ -149,11 +211,51 @@ class LandingV1DemoDataSeeder extends Seeder
                 'created_at' => time(),
             ]);
 
+            $this->syncInstructorProfileMetas(
+                $user->id,
+                $data['educations'] ?? [],
+                $data['experiences'] ?? []
+            );
+
             $teacherIds[] = $user->id;
             $created++;
         }
 
         return [$created, $skipped, $teacherIds];
+    }
+
+    /**
+     * Idempotent education/experience metas for public instructor profile pages.
+     *
+     * @param array<int, string> $educations
+     * @param array<int, string> $experiences
+     */
+    private function syncInstructorProfileMetas(int $userId, array $educations, array $experiences): void
+    {
+        foreach (['education' => $educations, 'experience' => $experiences] as $name => $values) {
+            foreach ($values as $value) {
+                $value = trim((string) $value);
+                if ($value === '') {
+                    continue;
+                }
+
+                $exists = UserMeta::query()
+                    ->where('user_id', $userId)
+                    ->where('name', $name)
+                    ->where('value', $value)
+                    ->exists();
+
+                if ($exists) {
+                    continue;
+                }
+
+                UserMeta::query()->create([
+                    'user_id' => $userId,
+                    'name' => $name,
+                    'value' => $value,
+                ]);
+            }
+        }
     }
 
     /**

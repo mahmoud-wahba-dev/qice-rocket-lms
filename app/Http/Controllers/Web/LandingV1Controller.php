@@ -380,10 +380,15 @@ class LandingV1Controller extends Controller
     public function instructorDetails($username)
     {
         $instructor = User::query()
-            ->select('id', 'full_name', 'username', 'avatar', 'avatar_settings', 'bio', 'headline', 'about', 'created_at')
+            ->select('id', 'full_name', 'username', 'avatar', 'avatar_settings', 'bio', 'headline', 'about', 'created_at', 'profile_video')
             ->where('username', $username)
             ->where('role_name', Role::$teacher)
             ->where('status', 'active')
+            ->with([
+                'userMetas',
+                'occupations.category',
+                'profileAttachments',
+            ])
             ->firstOrFail();
 
         $this->attachInstructorStats($instructor);
@@ -403,8 +408,58 @@ class LandingV1Controller extends Controller
         $rating = is_numeric($instructor->rating) ? (float) $instructor->rating : 0;
         $studentsCount = (int) ($instructor->students_count ?? 0);
         $coursesCount = (int) ($instructor->courses_count ?? 0);
-        $aboutText = trim($instructor->about ?? $instructor->bio ?? '');
         $headline = trim((string) ($instructor->headline ?? ''));
+        $shortBio = trim((string) ($instructor->bio ?? ''));
+        $aboutText = trim((string) ($instructor->about ?? ''));
+        // Hero only: avoid repeating the same line under the headline.
+        $heroBio = $shortBio;
+        if ($heroBio !== '' && mb_strtolower($heroBio) === mb_strtolower($headline)) {
+            $heroBio = '';
+        }
+
+        $userMetas = $instructor->userMetas;
+        $educations = $userMetas->where('name', 'education')->values();
+        $experiences = $userMetas->where('name', 'experience')->values();
+        $certificateAdditional = trim((string) optional(
+            $userMetas->firstWhere('name', 'certificate_additional')
+        )->value);
+        $occupations = $instructor->occupations
+            ->map(fn ($occupation) => trim((string) ($occupation->category->title ?? '')))
+            ->filter()
+            ->unique()
+            ->values();
+        $attachments = $instructor->profileAttachments;
+        $badges = collect($instructor->getBadges(false) ?? [])
+            ->map(function ($badge) {
+                $title = !empty($badge->badge_id)
+                    ? ($badge->badge->title ?? null)
+                    : ($badge->title ?? null);
+                $image = !empty($badge->badge_id)
+                    ? ($badge->badge->image ?? null)
+                    : ($badge->image ?? null);
+                $title = trim((string) $title);
+
+                if ($title === '') {
+                    return null;
+                }
+
+                return [
+                    'title' => $title,
+                    'image' => $image,
+                ];
+            })
+            ->filter()
+            ->values();
+
+        $memberSince = null;
+        if (!empty($instructor->created_at)) {
+            $createdTs = is_numeric($instructor->created_at)
+                ? (int) $instructor->created_at
+                : strtotime((string) $instructor->created_at);
+            if ($createdTs > 0) {
+                $memberSince = (int) date('Y', $createdTs);
+            }
+        }
 
         $statCards = [];
         $statCards[] = [
@@ -430,13 +485,31 @@ class LandingV1Controller extends Controller
             'iconBg' => 'bg-[#D1FAE5]',
             'iconColor' => 'text-[#059669]',
         ];
+        if ($memberSince) {
+            $statCards[] = [
+                'value' => (string) $memberSince,
+                'label' => 'عضو منذ',
+                'icon' => 'icon-[tabler--calendar]',
+                'iconBg' => 'bg-[#EDE9FE]',
+                'iconColor' => 'text-[#7C3AED]',
+            ];
+        }
 
         return view('landing_v1.pages.instructor-details', [
             'pageTitle' => $instructor->full_name,
             'instructor' => $instructor,
             'courses' => $courses,
             'headline' => $headline,
+            'shortBio' => $shortBio,
+            'heroBio' => $heroBio,
             'aboutText' => $aboutText,
+            'educations' => $educations,
+            'experiences' => $experiences,
+            'certificateAdditional' => $certificateAdditional,
+            'occupations' => $occupations,
+            'attachments' => $attachments,
+            'badges' => $badges,
+            'memberSince' => $memberSince,
             'rating' => $rating,
             'studentsCount' => $studentsCount,
             'coursesCount' => $coursesCount,
