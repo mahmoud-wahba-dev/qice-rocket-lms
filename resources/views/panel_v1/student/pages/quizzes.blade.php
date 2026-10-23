@@ -51,10 +51,16 @@
                             {{ ($result->status ?? '')==='passed' ? 'ناجح' : (($result->status ?? '')==='waiting' ? 'بانتظار التصحيح' : 'راسب') }}
                         </span>
                     </div>
-                    <div class="text-center flex items-center justify-center gap-2">
+                    <div class="text-center flex flex-wrap items-center justify-center gap-3">
                         <span class="font-medium text-12px text-gray hidden md:block">{{ date('Y/m/d', (int) $result->created_at) }}</span>
+                        @if (!empty($result->quiz->webinar->slug))
+                            <a href="{{ route('panel.v1.student.course.quiz.result', ['slug' => $result->quiz->webinar->slug, 'resultId' => $result->id, 'quiz' => $result->quiz_id]) }}"
+                                class="font-bold text-13px text-primary hover:underline">
+                                {{ !empty($result->can_view_solutions) ? 'الحلول' : 'النتيجة' }}
+                            </a>
+                        @endif
                         @if (!empty($result->can_try))
-                            <a href="{{ route('panel.v1.student.course.quiz', ['slug' => $result->quiz->webinar->slug ?? 'demo']) }}" class="font-bold text-13px text-primary hover:underline">إعادة</a>
+                            <a href="{{ route('panel.v1.student.course.quiz', ['slug' => $result->quiz->webinar->slug ?? 'demo', 'quiz' => $result->quiz_id]) }}" class="font-bold text-13px text-primary hover:underline">إعادة</a>
                         @endif
                     </div>
                 </div>

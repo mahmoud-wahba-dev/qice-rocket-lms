@@ -61,6 +61,13 @@
                 @if (isset($quizData['attempts_left']))
                     <p class="font-medium text-13px text-gray mt-2">المحاولات المتبقية: {{ $quizData['attempts_left'] }}</p>
                 @endif
+                @if (!empty($lastResult['id']))
+                    <a href="{{ route('panel.v1.student.course.quiz.result', ['slug' => $courseSlug, 'resultId' => $lastResult['id'], 'quiz' => $quizData['id'] ?? null]) }}"
+                        class="inline-flex items-center gap-2 mt-4 h-11 px-5 rounded-12px border border-primary bg-white font-bold text-14px text-primary hover:bg-primary hover:text-white transition">
+                        <span class="icon-[tabler--{{ !empty($lastResult['can_view_solutions']) ? 'list-check' : 'chart-bar' }}] size-4"></span>
+                        {{ !empty($lastResult['can_view_solutions']) ? 'عرض الحلول والإجابات' : 'عرض النتيجة' }}
+                    </a>
+                @endif
             </div>
         @endif
 

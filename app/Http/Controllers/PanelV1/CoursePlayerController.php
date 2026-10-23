@@ -1131,9 +1131,58 @@ class CoursePlayerController extends Controller
                 'can_start' => $canStart,
             ],
             'lastResult' => $lastResult ? [
+                'id' => $lastResult->id,
                 'grade' => $lastResult->user_grade,
                 'status' => $lastResult->status,
+                'can_view_solutions' => $this->studentCanViewQuizSolutions($user, $quiz),
             ] : null,
+        ]));
+    }
+
+    public function quizResult(Request $request, string $slug, int $resultId)
+    {
+        $resolved = $this->resolveQuiz($request, $slug);
+
+        if ($resolved instanceof \Illuminate\Http\RedirectResponse) {
+            return $resolved;
+        }
+
+        [$user, $webinar, $quiz] = $resolved;
+
+        $result = QuizzesResult::where('id', $resultId)
+            ->where('quiz_id', $quiz->id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        $canViewSolutions = $this->studentCanViewQuizSolutions($user, $quiz);
+        $reviewItems = $canViewSolutions ? $this->buildQuizReviewItems($result) : [];
+        $player = $this->buildPlayerData($webinar, $user, $request);
+
+        $attemptsUsed = QuizzesResult::where('quiz_id', $quiz->id)->where('user_id', $user->id)->count();
+        $attemptsLimit = !empty($quiz->attempt) ? (int) $quiz->attempt : null;
+        $attemptsLeft = $attemptsLimit === null ? null : max(0, $attemptsLimit - $attemptsUsed);
+
+        $statusLabel = match ($result->status) {
+            'passed' => 'ناجح',
+            'waiting' => 'بانتظار التصحيح',
+            default => 'راسب',
+        };
+
+        return view('panel_v1.student.course-player.pages.quiz-result', array_merge($player, [
+            'pageTitle' => $canViewSolutions ? 'حلول الاختبار' : 'نتيجة الاختبار',
+            'authUser' => $user,
+            'webinar' => $webinar,
+            'slug' => $slug,
+            'courseTitle' => $player['course']['title'] ?? $webinar->title,
+            'quizResult' => $result,
+            'reviewItems' => $reviewItems,
+            'canViewSolutions' => $canViewSolutions,
+            'attemptsLeft' => $attemptsLeft,
+            'attemptsLimit' => $attemptsLimit,
+            'quizTitle' => $this->localizedTitle($quiz) ?: ($quiz->title ?: 'اختبار'),
+            'maxGrade' => (int) ($quiz->total_mark ?: ($canViewSolutions ? collect($reviewItems)->sum('grade') : QuizzesQuestion::where('quiz_id', $quiz->id)->sum('grade'))),
+            'statusLabel' => $statusLabel,
+            'passMark' => (int) ($quiz->pass_mark ?? 0),
         ]));
     }
 
@@ -1336,7 +1385,7 @@ class CoursePlayerController extends Controller
             $status = $totalMark >= (int) $quiz->pass_mark ? 'passed' : 'failed';
         }
 
-        QuizzesResult::create([
+        $result = QuizzesResult::create([
             'quiz_id'    => $quiz->id,
             'user_id'    => $user->id,
             'results'    => json_encode($results),
@@ -1348,11 +1397,6 @@ class CoursePlayerController extends Controller
                 ? max(0, time() - (int) session()->get($this->quizStartTimeKey($quiz->id)))
                 : null,
         ]);
-
-        $result = QuizzesResult::where('quiz_id', $quiz->id)
-            ->where('user_id', $user->id)
-            ->orderByDesc('id')
-            ->first();
 
         if ($status === 'passed' && $result) {
             try {
@@ -1372,17 +1416,98 @@ class CoursePlayerController extends Controller
         session()->forget($this->quizSessionKey($quiz->id));
         session()->forget($this->quizStartTimeKey($quiz->id));
 
-        $toastMsg = $timedOut
-            ? 'انتهى وقت الاختبار — تم إرسال إجاباتك تلقائياً'
-            : ($status === 'waiting' ? 'تم إرسال إجاباتك وهي بانتظار التصحيح' : ('درجتك: ' . max(0, $totalMark)));
+        $canViewSolutions = $this->studentCanViewQuizSolutions($user, $quiz);
+
+        if ($timedOut) {
+            $toastMsg = $canViewSolutions
+                ? 'انتهى وقت الاختبار — تم إرسال إجاباتك. راجع الحلول أدناه.'
+                : 'انتهى وقت الاختبار — تم إرسال إجاباتك تلقائياً';
+        } elseif ($status === 'waiting') {
+            $toastMsg = 'تم إرسال إجاباتك وهي بانتظار التصحيح';
+        } elseif ($canViewSolutions) {
+            $toastMsg = 'درجتك: ' . max(0, $totalMark) . ' — راجع الحلول أدناه';
+        } else {
+            $toastMsg = 'درجتك: ' . max(0, $totalMark) . ' — الحلول تظهر بعد استنفاد المحاولات';
+        }
 
         return redirect()
-            ->route('panel.v1.student.course.quiz', ['slug' => $slug, 'quiz' => $quiz->id])
+            ->route('panel.v1.student.course.quiz.result', [
+                'slug' => $slug,
+                'resultId' => $result->id,
+                'quiz' => $quiz->id,
+            ])
             ->with('toast', [
                 'title' => $timedOut ? 'انتهى الوقت' : ($status === 'passed' ? 'أحسنت!' : 'تم'),
                 'msg'   => $toastMsg,
                 'type'  => ($timedOut || $status === 'failed') ? 'error' : 'success',
             ]);
+    }
+
+    /**
+     * Solutions are revealed only after the student used their last attempt (anti-cheat).
+     * Unlimited-attempt quizzes never reveal solutions.
+     */
+    private function studentCanViewQuizSolutions($user, Quiz $quiz): bool
+    {
+        $limit = !empty($quiz->attempt) ? (int) $quiz->attempt : 0;
+        if ($limit <= 0) {
+            return false;
+        }
+
+        $used = QuizzesResult::where('quiz_id', $quiz->id)
+            ->where('user_id', $user->id)
+            ->count();
+
+        return $used >= $limit;
+    }
+
+    /**
+     * Build per-question review rows (student answer vs model answer) — same shape as instructor grading.
+     */
+    private function buildQuizReviewItems(QuizzesResult $result): array
+    {
+        $decoded = json_decode($result->results ?? '[]', true) ?: [];
+        $questionIds = array_keys($decoded);
+        $questions = QuizzesQuestion::with(['quizzesQuestionsAnswers'])
+            ->whereIn('id', $questionIds)
+            ->get()
+            ->keyBy('id');
+
+        $reviewItems = [];
+        foreach ($decoded as $questionId => $entry) {
+            $question = $questions->get($questionId);
+            $studentAnswer = '—';
+            $modelAnswer = '—';
+            $isCorrect = null;
+
+            if ($question && $question->type === QuizzesQuestion::$descriptive) {
+                $studentAnswer = $entry['text'] ?? '—';
+                $modelAnswer = $question->correct ?: '—';
+            } elseif (!empty($entry['answer'])) {
+                $answer = QuizzesQuestionsAnswer::find($entry['answer']);
+                $studentAnswer = $answer->title ?? '—';
+                $correct = $question
+                    ? $question->quizzesQuestionsAnswers->firstWhere('correct', 1)
+                    : null;
+                $modelAnswer = $correct->title ?? '—';
+                $isCorrect = !empty($entry['status']);
+            } elseif ($question && $question->type !== QuizzesQuestion::$descriptive) {
+                $correct = $question->quizzesQuestionsAnswers->firstWhere('correct', 1);
+                $modelAnswer = $correct->title ?? '—';
+                $isCorrect = false;
+            }
+
+            $reviewItems[] = [
+                'question' => $question->title ?? ('سؤال #' . $questionId),
+                'type' => $question->type ?? 'multiple',
+                'student_answer' => $studentAnswer,
+                'model_answer' => $modelAnswer,
+                'is_correct' => $isCorrect,
+                'grade' => (int) ($entry['grade'] ?? ($question->grade ?? 0)),
+            ];
+        }
+
+        return $reviewItems;
     }
 
     private function quizSessionKey(int $quizId): string

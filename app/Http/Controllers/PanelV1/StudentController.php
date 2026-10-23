@@ -1317,8 +1317,11 @@ class StudentController extends Controller
             if ($quiz && (!isset($quiz->attempt) || count($group) < (int) $quiz->attempt) && $first->status !== 'passed') {
                 $canTry = true;
             }
+            $attemptLimit = ($quiz && !empty($quiz->attempt)) ? (int) $quiz->attempt : 0;
+            $canViewSolutions = $attemptLimit > 0 && count($group) >= $attemptLimit;
             foreach ($group as $item) {
                 $item->can_try = $canTry;
+                $item->can_view_solutions = $canViewSolutions;
             }
         }
 

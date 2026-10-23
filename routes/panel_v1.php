@@ -93,6 +93,9 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 Route::get('/quiz', [CoursePlayerController::class, 'quiz'])->name('quiz');
                 Route::get('/quiz/take', [CoursePlayerController::class, 'quizTake'])->name('quiz.take');
                 Route::post('/quiz/answer', [CoursePlayerController::class, 'quizAnswer'])->name('quiz.answer');
+                Route::get('/quiz/result/{resultId}', [CoursePlayerController::class, 'quizResult'])
+                    ->whereNumber('resultId')
+                    ->name('quiz.result');
             });
 
             Route::get('/instructor', [InstructorController::class, 'home'])->name('instructor.home');
