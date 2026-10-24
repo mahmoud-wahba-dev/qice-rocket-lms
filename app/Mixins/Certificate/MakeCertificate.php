@@ -450,47 +450,49 @@ class MakeCertificate
         $fill(730, 518, 500, 36);
         $write($courseAr, 1220, 522, $fitSize($courseAr, 16, 36, 11), 'right', true);
 
-        // 4. Meta Rows EN (Left)
+        // 4. Meta Rows EN (Left) — baselines match printed template (~+4px vs old)
         // Row 0 EN: Duration: [ 00 ] training hours
-        $fill(147, 590, 53, 18);
-        $write($bracket($hours), 149, 592, 11, 'left', false);
+        $fill(147, 590, 53, 24);
+        $write($bracket($hours), 149, 596, 11, 'left', false);
 
         // Row 1 EN: Course dates: [ DD/MM/YYYY ] – [ DD/MM/YYYY ]
-        $fill(180, 620, 270, 18);
-        $write($bracket($start) . ' – ' . $bracket($end), 182, 622, 11, 'left', false);
+        $fill(180, 620, 270, 26);
+        $write($bracket($start) . '  –  ' . $bracket($end), 182, 626, 11, 'left', false);
 
         // Row 2 EN: Issue date: [ DD/MM/YYYY ]
-        $fill(156, 652, 130, 18);
-        $write($bracket($issue), 158, 654, 11, 'left', false);
+        $fill(156, 652, 130, 26);
+        $write($bracket($issue), 158, 658, 11, 'left', false);
 
         // Row 3 EN: Accreditation Number: [ DD/MM/YYYY ] (Accredited by)
-        $fill(250, 684, 130, 18);
-        $write($bracket($accreditedByEn), 252, 686, 11, 'left', false);
+        $fill(250, 684, 130, 26);
+        $write($bracket($accreditedByEn), 252, 690, 11, 'left', false);
 
         // Row 4 EN: Accreditation Number: [ DD/MM/YYYY ] (Accreditation No)
-        $fill(250, 716, 130, 18);
-        $write($bracket($acc), 252, 718, 11, 'left', false);
+        $fill(250, 716, 130, 26);
+        $write($bracket($acc), 252, 722, 11, 'left', false);
 
-        // 5. Meta Rows AR (Right)
+        // 5. Meta Rows AR (Right) — leave gap before printed labels; match baselines
         // Row 0 AR: عدد الساعات التدريبية: [ 00 ] ساعة
-        $fill(1006, 588, 52, 20);
-        $write($bracket($hours), 1056, 590, 11, 'right', false);
+        $fill(1006, 590, 52, 24);
+        $write($bracket($hours), 1056, 594, 11, 'right', false);
 
         // Row 1 AR: فترة الدورة: [ 00/00/0000 ] - [ 00/00/0000 ]
-        $fill(900, 620, 237, 18);
-        $write($bracket($start) . ' - ' . $bracket($end), 1130, 622, 11, 'right', false);
+        // Placeholder ends ~1122; label starts ~1141 — keep clear horizontal gap
+        $fill(900, 620, 228, 26);
+        $write($bracket($start) . '  -  ' . $bracket($end), 1126, 626, 11, 'right', false);
 
         // Row 2 AR: تاريخ الإصدار: [ 00/00/0000 ]
-        $fill(1008, 652, 118, 18);
-        $write($bracket($issue), 1122, 654, 11, 'right', false);
+        // Placeholder ends ~1116; label starts ~1124
+        $fill(1005, 652, 110, 26);
+        $write($bracket($issue), 1112, 658, 11, 'right', false);
 
         // Row 3 AR: الدورة معتمدة من: [ --------- ]
-        $fill(1012, 684, 75, 18);
-        $write($bracket($accreditedByAr), 1084, 686, 11, 'right', false);
+        $fill(1000, 684, 90, 26);
+        $write($bracket($accreditedByAr), 1088, 690, 11, 'right', false);
 
         // Row 4 AR: رقم الاعتماد: [ 00/00/0000 ]
-        $fill(1012, 716, 112, 18);
-        $write($bracket($acc), 1120, 718, 11, 'right', false);
+        $fill(1012, 716, 108, 26);
+        $write($bracket($acc), 1116, 722, 11, 'right', false);
 
         // 6. Signatures (Replace placeholders [ Name ] and [ الاسم ] only)
         // Left EN: Under "Training & Accreditation Officer"
