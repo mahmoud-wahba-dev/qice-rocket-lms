@@ -527,13 +527,14 @@ class MakeCertificate
         $fill(156, 650, 148, 24);
         $write($bracket($issue), 160, 656, 11, 'left', false);
 
-        // Accredited by (EN) — widen so full جهة الاعتماد fits; shrink font if long
-        $fill(200, 680, 280, 26);
+        // Accredited by (EN) — NEVER cover printed "Accreditation Number:" (~73–248).
+        // Fill full placeholder (~254–393+) so no leftover brackets; text starts with a gap after colon.
+        $fill(252, 678, 280, 28);
         $write(
             $bracket($accreditedByEn),
-            204,
-            688,
-            $fitSize($accreditedByEn, 11, 22, 8),
+            275,
+            686,
+            $fitSize('[ ' . $accreditedByEn . ' ]', 13, 34, 10),
             'left',
             false
         );
@@ -555,14 +556,14 @@ class MakeCertificate
         $fill(970, 648, 148, 26);
         $write($bracket($issue), 1110, 656, 11, 'right', false);
 
-        // الدورة معتمدة من — wide slot left of the printed label so full جهة الاعتماد shows
-        // Keep clear of printed "من:" (~1110+). QR ends ~698.
-        $fill(720, 678, 378, 28);
+        // الدورة معتمدة من — fill erases full [ ---- ] placeholder up to the label,
+        // but draw the value further left so a clear paper gap sits before "من".
+        $fill(730, 678, 378, 28); // ends ~1108, just before printed "من"
         $write(
             $bracket($accreditedByAr),
-            1095,
+            1035,
             686,
-            $fitSize($accreditedByAr, 11, 20, 8),
+            $fitSize('[ ' . $accreditedByAr . ' ]', 13, 30, 10),
             'right',
             false
         );
