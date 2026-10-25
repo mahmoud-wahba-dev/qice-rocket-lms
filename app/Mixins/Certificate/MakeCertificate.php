@@ -486,14 +486,6 @@ class MakeCertificate
             return $value === '' ? '' : '[ ' . $value . ' ]';
         };
 
-        // Keep accredited-by short enough for the narrow template slot
-        if (mb_strlen($accreditedByEn) > 18) {
-            $accreditedByEn = mb_substr($accreditedByEn, 0, 18);
-        }
-        if (mb_strlen($accreditedByAr) > 14) {
-            $accreditedByAr = mb_substr($accreditedByAr, 0, 14);
-        }
-
         // 1. Certificate numbers — placeholder after "Certificate no.:" / before "رقم الشهادة"
         $fill(186, 284, 138, 22);
         $write($bracket($num), 188, 288, 11, 'left', false);
@@ -535,9 +527,16 @@ class MakeCertificate
         $fill(156, 650, 148, 24);
         $write($bracket($issue), 160, 656, 11, 'left', false);
 
-        // Accredited by slot (template label says Accreditation Number): ink ~254–393
-        $fill(250, 682, 148, 24);
-        $write($bracket($accreditedByEn), 254, 688, 11, 'left', false);
+        // Accredited by (EN) — widen so full جهة الاعتماد fits; shrink font if long
+        $fill(200, 680, 280, 26);
+        $write(
+            $bracket($accreditedByEn),
+            204,
+            688,
+            $fitSize($accreditedByEn, 11, 22, 8),
+            'left',
+            false
+        );
 
         // Accreditation number: ink ~254–393
         $fill(250, 714, 148, 24);
@@ -556,9 +555,17 @@ class MakeCertificate
         $fill(970, 648, 148, 26);
         $write($bracket($issue), 1110, 656, 11, 'right', false);
 
-        // الدورة معتمدة من — only the [ ---- ] slot (do not erase "من")
-        $fill(1005, 680, 105, 26);
-        $write($bracket($accreditedByAr), 1105, 688, 11, 'right', false);
+        // الدورة معتمدة من — wide slot left of the printed label so full جهة الاعتماد shows
+        // Keep clear of printed "من:" (~1110+). QR ends ~698.
+        $fill(720, 678, 378, 28);
+        $write(
+            $bracket($accreditedByAr),
+            1095,
+            686,
+            $fitSize($accreditedByAr, 11, 20, 8),
+            'right',
+            false
+        );
 
         // رقم الاعتماد — erase full placeholder incl. leftover | ghosts
         $fill(970, 712, 148, 26);
