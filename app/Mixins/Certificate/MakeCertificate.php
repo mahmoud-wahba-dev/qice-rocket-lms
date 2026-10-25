@@ -578,8 +578,8 @@ class MakeCertificate
         $writeLtr($acc, 254, 720, 11, 'left');
 
         // 5. Meta rows AR (right)
-        // Hours — Latin digits LTR in the [00] slot
-        $fill(1002, 588, 46, 22);
+        // Hours — wipe full template "[ 00 ]" (incl. closing ]) without touching "التدريبية"
+        $fill(1000, 586, 56, 26); // ends ~1056
         $writeLtr($bracket($hours), 1004, 594, 11, 'left');
 
         // Dates — Latin LTR (avoids ][)

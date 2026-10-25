@@ -76,8 +76,8 @@
     <div class="mask" style="left:250px;top:714px;width:148px;height:24px;"></div>
     <div class="field en" style="left:254px;top:720px;width:144px;font-size:11px;font-weight:normal;">[ {{ $acc }} ]</div>
 
-    <div class="mask" style="left:1000px;top:588px;width:50px;height:22px;"></div>
-    <div class="field en" style="left:1002px;top:594px;width:48px;font-size:11px;font-weight:normal;">[ {{ $hours }} ]</div>
+    <div class="mask" style="left:1000px;top:586px;width:56px;height:26px;"></div>
+    <div class="field en" style="left:1004px;top:594px;width:50px;font-size:11px;font-weight:normal;">[ {{ $hours }} ]</div>
 
     <div class="mask" style="left:860px;top:616px;width:275px;height:26px;"></div>
     <div class="field en" style="left:865px;top:624px;width:270px;font-size:11px;font-weight:normal;">[ {{ $start }} ] - [ {{ $end }} ]</div>
