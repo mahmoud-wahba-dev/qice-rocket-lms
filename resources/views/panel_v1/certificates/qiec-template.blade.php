@@ -87,20 +87,25 @@
     <div class="mask" style="left:250px;top:714px;width:148px;height:24px;"></div>
     <div class="field en" style="left:254px;top:720px;width:144px;font-size:11px;font-weight:normal;">[ {{ $acc }} ]</div>
 
-    <div class="mask" style="left:1008px;top:586px;width:44px;height:26px;background-color:red;"></div>
-    <div class="field en" style="left:1008px;top:594px;width:44px;font-size:11px;font-weight:normal;text-align:right;background-color:red;">[ {{ $hours }} ]</div>
+    {{-- Debug: set background-color:red on masks/fields below to highlight values --}}
+    <div class="mask" style="left:1008px;top:586px;width:44px;height:26px;background:#FAF9F4;"></div>
+    <div class="field en" style="left:1008px;top:594px;width:44px;font-size:11px;font-weight:normal;text-align:right;">[ {{ $hours }} ]</div>
 
-    <div class="mask" style="left:850px;top:614px;width:286px;height:28px;background:#FAF9F4;"></div>
-    <div class="field en" style="left:900px;top:622px;width:236px;font-size:10px;font-weight:normal;text-align:right;background-color:red;">[ {{ $start }} ] – [ {{ $end }} ]</div>
+    <div class="mask" style="left:820px;top:612px;width:314px;height:28px;background:#FAF9F4;"></div>
+    <div class="field en" style="left:900px;top:622px;width:236px;font-size:10px;font-weight:normal;text-align:right;">[ {{ $start }} ] – [ {{ $end }} ]</div>
 
-    <div class="mask" style="left:960px;top:648px;width:156px;height:28px;background:#FAF9F4;"></div>
-    <div class="field en" style="left:1000px;top:656px;width:118px;font-size:11px;font-weight:normal;text-align:right;background-color:red;">[ {{ $issue }} ]</div>
+    <div class="mask" style="left:960px;top:644px;width:148px;height:28px;background:#FAF9F4;"></div>
+    <div class="field en" style="left:1000px;top:654px;width:118px;font-size:11px;font-weight:normal;text-align:right;">[ {{ $issue }} ]</div>
 
-    <div class="mask" style="left:880px;top:676px;width:200px;height:32px;"></div>
-    <div class="field ar" style="left:880px;top:690px;width:200px;font-size:{{ $accByArSize }};font-weight:normal;">{{ $accByAr }}</div>
+    <div class="mask" style="left:820px;top:676px;width:420px;height:28px;background:#FAF9F4;"></div>
+    <div class="field ar" style="left:1080px;top:684px;width:135px;font-size:12px;font-weight:bold;text-align:right;">الدورة معتمدة من</div>
+    <div class="field en" style="left:1070px;top:685px;width:12px;font-size:12px;">:</div>
+    <div class="field ar" style="left:820px;top:686px;width:245px;font-size:{{ $accByArSize }};font-weight:normal;text-align:right;">{{ $accByAr }}</div>
 
-    <div class="mask" style="left:980px;top:712px;width:155px;height:26px;background-color: red;"></div>
-    <div class="field en" style="left:980px;top:720px;width:143px;font-size:11px;font-weight:normal;text-align:right;background-color: red;">{{ $acc }}</div>
+    <div class="mask" style="left:960px;top:708px;width:280px;height:34px;background:#FAF9F4;"></div>
+    <div class="field ar" style="left:1110px;top:718px;width:105px;font-size:13px;font-weight:bold;text-align:right;">رقم الاعتماد</div>
+    <div class="field en" style="left:1100px;top:717px;width:12px;font-size:13px;">:</div>
+    <div class="field en" style="left:990px;top:718px;width:100px;font-size:11px;font-weight:normal;text-align:right;">{{ $acc }}</div>
 
     @if (!empty($qrHtml))
         <div class="qr-box">{!! $qrHtml !!}</div>

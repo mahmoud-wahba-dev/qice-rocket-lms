@@ -418,8 +418,9 @@ class MakeCertificate
         }
         $img = Image::make($bgPath)->resize(1280, 905);
 
-        // TEMP TEST: red behind every dynamic VALUE slot (revert to '#FAF9F4' when done)
-        $paper = '#FF0000';
+        // Value slot fill color. Uncomment red line to debug value boxes again.
+        // $paper = '#FF0000';
+        $paper = '#FAF9F4';
         $ink = '#103E36';
 
         $fill = function (int $x, int $y, int $w, int $h) use ($img, $paper) {
@@ -619,39 +620,64 @@ class MakeCertificate
         $fill(1008, 586, 44, 26); // ends 1052 — wipe [00] slot only
         $writeLtr($arHours, 1052, 594, 11, 'right');
 
-        // فترة الدورة — flush to label colon (~1140); red only behind the date glyphs
+        // AR meta rows — even ~32px rhythm (JPG centers ~629/661/693/724); wipes must not overlap
+        // 1) فترة الدورة
         $arDateLine = $bracket($start) . ' – ' . $bracket($end);
         $arDateSize = 10;
-        $arDateRight = 1135; // just left of "فترة الدورة:"
+        $arDateRight = 1135;
         $arDateW = (int) round($textWidth($arDateLine, $arDateSize) * 1.05) + 6;
-        $wipeCream(820, 614, $arDateRight - 820 - 2, 28); // clear leftover template (cream)
-        $fill($arDateRight - $arDateW, 616, $arDateW, 26); // TEMP red behind value
+        $wipeCream(820, 612, $arDateRight - 820 - 2, 28); // 612–640
+        $fill($arDateRight - $arDateW, 614, $arDateW, 24);
         $writeLtr($arDateLine, $arDateRight, 622, $arDateSize, 'right');
 
-        // تاريخ الإصدار — stop fill before label (~1125+); do not cover "تاريخ"
+        // 2) تاريخ الإصدار
         $arIssue = $bracket($issue);
         $arIssueSize = 11;
         $arIssueRight = 1110;
         $arIssueW = (int) round($textWidth($arIssue, $arIssueSize) * 1.05) + 6;
-        $wipeCream(960, 648, $arIssueRight - 960 - 2, 28); // clear leftover template (cream)
-        $fill($arIssueRight - $arIssueW, 650, $arIssueW, 24); // TEMP red behind value only
-        $writeLtr($arIssue, $arIssueRight, 656, $arIssueSize, 'right');
+        $wipeCream(960, 644, $arIssueRight - 960 - 2, 28); // 644–672
+        $fill($arIssueRight - $arIssueW, 646, $arIssueW, 24);
+        $writeLtr($arIssue, $arIssueRight, 654, $arIssueSize, 'right');
 
-        // جهة الاعتماد — keep printed "الدورة معتمدة من:" on the JPG; only fill [---------]
+        // 3) جهة الاعتماد — label includes colon in same Vazir draw (aligned baseline)
         $accreditedByAr = preg_replace('/^\s*الدورة\s+معتمدة\s+من\s*:?\s*/u', '', $accreditedByAr) ?: $accreditedByAr;
-        $fill(860, 676, 220, 34); // ends ~1080, before "من:"
-        $writeAr(
-            $accreditedByAr,
-            1082,
-            688,
-            $fitSize($accreditedByAr, 14, 32, 11),
-            'right',
-            false
-        );
+        $wipeCream(820, 676, 420, 28); // 676–704
+        $arByLabelRight = 1215;
+        $writeAr('الدورة معتمدة من:', $arByLabelRight, 684, 12, 'right', true);
+        $arByLabelLeft = 1090;
+        for ($sx = 900; $sx <= $arByLabelRight; $sx++) {
+            for ($sy = 682; $sy <= 698; $sy++) {
+                $sc = $img->pickColor($sx, $sy, 'array');
+                if (($sc[0] + $sc[1] + $sc[2]) < 300) {
+                    $arByLabelLeft = $sx;
+                    break 2;
+                }
+            }
+        }
+        // Gap after colon so alef (ا) of the org name does not look like `|` next to `:`
+        $arByValRight = $arByLabelLeft - 16;
+        $arByValSize = $fitSize($accreditedByAr, 12, 36, 10);
+        $writeAr($accreditedByAr, $arByValRight, 686, $arByValSize, 'right', false);
 
-        // رقم الاعتماد — right-align near "رقم الاعتماد:" (label ~1144+), small gap
-        $fill(980, 708, 155, 30);
-        $writeLtr($acc, 1125, 718, 11, 'right');
+        // 4) رقم الاعتماد — label includes colon in same Vazir draw
+        $wipeCream(960, 708, 280, 34); // 708–742
+        $arAccLabelRight = 1215;
+        $writeAr('رقم الاعتماد:', $arAccLabelRight, 718, 13, 'right', true);
+        $arAccLabelLeft = 1150;
+        for ($sx = 1050; $sx <= $arAccLabelRight; $sx++) {
+            for ($sy = 716; $sy <= 730; $sy++) {
+                $sc = $img->pickColor($sx, $sy, 'array');
+                if (($sc[0] + $sc[1] + $sc[2]) < 300) {
+                    $arAccLabelLeft = $sx;
+                    break 2;
+                }
+            }
+        }
+        $arAccIdRight = $arAccLabelLeft - 14;
+        $arAccIdSize = 11;
+        $arAccIdW = $textWidth($acc, $arAccIdSize) + 4;
+        $fill($arAccIdRight - $arAccIdW, 716, $arAccIdW, 22);
+        $writeLtr($acc, $arAccIdRight, 718, $arAccIdSize, 'right');
 
         // 6. QR — true center of dashed box on template (581–696 × 590–702)
         $boxL = 581;
