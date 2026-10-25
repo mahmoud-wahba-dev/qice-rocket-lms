@@ -81,11 +81,11 @@
     <div class="mask" style="left:158px;top:648px;width:200px;height:28px;"></div>
     <div class="field en" style="left:162px;top:656px;width:196px;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
 
-    <div class="mask" style="left:248px;top:676px;width:310px;height:32px;"></div>
-    <div class="field en" style="left:254px;top:690px;width:300px;font-size:{{ $accByEnSize }};font-weight:normal;">{{ $accByEn }}</div>
+    <div class="mask" style="left:70px;top:672px;width:500px;height:36px;background:#FAF9F4;"></div>
+    <div class="field en" style="left:74px;top:686px;width:500px;font-size:12px;font-weight:normal;white-space:nowrap;">Accreditation By: {{ $accByEn }}</div>
 
-    <div class="mask" style="left:250px;top:714px;width:148px;height:24px;"></div>
-    <div class="field en" style="left:254px;top:720px;width:144px;font-size:11px;font-weight:normal;">[ {{ $acc }} ]</div>
+    <div class="mask" style="left:70px;top:710px;width:360px;height:30px;background:#FAF9F4;"></div>
+    <div class="field en" style="left:74px;top:720px;width:360px;font-size:11px;font-weight:normal;white-space:nowrap;">Accreditation Number: [ {{ $acc }} ]</div>
 
     {{-- Debug: set background-color:red on masks/fields below to highlight values --}}
     <div class="mask" style="left:1008px;top:586px;width:44px;height:26px;background:#FAF9F4;"></div>

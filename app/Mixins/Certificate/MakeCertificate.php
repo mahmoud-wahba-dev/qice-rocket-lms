@@ -624,12 +624,15 @@ class MakeCertificate
         $fill(158, 648, 200, 28);
         $writeLtr($bracket($issue), 162, 656, 11, 'left');
 
-        // Accredited by EN — stop well before QR (~576); no brackets (saves width)
-        $fill(248, 676, 320, 34); // ends ~568
-        $writeLtr($accreditedByEn, 252, 688, $fitSize($accreditedByEn, 12, 48, 10), 'left');
+        // Accredited by EN — one LTR line (label + value, same baseline/size)
+        $wipeCream(70, 672, 500, 36);
+        $enByLine = 'Accreditation By: ' . trim($accreditedByEn);
+        $writeLtr($enByLine, 74, 686, 11, 'left');
 
-        $fill(250, 714, 148, 24);
-        $writeLtr($acc, 254, 720, 11, 'left');
+        // Accreditation number EN — one LTR line
+        $wipeCream(70, 710, 360, 30);
+        $enAccLine = 'Accreditation Number: ' . $bracket($acc);
+        $writeLtr($enAccLine, 74, 720, 11, 'left');
 
         // 5. Meta rows AR (right)
         // Hours — right-align flush to end of "عدد الساعات التدريبية:" (colon ~1055);
