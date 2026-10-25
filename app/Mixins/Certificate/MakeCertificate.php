@@ -571,13 +571,31 @@ class MakeCertificate
             return $value === '' ? '' : '[ ' . $value . ' ]';
         };
 
-        // 1. Certificate numbers — same baseline both sides; Latin LTR only
-        $fill(186, 284, 138, 22);
-        $writeLtr($bracket($num), 188, 288, 11, 'left');
+        // 1. Certificate numbers — wipe JPG placeholder, redraw flush to labels
+        // EN: wipe "no.:" junk + value; redraw clean "no: [ num ]" (avoids .: glitch)
+        $wipeCream(155, 280, 188, 28);
+        $enNumLine = 'no: [ ' . trim((string) $num) . ' ]';
+        $fill(155, 282, $textWidth($enNumLine, 11) + 8, 24);
+        $writeLtr($enNumLine, 155, 286, 11, 'left'); // "Certificate " kept on JPG
 
-        // AR: placeholder left of "رقم الشهادة" — left-align Latin so brackets stay [ ]
-        $fill(990, 284, 120, 22);
-        $writeLtr($bracket($num), 992, 288, 11, 'left');
+        // AR: full rebuild — wipe JPG label+value junk, redraw label + [num] aligned
+        $wipeCream(980, 276, 250, 30); // clear through رقم الشهادة slot
+        $writeAr('رقم الشهادة:', 1215, 284, 12, 'right', true);
+        $arNumLabelLeft = 1120;
+        for ($sx = 1000; $sx <= 1215; $sx++) {
+            for ($sy = 282; $sy <= 296; $sy++) {
+                $sc = $img->pickColor($sx, $sy, 'array');
+                if (($sc[0] + $sc[1] + $sc[2]) < 300) {
+                    $arNumLabelLeft = $sx;
+                    break 2;
+                }
+            }
+        }
+        $arNum = '[ ' . trim((string) $num) . ' ]';
+        $arNumRight = $arNumLabelLeft - 4;
+        $arNumW = $textWidth($arNum, 11) + 4;
+        $fill($arNumRight - $arNumW, 282, $arNumW, 20);
+        $writeLtr($arNum, $arNumRight, 287, 11, 'right'); // optically level with رقم الشهادة
 
         // 2. Trainee names
         $fill(70, 428, 350, 32);
