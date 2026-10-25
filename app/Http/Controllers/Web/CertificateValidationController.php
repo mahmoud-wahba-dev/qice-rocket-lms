@@ -120,7 +120,9 @@ class CertificateValidationController extends Controller
             'end_date' => $qiec['end_date'] ?? null,
             'type' => $type,
             'type_label' => $typeLabels[$type] ?? 'شهادة',
-            'verify_url' => url('/certificate_validation?certificate_id=' . urlencode($qiec['certificate_number'] ?? $certificate->id)),
+            'verify_url' => MakeCertificate::certificateValidationUrl(
+                (string) ($qiec['certificate_number'] ?? $certificate->formatted_number ?? $certificate->id)
+            ),
         ];
     }
 }

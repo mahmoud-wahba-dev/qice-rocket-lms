@@ -79,6 +79,31 @@ class MakeCertificate
     }
 
     /**
+     * Absolute URL for certificate QR / deep links (must be phone-reachable).
+     * Local APP_URL hosts are upgraded to production so scans open a real page.
+     */
+    public static function certificateValidationUrl(?string $certificateNumber = null): string
+    {
+        $base = rtrim((string) config('app.certificate_public_url', config('app.url')), '/');
+        $host = (string) (parse_url($base, PHP_URL_HOST) ?: '');
+
+        // Only rewrite unresolvable-from-phone hosts. Keep LAN IPs / explicit public URLs as-is.
+        $isUnreachableFromPhone = $host === ''
+            || preg_match('/^(localhost|127\.0\.0\.1|.*\.local)$/i', $host);
+
+        if ($isUnreachableFromPhone) {
+            $base = 'https://training.qiec.sa';
+        }
+
+        $path = '/certificate_validation';
+        if ($certificateNumber !== null && trim($certificateNumber) !== '') {
+            $path .= '?certificate_id=' . urlencode(trim($certificateNumber));
+        }
+
+        return $base . $path;
+    }
+
+    /**
      * Canonical QIEC bilingual template (tracked under resources/ — public/assets is gitignored).
      */
     public function qiecTemplatePath(): ?string
@@ -256,8 +281,8 @@ class MakeCertificate
         $data['trainee_name'] = $data['trainee_name_ar'] ?: $data['trainee_name_en'];
         $data['course_title'] = $data['course_title_ar'] ?: $data['course_title_en'];
 
-        // QR — encode validation URL so the public validation page can resolve the certificate
-        $data['qr_url'] = url('/certificate_validation?certificate_id=' . urlencode($data['certificate_number']));
+        // QR — public validation URL (not localhost) so phone scans open the live page
+        $data['qr_url'] = self::certificateValidationUrl($data['certificate_number']);
         $data['qr_png'] = $this->buildQiecQrPngBinary($data['qr_url'], 200);
         $data['qr_html'] = !empty($data['qr_png'])
             ? '<img src="data:image/png;base64,' . base64_encode($data['qr_png']) . '" width="96" height="96" alt="QR" />'
@@ -293,8 +318,14 @@ class MakeCertificate
                 return null;
             }
 
-            $scale = max(1, (int) floor($size / $modules));
-            $imgW = $scale * $modules;
+            // Trim Bacon quiet zone so modules fill the square evenly (keep 1-module margin)
+            $quiet = 4;
+            $inner = max(1, $modules - (2 * $quiet));
+            $drawStart = $quiet;
+            $margin = 1;
+            $drawModules = $inner + (2 * $margin);
+            $scale = max(1, (int) floor($size / $drawModules));
+            $imgW = $scale * $drawModules;
             $im = imagecreatetruecolor($imgW, $imgW);
             if ($im === false) {
                 return null;
@@ -303,15 +334,15 @@ class MakeCertificate
             $black = imagecolorallocate($im, 0, 0, 0);
             imagefilledrectangle($im, 0, 0, $imgW - 1, $imgW - 1, $white);
 
-            for ($y = 0; $y < $modules; $y++) {
-                for ($x = 0; $x < $modules; $x++) {
-                    if ($matrix->get($x, $y) === 1) {
+            for ($y = 0; $y < $inner; $y++) {
+                for ($x = 0; $x < $inner; $x++) {
+                    if ($matrix->get($drawStart + $x, $drawStart + $y) === 1) {
                         imagefilledrectangle(
                             $im,
-                            $x * $scale,
-                            $y * $scale,
-                            ($x + 1) * $scale - 1,
-                            ($y + 1) * $scale - 1,
+                            ($x + $margin) * $scale,
+                            ($y + $margin) * $scale,
+                            ($x + $margin + 1) * $scale - 1,
+                            ($y + $margin + 1) * $scale - 1,
                             $black
                         );
                     }
@@ -434,19 +465,31 @@ class MakeCertificate
             }
         };
 
-        $write = function (string $text, int $x, int $y, int $size, string $align = 'left', bool $bold = false) use ($img, $fontEn, $fontArBold, $fontArMed, $shapeAr, $hasAr, $ink) {
+        // Latin-only writer — never run Arabic glyph shaping (avoids ][ reversal)
+        $writeLtr = function (string $text, int $x, int $y, int $size, string $align = 'left') use ($img, $fontEn, $ink) {
             $text = trim($text);
             if ($text === '') {
                 return;
             }
-            $isAr = $hasAr($text);
-            if ($isAr) {
-                $text = $shapeAr($text);
-                $fontFile = $bold ? $fontArBold : $fontArMed;
-            } else {
-                $fontFile = $bold && is_file($fontArBold) ? $fontArBold : $fontEn;
-            }
+            $img->text($text, $x, $y, function ($font) use ($size, $align, $fontEn, $ink) {
+                if (is_file($fontEn)) {
+                    $font->file($fontEn);
+                }
+                $font->size($size);
+                $font->color($ink);
+                $font->align($align);
+                $font->valign('top');
+            });
+        };
 
+        // Arabic-only writer — shape Arabic alone (never mix with [ ] Latin brackets)
+        $writeAr = function (string $text, int $x, int $y, int $size, string $align = 'right', bool $bold = true) use ($img, $fontArBold, $fontArMed, $shapeAr, $ink) {
+            $text = trim($text);
+            if ($text === '') {
+                return;
+            }
+            $text = $shapeAr($text);
+            $fontFile = $bold ? $fontArBold : $fontArMed;
             $img->text($text, $x, $y, function ($font) use ($size, $align, $fontFile, $ink) {
                 if (is_file($fontFile)) {
                     $font->file($fontFile);
@@ -456,6 +499,14 @@ class MakeCertificate
                 $font->align($align);
                 $font->valign('top');
             });
+        };
+
+        $write = function (string $text, int $x, int $y, int $size, string $align = 'left', bool $bold = false) use ($writeLtr, $writeAr, $hasAr) {
+            if ($hasAr($text)) {
+                $writeAr($text, $x, $y, $size, $align, $bold);
+            } else {
+                $writeLtr($text, $x, $y, $size, $align);
+            }
         };
 
         $fitSize = function (string $text, int $defaultSize, int $maxChars, int $minSize = 11): int {
@@ -480,103 +531,91 @@ class MakeCertificate
         $accreditedByEn = (string) ($data['accredited_by_en'] ?? 'Quality & Excellence Center');
         $accreditedByAr = (string) ($data['accredited_by_ar'] ?? 'مركز الجودة والتميز');
 
-        // Bracket helper — Latin-only so [ ] never reverse under Arabic shaping
+        // Latin bracket — never pass through Arabic shaping
         $bracket = static function (string $value): string {
             $value = trim($value);
             return $value === '' ? '' : '[ ' . $value . ' ]';
         };
 
-        // 1. Certificate numbers — placeholder after "Certificate no.:" / before "رقم الشهادة"
+        // 1. Certificate numbers — same baseline both sides; Latin LTR only
         $fill(186, 284, 138, 22);
-        $write($bracket($num), 188, 288, 11, 'left', false);
+        $writeLtr($bracket($num), 188, 288, 11, 'left');
 
+        // AR: placeholder left of "رقم الشهادة" — left-align Latin so brackets stay [ ]
         $fill(990, 284, 120, 22);
-        $write($bracket($num), 1108, 288, 11, 'right', false);
+        $writeLtr($bracket($num), 992, 288, 11, 'left');
 
-        // 2. Trainee names — erase full placeholder bands (incl. brackets/dashes) then rewrite
-        // EN placeholder ~74–407 × 433–454
+        // 2. Trainee names
         $fill(70, 428, 350, 32);
         $nameEnDraw = $hasAr($nameEn) ? $nameEn : strtoupper($nameEn);
         $write($nameEnDraw, 74, 434, $fitSize($nameEnDraw, 18, 26, 12), 'left', true);
 
-        // AR placeholder ~854–1221 × 426–452 — fill fully so no leftover ] / ---
         $fill(848, 424, 380, 34);
-        $write($nameAr, 1205, 432, $fitSize($nameAr, 18, 26, 12), 'right', true);
+        $writeAr($nameAr, 1205, 432, $fitSize($nameAr, 18, 26, 12), 'right', true);
 
         // 3. Course titles
-        // EN placeholder ~73–232 × 528–548 (short slot — keep text compact)
         $fill(70, 524, 200, 30);
-        $courseEnDraw = $courseEn;
-        $write($courseEnDraw, 74, 530, $fitSize($courseEnDraw, 14, 22, 10), 'left', true);
+        $write($courseEn, 74, 530, $fitSize($courseEn, 14, 22, 10), 'left', true);
 
-        // AR placeholder ~966–1222 × 526–550
         $fill(960, 524, 268, 32);
-        $write($courseAr, 1205, 530, $fitSize($courseAr, 14, 28, 10), 'right', true);
+        $writeAr($courseAr, 1205, 530, $fitSize($courseAr, 14, 28, 10), 'right', true);
 
-        // 4. Meta rows EN (left) — fills MUST fully erase printed placeholders
-        //    (narrow fills left "YY]" / "' ]" ghosts from [ DD / MM / YYYY ])
-        // Duration: [ 00 ]
+        // 4. Meta rows EN (left) — Latin LTR
         $fill(148, 590, 40, 20);
-        $write($bracket($hours), 150, 594, 11, 'left', false);
+        $writeLtr($bracket($hours), 150, 594, 11, 'left');
 
-        // Course dates: [ DD / MM / YYYY ] – [ DD / MM / YYYY ]  (ink ~182–478)
         $fill(178, 618, 304, 24);
-        $write($bracket($start) . ' – ' . $bracket($end), 182, 624, 11, 'left', false);
+        $writeLtr($bracket($start) . ' – ' . $bracket($end), 182, 624, 11, 'left');
 
-        // Issue date: [ DD / MM / YYYY ]  (ink ~160–299)
         $fill(156, 650, 148, 24);
-        $write($bracket($issue), 160, 656, 11, 'left', false);
+        $writeLtr($bracket($issue), 160, 656, 11, 'left');
 
-        // Accredited by (EN) — NEVER cover printed "Accreditation Number:" (~73–248).
-        // Fill full placeholder (~254–393+) so no leftover brackets; text starts with a gap after colon.
-        $fill(252, 678, 280, 28);
-        $write(
-            $bracket($accreditedByEn),
-            275,
-            686,
-            $fitSize('[ ' . $accreditedByEn . ' ]', 13, 34, 10),
-            'left',
-            false
-        );
+        // Accredited by EN — stop well before QR (~576); no brackets (saves width)
+        $fill(252, 678, 255, 28); // ends 507
+        $writeLtr($accreditedByEn, 258, 686, $fitSize($accreditedByEn, 11, 24, 8), 'left');
 
-        // Accreditation number: ink ~254–393
         $fill(250, 714, 148, 24);
-        $write($bracket($acc), 254, 720, 11, 'left', false);
+        $writeLtr($acc, 254, 720, 11, 'left');
 
-        // 5. Meta rows AR (right) — keep clear of printed labels on the far right
-        // Hours [ 00 ] sits between label and "ساعة" (~1000–1048) — keep clear of "ساعة"
+        // 5. Meta rows AR (right)
+        // Hours — Latin digits LTR in the [00] slot
         $fill(1002, 588, 46, 22);
-        $write($bracket($hours), 1004, 594, 11, 'left', false);
+        $writeLtr($bracket($hours), 1004, 594, 11, 'left');
 
-        // فترة الدورة dates (~869–1125); label starts ~1140
+        // Dates — Latin LTR (avoids ][)
         $fill(860, 616, 275, 26);
-        $write($bracket($start) . ' - ' . $bracket($end), 1128, 624, 11, 'right', false);
+        $writeLtr($bracket($start) . ' - ' . $bracket($end), 865, 624, 11, 'left');
 
-        // تاريخ الإصدار — erase full placeholder incl. leftover | ghosts
         $fill(970, 648, 148, 26);
-        $write($bracket($issue), 1110, 656, 11, 'right', false);
+        $writeLtr($bracket($issue), 975, 656, 11, 'left');
 
-        // الدورة معتمدة من — fill erases full [ ---- ] placeholder up to the label,
-        // but draw the value further left so a clear paper gap sits before "من".
-        $fill(730, 678, 378, 28); // ends ~1108, just before printed "من"
-        $write(
-            $bracket($accreditedByAr),
-            1035,
+        // جهة الاعتماد — Arabic only; stop before printed "من" (~1110+)
+        $fill(730, 678, 360, 28); // ends 1090
+        $writeAr(
+            $accreditedByAr,
+            1085,
             686,
-            $fitSize('[ ' . $accreditedByAr . ' ]', 13, 30, 10),
+            $fitSize($accreditedByAr, 12, 26, 9),
             'right',
             false
         );
 
-        // رقم الاعتماد — erase full placeholder incl. leftover | ghosts
-        $fill(970, 712, 148, 26);
-        $write($bracket($acc), 1110, 720, 11, 'right', false);
+        // رقم الاعتماد — wipe placeholder + template "[" before Arabic label (~1144+)
+        $fill(955, 708, 178, 30); // ends 1133
+        $writeLtr($acc, 968, 718, 11, 'left');
 
-        // 6. QR — centered inside dashed box, nudged 5px up
-        $qrSize = 96;
-        $qrX = 582 + (int) floor((116 - $qrSize) / 2);
-        $qrY = 603; // was 608 — move ~5px toward top
-        $fill(582, 603, 116, 96);
+        // 6. QR — true center of dashed box on template (581–696 × 590–702)
+        $boxL = 581;
+        $boxT = 590;
+        $boxR = 696;
+        $boxB = 702;
+        $boxW = $boxR - $boxL;
+        $boxH = $boxB - $boxT;
+        $qrSize = 84;
+        $qrX = (int) round(($boxL + $boxR - $qrSize) / 2);
+        $qrY = (int) round(($boxT + $boxB - $qrSize) / 2);
+        // Clear interior only — keep dashed border intact
+        $fill($boxL + 6, $boxT + 6, $boxW - 12, $boxH - 12);
 
         $qrBinary = $data['qr_png'] ?? null;
         if (empty($qrBinary) && !empty($data['qr_url'])) {
@@ -940,10 +979,9 @@ class MakeCertificate
             $size = (int) $elements['qr_code']['image_size'];
         }
 
-        $url = url('/certificate_validation');
-        if (!empty($certificate?->id)) {
-            $url = url('/certificate_validation?certificate_id=' . urlencode(self::formatCertificateNumber((int) $certificate->id)));
-        }
+        $url = self::certificateValidationUrl(
+            !empty($certificate?->id) ? self::formatCertificateNumber((int) $certificate->id) : null
+        );
 
         try {
             $png = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')->size($size)->generate($url);

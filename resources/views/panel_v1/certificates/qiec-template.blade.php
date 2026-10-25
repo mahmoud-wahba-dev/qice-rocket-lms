@@ -17,8 +17,8 @@
         }
         .en  { direction: ltr;  text-align: left;   font-family: "DejaVu Sans", sans-serif; }
         .ar  { direction: rtl;  text-align: right;  font-family: "VazirCert", "DejaVu Sans", sans-serif; }
-        .qr-box { position: absolute; left: 592px; top: 603px; width: 96px; height: 96px; z-index: 2; background: #FAF9F4; }
-        .qr-box img { width: 96px; height: 96px; display: block; }
+        .qr-box { position: absolute; left: 594px; top: 606px; width: 90px; height: 90px; z-index: 2; background: #FAF9F4; }
+        .qr-box img { width: 90px; height: 90px; display: block; }
     </style>
 </head>
 <body>
@@ -47,7 +47,7 @@
     <div class="field en" style="left:188px;top:288px;width:136px;font-size:11px;">[ {{ $num }} ]</div>
 
     <div class="mask" style="left:990px;top:284px;width:120px;height:22px;"></div>
-    <div class="field en" style="left:990px;top:288px;width:118px;text-align:right;font-size:11px;">[ {{ $num }} ]</div>
+    <div class="field en" style="left:992px;top:288px;width:116px;font-size:11px;">[ {{ $num }} ]</div>
 
     <div class="mask" style="left:70px;top:428px;width:350px;height:32px;"></div>
     <div class="field en" style="left:74px;top:434px;width:346px;font-size:18px;">{{ $nameEn }}</div>
@@ -79,17 +79,17 @@
     <div class="mask" style="left:1000px;top:588px;width:50px;height:22px;"></div>
     <div class="field en" style="left:1002px;top:594px;width:48px;font-size:11px;font-weight:normal;">[ {{ $hours }} ]</div>
 
-    <div class="mask" style="left:865px;top:618px;width:268px;height:24px;"></div>
-    <div class="field en" style="left:865px;top:624px;width:263px;text-align:right;font-size:11px;font-weight:normal;">[ {{ $start }} ] - [ {{ $end }} ]</div>
+    <div class="mask" style="left:860px;top:616px;width:275px;height:26px;"></div>
+    <div class="field en" style="left:865px;top:624px;width:270px;font-size:11px;font-weight:normal;">[ {{ $start }} ] - [ {{ $end }} ]</div>
 
-    <div class="mask" style="left:995px;top:650px;width:120px;height:24px;"></div>
-    <div class="field en" style="left:995px;top:656px;width:117px;text-align:right;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
+    <div class="mask" style="left:970px;top:648px;width:148px;height:26px;"></div>
+    <div class="field en" style="left:975px;top:656px;width:140px;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
 
-    <div class="mask" style="left:730px;top:678px;width:375px;height:28px;"></div>
-    <div class="field ar" style="left:730px;top:686px;width:310px;font-size:{{ $accByArSize }};font-weight:normal;">[ {{ $accByAr }} ]</div>
+    <div class="mask" style="left:730px;top:678px;width:378px;height:28px;"></div>
+    <div class="field ar" style="left:730px;top:686px;width:305px;font-size:{{ $accByArSize }};font-weight:normal;">{{ $accByAr }}</div>
 
-    <div class="mask" style="left:1000px;top:714px;width:120px;height:24px;"></div>
-    <div class="field en" style="left:1000px;top:720px;width:116px;text-align:right;font-size:11px;font-weight:normal;">[ {{ $acc }} ]</div>
+    <div class="mask" style="left:970px;top:712px;width:148px;height:26px;"></div>
+    <div class="field en" style="left:975px;top:720px;width:140px;font-size:11px;font-weight:normal;">[ {{ $acc }} ]</div>
 
     @if (!empty($qrHtml))
         <div class="qr-box">{!! $qrHtml !!}</div>

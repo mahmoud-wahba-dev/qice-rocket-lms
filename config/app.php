@@ -56,6 +56,12 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    /*
+    | Public base URL encoded into certificate QR codes (phone cameras cannot
+    | open localhost / *.local). Defaults to production when APP_URL is local.
+    */
+    'certificate_public_url' => env('CERTIFICATE_PUBLIC_URL', env('APP_URL', 'http://localhost')),
+
     'asset_url' => env('ASSET_URL', null),
 
     /*
