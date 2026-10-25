@@ -292,7 +292,8 @@ class MakeCertificate
     }
 
     /**
-     * Build a PNG QR (Imagick via SimpleQr when available; otherwise Bacon matrix + GD).
+     * Build a scannable PNG QR for $url.
+     * Prefers SimpleQr+Imagick; otherwise Bacon matrix rendered with GD (no quiet-zone trim).
      */
     private function buildQiecQrPngBinary(string $url, int $size = 200): ?string
     {
@@ -302,9 +303,12 @@ class MakeCertificate
         }
 
         try {
-            return (string) QrCode::format('png')->size($size)->margin(0)->generate($url);
+            $png = (string) QrCode::format('png')->size($size)->margin(1)->generate($url);
+            if ($png !== '' && strncmp($png, "\x89PNG", 4) === 0) {
+                return $png;
+            }
         } catch (\Throwable $e) {
-            // fall through to GD
+            // Imagick often missing on XAMPP — fall through to GD
         }
 
         try {
@@ -318,14 +322,9 @@ class MakeCertificate
                 return null;
             }
 
-            // Trim Bacon quiet zone so modules fill the square evenly (keep 1-module margin)
-            $quiet = 4;
-            $inner = max(1, $modules - (2 * $quiet));
-            $drawStart = $quiet;
-            $margin = 1;
-            $drawModules = $inner + (2 * $margin);
-            $scale = max(1, (int) floor($size / $drawModules));
-            $imgW = $scale * $drawModules;
+            // Keep Bacon's full matrix (includes quiet zone) — trimming breaks scanners
+            $scale = max(2, (int) floor($size / $modules));
+            $imgW = $scale * $modules;
             $im = imagecreatetruecolor($imgW, $imgW);
             if ($im === false) {
                 return null;
@@ -334,15 +333,16 @@ class MakeCertificate
             $black = imagecolorallocate($im, 0, 0, 0);
             imagefilledrectangle($im, 0, 0, $imgW - 1, $imgW - 1, $white);
 
-            for ($y = 0; $y < $inner; $y++) {
-                for ($x = 0; $x < $inner; $x++) {
-                    if ($matrix->get($drawStart + $x, $drawStart + $y) === 1) {
+            for ($y = 0; $y < $modules; $y++) {
+                for ($x = 0; $x < $modules; $x++) {
+                    // Bacon ByteMatrix: 1 = dark module
+                    if ((int) $matrix->get($x, $y) === 1) {
                         imagefilledrectangle(
                             $im,
-                            ($x + $margin) * $scale,
-                            ($y + $margin) * $scale,
-                            ($x + $margin + 1) * $scale - 1,
-                            ($y + $margin + 1) * $scale - 1,
+                            $x * $scale,
+                            $y * $scale,
+                            ($x + 1) * $scale - 1,
+                            ($y + 1) * $scale - 1,
                             $black
                         );
                     }
