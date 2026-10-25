@@ -654,8 +654,8 @@ class MakeCertificate
                 }
             }
         }
-        // Gap after colon so alef (ا) of the org name does not look like `|` next to `:`
-        $arByValRight = $arByLabelLeft - 16;
+        // Tight gap after colon (was 16 — looked too wide)
+        $arByValRight = $arByLabelLeft - 6;
         $arByValSize = $fitSize($accreditedByAr, 12, 36, 10);
         $writeAr($accreditedByAr, $arByValRight, 686, $arByValSize, 'right', false);
 
@@ -673,7 +673,7 @@ class MakeCertificate
                 }
             }
         }
-        $arAccIdRight = $arAccLabelLeft - 14;
+        $arAccIdRight = $arAccLabelLeft - 6; // tight gap after colon (was 14)
         $arAccIdSize = 11;
         $arAccIdW = $textWidth($acc, $arAccIdSize) + 4;
         $fill($arAccIdRight - $arAccIdW, 716, $arAccIdW, 22);
