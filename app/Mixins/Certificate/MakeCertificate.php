@@ -524,12 +524,25 @@ class MakeCertificate
         $courseEn = (string) ($data['course_title_en'] ?? '');
         $courseAr = (string) ($data['course_title_ar'] ?? '');
         $hours = str_pad((string) ((int) ($data['hours'] ?? 0)), 2, '0', STR_PAD_LEFT);
-        $start = (string) ($data['start_date'] ?? '');
-        $end = (string) ($data['end_date'] ?? '');
-        $issue = (string) ($data['issue_date'] ?? '');
         $acc = (string) ($data['accreditation_number'] ?? '');
         $accreditedByEn = (string) ($data['accredited_by_en'] ?? 'Quality & Excellence Center');
         $accreditedByAr = (string) ($data['accredited_by_ar'] ?? 'مركز الجودة والتميز');
+
+        // Dates → "12 / 10 / 2026" (spaces around slashes)
+        $spaceDate = static function (string $value): string {
+            $value = trim($value);
+            if ($value === '') {
+                return '';
+            }
+            if (preg_match('/^(\d{1,4})\s*[\/.\-]\s*(\d{1,4})\s*[\/.\-]\s*(\d{1,4})$/', $value, $m)) {
+                return $m[1] . ' / ' . $m[2] . ' / ' . $m[3];
+            }
+
+            return $value;
+        };
+        $start = $spaceDate((string) ($data['start_date'] ?? ''));
+        $end = $spaceDate((string) ($data['end_date'] ?? ''));
+        $issue = $spaceDate((string) ($data['issue_date'] ?? ''));
 
         // Latin bracket — never pass through Arabic shaping
         $bracket = static function (string $value): string {
@@ -564,11 +577,11 @@ class MakeCertificate
         $fill(148, 590, 40, 20);
         $writeLtr($bracket($hours), 150, 594, 11, 'left');
 
-        $fill(178, 618, 304, 24);
-        $writeLtr($bracket($start) . ' – ' . $bracket($end), 182, 624, 11, 'left');
+        $fill(170, 616, 340, 28);
+        $writeLtr($bracket($start) . ' – ' . $bracket($end), 174, 624, 11, 'left');
 
-        $fill(156, 650, 148, 24);
-        $writeLtr($bracket($issue), 160, 656, 11, 'left');
+        $fill(150, 648, 180, 28);
+        $writeLtr($bracket($issue), 154, 656, 11, 'left');
 
         // Accredited by EN — stop well before QR (~576); no brackets (saves width)
         $fill(248, 676, 320, 34); // ends ~568
@@ -583,11 +596,11 @@ class MakeCertificate
         $writeLtr($bracket($hours), 1004, 594, 11, 'left');
 
         // Dates — Latin LTR (avoids ][)
-        $fill(860, 616, 275, 26);
-        $writeLtr($bracket($start) . ' - ' . $bracket($end), 865, 624, 11, 'left');
+        $fill(820, 614, 320, 30);
+        $writeLtr($bracket($start) . ' – ' . $bracket($end), 825, 624, 11, 'left');
 
-        $fill(970, 648, 148, 26);
-        $writeLtr($bracket($issue), 975, 656, 11, 'left');
+        $fill(950, 646, 180, 30);
+        $writeLtr($bracket($issue), 955, 656, 11, 'left');
 
         // جهة الاعتماد — keep printed "الدورة معتمدة من:" on the JPG; only fill [---------]
         $accreditedByAr = preg_replace('/^\s*الدورة\s+معتمدة\s+من\s*:?\s*/u', '', $accreditedByAr) ?: $accreditedByAr;

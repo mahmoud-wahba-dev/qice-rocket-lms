@@ -26,9 +26,19 @@
     $d     = $data ?? [];
     $hours = str_pad((string)((int)($d['hours'] ?? 0)), 2, '0', STR_PAD_LEFT);
     $num   = $d['certificate_number'] ?? '';
-    $start = $d['start_date']  ?? '';
-    $end   = $d['end_date']    ?? '';
-    $issue = $d['issue_date']  ?? '';
+    $spaceDate = static function (string $value): string {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+        if (preg_match('/^(\d{1,4})\s*[\/.\-]\s*(\d{1,4})\s*[\/.\-]\s*(\d{1,4})$/', $value, $m)) {
+            return $m[1] . ' / ' . $m[2] . ' / ' . $m[3];
+        }
+        return $value;
+    };
+    $start = $spaceDate((string)($d['start_date'] ?? ''));
+    $end   = $spaceDate((string)($d['end_date'] ?? ''));
+    $issue = $spaceDate((string)($d['issue_date'] ?? ''));
     $acc   = $d['accreditation_number'] ?? '';
     $nameEn   = $d['trainee_name_en']  ?? '';
     $nameAr   = $d['trainee_name_ar']  ?? '';
@@ -65,11 +75,11 @@
     <div class="mask" style="left:148px;top:590px;width:40px;height:20px;"></div>
     <div class="field en" style="left:150px;top:594px;width:40px;font-size:11px;font-weight:normal;">[ {{ $hours }} ]</div>
 
-    <div class="mask" style="left:178px;top:618px;width:304px;height:24px;"></div>
-    <div class="field en" style="left:182px;top:624px;width:300px;font-size:11px;font-weight:normal;">[ {{ $start }} ] – [ {{ $end }} ]</div>
+    <div class="mask" style="left:170px;top:616px;width:340px;height:28px;"></div>
+    <div class="field en" style="left:174px;top:624px;width:336px;font-size:11px;font-weight:normal;">[ {{ $start }} ] – [ {{ $end }} ]</div>
 
-    <div class="mask" style="left:156px;top:650px;width:148px;height:24px;"></div>
-    <div class="field en" style="left:160px;top:656px;width:144px;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
+    <div class="mask" style="left:150px;top:648px;width:180px;height:28px;"></div>
+    <div class="field en" style="left:154px;top:656px;width:176px;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
 
     <div class="mask" style="left:248px;top:676px;width:310px;height:32px;"></div>
     <div class="field en" style="left:254px;top:690px;width:300px;font-size:{{ $accByEnSize }};font-weight:normal;">{{ $accByEn }}</div>
@@ -80,11 +90,11 @@
     <div class="mask" style="left:1000px;top:586px;width:56px;height:26px;"></div>
     <div class="field en" style="left:1004px;top:594px;width:50px;font-size:11px;font-weight:normal;">[ {{ $hours }} ]</div>
 
-    <div class="mask" style="left:860px;top:616px;width:275px;height:26px;"></div>
-    <div class="field en" style="left:865px;top:624px;width:270px;font-size:11px;font-weight:normal;">[ {{ $start }} ] - [ {{ $end }} ]</div>
+    <div class="mask" style="left:820px;top:614px;width:320px;height:30px;"></div>
+    <div class="field en" style="left:825px;top:624px;width:315px;font-size:11px;font-weight:normal;">[ {{ $start }} ] – [ {{ $end }} ]</div>
 
-    <div class="mask" style="left:970px;top:648px;width:148px;height:26px;"></div>
-    <div class="field en" style="left:975px;top:656px;width:140px;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
+    <div class="mask" style="left:950px;top:646px;width:180px;height:30px;"></div>
+    <div class="field en" style="left:955px;top:656px;width:175px;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
 
     <div class="mask" style="left:880px;top:676px;width:200px;height:32px;"></div>
     <div class="field ar" style="left:880px;top:690px;width:200px;font-size:{{ $accByArSize }};font-weight:normal;">{{ $accByAr }}</div>
