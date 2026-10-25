@@ -32,7 +32,7 @@
             return '';
         }
         if (preg_match('/^(\d{1,4})\s*[\/.\-]\s*(\d{1,4})\s*[\/.\-]\s*(\d{1,4})$/', $value, $m)) {
-            return $m[1] . ' / ' . $m[2] . ' / ' . $m[3];
+            return $m[1] . '  /  ' . $m[2] . '  /  ' . $m[3];
         }
         return $value;
     };
@@ -75,11 +75,11 @@
     <div class="mask" style="left:148px;top:590px;width:40px;height:20px;"></div>
     <div class="field en" style="left:150px;top:594px;width:40px;font-size:11px;font-weight:normal;">[ {{ $hours }} ]</div>
 
-    <div class="mask" style="left:170px;top:616px;width:340px;height:28px;"></div>
-    <div class="field en" style="left:174px;top:624px;width:336px;font-size:11px;font-weight:normal;">[ {{ $start }} ] – [ {{ $end }} ]</div>
+    <div class="mask" style="left:178px;top:616px;width:360px;height:28px;"></div>
+    <div class="field en" style="left:182px;top:624px;width:356px;font-size:11px;font-weight:normal;">[ {{ $start }} ]  –  [ {{ $end }} ]</div>
 
-    <div class="mask" style="left:150px;top:648px;width:180px;height:28px;"></div>
-    <div class="field en" style="left:154px;top:656px;width:176px;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
+    <div class="mask" style="left:158px;top:648px;width:200px;height:28px;"></div>
+    <div class="field en" style="left:162px;top:656px;width:196px;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
 
     <div class="mask" style="left:248px;top:676px;width:310px;height:32px;"></div>
     <div class="field en" style="left:254px;top:690px;width:300px;font-size:{{ $accByEnSize }};font-weight:normal;">{{ $accByEn }}</div>
@@ -90,11 +90,11 @@
     <div class="mask" style="left:1000px;top:586px;width:56px;height:26px;"></div>
     <div class="field en" style="left:1004px;top:594px;width:50px;font-size:11px;font-weight:normal;">[ {{ $hours }} ]</div>
 
-    <div class="mask" style="left:820px;top:614px;width:320px;height:30px;"></div>
-    <div class="field en" style="left:825px;top:624px;width:315px;font-size:11px;font-weight:normal;">[ {{ $start }} ] – [ {{ $end }} ]</div>
+    <div class="mask" style="left:800px;top:614px;width:340px;height:30px;"></div>
+    <div class="field en" style="left:805px;top:624px;width:335px;font-size:11px;font-weight:normal;">[ {{ $start }} ]  –  [ {{ $end }} ]</div>
 
-    <div class="mask" style="left:950px;top:646px;width:180px;height:30px;"></div>
-    <div class="field en" style="left:955px;top:656px;width:175px;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
+    <div class="mask" style="left:955px;top:648px;width:168px;height:28px;"></div>
+    <div class="field en" style="left:960px;top:656px;width:160px;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
 
     <div class="mask" style="left:880px;top:676px;width:200px;height:32px;"></div>
     <div class="field ar" style="left:880px;top:690px;width:200px;font-size:{{ $accByArSize }};font-weight:normal;">{{ $accByAr }}</div>

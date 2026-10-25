@@ -528,14 +528,14 @@ class MakeCertificate
         $accreditedByEn = (string) ($data['accredited_by_en'] ?? 'Quality & Excellence Center');
         $accreditedByAr = (string) ($data['accredited_by_ar'] ?? 'مركز الجودة والتميز');
 
-        // Dates → "12 / 10 / 2026" (spaces around slashes)
+        // Dates → "12  /  10  /  2026" (extra horizontal spacing around slashes)
         $spaceDate = static function (string $value): string {
             $value = trim($value);
             if ($value === '') {
                 return '';
             }
             if (preg_match('/^(\d{1,4})\s*[\/.\-]\s*(\d{1,4})\s*[\/.\-]\s*(\d{1,4})$/', $value, $m)) {
-                return $m[1] . ' / ' . $m[2] . ' / ' . $m[3];
+                return $m[1] . '  /  ' . $m[2] . '  /  ' . $m[3];
             }
 
             return $value;
@@ -577,11 +577,13 @@ class MakeCertificate
         $fill(148, 590, 40, 20);
         $writeLtr($bracket($hours), 150, 594, 11, 'left');
 
-        $fill(170, 616, 340, 28);
-        $writeLtr($bracket($start) . ' – ' . $bracket($end), 174, 624, 11, 'left');
+        // Keep "Course dates:" intact; wider wipe for spaced dates
+        $fill(178, 616, 360, 28);
+        $writeLtr($bracket($start) . '  –  ' . $bracket($end), 182, 624, 11, 'left');
 
-        $fill(150, 648, 180, 28);
-        $writeLtr($bracket($issue), 154, 656, 11, 'left');
+        // Keep "Issue date:" intact
+        $fill(158, 648, 200, 28);
+        $writeLtr($bracket($issue), 162, 656, 11, 'left');
 
         // Accredited by EN — stop well before QR (~576); no brackets (saves width)
         $fill(248, 676, 320, 34); // ends ~568
@@ -596,11 +598,12 @@ class MakeCertificate
         $writeLtr($bracket($hours), 1004, 594, 11, 'left');
 
         // Dates — Latin LTR (avoids ][)
-        $fill(820, 614, 320, 30);
-        $writeLtr($bracket($start) . ' – ' . $bracket($end), 825, 624, 11, 'left');
+        $fill(800, 614, 340, 30);
+        $writeLtr($bracket($start) . '  –  ' . $bracket($end), 805, 624, 11, 'left');
 
-        $fill(950, 646, 180, 30);
-        $writeLtr($bracket($issue), 955, 656, 11, 'left');
+        // Cover date slot + leftover template "]" but stop before "تاريخ الإصدار:" (~1130+)
+        $fill(955, 648, 168, 28); // ends ~1123
+        $writeLtr($bracket($issue), 960, 656, 11, 'left');
 
         // جهة الاعتماد — keep printed "الدورة معتمدة من:" on the JPG; only fill [---------]
         $accreditedByAr = preg_replace('/^\s*الدورة\s+معتمدة\s+من\s*:?\s*/u', '', $accreditedByAr) ?: $accreditedByAr;
