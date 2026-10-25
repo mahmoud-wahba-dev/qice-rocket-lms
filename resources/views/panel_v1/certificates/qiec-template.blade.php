@@ -39,7 +39,7 @@
     $accByAr  = preg_replace('/^\s*الدورة\s+معتمدة\s+من\s*:?\s*/u', '', (string) $accByAr) ?: $accByAr;
     $qrHtml   = $d['qr_html'] ?? '';
     $accByArSize = mb_strlen($accByAr) > 30 ? '11px' : (mb_strlen($accByAr) > 22 ? '12px' : '14px');
-    $accByEnSize = mb_strlen($accByEn) > 40 ? '11px' : (mb_strlen($accByEn) > 28 ? '12px' : '14px');
+    $accByEnSize = mb_strlen($accByEn) > 40 ? '10px' : (mb_strlen($accByEn) > 28 ? '11px' : '12px');
 @endphp
 <div class="sheet">
     <img class="sheet-bg" src="{{ $backgroundUrl }}" width="1280" height="905" alt="">
