@@ -32,9 +32,9 @@
             </p>
         @endif
         @if (!empty($programDate))
-            <p class="font-medium text-12px text-primary/70 mb-3 inline-flex items-center gap-1.5">
+            <p class="font-medium text-13px text-primary mb-3 inline-flex items-center gap-1.5">
                 <span class="icon-[tabler--calendar-event] size-3.5 shrink-0"></span>
-                <span>تاريخ البرنامج: {{ $programDate }}</span>
+                <span>تاريخ الدورة: {{ $programDate }}</span>
             </p>
         @endif
         <div class="flex items-center gap-1.5 mb-5 border-t border-card-border pt-4 ">

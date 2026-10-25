@@ -157,6 +157,11 @@ class OfflinePaymentController extends Controller
                 if ($order->status !== Order::$paid) {
                     $order->update([
                         'payment_method' => Order::$paymentChannel,
+                        'payment_channel_id' => null,
+                        'payment_data' => json_encode([
+                            'gateway' => 'offline',
+                            'label' => 'تحويل بنكي',
+                        ]),
                     ]);
 
                     // Finalize order: reuse web controller logic

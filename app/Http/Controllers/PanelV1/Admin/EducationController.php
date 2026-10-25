@@ -2401,6 +2401,7 @@ class EducationController extends AdminController
                 'students' => $payload['rows'],
                 'paginator' => $payload['paginator'],
                 'filterGroups' => $payload['filterGroups'],
+                'paymentChannels' => $payload['paymentChannels'] ?? [],
             ])
         );
     }
@@ -2429,10 +2430,51 @@ class EducationController extends AdminController
     {
         $webinar->loadMissing(['sessions', 'files', 'textLessons']);
 
-        $query = \App\Models\Sale::query()
-            ->with(['buyer'])
+        $giftIds = \App\Models\Gift::query()
             ->where('webinar_id', $webinar->id)
+            ->where('status', 'active')
+            ->where(function ($query) {
+                $query->whereNull('date');
+                $query->orWhere('date', '<', time());
+            })
+            ->whereHas('sale')
+            ->pluck('id')
+            ->all();
+
+        $bundleIds = \App\Models\BundleWebinar::query()
+            ->where('webinar_id', $webinar->id)
+            ->pluck('bundle_id')
+            ->all();
+
+        $installmentSalesIds = [];
+        $installmentOrders = \App\Models\InstallmentOrder::query()
+            ->where('webinar_id', $webinar->id)
+            ->where('status', 'open')
+            ->with('payments')
+            ->get();
+        foreach ($installmentOrders as $installmentOrder) {
+            $installmentSalesIds = array_merge(
+                $installmentSalesIds,
+                $installmentOrder->payments->pluck('sale_id')->filter()->all()
+            );
+        }
+        $installmentSalesIds = array_values(array_unique(array_filter($installmentSalesIds)));
+
+        $query = \App\Models\Sale::query()
+            ->with(['buyer', 'order.paymentChannel', 'order.offlinePayment', 'bundle'])
             ->whereNull('refund_at')
+            ->where(function ($q) use ($webinar, $giftIds, $bundleIds, $installmentSalesIds) {
+                $q->where('webinar_id', $webinar->id);
+                if (!empty($giftIds)) {
+                    $q->orWhereIn('gift_id', $giftIds);
+                }
+                if (!empty($bundleIds)) {
+                    $q->orWhereIn('bundle_id', $bundleIds);
+                }
+                if (!empty($installmentSalesIds)) {
+                    $q->orWhereIn('id', $installmentSalesIds);
+                }
+            })
             ->orderByDesc('created_at');
 
         $search = trim((string) $request->get('search', ''));
@@ -2459,6 +2501,29 @@ class EducationController extends AdminController
             $query->whereIn('buyer_id', $userIds ?: [0]);
         }
 
+        $paymentMethodFilter = trim((string) $request->get('payment_method', ''));
+        if ($paymentMethodFilter === 'credit') {
+            $query->where('payment_method', \App\Models\Sale::$credit);
+        } elseif ($paymentMethodFilter === 'subscribe') {
+            $query->where('payment_method', \App\Models\Sale::$subscribe);
+        } elseif ($paymentMethodFilter === 'offline') {
+            $query->where('payment_method', \App\Models\Sale::$paymentChannel)
+                ->where(function ($q) {
+                    $q->whereHas('order.offlinePayment')
+                        ->orWhereHas('order', function ($order) {
+                            $order->where('payment_data', 'like', '%"gateway":"offline"%');
+                        });
+                });
+        } elseif ($paymentMethodFilter === 'payment_channel') {
+            $query->where('payment_method', \App\Models\Sale::$paymentChannel);
+        } elseif ($paymentMethodFilter !== '' && ctype_digit($paymentMethodFilter)) {
+            $channelId = (int) $paymentMethodFilter;
+            $query->where('payment_method', \App\Models\Sale::$paymentChannel)
+                ->whereHas('order', function ($order) use ($channelId) {
+                    $order->where('payment_channel_id', $channelId);
+                });
+        }
+
         $status = (string) $request->get('status', '');
         if ($status === 'blocked') {
             $query->where('access_to_purchased_item', false);
@@ -2479,6 +2544,16 @@ class EducationController extends AdminController
             ->orderByDesc('created_at')
             ->get()
             ->map(fn ($g) => ['id' => $g->id, 'name' => $g->name])
+            ->all();
+
+        $paymentChannels = \App\Models\PaymentChannel::query()
+            ->orderBy('title')
+            ->get(['id', 'title', 'class_name', 'status'])
+            ->map(fn ($ch) => [
+                'id' => $ch->id,
+                'name' => $ch->title ?: $ch->class_name,
+                'active' => $ch->status === 'active',
+            ])
             ->all();
 
         if ($forExport) {
@@ -2562,16 +2637,34 @@ class EducationController extends AdminController
                 }
             }
 
+            $paymentLabel = method_exists($sale, 'resolvePaymentMethodLabel')
+                ? $sale->resolvePaymentMethodLabel()
+                : '—';
+
+            $enrollmentSource = 'دورة';
+            if (!empty($sale->bundle_id)) {
+                $enrollmentSource = 'حزمة' . (!empty($sale->bundle->title) ? (': ' . $sale->bundle->title) : '');
+            } elseif (!empty($sale->gift_id)) {
+                $enrollmentSource = 'هدية';
+            } elseif ($sale->type === \App\Models\Sale::$installmentPayment) {
+                $enrollmentSource = 'أقساط';
+            }
+
             return [
                 'id' => $buyerId ?: ('sale-' . $sale->id),
+                'sale_id' => $sale->id,
                 'name' => $buyer->full_name ?? 'متدرب',
                 'email' => $buyer->email ?? '',
+                'mobile' => $buyer->mobile ?? '',
                 'avatar' => ($buyer && method_exists($buyer, 'getAvatar')) ? $buyer->getAvatar() : null,
                 'rate' => $rate !== null ? $rate : '—',
                 'learning' => $learning,
                 'group' => $groupName,
                 'income' => handlePrice($sale->total_amount ?? 0),
                 'income_raw' => (float) ($sale->total_amount ?? 0),
+                'payment_method' => $paymentLabel,
+                'payment_method_raw' => $sale->payment_method,
+                'enrollment_source' => $enrollmentSource,
                 'purchase_date' => $purchaseAt > 0 ? date('Y/m/d H:i', $purchaseAt) : '—',
                 'status_label' => $statusLabel,
                 'status_class' => $statusClass,
@@ -2583,6 +2676,7 @@ class EducationController extends AdminController
             'rows' => $rows,
             'paginator' => $paginator,
             'filterGroups' => $filterGroups,
+            'paymentChannels' => $paymentChannels,
         ];
     }
 

@@ -84,8 +84,9 @@ class MakeCertificate
     public function qiecTemplatePath(): ?string
     {
         $candidates = [
-            resource_path('certificate/certificate_new.jpg'),
-            public_path('assets/panel_v1/img/certificate_new.jpg'),
+            resource_path('certificate/certficate_qr.jpg'), // canonical QR template (filename as provided)
+            resource_path('certificate/certificate_qr.jpg'),
+            public_path('assets/panel_v1/img/certificate_qr.jpg'),
         ];
 
         foreach ($candidates as $path) {
@@ -112,13 +113,23 @@ class MakeCertificate
             return null;
         }
 
-        $dst = public_path('assets/panel_v1/img/certificate_new.jpg');
+        $dst = public_path('assets/panel_v1/img/certificate_qr.jpg');
         if (!is_file($dst) || filesize($dst) !== filesize($src)) {
             $dir = dirname($dst);
             if (!is_dir($dir)) {
                 @mkdir($dir, 0755, true);
             }
             @copy($src, $dst);
+        }
+
+        // Drop legacy non-QR template copies if present.
+        foreach ([
+            public_path('assets/panel_v1/img/certificate_new.jpg'),
+            resource_path('certificate/certificate_new.jpg'),
+        ] as $legacy) {
+            if (is_file($legacy)) {
+                @unlink($legacy);
+            }
         }
 
         return is_file($dst) ? $dst : $src;
@@ -130,7 +141,7 @@ class MakeCertificate
             return null;
         }
 
-        return asset('assets/panel_v1/img/certificate_new.jpg');
+        return asset('assets/panel_v1/img/certificate_qr.jpg');
     }
 
     public function buildQiecCertificateData($certificate): array
@@ -245,22 +256,77 @@ class MakeCertificate
         $data['trainee_name'] = $data['trainee_name_ar'] ?: $data['trainee_name_en'];
         $data['course_title'] = $data['course_title_ar'] ?: $data['course_title_en'];
 
-        // QR for HTML template — encode QEC number so validation page can parse it
-        $data['qr_html'] = '';
-        try {
-            $url = url('/certificate_validation?certificate_id=' . urlencode($data['certificate_number']));
-            try {
-                $png = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')->size(120)->margin(0)->generate($url);
-                $data['qr_html'] = '<img src="data:image/png;base64,' . base64_encode($png) . '" width="78" height="78" alt="QR" />';
-            } catch (\Throwable $e) {
-                $svg = (string) \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(120)->margin(0)->generate($url);
-                $data['qr_html'] = '<img src="data:image/svg+xml;base64,' . base64_encode($svg) . '" width="78" height="78" alt="QR" />';
-            }
-        } catch (\Throwable $e) {
-            $data['qr_html'] = '';
-        }
+        // QR — encode validation URL so the public validation page can resolve the certificate
+        $data['qr_url'] = url('/certificate_validation?certificate_id=' . urlencode($data['certificate_number']));
+        $data['qr_png'] = $this->buildQiecQrPngBinary($data['qr_url'], 200);
+        $data['qr_html'] = !empty($data['qr_png'])
+            ? '<img src="data:image/png;base64,' . base64_encode($data['qr_png']) . '" width="96" height="96" alt="QR" />'
+            : '';
 
         return $data;
+    }
+
+    /**
+     * Build a PNG QR (Imagick via SimpleQr when available; otherwise Bacon matrix + GD).
+     */
+    private function buildQiecQrPngBinary(string $url, int $size = 200): ?string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return null;
+        }
+
+        try {
+            return (string) QrCode::format('png')->size($size)->margin(0)->generate($url);
+        } catch (\Throwable $e) {
+            // fall through to GD
+        }
+
+        try {
+            $qrCode = \BaconQrCode\Encoder\Encoder::encode(
+                $url,
+                \BaconQrCode\Common\ErrorCorrectionLevel::M()
+            );
+            $matrix = $qrCode->getMatrix();
+            $modules = $matrix->getWidth();
+            if ($modules < 1) {
+                return null;
+            }
+
+            $scale = max(1, (int) floor($size / $modules));
+            $imgW = $scale * $modules;
+            $im = imagecreatetruecolor($imgW, $imgW);
+            if ($im === false) {
+                return null;
+            }
+            $white = imagecolorallocate($im, 255, 255, 255);
+            $black = imagecolorallocate($im, 0, 0, 0);
+            imagefilledrectangle($im, 0, 0, $imgW - 1, $imgW - 1, $white);
+
+            for ($y = 0; $y < $modules; $y++) {
+                for ($x = 0; $x < $modules; $x++) {
+                    if ($matrix->get($x, $y) === 1) {
+                        imagefilledrectangle(
+                            $im,
+                            $x * $scale,
+                            $y * $scale,
+                            ($x + 1) * $scale - 1,
+                            ($y + 1) * $scale - 1,
+                            $black
+                        );
+                    }
+                }
+            }
+
+            ob_start();
+            imagepng($im);
+            $png = ob_get_clean();
+            imagedestroy($im);
+
+            return is_string($png) && $png !== '' ? $png : null;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     public function renderQiecCertificate($certificate)
@@ -310,7 +376,8 @@ class MakeCertificate
     }
 
     /**
-     * Draw dynamic fields onto certificate_new.jpg (1280×905) — pixel-perfect matching of template.
+     * Draw dynamic fields onto certficate_qr.jpg (1280×905) — pixel-perfect matching of template.
+     * Director signature is printed on the template; only dynamic values + QR are overlaid.
      */
     private function composeQiecCertificatePng(array $data): string
     {
@@ -412,8 +479,6 @@ class MakeCertificate
         $acc = (string) ($data['accreditation_number'] ?? '');
         $accreditedByEn = (string) ($data['accredited_by_en'] ?? 'Quality & Excellence Center');
         $accreditedByAr = (string) ($data['accredited_by_ar'] ?? 'مركز الجودة والتميز');
-        $officer = (string) ($data['officer_name'] ?? '');
-        $director = (string) ($data['director_name'] ?? '');
 
         // Bracket helper — Latin-only so [ ] never reverse under Arabic shaping
         $bracket = static function (string $value): string {
@@ -421,87 +486,102 @@ class MakeCertificate
             return $value === '' ? '' : '[ ' . $value . ' ]';
         };
 
-        // 1. Certificate numbers
-        // Left EN: "Certificate no.: [ QEC-0000-000 ]"
-        // Label ends before x=186. Placeholder is x=188 to 320.
-        $fill(186, 280, 140, 24);
-        $write($bracket($num), 188, 284, 12, 'left', false);
+        // Keep accredited-by short enough for the narrow template slot
+        if (mb_strlen($accreditedByEn) > 18) {
+            $accreditedByEn = mb_substr($accreditedByEn, 0, 18);
+        }
+        if (mb_strlen($accreditedByAr) > 14) {
+            $accreditedByAr = mb_substr($accreditedByAr, 0, 14);
+        }
 
-        // Right AR: "[ QEC-0000-000 ] :رقم الشهادة"
-        // Placeholder is x=990 to 1110. Label starts at x=1116.
-        $fill(988, 278, 124, 24);
-        $write($bracket($num), 1110, 284, 12, 'right', false);
+        // 1. Certificate numbers — placeholder after "Certificate no.:" / before "رقم الشهادة"
+        $fill(186, 284, 138, 22);
+        $write($bracket($num), 188, 288, 11, 'left', false);
 
-        // 2. Trainee Names
-        // Left EN: Under "Quality & Excellence Center for Training to:" (left aligned, bold)
-        $fill(70, 424, 480, 38);
-        $write(strtoupper($nameEn), 74, 430, $fitSize($nameEn, 20, 26, 13), 'left', true);
+        $fill(990, 284, 120, 22);
+        $write($bracket($num), 1108, 288, 11, 'right', false);
 
-        // Right AR: Under "إلى :" (right aligned, bold)
-        $fill(730, 420, 500, 40);
-        $write($nameAr, 1220, 426, $fitSize($nameAr, 20, 26, 13), 'right', true);
+        // 2. Trainee names — erase full placeholder bands (incl. brackets/dashes) then rewrite
+        // EN placeholder ~74–407 × 433–454
+        $fill(70, 428, 350, 32);
+        $nameEnDraw = $hasAr($nameEn) ? $nameEn : strtoupper($nameEn);
+        $write($nameEnDraw, 74, 434, $fitSize($nameEnDraw, 18, 26, 12), 'left', true);
 
-        // 3. Course Titles
-        // Left EN: Under "in recognition of successfully completing the training course:"
-        $fill(70, 520, 480, 34);
-        $write($courseEn, 74, 524, $fitSize($courseEn, 16, 36, 11), 'left', true);
+        // AR placeholder ~854–1221 × 426–452 — fill fully so no leftover ] / ---
+        $fill(848, 424, 380, 34);
+        $write($nameAr, 1205, 432, $fitSize($nameAr, 18, 26, 12), 'right', true);
 
-        // Right AR: Under "وذلك لإتمامه/ا بنجاح الدورة التدريبية:"
-        $fill(730, 518, 500, 36);
-        $write($courseAr, 1220, 522, $fitSize($courseAr, 16, 36, 11), 'right', true);
+        // 3. Course titles
+        // EN placeholder ~73–232 × 528–548 (short slot — keep text compact)
+        $fill(70, 524, 200, 30);
+        $courseEnDraw = $courseEn;
+        $write($courseEnDraw, 74, 530, $fitSize($courseEnDraw, 14, 22, 10), 'left', true);
 
-        // 4. Meta Rows EN (Left) — baselines match printed template (~+4px vs old)
-        // Row 0 EN: Duration: [ 00 ] training hours
-        $fill(147, 590, 53, 24);
-        $write($bracket($hours), 149, 596, 11, 'left', false);
+        // AR placeholder ~966–1222 × 526–550
+        $fill(960, 524, 268, 32);
+        $write($courseAr, 1205, 530, $fitSize($courseAr, 14, 28, 10), 'right', true);
 
-        // Row 1 EN: Course dates: [ DD/MM/YYYY ] – [ DD/MM/YYYY ]
-        $fill(180, 620, 270, 26);
-        $write($bracket($start) . '  –  ' . $bracket($end), 182, 626, 11, 'left', false);
+        // 4. Meta rows EN (left) — fills MUST fully erase printed placeholders
+        //    (narrow fills left "YY]" / "' ]" ghosts from [ DD / MM / YYYY ])
+        // Duration: [ 00 ]
+        $fill(148, 590, 40, 20);
+        $write($bracket($hours), 150, 594, 11, 'left', false);
 
-        // Row 2 EN: Issue date: [ DD/MM/YYYY ]
-        $fill(156, 652, 130, 26);
-        $write($bracket($issue), 158, 658, 11, 'left', false);
+        // Course dates: [ DD / MM / YYYY ] – [ DD / MM / YYYY ]  (ink ~182–478)
+        $fill(178, 618, 304, 24);
+        $write($bracket($start) . ' – ' . $bracket($end), 182, 624, 11, 'left', false);
 
-        // Row 3 EN: Accreditation Number: [ DD/MM/YYYY ] (Accredited by)
-        $fill(250, 684, 130, 26);
-        $write($bracket($accreditedByEn), 252, 690, 11, 'left', false);
+        // Issue date: [ DD / MM / YYYY ]  (ink ~160–299)
+        $fill(156, 650, 148, 24);
+        $write($bracket($issue), 160, 656, 11, 'left', false);
 
-        // Row 4 EN: Accreditation Number: [ DD/MM/YYYY ] (Accreditation No)
-        $fill(250, 716, 130, 26);
-        $write($bracket($acc), 252, 722, 11, 'left', false);
+        // Accredited by slot (template label says Accreditation Number): ink ~254–393
+        $fill(250, 682, 148, 24);
+        $write($bracket($accreditedByEn), 254, 688, 11, 'left', false);
 
-        // 5. Meta Rows AR (Right) — leave gap before printed labels; match baselines
-        // Row 0 AR: عدد الساعات التدريبية: [ 00 ] ساعة
-        $fill(1006, 590, 52, 24);
-        $write($bracket($hours), 1056, 594, 11, 'right', false);
+        // Accreditation number: ink ~254–393
+        $fill(250, 714, 148, 24);
+        $write($bracket($acc), 254, 720, 11, 'left', false);
 
-        // Row 1 AR: فترة الدورة: [ 00/00/0000 ] - [ 00/00/0000 ]
-        // Placeholder ends ~1122; label starts ~1141 — keep clear horizontal gap
-        $fill(900, 620, 228, 26);
-        $write($bracket($start) . '  -  ' . $bracket($end), 1126, 626, 11, 'right', false);
+        // 5. Meta rows AR (right) — keep clear of printed labels on the far right
+        // Hours [ 00 ] sits between label and "ساعة" (~1000–1048) — keep clear of "ساعة"
+        $fill(1002, 588, 46, 22);
+        $write($bracket($hours), 1004, 594, 11, 'left', false);
 
-        // Row 2 AR: تاريخ الإصدار: [ 00/00/0000 ]
-        // Placeholder ends ~1116; label starts ~1124
-        $fill(1005, 652, 110, 26);
-        $write($bracket($issue), 1112, 658, 11, 'right', false);
+        // فترة الدورة dates (~869–1125); label starts ~1140
+        $fill(860, 616, 275, 26);
+        $write($bracket($start) . ' - ' . $bracket($end), 1128, 624, 11, 'right', false);
 
-        // Row 3 AR: الدورة معتمدة من: [ --------- ]
-        $fill(1000, 684, 90, 26);
-        $write($bracket($accreditedByAr), 1088, 690, 11, 'right', false);
+        // تاريخ الإصدار — erase full placeholder incl. leftover | ghosts
+        $fill(970, 648, 148, 26);
+        $write($bracket($issue), 1110, 656, 11, 'right', false);
 
-        // Row 4 AR: رقم الاعتماد: [ 00/00/0000 ]
-        $fill(1012, 716, 108, 26);
-        $write($bracket($acc), 1116, 722, 11, 'right', false);
+        // الدورة معتمدة من — only the [ ---- ] slot (do not erase "من")
+        $fill(1005, 680, 105, 26);
+        $write($bracket($accreditedByAr), 1105, 688, 11, 'right', false);
 
-        // 6. Signatures (Replace placeholders [ Name ] and [ الاسم ] only)
-        // Left EN: Under "Training & Accreditation Officer"
-        $fill(80, 846, 240, 20);
-        $write($officer, 200, 846, $fitSize($officer, 13, 24, 10), 'center', true);
+        // رقم الاعتماد — erase full placeholder incl. leftover | ghosts
+        $fill(970, 712, 148, 26);
+        $write($bracket($acc), 1110, 720, 11, 'right', false);
 
-        // Right AR: Under "مدير المركز"
-        $fill(980, 846, 240, 20);
-        $write($director, 1100, 846, $fitSize($director, 13, 24, 10), 'center', true);
+        // 6. QR — centered inside dashed box, nudged 5px up
+        $qrSize = 96;
+        $qrX = 582 + (int) floor((116 - $qrSize) / 2);
+        $qrY = 603; // was 608 — move ~5px toward top
+        $fill(582, 603, 116, 96);
+
+        $qrBinary = $data['qr_png'] ?? null;
+        if (empty($qrBinary) && !empty($data['qr_url'])) {
+            $qrBinary = $this->buildQiecQrPngBinary((string) $data['qr_url'], 200);
+        }
+        if (!empty($qrBinary)) {
+            try {
+                $qrImg = Image::make($qrBinary)->resize($qrSize, $qrSize);
+                $img->insert($qrImg, 'top-left', $qrX, $qrY);
+            } catch (\Throwable $e) {
+                // leave paper fill if QR insert fails
+            }
+        }
 
         return (string) $img->encode('png');
     }

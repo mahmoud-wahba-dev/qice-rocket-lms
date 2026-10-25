@@ -78,6 +78,33 @@ class Sale extends Model
         return $this->belongsTo('App\Models\Order', 'order_id', 'id');
     }
 
+    /**
+     * Human-readable payment method (Tabby / Tamara / credit / subscribe / offline…).
+     */
+    public function resolvePaymentMethodLabel(): string
+    {
+        if ($this->payment_method === self::$subscribe) {
+            return 'اشتراك';
+        }
+
+        if ($this->payment_method === self::$credit) {
+            return empty($this->order_id) ? 'تسجيل إداري / رصيد' : 'رصيد المحفظة';
+        }
+
+        if (!empty($this->order_id)) {
+            $order = $this->relationLoaded('order') ? $this->order : $this->order()->with(['paymentChannel', 'offlinePayment'])->first();
+            if (!empty($order) && method_exists($order, 'resolvePaymentMethodLabel')) {
+                return $order->resolvePaymentMethodLabel();
+            }
+        }
+
+        if ($this->payment_method === self::$paymentChannel) {
+            return 'بوابة دفع';
+        }
+
+        return '—';
+    }
+
     public function ticket()
     {
         return $this->belongsTo('App\Models\Ticket', 'ticket_id', 'id');

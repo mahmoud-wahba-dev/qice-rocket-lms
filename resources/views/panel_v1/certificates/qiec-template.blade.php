@@ -17,10 +17,8 @@
         }
         .en  { direction: ltr;  text-align: left;   font-family: "DejaVu Sans", sans-serif; }
         .ar  { direction: rtl;  text-align: right;  font-family: "VazirCert", "DejaVu Sans", sans-serif; }
-        .cen { direction: ltr;  text-align: center; font-family: "DejaVu Sans", sans-serif; }
-        .car { direction: rtl;  text-align: center; font-family: "VazirCert", "DejaVu Sans", sans-serif; }
-        .qr  { position: absolute; left: 40px; top: 800px; width: 72px; height: 72px; z-index: 2; }
-        .qr img { width: 72px; height: 72px; display: block; }
+        .qr-box { position: absolute; left: 592px; top: 603px; width: 96px; height: 96px; z-index: 2; background: #FAF9F4; }
+        .qr-box img { width: 96px; height: 96px; display: block; }
     </style>
 </head>
 <body>
@@ -32,78 +30,70 @@
     $end   = $d['end_date']    ?? '';
     $issue = $d['issue_date']  ?? '';
     $acc   = $d['accreditation_number'] ?? '';
-    $officer  = $d['officer_name']  ?? 'مسؤول التدريب والاعتماد';
-    $director = $d['director_name'] ?? 'مدير المركز';
     $nameEn   = $d['trainee_name_en']  ?? '';
     $nameAr   = $d['trainee_name_ar']  ?? '';
     $courseEn = $d['course_title_en']  ?? '';
     $courseAr = $d['course_title_ar']  ?? '';
     $accByEn  = $d['accredited_by_en'] ?? 'Quality & Excellence Center';
     $accByAr  = $d['accredited_by_ar'] ?? 'مركز الجودة والتميز';
+    if (mb_strlen($accByEn) > 18) { $accByEn = mb_substr($accByEn, 0, 18); }
+    if (mb_strlen($accByAr) > 14) { $accByAr = mb_substr($accByAr, 0, 14); }
+    $qrHtml   = $d['qr_html'] ?? '';
 @endphp
 <div class="sheet">
     <img class="sheet-bg" src="{{ $backgroundUrl }}" width="1280" height="905" alt="">
 
-    {{-- ── Certificate numbers ── --}}
-    <div class="mask" style="left:186px;top:280px;width:140px;height:24px;"></div>
-    <div class="field en" style="left:188px;top:284px;width:140px;font-size:12px;">[ {{ $num }} ]</div>
+    <div class="mask" style="left:186px;top:284px;width:138px;height:22px;"></div>
+    <div class="field en" style="left:188px;top:288px;width:136px;font-size:11px;">[ {{ $num }} ]</div>
 
-    <div class="mask" style="left:988px;top:278px;width:124px;height:24px;"></div>
-    <div class="field en" style="left:988px;top:284px;width:120px;text-align:right;font-size:12px;">[ {{ $num }} ]</div>
+    <div class="mask" style="left:990px;top:284px;width:120px;height:22px;"></div>
+    <div class="field en" style="left:990px;top:288px;width:118px;text-align:right;font-size:11px;">[ {{ $num }} ]</div>
 
-    {{-- ── Trainee names ── --}}
-    <div class="mask" style="left:70px;top:424px;width:480px;height:38px;"></div>
-    <div class="field en" style="left:74px;top:430px;width:480px;font-size:20px;text-transform:uppercase;">{{ $nameEn }}</div>
+    <div class="mask" style="left:70px;top:428px;width:350px;height:32px;"></div>
+    <div class="field en" style="left:74px;top:434px;width:346px;font-size:18px;">{{ $nameEn }}</div>
 
-    <div class="mask" style="left:730px;top:420px;width:500px;height:40px;"></div>
-    <div class="field ar" style="left:730px;top:426px;width:490px;font-size:20px;">{{ $nameAr }}</div>
+    <div class="mask" style="left:848px;top:424px;width:380px;height:34px;"></div>
+    <div class="field ar" style="left:848px;top:432px;width:357px;font-size:18px;">{{ $nameAr }}</div>
 
-    {{-- ── Course titles ── --}}
-    <div class="mask" style="left:70px;top:520px;width:480px;height:34px;"></div>
-    <div class="field en" style="left:74px;top:524px;width:480px;font-size:16px;">{{ $courseEn }}</div>
+    <div class="mask" style="left:70px;top:524px;width:200px;height:30px;"></div>
+    <div class="field en" style="left:74px;top:530px;width:196px;font-size:14px;">{{ $courseEn }}</div>
 
-    <div class="mask" style="left:730px;top:518px;width:500px;height:36px;"></div>
-    <div class="field ar" style="left:730px;top:522px;width:490px;font-size:16px;">{{ $courseAr }}</div>
+    <div class="mask" style="left:960px;top:524px;width:268px;height:32px;"></div>
+    <div class="field ar" style="left:960px;top:530px;width:245px;font-size:14px;">{{ $courseAr }}</div>
 
-    {{-- ── Meta rows — EN left ── --}}
-    <div class="mask" style="left:147px;top:594px;width:53px;height:20px;"></div>
-    <div class="field en" style="left:149px;top:596px;width:60px;font-size:11px;font-weight:normal;">[ {{ $hours }} ]</div>
+    <div class="mask" style="left:148px;top:590px;width:40px;height:20px;"></div>
+    <div class="field en" style="left:150px;top:594px;width:40px;font-size:11px;font-weight:normal;">[ {{ $hours }} ]</div>
 
-    <div class="mask" style="left:180px;top:624px;width:270px;height:20px;"></div>
-    <div class="field en" style="left:182px;top:626px;width:270px;font-size:11px;font-weight:normal;">[ {{ $start }} ]  –  [ {{ $end }} ]</div>
+    <div class="mask" style="left:178px;top:618px;width:304px;height:24px;"></div>
+    <div class="field en" style="left:182px;top:624px;width:300px;font-size:11px;font-weight:normal;">[ {{ $start }} ] – [ {{ $end }} ]</div>
 
-    <div class="mask" style="left:156px;top:656px;width:130px;height:20px;"></div>
-    <div class="field en" style="left:158px;top:658px;width:130px;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
+    <div class="mask" style="left:156px;top:650px;width:148px;height:24px;"></div>
+    <div class="field en" style="left:160px;top:656px;width:144px;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
 
-    <div class="mask" style="left:200px;top:688px;width:280px;height:20px;"></div>
-    <div class="field en" style="left:202px;top:690px;width:280px;font-size:11px;font-weight:normal;">[ {{ $accByEn }} ]</div>
+    <div class="mask" style="left:250px;top:682px;width:148px;height:24px;"></div>
+    <div class="field en" style="left:254px;top:688px;width:144px;font-size:11px;font-weight:normal;">[ {{ $accByEn }} ]</div>
 
-    <div class="mask" style="left:250px;top:720px;width:130px;height:20px;"></div>
-    <div class="field en" style="left:252px;top:722px;width:130px;font-size:11px;font-weight:normal;">[ {{ $acc }} ]</div>
+    <div class="mask" style="left:250px;top:714px;width:148px;height:24px;"></div>
+    <div class="field en" style="left:254px;top:720px;width:144px;font-size:11px;font-weight:normal;">[ {{ $acc }} ]</div>
 
-    {{-- ── Meta rows — AR right ── --}}
-    <div class="mask" style="left:1006px;top:590px;width:52px;height:24px;"></div>
-    <div class="field en" style="left:1006px;top:594px;width:50px;text-align:right;font-size:11px;font-weight:normal;">[ {{ $hours }} ]</div>
+    <div class="mask" style="left:1000px;top:588px;width:50px;height:22px;"></div>
+    <div class="field en" style="left:1002px;top:594px;width:48px;font-size:11px;font-weight:normal;">[ {{ $hours }} ]</div>
 
-    <div class="mask" style="left:900px;top:620px;width:228px;height:26px;"></div>
-    <div class="field en" style="left:900px;top:626px;width:226px;text-align:right;font-size:11px;font-weight:normal;">[ {{ $start }} ]  -  [ {{ $end }} ]</div>
+    <div class="mask" style="left:865px;top:618px;width:268px;height:24px;"></div>
+    <div class="field en" style="left:865px;top:624px;width:263px;text-align:right;font-size:11px;font-weight:normal;">[ {{ $start }} ] - [ {{ $end }} ]</div>
 
-    <div class="mask" style="left:1005px;top:652px;width:110px;height:26px;"></div>
-    <div class="field en" style="left:1005px;top:658px;width:107px;text-align:right;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
+    <div class="mask" style="left:995px;top:650px;width:120px;height:24px;"></div>
+    <div class="field en" style="left:995px;top:656px;width:117px;text-align:right;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
 
-    <div class="mask" style="left:820px;top:684px;width:267px;height:26px;"></div>
-    <div class="field ar" style="left:820px;top:690px;width:260px;font-size:11px;font-weight:normal;">[ {{ $accByAr }} ]</div>
+    <div class="mask" style="left:1012px;top:682px;width:100px;height:24px;"></div>
+    <div class="field ar" style="left:1012px;top:688px;width:98px;font-size:11px;font-weight:normal;">[ {{ $accByAr }} ]</div>
 
-    <div class="mask" style="left:1012px;top:716px;width:108px;height:26px;"></div>
-    <div class="field en" style="left:1012px;top:722px;width:104px;text-align:right;font-size:11px;font-weight:normal;">[ {{ $acc }} ]</div>
+    <div class="mask" style="left:1000px;top:714px;width:120px;height:24px;"></div>
+    <div class="field en" style="left:1000px;top:720px;width:116px;text-align:right;font-size:11px;font-weight:normal;">[ {{ $acc }} ]</div>
 
-    {{-- ── Signature area (placeholders only) ── --}}
-    <div class="mask" style="left:80px;top:846px;width:240px;height:20px;"></div>
-    <div class="field cen" style="left:80px;top:846px;width:240px;font-size:13px;">{{ $officer }}</div>
-
-    <div class="mask" style="left:980px;top:846px;width:240px;height:20px;"></div>
-    <div class="field car" style="left:980px;top:846px;width:240px;font-size:13px;">{{ $director }}</div>
+    @if (!empty($qrHtml))
+        <div class="qr-box">{!! $qrHtml !!}</div>
+    @endif
 </div>
-
 </body>
 </html>

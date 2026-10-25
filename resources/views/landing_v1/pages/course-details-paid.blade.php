@@ -105,7 +105,7 @@
                             <div
                                 class="flex items-center gap-2  px-7 py-2 rounded-full border border-[#155554] backdrop-blur-[9px] flex-nowrap">
                                 <img src="{{ $courseDetailsImg }}/calendar.webp" alt="calendar" class="size-6 shrink-0">
-                                <span class="font-semibold text-14px text-white whitespace-nowrap">تاريخ البرنامج: {{ $programDateLabel }}</span>
+                                <span class="font-semibold text-14px text-white whitespace-nowrap">تاريخ الدورة: {{ $programDateLabel }}</span>
                             </div>
                         @endif
                         @if (!empty($course->access_days))

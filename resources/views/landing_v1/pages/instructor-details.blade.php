@@ -303,6 +303,7 @@
                             :price="handlePrice($course->price)"
                             :image="$course->image_cover ?? $course->thumbnail ?? asset('assets/landing_v1/img/home/course.webp')"
                             :categoryTitle="$course->category->title ?? ''"
+                            :programDate="landingProgramDate($course)"
                             :slug="$course->slug"
                         />
                     @else
@@ -310,6 +311,7 @@
                             :title="$course->title"
                             :summary="$course->summary ?? $course->description"
                             :categoryTitle="$course->category->title ?? ''"
+                            :programDate="landingProgramDate($course)"
                             :slug="$course->slug"
                         />
                     @endif

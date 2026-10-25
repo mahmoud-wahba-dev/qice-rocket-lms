@@ -58,7 +58,12 @@ class PaymentController extends Controller
             }
 
             $order->update([
-                'payment_method' => Order::$credit
+                'payment_method' => Order::$credit,
+                'payment_channel_id' => null,
+                'payment_data' => json_encode([
+                    'gateway' => 'credit',
+                    'label' => 'رصيد المحفظة',
+                ]),
             ]);
 
             $this->setPaymentAccounting($order, 'credit');
@@ -117,6 +122,11 @@ class PaymentController extends Controller
             $order->update([
                 'status' => \App\Models\Order::$paying,
                 'payment_method' => \App\Models\Order::$paymentChannel,
+                'payment_channel_id' => null,
+                'payment_data' => json_encode([
+                    'gateway' => 'offline',
+                    'label' => 'تحويل بنكي',
+                ]),
             ]);
 
             // Empty user cart after submitting offline payment
@@ -148,6 +158,12 @@ class PaymentController extends Controller
         }
 
         $order->payment_method = Order::$paymentChannel;
+        $order->payment_channel_id = $paymentChannel->id;
+        $order->payment_data = json_encode([
+            'gateway' => $paymentChannel->class_name,
+            'channel_id' => $paymentChannel->id,
+            'title' => $paymentChannel->title,
+        ]);
         $order->save();
 
 
@@ -182,6 +198,26 @@ class PaymentController extends Controller
         try {
             $channelManager = ChannelManager::makeChannel($paymentChannel);
             $order = $channelManager->verify($request);
+
+            if (!empty($order) && !empty($paymentChannel)) {
+                $updates = [];
+                if (empty($order->payment_channel_id)) {
+                    $updates['payment_channel_id'] = $paymentChannel->id;
+                }
+                if (empty($order->payment_method)) {
+                    $updates['payment_method'] = Order::$paymentChannel;
+                }
+                if (empty($order->payment_data)) {
+                    $updates['payment_data'] = json_encode([
+                        'gateway' => $paymentChannel->class_name,
+                        'channel_id' => $paymentChannel->id,
+                        'title' => $paymentChannel->title,
+                    ]);
+                }
+                if (!empty($updates)) {
+                    $order->update($updates);
+                }
+            }
 
             return $this->paymentOrderAfterVerify($order);
 

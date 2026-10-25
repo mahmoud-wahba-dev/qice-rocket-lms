@@ -214,6 +214,12 @@ class AccountingController extends Controller
             'user_id' => $userAuth->id,
             'status' => Order::$pending,
             'payment_method' => Order::$paymentChannel,
+            'payment_channel_id' => $paymentChannel->id,
+            'payment_data' => json_encode([
+                'gateway' => $paymentChannel->class_name,
+                'channel_id' => $paymentChannel->id,
+                'title' => $paymentChannel->title,
+            ]),
             'is_charge_account' => true,
             'total_amount' => $amount,
             'amount' => $amount,

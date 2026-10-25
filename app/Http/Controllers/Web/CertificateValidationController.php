@@ -50,7 +50,7 @@ class CertificateValidationController extends Controller
             'prefilledResult' => $prefilledResult,
             'autoChecked' => $autoChecked,
             'sampleCertificateUrl' => (new \App\Mixins\Certificate\MakeCertificate())->qiecTemplatePublicUrl()
-                ?: asset('assets/panel_v1/img/certificate_new.jpg'),
+                ?: asset('assets/panel_v1/img/certificate_qr.jpg'),
         ];
 
         if (view()->exists('landing_v1.pages.certificate-validation')) {

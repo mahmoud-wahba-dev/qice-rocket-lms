@@ -156,7 +156,7 @@
         <div class="border border-d9 rounded-14px bg-white overflow-hidden mb-4">
             <div class="grid grid-cols-1 lg:grid-cols-5 gap-0">
                 <div class="lg:col-span-2 bg-[#0F3D36] p-5 flex items-center justify-center">
-                    <img src="{{ $qiecCertificatePreview ?? asset('assets/panel_v1/img/certificate_new.jpg') }}"
+                    <img src="{{ $qiecCertificatePreview ?? asset('assets/panel_v1/img/certificate_qr.jpg') }}"
                         alt="قالب شهادة QIEC"
                         class="w-full max-w-md rounded-10px border border-white/20 shadow-lg">
                 </div>

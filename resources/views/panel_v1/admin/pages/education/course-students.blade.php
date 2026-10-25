@@ -6,7 +6,8 @@
     $students = $students ?? collect();
     $paginator = $paginator ?? null;
     $filterGroups = $filterGroups ?? [];
-    $showFilters = request()->filled('status') || request()->filled('group_id') || request()->boolean('filters');
+    $paymentChannels = $paymentChannels ?? [];
+    $showFilters = request()->filled('status') || request()->filled('group_id') || request()->filled('payment_method') || request()->boolean('filters');
     $courseId = $courseId ?? ($webinar->id ?? 0);
 @endphp
 
@@ -61,7 +62,7 @@
             @if ($showFilters)
                 <form method="GET" action="{{ route('panel.v1.admin.education.courses.students', ['id' => $courseId]) }}"
                     class="mt-4 pt-4 border-t border-d9 flex flex-wrap gap-3 items-end">
-                    @foreach (request()->except(['status', 'group_id', 'page', 'filters']) as $fkey => $fval)
+                    @foreach (request()->except(['status', 'group_id', 'payment_method', 'page', 'filters']) as $fkey => $fval)
                         @if (!is_array($fval))
                             <input type="hidden" name="{{ $fkey }}" value="{{ $fval }}">
                         @endif
@@ -75,6 +76,23 @@
                             <option value="">كل المجموعات</option>
                             @foreach ($filterGroups as $g)
                                 <option value="{{ $g['id'] }}" @selected(request('group_id') == $g['id'])>{{ $g['name'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="min-w-[12rem]">
+                        <label class="font-medium text-12px text-gray mb-1.5 block">طريقة الدفع</label>
+                        <select name="payment_method" onchange="this.form.submit()"
+                            class="select select-bordered w-full h-11 rounded-10px border-d9 text-13px bg-white">
+                            <option value="">كل الطرق</option>
+                            <option value="credit" @selected(request('payment_method')==='credit')>رصيد / تسجيل إداري</option>
+                            <option value="subscribe" @selected(request('payment_method')==='subscribe')>اشتراك</option>
+                            <option value="offline" @selected(request('payment_method')==='offline')>تحويل بنكي</option>
+                            <option value="payment_channel" @selected(request('payment_method')==='payment_channel')>كل بوابات الدفع</option>
+                            @foreach ($paymentChannels as $ch)
+                                <option value="{{ $ch['id'] }}" @selected((string) request('payment_method') === (string) $ch['id'])>
+                                    {{ $ch['name'] }}{{ empty($ch['active']) ? ' (غير مفعّل)' : '' }}
+                                </option>
                             @endforeach
                         </select>
                     </div>
@@ -103,6 +121,8 @@
                         <th class="font-semibold px-4 py-3.5 text-start">التعلم</th>
                         <th class="font-semibold px-4 py-3.5 text-start">مجموعة المستخدم</th>
                         <th class="font-semibold px-4 py-3.5 text-start">الدخل</th>
+                        <th class="font-semibold px-4 py-3.5 text-start">طريقة الدفع</th>
+                        <th class="font-semibold px-4 py-3.5 text-start">مصدر التسجيل</th>
                         <th class="font-semibold px-4 py-3.5 text-start">تاريخ الشراء</th>
                         <th class="font-semibold px-4 py-3.5 text-start">الحالة</th>
                         <th class="font-semibold px-4 py-3.5 text-start">اجراءات</th>
@@ -126,6 +146,9 @@
                                         @if (!empty($row['email']))
                                             <p class="font-medium text-12px text-gray truncate">{{ $row['email'] }}</p>
                                         @endif
+                                        @if (!empty($row['mobile']))
+                                            <p class="font-medium text-12px text-gray truncate">{{ $row['mobile'] }}</p>
+                                        @endif
                                     </div>
                                 </div>
                             </td>
@@ -133,6 +156,12 @@
                             <td class="px-4 py-4 font-semibold text-primary">{{ $row['learning'] }}%</td>
                             <td class="px-4 py-4 font-medium text-black">{{ $row['group'] }}</td>
                             <td class="px-4 py-4 font-semibold text-primary whitespace-nowrap">{{ $row['income'] }}</td>
+                            <td class="px-4 py-4">
+                                <span class="inline-flex rounded-full px-2.5 py-1 font-semibold text-12px bg-[#EEF2FF] text-[#4338CA]">
+                                    {{ $row['payment_method'] ?? '—' }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-4 font-medium text-black whitespace-nowrap">{{ $row['enrollment_source'] ?? 'دورة' }}</td>
                             <td class="px-4 py-4 font-medium text-black whitespace-nowrap">{{ $row['purchase_date'] }}</td>
                             <td class="px-4 py-4">
                                 <span class="inline-flex rounded-full px-2.5 py-1 font-semibold text-12px {{ $row['status_class'] }}">
@@ -148,7 +177,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="px-4 py-16 text-center font-medium text-15px text-gray">
+                            <td colspan="11" class="px-4 py-16 text-center font-medium text-15px text-gray">
                                 لا يوجد متدربون مطابقون للبحث أو الفلتر الحالي
                             </td>
                         </tr>

@@ -117,6 +117,12 @@ class PaymentsController extends Controller
         }
 
         $order->payment_method = Order::$paymentChannel;
+        $order->payment_channel_id = $paymentChannel->id;
+        $order->payment_data = json_encode([
+            'gateway' => $paymentChannel->class_name,
+            'channel_id' => $paymentChannel->id,
+            'title' => $paymentChannel->title,
+        ]);
         $order->save();
 
         try {
@@ -154,6 +160,26 @@ class PaymentsController extends Controller
             $order = $channelManager->verify($request);
 
             if (!empty($order)) {
+                if (!empty($paymentChannel)) {
+                    $channelUpdates = [];
+                    if (empty($order->payment_channel_id)) {
+                        $channelUpdates['payment_channel_id'] = $paymentChannel->id;
+                    }
+                    if (empty($order->payment_method)) {
+                        $channelUpdates['payment_method'] = Order::$paymentChannel;
+                    }
+                    if (empty($order->payment_data)) {
+                        $channelUpdates['payment_data'] = json_encode([
+                            'gateway' => $paymentChannel->class_name,
+                            'channel_id' => $paymentChannel->id,
+                            'title' => $paymentChannel->title,
+                        ]);
+                    }
+                    if (!empty($channelUpdates)) {
+                        $order->update($channelUpdates);
+                    }
+                }
+
                 $orderItem = OrderItem::where('order_id', $order->id)->first();
 
                 $reserveMeeting = null;
@@ -296,6 +322,12 @@ class PaymentsController extends Controller
             'user_id' => $userAuth->id,
             'status' => Order::$pending,
             'payment_method' => Order::$paymentChannel,
+            'payment_channel_id' => $paymentChannel->id ?? null,
+            'payment_data' => !empty($paymentChannel) ? json_encode([
+                'gateway' => $paymentChannel->class_name,
+                'channel_id' => $paymentChannel->id,
+                'title' => $paymentChannel->title,
+            ]) : null,
             'is_charge_account' => true,
             'total_amount' => $amount,
             'amount' => $amount,

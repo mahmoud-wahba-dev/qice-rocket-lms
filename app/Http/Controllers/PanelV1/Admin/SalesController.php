@@ -471,7 +471,11 @@ class SalesController extends AdminController
         if($op->type === \App\Models\OfflinePayment::$typeCart && !empty($op->order_id)){
             $order=Order::where('id',$op->order_id)->where('user_id',$op->user_id)->first();
             if($order && $order->status !== Order::$paid){
-                $order->update(['payment_method'=>Order::$paymentChannel]);
+                $order->update([
+                    'payment_method'=>Order::$paymentChannel,
+                    'payment_channel_id'=>null,
+                    'payment_data'=>json_encode(['gateway'=>'offline','label'=>'تحويل بنكي']),
+                ]);
                 (new \App\Http\Controllers\Web\PaymentController())->setPaymentAccounting($order);
                 $order->update(['status'=>Order::$paid]);
             }

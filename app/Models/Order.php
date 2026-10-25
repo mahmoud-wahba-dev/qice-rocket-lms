@@ -59,4 +59,64 @@ class Order extends Model
     {
         return $this->hasMany('App\Models\OrderItem', 'order_id', 'id');
     }
+
+    public function paymentChannel()
+    {
+        return $this->belongsTo(PaymentChannel::class, 'payment_channel_id', 'id');
+    }
+
+    public function offlinePayment()
+    {
+        return $this->hasOne(OfflinePayment::class, 'order_id', 'id');
+    }
+
+    /**
+     * Human-readable payment method for admin dashboards (Tabby, Tamara, credit, offline, …).
+     */
+    public function resolvePaymentMethodLabel(): string
+    {
+        if ($this->payment_method === self::$credit) {
+            return 'رصيد المحفظة';
+        }
+
+        if (!empty($this->payment_channel_id)) {
+            $channel = $this->relationLoaded('paymentChannel')
+                ? $this->paymentChannel
+                : $this->paymentChannel()->first();
+
+            if (!empty($channel)) {
+                return $channel->title ?: $channel->class_name;
+            }
+        }
+
+        $paymentData = null;
+        if (!empty($this->payment_data)) {
+            $decoded = json_decode($this->payment_data, true);
+            if (is_array($decoded)) {
+                $paymentData = $decoded;
+            }
+        }
+
+        if (!empty($paymentData['gateway'])) {
+            $gateway = (string) $paymentData['gateway'];
+            if (strcasecmp($gateway, 'offline') === 0) {
+                return 'تحويل بنكي';
+            }
+            if (strcasecmp($gateway, 'credit') === 0) {
+                return 'رصيد المحفظة';
+            }
+
+            return $gateway;
+        }
+
+        if ($this->relationLoaded('offlinePayment') ? !empty($this->offlinePayment) : $this->offlinePayment()->exists()) {
+            return 'تحويل بنكي';
+        }
+
+        if ($this->payment_method === self::$paymentChannel) {
+            return 'بوابة دفع';
+        }
+
+        return '—';
+    }
 }
