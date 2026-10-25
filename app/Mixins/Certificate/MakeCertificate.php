@@ -571,8 +571,8 @@ class MakeCertificate
         $writeLtr($bracket($issue), 160, 656, 11, 'left');
 
         // Accredited by EN — stop well before QR (~576); no brackets (saves width)
-        $fill(252, 678, 255, 28); // ends 507
-        $writeLtr($accreditedByEn, 258, 686, $fitSize($accreditedByEn, 11, 24, 8), 'left');
+        $fill(248, 676, 310, 32); // ends ~558
+        $writeLtr($accreditedByEn, 254, 690, $fitSize($accreditedByEn, 13, 28, 10), 'left');
 
         $fill(250, 714, 148, 24);
         $writeLtr($acc, 254, 720, 11, 'left');
@@ -589,13 +589,14 @@ class MakeCertificate
         $fill(970, 648, 148, 26);
         $writeLtr($bracket($issue), 975, 656, 11, 'left');
 
-        // جهة الاعتماد — Arabic only; stop before printed "من" (~1110+)
-        $fill(730, 678, 360, 28); // ends 1090
+        // جهة الاعتماد — keep printed "الدورة معتمدة من:" on the JPG; only fill [---------]
+        $accreditedByAr = preg_replace('/^\s*الدورة\s+معتمدة\s+من\s*:?\s*/u', '', $accreditedByAr) ?: $accreditedByAr;
+        $fill(880, 676, 200, 32); // ends ~1080, before "من:"
         $writeAr(
             $accreditedByAr,
-            1085,
-            686,
-            $fitSize($accreditedByAr, 12, 26, 9),
+            1082,
+            690,
+            $fitSize($accreditedByAr, 13, 26, 10),
             'right',
             false
         );

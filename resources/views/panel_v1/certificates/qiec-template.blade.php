@@ -36,9 +36,10 @@
     $courseAr = $d['course_title_ar']  ?? '';
     $accByEn  = $d['accredited_by_en'] ?? 'Quality & Excellence Center';
     $accByAr  = $d['accredited_by_ar'] ?? 'مركز الجودة والتميز';
+    $accByAr  = preg_replace('/^\s*الدورة\s+معتمدة\s+من\s*:?\s*/u', '', (string) $accByAr) ?: $accByAr;
     $qrHtml   = $d['qr_html'] ?? '';
-    $accByArSize = mb_strlen($accByAr) > 30 ? '10px' : (mb_strlen($accByAr) > 22 ? '11px' : '13px');
-    $accByEnSize = mb_strlen($accByEn) > 40 ? '10px' : (mb_strlen($accByEn) > 28 ? '11px' : '13px');
+    $accByArSize = mb_strlen($accByAr) > 30 ? '11px' : (mb_strlen($accByAr) > 22 ? '12px' : '14px');
+    $accByEnSize = mb_strlen($accByEn) > 40 ? '11px' : (mb_strlen($accByEn) > 28 ? '12px' : '14px');
 @endphp
 <div class="sheet">
     <img class="sheet-bg" src="{{ $backgroundUrl }}" width="1280" height="905" alt="">
@@ -70,8 +71,8 @@
     <div class="mask" style="left:156px;top:650px;width:148px;height:24px;"></div>
     <div class="field en" style="left:160px;top:656px;width:144px;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
 
-    <div class="mask" style="left:252px;top:678px;width:280px;height:28px;"></div>
-    <div class="field en" style="left:275px;top:686px;width:255px;font-size:{{ $accByEnSize }};font-weight:normal;">[ {{ $accByEn }} ]</div>
+    <div class="mask" style="left:248px;top:676px;width:310px;height:32px;"></div>
+    <div class="field en" style="left:254px;top:690px;width:300px;font-size:{{ $accByEnSize }};font-weight:normal;">{{ $accByEn }}</div>
 
     <div class="mask" style="left:250px;top:714px;width:148px;height:24px;"></div>
     <div class="field en" style="left:254px;top:720px;width:144px;font-size:11px;font-weight:normal;">[ {{ $acc }} ]</div>
@@ -85,8 +86,8 @@
     <div class="mask" style="left:970px;top:648px;width:148px;height:26px;"></div>
     <div class="field en" style="left:975px;top:656px;width:140px;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
 
-    <div class="mask" style="left:730px;top:678px;width:378px;height:28px;"></div>
-    <div class="field ar" style="left:730px;top:686px;width:305px;font-size:{{ $accByArSize }};font-weight:normal;">{{ $accByAr }}</div>
+    <div class="mask" style="left:880px;top:676px;width:200px;height:32px;"></div>
+    <div class="field ar" style="left:880px;top:690px;width:200px;font-size:{{ $accByArSize }};font-weight:normal;">{{ $accByAr }}</div>
 
     <div class="mask" style="left:970px;top:712px;width:148px;height:26px;"></div>
     <div class="field en" style="left:975px;top:720px;width:140px;font-size:11px;font-weight:normal;">[ {{ $acc }} ]</div>
