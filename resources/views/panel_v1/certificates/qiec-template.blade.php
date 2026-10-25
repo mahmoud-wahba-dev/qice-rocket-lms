@@ -91,11 +91,11 @@
     <div class="mask" style="left:1008px;top:586px;width:44px;height:26px;background:#FAF9F4;"></div>
     <div class="field en" style="left:1008px;top:594px;width:44px;font-size:11px;font-weight:normal;text-align:right;">[ {{ $hours }} ]</div>
 
-    <div class="mask" style="left:820px;top:612px;width:314px;height:28px;background:#FAF9F4;"></div>
+    <div class="mask" style="left:820px;top:612px;width:315px;height:28px;background:#FAF9F4;"></div>
     <div class="field en" style="left:900px;top:622px;width:236px;font-size:10px;font-weight:normal;text-align:right;">[ {{ $start }} ] – [ {{ $end }} ]</div>
 
-    <div class="mask" style="left:960px;top:644px;width:148px;height:28px;background:#FAF9F4;"></div>
-    <div class="field en" style="left:1000px;top:654px;width:118px;font-size:11px;font-weight:normal;text-align:right;">[ {{ $issue }} ]</div>
+    <div class="mask" style="left:960px;top:644px;width:158px;height:28px;background:#FAF9F4;"></div>
+    <div class="field en" style="left:990px;top:654px;width:128px;font-size:11px;font-weight:normal;text-align:right;">[ {{ $issue }} ]</div>
 
     <div class="mask" style="left:820px;top:676px;width:420px;height:28px;background:#FAF9F4;"></div>
     <div class="field ar" style="left:1080px;top:684px;width:135px;font-size:12px;font-weight:bold;text-align:right;">الدورة معتمدة من</div>

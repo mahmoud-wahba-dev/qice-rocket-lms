@@ -621,21 +621,21 @@ class MakeCertificate
         $writeLtr($arHours, 1052, 594, 11, 'right');
 
         // AR meta rows — even ~32px rhythm (JPG centers ~629/661/693/724); wipes must not overlap
-        // 1) فترة الدورة
+        // 1) فترة الدورة — wipe full JPG [date] slot (incl. both brackets), then redraw
         $arDateLine = $bracket($start) . ' – ' . $bracket($end);
         $arDateSize = 10;
-        $arDateRight = 1135;
+        $arDateRight = 1135; // flush left of "فترة الدورة:"
         $arDateW = (int) round($textWidth($arDateLine, $arDateSize) * 1.05) + 6;
-        $wipeCream(820, 612, $arDateRight - 820 - 2, 28); // 612–640
+        $wipeCream(820, 612, $arDateRight - 820, 28); // clear JPG [ ] ghosts through colon
         $fill($arDateRight - $arDateW, 614, $arDateW, 24);
         $writeLtr($arDateLine, $arDateRight, 622, $arDateSize, 'right');
 
-        // 2) تاريخ الإصدار
+        // 2) تاريخ الإصدار — wipe full JPG [date] slot (incl. both brackets), then redraw
         $arIssue = $bracket($issue);
         $arIssueSize = 11;
-        $arIssueRight = 1110;
+        $arIssueRight = 1118; // flush left of "تاريخ الإصدار:"
         $arIssueW = (int) round($textWidth($arIssue, $arIssueSize) * 1.05) + 6;
-        $wipeCream(960, 644, $arIssueRight - 960 - 2, 28); // 644–672
+        $wipeCream(960, 644, $arIssueRight - 960, 28); // clear JPG [ ] ghosts through colon
         $fill($arIssueRight - $arIssueW, 646, $arIssueW, 24);
         $writeLtr($arIssue, $arIssueRight, 654, $arIssueSize, 'right');
 
