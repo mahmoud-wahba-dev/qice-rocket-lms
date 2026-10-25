@@ -87,20 +87,20 @@
     <div class="mask" style="left:250px;top:714px;width:148px;height:24px;"></div>
     <div class="field en" style="left:254px;top:720px;width:144px;font-size:11px;font-weight:normal;">[ {{ $acc }} ]</div>
 
-    <div class="mask" style="left:1000px;top:586px;width:56px;height:26px;"></div>
-    <div class="field en" style="left:1004px;top:594px;width:50px;font-size:11px;font-weight:normal;">[ {{ $hours }} ]</div>
+    <div class="mask" style="left:1008px;top:586px;width:44px;height:26px;background-color:red;"></div>
+    <div class="field en" style="left:1008px;top:594px;width:44px;font-size:11px;font-weight:normal;text-align:right;background-color:red;">[ {{ $hours }} ]</div>
 
-    <div class="mask" style="left:800px;top:614px;width:340px;height:30px;"></div>
-    <div class="field en" style="left:805px;top:624px;width:335px;font-size:11px;font-weight:normal;">[ {{ $start }} ]  –  [ {{ $end }} ]</div>
+    <div class="mask" style="left:850px;top:614px;width:286px;height:28px;background:#FAF9F4;"></div>
+    <div class="field en" style="left:900px;top:622px;width:236px;font-size:10px;font-weight:normal;text-align:right;background-color:red;">[ {{ $start }} ] – [ {{ $end }} ]</div>
 
-    <div class="mask" style="left:955px;top:648px;width:168px;height:28px;"></div>
-    <div class="field en" style="left:960px;top:656px;width:160px;font-size:11px;font-weight:normal;">[ {{ $issue }} ]</div>
+    <div class="mask" style="left:960px;top:648px;width:156px;height:28px;background:#FAF9F4;"></div>
+    <div class="field en" style="left:1000px;top:656px;width:118px;font-size:11px;font-weight:normal;text-align:right;background-color:red;">[ {{ $issue }} ]</div>
 
     <div class="mask" style="left:880px;top:676px;width:200px;height:32px;"></div>
     <div class="field ar" style="left:880px;top:690px;width:200px;font-size:{{ $accByArSize }};font-weight:normal;">{{ $accByAr }}</div>
 
-    <div class="mask" style="left:970px;top:712px;width:148px;height:26px;"></div>
-    <div class="field en" style="left:975px;top:720px;width:140px;font-size:11px;font-weight:normal;">[ {{ $acc }} ]</div>
+    <div class="mask" style="left:980px;top:712px;width:155px;height:26px;background-color: red;"></div>
+    <div class="field en" style="left:980px;top:720px;width:143px;font-size:11px;font-weight:normal;text-align:right;background-color: red;">{{ $acc }}</div>
 
     @if (!empty($qrHtml))
         <div class="qr-box">{!! $qrHtml !!}</div>

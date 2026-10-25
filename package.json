@@ -8,7 +8,7 @@
         "hot": "mix watch --hot",
         "prod": "npm run production",
         "production": "mix --production",
-        "dev:landing": "vite",
+        "dev:full": "vite",
         "build:landing": "vite build",
         "optimize:landing-images": "node scripts/optimize-landing-images.js",
         "deploy": "deploy.bat",

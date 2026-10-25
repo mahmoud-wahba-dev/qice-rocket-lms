@@ -418,7 +418,8 @@ class MakeCertificate
         }
         $img = Image::make($bgPath)->resize(1280, 905);
 
-        $paper = '#FAF9F4';
+        // TEMP TEST: red behind every dynamic VALUE slot (revert to '#FAF9F4' when done)
+        $paper = '#FF0000';
         $ink = '#103E36';
 
         $fill = function (int $x, int $y, int $w, int $h) use ($img, $paper) {
@@ -439,6 +440,25 @@ class MakeCertificate
         if (!is_file($fontEn)) {
             $fontEn = $fontArMed;
         }
+
+        // Cream wipe for leftover template ink (keeps TEMP red only on real value boxes)
+        $wipeCream = function (int $x, int $y, int $w, int $h) use ($img) {
+            $img->rectangle($x, $y, $x + $w, $y + $h, function ($draw) {
+                $draw->background('#FAF9F4');
+            });
+        };
+
+        $textWidth = function (string $text, int $size) use ($fontEn): int {
+            if ($text === '' || !is_file($fontEn) || !function_exists('imagettfbbox')) {
+                return max(40, (int) (strlen($text) * $size * 0.55));
+            }
+            $bbox = @imagettfbbox($size, 0, $fontEn, $text);
+            if (!is_array($bbox)) {
+                return max(40, (int) (strlen($text) * $size * 0.55));
+            }
+
+            return max(20, abs((int) $bbox[2] - (int) $bbox[0]));
+        };
 
         $arabic = null;
         try {
@@ -593,17 +613,29 @@ class MakeCertificate
         $writeLtr($acc, 254, 720, 11, 'left');
 
         // 5. Meta rows AR (right)
-        // Hours — wipe full template "[ 00 ]" (incl. closing ]) without touching "التدريبية"
-        $fill(1000, 586, 56, 26); // ends ~1056
-        $writeLtr($bracket($hours), 1004, 594, 11, 'left');
+        // Hours — right-align flush to end of "عدد الساعات التدريبية:" (colon ~1055);
+        // keep printed "ساعة" to the left; red $paper is TEMP test
+        $arHours = $bracket($hours);
+        $fill(1008, 586, 44, 26); // ends 1052 — wipe [00] slot only
+        $writeLtr($arHours, 1052, 594, 11, 'right');
 
-        // Dates — Latin LTR (avoids ][)
-        $fill(800, 614, 340, 30);
-        $writeLtr($bracket($start) . '  –  ' . $bracket($end), 805, 624, 11, 'left');
+        // فترة الدورة — flush to label colon (~1140); red only behind the date glyphs
+        $arDateLine = $bracket($start) . ' – ' . $bracket($end);
+        $arDateSize = 10;
+        $arDateRight = 1135; // just left of "فترة الدورة:"
+        $arDateW = (int) round($textWidth($arDateLine, $arDateSize) * 1.05) + 6;
+        $wipeCream(820, 614, $arDateRight - 820 - 2, 28); // clear leftover template (cream)
+        $fill($arDateRight - $arDateW, 616, $arDateW, 26); // TEMP red behind value
+        $writeLtr($arDateLine, $arDateRight, 622, $arDateSize, 'right');
 
-        // Cover date slot + leftover template "]" but stop before "تاريخ الإصدار:" (~1130+)
-        $fill(955, 648, 168, 28); // ends ~1123
-        $writeLtr($bracket($issue), 960, 656, 11, 'left');
+        // تاريخ الإصدار — stop fill before label (~1125+); do not cover "تاريخ"
+        $arIssue = $bracket($issue);
+        $arIssueSize = 11;
+        $arIssueRight = 1110;
+        $arIssueW = (int) round($textWidth($arIssue, $arIssueSize) * 1.05) + 6;
+        $wipeCream(960, 648, $arIssueRight - 960 - 2, 28); // clear leftover template (cream)
+        $fill($arIssueRight - $arIssueW, 650, $arIssueW, 24); // TEMP red behind value only
+        $writeLtr($arIssue, $arIssueRight, 656, $arIssueSize, 'right');
 
         // جهة الاعتماد — keep printed "الدورة معتمدة من:" on the JPG; only fill [---------]
         $accreditedByAr = preg_replace('/^\s*الدورة\s+معتمدة\s+من\s*:?\s*/u', '', $accreditedByAr) ?: $accreditedByAr;
@@ -617,9 +649,9 @@ class MakeCertificate
             false
         );
 
-        // رقم الاعتماد — wipe placeholder + template "[" before Arabic label (~1144+)
-        $fill(955, 708, 178, 30); // ends 1133
-        $writeLtr($acc, 968, 718, 11, 'left');
+        // رقم الاعتماد — right-align near "رقم الاعتماد:" (label ~1144+), small gap
+        $fill(980, 708, 155, 30);
+        $writeLtr($acc, 1125, 718, 11, 'right');
 
         // 6. QR — true center of dashed box on template (581–696 × 590–702)
         $boxL = 581;
