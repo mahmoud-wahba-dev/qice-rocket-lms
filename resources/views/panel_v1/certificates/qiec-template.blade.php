@@ -75,15 +75,15 @@
         $courseEnLen = mb_strlen(trim($courseEnDraw));
         $courseArLen = mb_strlen(trim((string) $courseAr));
         $courseEnSize = $courseEnLen > 40 ? max(12, (int) round(16 * 40 / max(1, $courseEnLen))) : 16;
-        $courseArSize = $courseArLen > 36 ? max(12, (int) round(16 * 36 / max(1, $courseArLen))) : 16;
+        $courseArSize = $courseArLen > 32 ? max(14, (int) round(20 * 32 / max(1, $courseArLen))) : 20;
     @endphp
     <div class="mask" style="left:70px;top:516px;width:460px;height:42px;"></div>
     @if ($courseEnDraw !== '')
     <div class="field en" style="left:74px;top:528px;width:450px;font-size:{{ $courseEnSize }}px;white-space:nowrap;">{{ $courseEnDraw }}</div>
     @endif
 
-    <div class="mask" style="left:780px;top:516px;width:440px;height:42px;"></div>
-    <div class="field ar" style="left:780px;top:528px;width:425px;font-size:{{ $courseArSize }}px;white-space:nowrap;">{{ $courseAr }}</div>
+    <div class="mask" style="left:780px;top:514px;width:455px;height:46px;"></div>
+    <div class="field ar" style="left:780px;top:526px;width:420px;font-size:{{ $courseArSize }}px;white-space:nowrap;">{{ $courseAr }}</div>
 
     <div class="mask" style="left:148px;top:590px;width:40px;height:20px;"></div>
     <div class="field en" style="left:150px;top:594px;width:40px;font-size:11px;font-weight:normal;">[ {{ $hours }} ]</div>

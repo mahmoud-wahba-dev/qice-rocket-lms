@@ -622,7 +622,7 @@ class MakeCertificate
             $courseEn = '';
         }
         $courseEnSize = $fitSize($courseEn, 16, 40, 12);
-        $courseArSize = $fitSize($courseAr, 16, 36, 12);
+        $courseArSize = $fitSize($courseAr, 20, 32, 14);
 
         // EN: clear JPG "[ Course Title ]" placeholder only (keep "in recognition..." above)
         $wipeCream(70, 516, 460, 42);
@@ -630,10 +630,10 @@ class MakeCertificate
             $writeLtr($courseEn, 74, 528, $courseEnSize, 'left', true);
         }
 
-        // AR course title — keep JPG intro "وذلك لإتمامه/ا بنجاح الدورة التدريبية:"; fill value only
-        $wipeCream(780, 516, 440, 42);
+        // AR course title — keep JPG intro; wipe value slot through right edge (clears "|" ghost)
+        $wipeCream(780, 514, 455, 46); // →1235
         if ($courseAr !== '') {
-            $writeAr($courseAr, 1205, 528, $courseArSize, 'right', true);
+            $writeAr($courseAr, 1200, 526, $courseArSize, 'right', true);
         }
 
         // 4. Meta rows EN (left) — Latin LTR
