@@ -74,7 +74,7 @@
         $courseEnDraw = preg_match('/[\x{0600}-\x{06FF}]/u', (string) $courseEn) ? '' : (string) $courseEn;
         $courseEnLen = mb_strlen(trim($courseEnDraw));
         $courseArLen = mb_strlen(trim((string) $courseAr));
-        $courseEnSize = $courseEnLen > 40 ? max(12, (int) round(16 * 40 / max(1, $courseEnLen))) : 16;
+        $courseEnSize = $courseEnLen > 36 ? max(14, (int) round(20 * 36 / max(1, $courseEnLen))) : 20;
         $courseArSize = $courseArLen > 32 ? max(14, (int) round(20 * 32 / max(1, $courseArLen))) : 20;
     @endphp
     <div class="mask" style="left:70px;top:516px;width:460px;height:42px;"></div>

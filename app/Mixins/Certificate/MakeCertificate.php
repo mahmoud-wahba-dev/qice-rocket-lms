@@ -621,7 +621,7 @@ class MakeCertificate
         if ($hasAr($courseEn)) {
             $courseEn = '';
         }
-        $courseEnSize = $fitSize($courseEn, 16, 40, 12);
+        $courseEnSize = $fitSize($courseEn, 20, 36, 14);
         $courseArSize = $fitSize($courseAr, 20, 32, 14);
 
         // EN: clear JPG "[ Course Title ]" placeholder only (keep "in recognition..." above)
