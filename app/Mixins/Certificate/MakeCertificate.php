@@ -430,6 +430,7 @@ class MakeCertificate
         };
 
         $fontEn = public_path('assets/default/fonts/Montserrat-Medium.ttf');
+        $fontEnBold = public_path('assets/admin/fonts/nunito-v9-latin-700.ttf');
         $fontArBold = public_path('assets/default/fonts/vazir/Vazir-Bold.ttf');
         $fontArMed = public_path('assets/default/fonts/vazir/Vazir-Medium.ttf');
         if (!is_file($fontArBold)) {
@@ -441,6 +442,9 @@ class MakeCertificate
         if (!is_file($fontEn)) {
             $fontEn = $fontArMed;
         }
+        if (!is_file($fontEnBold)) {
+            $fontEnBold = $fontEn;
+        }
 
         // Cream wipe for leftover template ink (keeps TEMP red only on real value boxes)
         $wipeCream = function (int $x, int $y, int $w, int $h) use ($img) {
@@ -449,11 +453,12 @@ class MakeCertificate
             });
         };
 
-        $textWidth = function (string $text, int $size) use ($fontEn): int {
-            if ($text === '' || !is_file($fontEn) || !function_exists('imagettfbbox')) {
+        $textWidth = function (string $text, int $size, ?string $fontFile = null) use ($fontEn): int {
+            $fontFile = $fontFile ?: $fontEn;
+            if ($text === '' || !is_file($fontFile) || !function_exists('imagettfbbox')) {
                 return max(40, (int) (strlen($text) * $size * 0.55));
             }
-            $bbox = @imagettfbbox($size, 0, $fontEn, $text);
+            $bbox = @imagettfbbox($size, 0, $fontFile, $text);
             if (!is_array($bbox)) {
                 return max(40, (int) (strlen($text) * $size * 0.55));
             }
@@ -487,14 +492,15 @@ class MakeCertificate
         };
 
         // Latin-only writer — never run Arabic glyph shaping (avoids ][ reversal)
-        $writeLtr = function (string $text, int $x, int $y, int $size, string $align = 'left') use ($img, $fontEn, $ink) {
+        $writeLtr = function (string $text, int $x, int $y, int $size, string $align = 'left', bool $bold = false) use ($img, $fontEn, $fontEnBold, $ink) {
             $text = trim($text);
             if ($text === '') {
                 return;
             }
-            $img->text($text, $x, $y, function ($font) use ($size, $align, $fontEn, $ink) {
-                if (is_file($fontEn)) {
-                    $font->file($fontEn);
+            $fontFile = $bold ? $fontEnBold : $fontEn;
+            $img->text($text, $x, $y, function ($font) use ($size, $align, $fontFile, $ink) {
+                if (is_file($fontFile)) {
+                    $font->file($fontFile);
                 }
                 $font->size($size);
                 $font->color($ink);
@@ -624,17 +630,15 @@ class MakeCertificate
         $fill(158, 648, 200, 28);
         $writeLtr($bracket($issue), 162, 656, 11, 'left');
 
-        // Accredited by EN — one LTR line (label + value, same baseline/size)
-        $wipeCream(70, 672, 500, 36);
-        $enByLine = 'Accreditation By: ' . trim($accreditedByEn);
-        $writeLtr($enByLine, 74, 686, 11, 'left');
+        // Accredited by EN — keep JPG "Accreditation Number:", fill org in value slot
+        $wipeCream(248, 672, 340, 36);
+        $writeLtr($bracket(trim($accreditedByEn)), 252, 686, 11, 'left');
 
-        // Accreditation number EN — one LTR line
-        $wipeCream(70, 710, 360, 30);
-        $enAccLine = 'Accreditation Number: ' . $bracket($acc);
-        $writeLtr($enAccLine, 74, 720, 11, 'left');
+        // Accreditation number EN — keep JPG "Accreditation Number:", fill value only
+        $wipeCream(248, 710, 200, 30);
+        $writeLtr($bracket($acc), 252, 720, 11, 'left');
 
-        // 5. Meta rows AR (right)
+        // 5. Meta rows AR (right) — keep JPG labels; fill value slots only
         // Hours — right-align flush to end of "عدد الساعات التدريبية:" (colon ~1055);
         // keep printed "ساعة" to the left; red $paper is TEMP test
         $arHours = $bracket($hours);
@@ -660,44 +664,25 @@ class MakeCertificate
         $fill($arIssueRight - $arIssueW, 646, $arIssueW, 24);
         $writeLtr($arIssue, $arIssueRight, 654, $arIssueSize, 'right');
 
-        // 3) جهة الاعتماد — label includes colon in same Vazir draw (aligned baseline)
+        // 3) الدورة معتمدة من — keep full JPG label (من: ~1087–1110, معتمدة/الدورة ~1118–1222)
         $accreditedByAr = preg_replace('/^\s*الدورة\s+معتمدة\s+من\s*:?\s*/u', '', $accreditedByAr) ?: $accreditedByAr;
-        $wipeCream(820, 676, 420, 28); // 676–704
-        $arByLabelRight = 1215;
-        $writeAr('الدورة معتمدة من:', $arByLabelRight, 684, 12, 'right', true);
-        $arByLabelLeft = 1090;
-        for ($sx = 900; $sx <= $arByLabelRight; $sx++) {
-            for ($sy = 682; $sy <= 698; $sy++) {
-                $sc = $img->pickColor($sx, $sy, 'array');
-                if (($sc[0] + $sc[1] + $sc[2]) < 300) {
-                    $arByLabelLeft = $sx;
-                    break 2;
-                }
-            }
+        $arByValRight = 1080; // left of JPG "من:" — do not wipe into label
+        $arByValLeft = 705; // stay clear of QR box (~696)
+        $arByValMaxW = $arByValRight - $arByValLeft;
+        $arByValSize = 12;
+        while ($arByValSize > 9 && $textWidth($accreditedByAr, $arByValSize) > $arByValMaxW) {
+            $arByValSize--;
         }
-        // Tight gap after colon (was 16 — looked too wide)
-        $arByValRight = $arByLabelLeft - 6;
-        $arByValSize = $fitSize($accreditedByAr, 12, 36, 10);
-        $writeAr($accreditedByAr, $arByValRight, 686, $arByValSize, 'right', false);
+        $wipeCream($arByValLeft, 672, $arByValRight - $arByValLeft, 32);
+        // valign top: optical mid ~JPG label (~684–685)
+        $writeAr($accreditedByAr, $arByValRight, 679, $arByValSize, 'right', false);
 
-        // 4) رقم الاعتماد — label includes colon in same Vazir draw
-        $wipeCream(960, 708, 280, 34); // 708–742
-        $arAccLabelRight = 1215;
-        $writeAr('رقم الاعتماد:', $arAccLabelRight, 718, 13, 'right', true);
-        $arAccLabelLeft = 1150;
-        for ($sx = 1050; $sx <= $arAccLabelRight; $sx++) {
-            for ($sy = 716; $sy <= 730; $sy++) {
-                $sc = $img->pickColor($sx, $sy, 'array');
-                if (($sc[0] + $sc[1] + $sc[2]) < 300) {
-                    $arAccLabelLeft = $sx;
-                    break 2;
-                }
-            }
-        }
-        $arAccIdRight = $arAccLabelLeft - 6; // tight gap after colon (was 14)
+        // 4) رقم الاعتماد — keep JPG label (ink ~1131–1222); fill [date] slot only
+        $arAccIdRight = 1125;
         $arAccIdSize = 11;
-        $arAccIdW = $textWidth($acc, $arAccIdSize) + 4;
-        $fill($arAccIdRight - $arAccIdW, 716, $arAccIdW, 22);
+        $arAccIdW = $textWidth($acc, $arAccIdSize) + 8;
+        $wipeCream(960, 708, $arAccIdRight - 960, 30);
+        $fill($arAccIdRight - $arAccIdW, 714, $arAccIdW, 22);
         $writeLtr($acc, $arAccIdRight, 718, $arAccIdSize, 'right');
 
         // 6. QR — true center of dashed box on template (581–696 × 590–702)
