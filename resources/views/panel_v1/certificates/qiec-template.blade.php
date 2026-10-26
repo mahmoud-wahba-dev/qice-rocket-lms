@@ -57,8 +57,8 @@
     <div class="mask" style="left:186px;top:284px;width:138px;height:22px;"></div>
     <div class="field en" style="left:188px;top:288px;width:136px;font-size:11px;">[ {{ $num }} ]</div>
 
-    <div class="mask" style="left:990px;top:284px;width:120px;height:22px;"></div>
-    <div class="field en" style="left:992px;top:288px;width:116px;font-size:11px;">[ {{ $num }} ]</div>
+    <div class="mask" style="left:980px;top:276px;width:133px;height:30px;"></div>
+    <div class="field en" style="left:980px;top:287px;width:125px;font-size:11px;text-align:right;">[ {{ $num }} ]</div>
 
     <div class="mask" style="left:70px;top:428px;width:350px;height:32px;"></div>
     <div class="field en" style="left:74px;top:434px;width:346px;font-size:18px;">{{ $nameEn }}</div>

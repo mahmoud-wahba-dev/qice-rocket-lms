@@ -589,24 +589,13 @@ class MakeCertificate
         $fill(155, 282, $textWidth($enNumLine, 11) + 8, 24);
         $writeLtr($enNumLine, 155, 286, 11, 'left'); // "Certificate " kept on JPG
 
-        // AR: full rebuild — wipe JPG label+value junk, redraw label + [num] aligned
-        $wipeCream(980, 276, 250, 30); // clear through رقم الشهادة slot
-        $writeAr('رقم الشهادة:', 1215, 284, 12, 'right', true);
-        $arNumLabelLeft = 1120;
-        for ($sx = 1000; $sx <= 1215; $sx++) {
-            for ($sy = 282; $sy <= 296; $sy++) {
-                $sc = $img->pickColor($sx, $sy, 'array');
-                if (($sc[0] + $sc[1] + $sc[2]) < 300) {
-                    $arNumLabelLeft = $sx;
-                    break 2;
-                }
-            }
-        }
+        // AR: keep JPG "رقم الشهادة:" (ink ~1116–1207); fill [num] with clear gap + same baseline
         $arNum = '[ ' . trim((string) $num) . ' ]';
-        $arNumRight = $arNumLabelLeft - 4;
-        $arNumW = $textWidth($arNum, 11) + 4;
-        $fill($arNumRight - $arNumW, 282, $arNumW, 20);
-        $writeLtr($arNum, $arNumRight, 287, 11, 'right'); // optically level with رقم الشهادة
+        $arNumRight = 1105; // ~10px left of JPG label
+        $arNumW = $textWidth($arNum, 11) + 6;
+        $wipeCream(980, 276, $arNumRight - 980 + 8, 30); // clear JPG [QEC…] slot, stop before label
+        $fill($arNumRight - $arNumW, 280, $arNumW, 22);
+        $writeLtr($arNum, $arNumRight, 284, 11, 'right');
 
         // 2. Trainee names
         $fill(70, 428, 350, 32);
