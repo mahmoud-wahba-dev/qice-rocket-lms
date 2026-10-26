@@ -664,18 +664,26 @@ class MakeCertificate
         $fill($arIssueRight - $arIssueW, 646, $arIssueW, 24);
         $writeLtr($arIssue, $arIssueRight, 654, $arIssueSize, 'right');
 
-        // 3) الدورة معتمدة من — keep full JPG label (من: ~1087–1110, معتمدة/الدورة ~1118–1222)
+        // 3) الدورة معتمدة من — keep full JPG label; value size matches other AR meta (11–12)
         $accreditedByAr = preg_replace('/^\s*الدورة\s+معتمدة\s+من\s*:?\s*/u', '', $accreditedByAr) ?: $accreditedByAr;
         $arByValRight = 1080; // left of JPG "من:" — do not wipe into label
-        $arByValLeft = 705; // stay clear of QR box (~696)
-        $arByValMaxW = $arByValRight - $arByValLeft;
-        $arByValSize = 12;
-        while ($arByValSize > 9 && $textWidth($accreditedByAr, $arByValSize) > $arByValMaxW) {
-            $arByValSize--;
+        $arByValLeft = 700; // stay clear of QR box (~696)
+        $arByValSize = 12; // same as hours/issue visual weight
+        $arByShaped = $shapeAr($accreditedByAr);
+        if (is_file($fontArMed) && function_exists('imagettfbbox')) {
+            $arByMaxW = $arByValRight - $arByValLeft;
+            while ($arByValSize > 11) {
+                $bbox = @imagettfbbox($arByValSize, 0, $fontArMed, $arByShaped);
+                $w = is_array($bbox) ? abs((int) $bbox[2] - (int) $bbox[0]) : 9999;
+                if ($w <= $arByMaxW) {
+                    break;
+                }
+                $arByValSize--;
+            }
         }
         $wipeCream($arByValLeft, 672, $arByValRight - $arByValLeft, 34);
-        // drop ~4px so value optical center matches JPG "الدورة معتمدة من:"
-        $writeAr($accreditedByAr, $arByValRight, 683, $arByValSize, 'right', false);
+        // drop so value optical center matches JPG "الدورة معتمدة من:"
+        $writeAr($accreditedByAr, $arByValRight, 686, $arByValSize, 'right', false);
 
         // 4) رقم الاعتماد — keep JPG label (ink ~1131–1222); fill [date] slot only
         $arAccIdRight = 1125;
