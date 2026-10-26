@@ -613,8 +613,8 @@ class MakeCertificate
         $nameEnDraw = $hasAr($nameEn) ? $nameEn : strtoupper($nameEn);
         $write($nameEnDraw, 74, 434, $fitSize($nameEnDraw, 18, 26, 12), 'left', true);
 
-        $fill(848, 424, 380, 34);
-        $writeAr($nameAr, 1205, 432, $fitSize($nameAr, 18, 26, 12), 'right', true);
+        $wipeCream(780, 418, 450, 42);
+        $writeAr($nameAr, 1205, 428, $fitSize($nameAr, 22, 30, 16), 'right', true);
 
         // 3. Course titles — EN Latin only; AR title under cleaned intro line
         // Never draw Arabic on the EN side (legacy meta copied AR→EN)
@@ -630,14 +630,8 @@ class MakeCertificate
             $writeLtr($courseEn, 74, 528, $courseEnSize, 'left', true);
         }
 
-        // AR intro: JPG has "لإتمامه/ا" — full wipe then redraw without the "/" glitch
-        $wipeCream(750, 478, 490, 40);
-        $fill(750, 478, 490, 40); // second pass — kill anti-aliased "/" remnants
-        $writeAr('وذلك لإتمامه بنجاح الدورة التدريبية:', 1215, 490, 11, 'right', false);
-
-        // AR course title value (placeholder line)
-        $wipeCream(750, 514, 490, 44);
-        $fill(750, 514, 490, 44);
+        // AR course title — keep JPG intro "وذلك لإتمامه/ا بنجاح الدورة التدريبية:"; fill value only
+        $wipeCream(780, 516, 440, 42);
         if ($courseAr !== '') {
             $writeAr($courseAr, 1205, 528, $courseArSize, 'right', true);
         }

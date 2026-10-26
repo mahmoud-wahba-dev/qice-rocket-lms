@@ -63,8 +63,12 @@
     <div class="mask" style="left:70px;top:428px;width:350px;height:32px;"></div>
     <div class="field en" style="left:74px;top:434px;width:346px;font-size:18px;">{{ $nameEn }}</div>
 
-    <div class="mask" style="left:848px;top:424px;width:380px;height:34px;"></div>
-    <div class="field ar" style="left:848px;top:432px;width:357px;font-size:18px;">{{ $nameAr }}</div>
+    @php
+        $nameArLen = mb_strlen(trim((string) $nameAr));
+        $nameArSize = $nameArLen > 30 ? max(16, (int) round(22 * 30 / max(1, $nameArLen))) : 22;
+    @endphp
+    <div class="mask" style="left:780px;top:418px;width:450px;height:42px;"></div>
+    <div class="field ar" style="left:780px;top:428px;width:425px;font-size:{{ $nameArSize }}px;">{{ $nameAr }}</div>
 
     @php
         $courseEnDraw = preg_match('/[\x{0600}-\x{06FF}]/u', (string) $courseEn) ? '' : (string) $courseEn;
@@ -78,10 +82,7 @@
     <div class="field en" style="left:74px;top:528px;width:450px;font-size:{{ $courseEnSize }}px;white-space:nowrap;">{{ $courseEnDraw }}</div>
     @endif
 
-    <div class="mask" style="left:780px;top:482px;width:455px;height:34px;"></div>
-    <div class="field ar" style="left:780px;top:492px;width:435px;font-size:11px;font-weight:normal;">وذلك لإتمامه بنجاح الدورة التدريبية:</div>
-
-    <div class="mask" style="left:780px;top:516px;width:455px;height:42px;"></div>
+    <div class="mask" style="left:780px;top:516px;width:440px;height:42px;"></div>
     <div class="field ar" style="left:780px;top:528px;width:425px;font-size:{{ $courseArSize }}px;white-space:nowrap;">{{ $courseAr }}</div>
 
     <div class="mask" style="left:148px;top:590px;width:40px;height:20px;"></div>
