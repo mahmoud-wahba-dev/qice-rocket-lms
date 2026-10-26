@@ -252,7 +252,8 @@ class MakeCertificate
             'trainee_name_en' => $traineeName,
             'course_title' => $titleAr ?: $titleEn,
             'course_title_ar' => $titleAr ?: $titleEn,
-            'course_title_en' => $titleEn ?: $titleAr,
+            // Keep EN Latin-only; never fall back to Arabic (left side of certificate)
+            'course_title_en' => (preg_match('/[\x{0600}-\x{06FF}]/u', $titleEn) ? '' : $titleEn),
             'hours' => str_pad($hours, 2, '0', STR_PAD_LEFT),
             'start_date' => $startDate,
             'end_date' => $endDate,
@@ -280,6 +281,10 @@ class MakeCertificate
         }
         $data['trainee_name'] = $data['trainee_name_ar'] ?: $data['trainee_name_en'];
         $data['course_title'] = $data['course_title_ar'] ?: $data['course_title_en'];
+        // If EN title was saved as Arabic (legacy fallback), clear it for the EN slot
+        if (preg_match('/[\x{0600}-\x{06FF}]/u', (string) $data['course_title_en'])) {
+            $data['course_title_en'] = '';
+        }
 
         // QR — public validation URL (not localhost) so phone scans open the live page
         $data['qr_url'] = self::certificateValidationUrl($data['certificate_number']);
@@ -532,7 +537,7 @@ class MakeCertificate
             if ($hasAr($text)) {
                 $writeAr($text, $x, $y, $size, $align, $bold);
             } else {
-                $writeLtr($text, $x, $y, $size, $align);
+                $writeLtr($text, $x, $y, $size, $align, $bold);
             }
         };
 
@@ -611,12 +616,31 @@ class MakeCertificate
         $fill(848, 424, 380, 34);
         $writeAr($nameAr, 1205, 432, $fitSize($nameAr, 18, 26, 12), 'right', true);
 
-        // 3. Course titles
-        $fill(70, 524, 200, 30);
-        $write($courseEn, 74, 530, $fitSize($courseEn, 14, 22, 10), 'left', true);
+        // 3. Course titles — EN Latin only; AR title under cleaned intro line
+        // Never draw Arabic on the EN side (legacy meta copied AR→EN)
+        if ($hasAr($courseEn)) {
+            $courseEn = '';
+        }
+        $courseEnSize = $fitSize($courseEn, 16, 40, 12);
+        $courseArSize = $fitSize($courseAr, 16, 36, 12);
 
-        $fill(960, 524, 268, 32);
-        $writeAr($courseAr, 1205, 530, $fitSize($courseAr, 14, 28, 10), 'right', true);
+        // EN: clear JPG "[ Course Title ]" placeholder only (keep "in recognition..." above)
+        $wipeCream(70, 516, 460, 42);
+        if ($courseEn !== '') {
+            $writeLtr($courseEn, 74, 528, $courseEnSize, 'left', true);
+        }
+
+        // AR intro: JPG has "لإتمامه/ا" — full wipe then redraw without the "/" glitch
+        $wipeCream(750, 478, 490, 40);
+        $fill(750, 478, 490, 40); // second pass — kill anti-aliased "/" remnants
+        $writeAr('وذلك لإتمامه بنجاح الدورة التدريبية:', 1215, 490, 11, 'right', false);
+
+        // AR course title value (placeholder line)
+        $wipeCream(750, 514, 490, 44);
+        $fill(750, 514, 490, 44);
+        if ($courseAr !== '') {
+            $writeAr($courseAr, 1205, 528, $courseArSize, 'right', true);
+        }
 
         // 4. Meta rows EN (left) — Latin LTR
         $fill(148, 590, 40, 20);

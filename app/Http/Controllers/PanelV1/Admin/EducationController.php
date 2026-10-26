@@ -1865,7 +1865,18 @@ class EducationController extends AdminController
                 $ar = '';
                 $en = '';
                 try { $ar = (string) (($c->translate('ar')->title ?? null) ?: ($c->title ?? '')); } catch (\Throwable $e) { $ar = (string) ($c->title ?? ''); }
-                try { $en = (string) (($c->translate('en')->title ?? null) ?: $ar); } catch (\Throwable $e) { $en = $ar; }
+                try {
+                    $en = (string) ($c->translate('en')->title ?? '');
+                } catch (\Throwable $e) {
+                    $en = '';
+                }
+                // Never autofill EN with Arabic — leave blank so the form field is filled intentionally
+                if ($en !== '' && preg_match('/[\x{0600}-\x{06FF}]/u', $en)) {
+                    $en = '';
+                }
+                if ($en !== '' && $ar !== '' && $en === $ar) {
+                    $en = '';
+                }
                 $hours = !empty($c->duration) ? max(1, (int) ceil(((int) $c->duration) / 60)) : 8;
                 return [
                     'id' => $c->id,
@@ -1902,7 +1913,7 @@ class EducationController extends AdminController
             'trainee_name_ar' => 'required|string|max:255',
             'trainee_name_en' => 'nullable|string|max:255',
             'course_title_ar' => 'required|string|max:255',
-            'course_title_en' => 'nullable|string|max:255',
+            'course_title_en' => 'required|string|max:255',
             'hours' => 'required|integer|min:1|max:999',
             'start_date' => 'required|date',
             'end_date' => 'required|date',
@@ -1923,7 +1934,8 @@ class EducationController extends AdminController
             'trainee_name_ar' => $data['trainee_name_ar'],
             'trainee_name_en' => $data['trainee_name_en'] ?: $data['trainee_name_ar'],
             'course_title_ar' => $data['course_title_ar'],
-            'course_title_en' => $data['course_title_en'] ?: $data['course_title_ar'],
+            // Keep EN separate — do not copy Arabic into the English title field
+            'course_title_en' => trim((string) ($data['course_title_en'] ?? '')),
             'hours' => (int) $data['hours'],
             'start_date' => date('d/m/Y', strtotime($data['start_date'])),
             'end_date' => date('d/m/Y', strtotime($data['end_date'])),

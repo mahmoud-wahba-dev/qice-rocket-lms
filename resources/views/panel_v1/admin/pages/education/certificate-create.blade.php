@@ -87,8 +87,8 @@
                     <input type="text" name="course_title_ar" value="{{ old('course_title_ar') }}" required class="{{ $input }}" data-course-title-ar>
                 </div>
                 <div>
-                    <label class="{{ $label }}">Course title (English)</label>
-                    <input type="text" name="course_title_en" value="{{ old('course_title_en') }}" class="{{ $input }}" dir="ltr" data-course-title-en>
+                    <label class="{{ $label }}">Course title (English) *</label>
+                    <input type="text" name="course_title_en" value="{{ old('course_title_en') }}" required class="{{ $input }}" dir="ltr" data-course-title-en" placeholder="e.g. Live Session: Quality Systems Kickoff">
                 </div>
                 <div>
                     <label class="{{ $label }}">عدد الساعات التدريبية *</label>

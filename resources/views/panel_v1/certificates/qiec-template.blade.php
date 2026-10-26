@@ -66,11 +66,23 @@
     <div class="mask" style="left:848px;top:424px;width:380px;height:34px;"></div>
     <div class="field ar" style="left:848px;top:432px;width:357px;font-size:18px;">{{ $nameAr }}</div>
 
-    <div class="mask" style="left:70px;top:524px;width:200px;height:30px;"></div>
-    <div class="field en" style="left:74px;top:530px;width:196px;font-size:14px;">{{ $courseEn }}</div>
+    @php
+        $courseEnDraw = preg_match('/[\x{0600}-\x{06FF}]/u', (string) $courseEn) ? '' : (string) $courseEn;
+        $courseEnLen = mb_strlen(trim($courseEnDraw));
+        $courseArLen = mb_strlen(trim((string) $courseAr));
+        $courseEnSize = $courseEnLen > 40 ? max(12, (int) round(16 * 40 / max(1, $courseEnLen))) : 16;
+        $courseArSize = $courseArLen > 36 ? max(12, (int) round(16 * 36 / max(1, $courseArLen))) : 16;
+    @endphp
+    <div class="mask" style="left:70px;top:516px;width:460px;height:42px;"></div>
+    @if ($courseEnDraw !== '')
+    <div class="field en" style="left:74px;top:528px;width:450px;font-size:{{ $courseEnSize }}px;white-space:nowrap;">{{ $courseEnDraw }}</div>
+    @endif
 
-    <div class="mask" style="left:960px;top:524px;width:268px;height:32px;"></div>
-    <div class="field ar" style="left:960px;top:530px;width:245px;font-size:14px;">{{ $courseAr }}</div>
+    <div class="mask" style="left:780px;top:482px;width:455px;height:34px;"></div>
+    <div class="field ar" style="left:780px;top:492px;width:435px;font-size:11px;font-weight:normal;">وذلك لإتمامه بنجاح الدورة التدريبية:</div>
+
+    <div class="mask" style="left:780px;top:516px;width:455px;height:42px;"></div>
+    <div class="field ar" style="left:780px;top:528px;width:425px;font-size:{{ $courseArSize }}px;white-space:nowrap;">{{ $courseAr }}</div>
 
     <div class="mask" style="left:148px;top:590px;width:40px;height:20px;"></div>
     <div class="field en" style="left:150px;top:594px;width:40px;font-size:11px;font-weight:normal;">[ {{ $hours }} ]</div>
