@@ -673,9 +673,9 @@ class MakeCertificate
         while ($arByValSize > 9 && $textWidth($accreditedByAr, $arByValSize) > $arByValMaxW) {
             $arByValSize--;
         }
-        $wipeCream($arByValLeft, 672, $arByValRight - $arByValLeft, 32);
-        // valign top: optical mid ~JPG label (~684–685)
-        $writeAr($accreditedByAr, $arByValRight, 679, $arByValSize, 'right', false);
+        $wipeCream($arByValLeft, 672, $arByValRight - $arByValLeft, 34);
+        // drop ~4px so value optical center matches JPG "الدورة معتمدة من:"
+        $writeAr($accreditedByAr, $arByValRight, 683, $arByValSize, 'right', false);
 
         // 4) رقم الاعتماد — keep JPG label (ink ~1131–1222); fill [date] slot only
         $arAccIdRight = 1125;
