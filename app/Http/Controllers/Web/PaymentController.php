@@ -343,7 +343,10 @@ class PaymentController extends Controller
                 }
 
                 // Set Sale After All Accounting
-                $sale = Sale::createSales($orderItem, $order->payment_method);
+                $sale = Sale::createSales($orderItem, $order->payment_method ?: Order::$paymentChannel);
+
+                // Remove zero-amount manual/free enrollments for the same item so dashboard shows the paid sale only.
+                $this->removeDuplicateFreeEnrollment($order, $orderItem, $sale);
 
                 if (!empty($orderItem->reserve_meeting_id)) {
                     $reserveMeeting = ReserveMeeting::where('id', $orderItem->reserve_meeting_id)->first();
@@ -410,6 +413,54 @@ class PaymentController extends Controller
         }
 
         return redirect(panelV1HomeUrl());
+    }
+
+    /**
+     * After a real paid sale is created, delete leftover manual/free enrollments
+     * for the same buyer + item (common when admin enrolled while gateway was stuck).
+     */
+    private function removeDuplicateFreeEnrollment($order, $orderItem, Sale $paidSale): void
+    {
+        try {
+            $query = Sale::query()
+                ->where('buyer_id', $order->user_id)
+                ->where('id', '!=', $paidSale->id)
+                ->where(function ($q) {
+                    $q->whereNull('order_id')
+                        ->orWhere('order_id', 0);
+                })
+                ->where(function ($q) {
+                    $q->where('payment_method', Sale::$credit)
+                        ->orWhereNull('payment_method');
+                })
+                ->where(function ($q) {
+                    $q->whereNull('total_amount')
+                        ->orWhere('total_amount', 0)
+                        ->orWhere('total_amount', '0.00');
+                });
+
+            if (!empty($orderItem->webinar_id) && empty($orderItem->gift_id)) {
+                $query->where('webinar_id', $orderItem->webinar_id);
+            } elseif (!empty($orderItem->bundle_id) && empty($orderItem->gift_id)) {
+                $query->where('bundle_id', $orderItem->bundle_id);
+            } else {
+                return;
+            }
+
+            $removed = $query->delete();
+            if ($removed > 0) {
+                \Log::info('Removed duplicate free enrollment after paid sale', [
+                    'order_id' => $order->id,
+                    'paid_sale_id' => $paidSale->id,
+                    'removed' => $removed,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('removeDuplicateFreeEnrollment failed', [
+                'order_id' => $order->id,
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 
 }

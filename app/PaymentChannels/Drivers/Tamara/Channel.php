@@ -277,6 +277,30 @@ class Channel extends BasePaymentChannel implements IChannel
         session()->put($this->order_session_key, $order->id);
         session()->put($this->checkout_response_order_session_key, $orderID);
 
+        // Persist gateway id on the order so notify/success can recover without browser session.
+        try {
+            $paymentData = [];
+            if (!empty($order->payment_data)) {
+                $decoded = json_decode($order->payment_data, true);
+                if (is_array($decoded)) {
+                    $paymentData = $decoded;
+                }
+            }
+            $paymentData['gateway'] = 'Tamara';
+            $paymentData['tamara_order_id'] = $orderID;
+            $channelId = PaymentChannel::where('class_name', 'Tamara')->value('id');
+            $order->update(array_filter([
+                'payment_method' => Order::$paymentChannel,
+                'payment_channel_id' => $order->payment_channel_id ?: $channelId,
+                'payment_data' => json_encode($paymentData),
+            ]));
+        } catch (\Throwable $e) {
+            \Log::warning('Tamara: failed to persist checkout order id', [
+                'local_order_id' => $order->id,
+                'tamara_order_id' => $orderID,
+                'message' => $e->getMessage(),
+            ]);
+        }
 
         return $checkoutUrl;
     }
@@ -288,10 +312,12 @@ class Channel extends BasePaymentChannel implements IChannel
 
     public function verify(Request $request)
     {
-        $callbackStatus = strtolower((string) $request->get('status', ''));
+        $callbackStatus = strtolower((string) $request->get('status', $request->input('status', '')));
         $tamaraPaymentOrderId = $request->get('orderId')
+            ?? $request->input('orderId')
             ?? $request->input('order_id')
-            ?? $request->input('orderId');
+            ?? data_get($request->all(), 'orderId')
+            ?? data_get($request->all(), 'order_id');
 
         $sessionOrderId = session()->get($this->order_session_key, null);
         $checkoutResponseTamaraOrderId = session()->get($this->checkout_response_order_session_key, null);
@@ -299,10 +325,21 @@ class Channel extends BasePaymentChannel implements IChannel
         session()->forget($this->checkout_response_order_session_key);
 
         $order = null;
-        $paidStatuses = ['authorised', 'authorized', 'approved', 'captured', 'fully_captured'];
+        $paidStatuses = [
+            'authorised', 'authorized', 'approved', 'captured', 'fully_captured',
+            'completed', 'complete', 'paid', 'settled',
+        ];
+        $cancelStatuses = ['cancel', 'canceled', 'cancelled', 'failure', 'failed', 'declined', 'expired'];
 
-        // Cancel/failure browser return — resolve order for status page, mark fail only if still pending/paying.
-        if (in_array($callbackStatus, ['cancel', 'failure', 'failed'], true) && empty($tamaraPaymentOrderId)) {
+        \Log::info('Tamara verify hit', [
+            'callback_status' => $callbackStatus,
+            'tamara_order_id' => $tamaraPaymentOrderId,
+            'session_order_id' => $sessionOrderId,
+            'has_auth' => Auth::check(),
+        ]);
+
+        // Cancel/failure browser return — mark fail only for explicit cancel/fail statuses.
+        if (in_array($callbackStatus, $cancelStatuses, true) && empty($tamaraPaymentOrderId)) {
             $order = $this->resolveLocalOrder(
                 $request->get('orderReferenceId') ?? $request->input('order_reference_id'),
                 $sessionOrderId,
@@ -317,6 +354,21 @@ class Channel extends BasePaymentChannel implements IChannel
         }
 
         try {
+            // Recover gateway id from session / stored payment_data when query params are missing.
+            if (empty($tamaraPaymentOrderId) && !empty($checkoutResponseTamaraOrderId)) {
+                $tamaraPaymentOrderId = $checkoutResponseTamaraOrderId;
+            }
+
+            if (empty($tamaraPaymentOrderId) && !empty($sessionOrderId)) {
+                $sessionOrder = Order::find($sessionOrderId);
+                if (!empty($sessionOrder?->payment_data)) {
+                    $decoded = json_decode($sessionOrder->payment_data, true);
+                    if (is_array($decoded) && !empty($decoded['tamara_order_id'])) {
+                        $tamaraPaymentOrderId = $decoded['tamara_order_id'];
+                    }
+                }
+            }
+
             if (!empty($tamaraPaymentOrderId)) {
                 $tamaraClient = $this->getTamaraClient();
                 $localOrderId = null;
@@ -328,6 +380,9 @@ class Channel extends BasePaymentChannel implements IChannel
                     if (method_exists($orderDetails, 'isSuccess') && $orderDetails->isSuccess()) {
                         $localOrderId = $orderDetails->getOrderReferenceId();
                         $tamaraOrderStatus = $orderDetails->getStatus();
+                    } elseif (method_exists($orderDetails, 'getOrderReferenceId')) {
+                        $localOrderId = $orderDetails->getOrderReferenceId();
+                        $tamaraOrderStatus = method_exists($orderDetails, 'getStatus') ? $orderDetails->getStatus() : null;
                     }
                 } catch (\Throwable $e) {
                     \Log::warning('Tamara getOrder failed during verify', [
@@ -342,7 +397,6 @@ class Channel extends BasePaymentChannel implements IChannel
                         ?? $sessionOrderId;
                 }
 
-                // Session Tamara id match is optional fallback only.
                 if (
                     empty($localOrderId)
                     && !empty($checkoutResponseTamaraOrderId)
@@ -359,7 +413,6 @@ class Channel extends BasePaymentChannel implements IChannel
                         return $order;
                     }
 
-                    // Authorise when still in new/approved; ignore errors if already captured.
                     if (empty($tamaraOrderStatus) || in_array(strtolower((string) $tamaraOrderStatus), ['new', 'approved', 'authorised', 'authorized'], true)) {
                         try {
                             $authedResponse = $tamaraClient->authoriseOrder(new AuthoriseOrderRequest((string) $tamaraPaymentOrderId));
@@ -380,7 +433,21 @@ class Channel extends BasePaymentChannel implements IChannel
                     if (in_array($normalizedStatus, $paidStatuses, true)) {
                         $this->ensureBuyerLoggedIn($order);
                         $order->update(['status' => Order::$paying]);
-                    } elseif (!in_array($callbackStatus, ['notify', 'success'], true)) {
+                        \Log::info('Tamara verify: marked paying', [
+                            'local_order_id' => $order->id,
+                            'tamara_status' => $tamaraOrderStatus,
+                            'callback_status' => $callbackStatus,
+                        ]);
+                    } elseif (in_array($callbackStatus, ['notify', 'success'], true)) {
+                        // Never mark fail on success/notify — create Sale even if status string is unfamiliar.
+                        $this->ensureBuyerLoggedIn($order);
+                        $order->update(['status' => Order::$paying]);
+                        \Log::warning('Tamara verify: success/notify without known paid status — marking paying', [
+                            'local_order_id' => $order->id,
+                            'tamara_status' => $tamaraOrderStatus,
+                            'callback_status' => $callbackStatus,
+                        ]);
+                    } elseif (in_array($callbackStatus, $cancelStatuses, true)) {
                         $order->update(['status' => Order::$fail]);
                     } else {
                         \Log::error('Tamara verify: unpaid status after API check', [
@@ -397,13 +464,23 @@ class Channel extends BasePaymentChannel implements IChannel
                     ]);
                 }
             } elseif (!empty($sessionOrderId) && Auth::check()) {
-                // Legacy fallback when gateway id missing.
+                // Legacy fallback when gateway id missing — ONLY fail on explicit cancel/failure.
+                // (Previously this marked every return as fail, which broke Tamara success redirects.)
                 $order = Order::where('id', $sessionOrderId)
                     ->where('user_id', Auth::id())
                     ->first();
 
-                if (!empty($order) && !in_array($order->status, [Order::$paid, Order::$paying], true)) {
+                if (
+                    !empty($order)
+                    && in_array($callbackStatus, $cancelStatuses, true)
+                    && !in_array($order->status, [Order::$paid, Order::$paying], true)
+                ) {
                     $order->update(['status' => Order::$fail]);
+                } elseif (!empty($order) && in_array($callbackStatus, ['success', 'notify'], true)) {
+                    \Log::warning('Tamara verify: success without gateway order id', [
+                        'local_order_id' => $order->id,
+                        'callback_status' => $callbackStatus,
+                    ]);
                 }
             }
         } catch (\Throwable $e) {
