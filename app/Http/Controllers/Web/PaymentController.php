@@ -406,7 +406,7 @@ class PaymentController extends Controller
                 'order' => $order,
             ];
 
-            return view('design_1.web.cart.payment.status.index', $data);
+            return view('landing_v1.pages.payment-status', $data);
         }
 
         return redirect(panelV1HomeUrl());

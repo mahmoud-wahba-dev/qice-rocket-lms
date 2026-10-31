@@ -71,11 +71,11 @@ class PaymentEnrollmentTest extends TestCase
 
     public function test_payment_status_blade_uses_panel_v1_home_url(): void
     {
-        $blade = file_get_contents(resource_path('views/design_1/web/cart/payment/status/index.blade.php'));
+        $blade = file_get_contents(resource_path('views/landing_v1/pages/payment-status.blade.php'));
 
         $this->assertStringContainsString('panelV1HomeUrl(auth()->user())', $blade);
-        $this->assertSame(0, substr_count($blade, 'href="/panel"'));
-        $this->assertSame(3, substr_count($blade, 'panelV1HomeUrl(auth()->user())'));
+        $this->assertStringNotContainsString('href="/panel"', $blade);
+        $this->assertStringContainsString('landing_v1.layouts.app', $blade);
     }
 
     public function test_payment_status_fallback_redirects_to_v1_home(): void
