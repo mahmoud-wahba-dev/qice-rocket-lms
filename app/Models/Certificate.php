@@ -43,4 +43,9 @@ class Certificate extends Model
     {
         return \App\Mixins\Certificate\MakeCertificate::formatCertificateNumber((int) $this->id);
     }
+
+    public function needsTraineeNames($user = null): bool
+    {
+        return !\App\Mixins\Certificate\MakeCertificate::certificateHasTraineeNames($this, $user);
+    }
 }

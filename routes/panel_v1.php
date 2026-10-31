@@ -65,6 +65,7 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
             Route::post('/student/notes', [StudentController::class, 'storeNote'])->name('student.notes.store');
             Route::post('/student/notes/{id}/delete', [StudentController::class, 'deleteNote'])->name('student.notes.delete');
             Route::get('/student/certificates', [StudentController::class, 'certificates'])->name('student.certificates');
+            Route::post('/student/certificates/{id}/complete-names', [StudentController::class, 'completeCertificateNames'])->name('student.certificates.complete-names');
             Route::get('/student/certificates/{id}/download', [StudentController::class, 'downloadCertificate'])->name('student.certificates.download');
             Route::get('/student/assignments', [StudentController::class, 'assignmentsPage'])->name('student.assignments');
             Route::get('/student/quizzes', [StudentController::class, 'quizzesPage'])->name('student.quizzes');

@@ -236,6 +236,21 @@ export function initCreateCourseWizard(root) {
     syncPartnerInstructorFields();
     initPartnerInstructorPicker(wrap);
 
+    const syncCertificateTitleFields = () => {
+        wrap.querySelectorAll('[data-certificate-section]').forEach((section) => {
+            const toggle = section.querySelector('[data-certificate-switch]');
+            const fields = section.querySelector('[data-certificate-titles]');
+            if (!toggle || !fields) {
+                return;
+            }
+            fields.classList.toggle('hidden', !toggle.checked);
+        });
+    };
+    wrap.querySelectorAll('[data-certificate-switch]').forEach((toggle) => {
+        toggle.addEventListener('change', syncCertificateTitleFields);
+    });
+    syncCertificateTitleFields();
+
     const isSpa = wrap.hasAttribute('data-spa-wizard');
     const form = wrap.querySelector('[data-wizard-form]');
     const storeUrl = wrap.getAttribute('data-store-url') || form?.action;
@@ -260,6 +275,8 @@ export function initCreateCourseWizard(root) {
         tags: 'الوسوم',
         quiz_id: 'الاختبار',
         certificate: 'الشهادة',
+        certificate_title_ar: 'اسم الدورة على الشهادة (عربي)',
+        certificate_title_en: 'اسم الدورة على الشهادة (English)',
         price: 'السعر',
         capacity: 'سعة الطلاب',
         access_days: 'عدد أيام الوصول',

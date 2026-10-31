@@ -169,6 +169,78 @@ class MakeCertificate
         return asset('assets/panel_v1/img/certificate_qr.jpg');
     }
 
+    /**
+     * Bilingual trainee names stored on users_metas for reuse across certificates.
+     *
+     * @return array{ar: string, en: string}
+     */
+    public static function traineeNamesFromUserMetas($user): array
+    {
+        $ar = '';
+        $en = '';
+        if (empty($user)) {
+            return ['ar' => $ar, 'en' => $en];
+        }
+
+        try {
+            if (method_exists($user, 'relationLoaded') && $user->relationLoaded('userMetas')) {
+                $metas = $user->userMetas;
+            } else {
+                $metas = UserMeta::query()->where('user_id', $user->id)->whereIn('name', ['full_name_ar', 'full_name_en'])->get();
+            }
+            foreach ($metas as $meta) {
+                if (($meta->name ?? '') === 'full_name_ar') {
+                    $ar = trim((string) ($meta->value ?? ''));
+                } elseif (($meta->name ?? '') === 'full_name_en') {
+                    $en = trim((string) ($meta->value ?? ''));
+                }
+            }
+        } catch (\Throwable $e) {
+        }
+
+        return ['ar' => $ar, 'en' => $en];
+    }
+
+    /**
+     * True when certificate meta or remembered user metas already have AR + EN trainee names.
+     */
+    public static function certificateHasTraineeNames($certificate, $user = null): bool
+    {
+        $meta = [];
+        if (!empty($certificate->meta)) {
+            $meta = is_array($certificate->meta) ? $certificate->meta : (json_decode((string) $certificate->meta, true) ?: []);
+        }
+        $ar = trim((string) ($meta['trainee_name_ar'] ?? ''));
+        $en = trim((string) ($meta['trainee_name_en'] ?? ''));
+        if ($ar !== '' && $en !== '') {
+            return true;
+        }
+
+        $user = $user ?: ($certificate->student ?? null);
+        $profile = self::traineeNamesFromUserMetas($user);
+        if ($ar === '') {
+            $ar = $profile['ar'];
+        }
+        if ($en === '') {
+            $en = $profile['en'];
+        }
+
+        return $ar !== '' && $en !== '';
+    }
+
+    public static function upsertUserTraineeNames($user, string $nameAr, string $nameEn): void
+    {
+        if (empty($user?->id)) {
+            return;
+        }
+        foreach (['full_name_ar' => $nameAr, 'full_name_en' => $nameEn] as $key => $value) {
+            UserMeta::updateOrCreate(
+                ['user_id' => $user->id, 'name' => $key],
+                ['value' => $value]
+            );
+        }
+    }
+
     public function buildQiecCertificateData($certificate): array
     {
         $certificate->loadMissing(['student.userMetas', 'webinar.translations', 'webinar.teacher', 'quiz.webinar.translations', 'quiz.webinar.teacher', 'bundle.translations', 'bundle.teacher']);
@@ -180,6 +252,7 @@ class MakeCertificate
 
         $student = $certificate->student;
         $traineeName = (string) ($student->full_name ?? '');
+        $profileNames = self::traineeNamesFromUserMetas($student);
         $course = null;
         $durationMinutes = null;
 
@@ -248,8 +321,8 @@ class MakeCertificate
         $data = [
             'certificate_number' => self::formatCertificateNumber((int) $certificate->id),
             'trainee_name' => $traineeName,
-            'trainee_name_ar' => $traineeName,
-            'trainee_name_en' => $traineeName,
+            'trainee_name_ar' => $profileNames['ar'] !== '' ? $profileNames['ar'] : $traineeName,
+            'trainee_name_en' => $profileNames['en'] !== '' ? $profileNames['en'] : $traineeName,
             'course_title' => $titleAr ?: $titleEn,
             'course_title_ar' => $titleAr ?: $titleEn,
             // Keep EN Latin-only; never fall back to Arabic (left side of certificate)

@@ -597,7 +597,8 @@ class CoursePlayerController extends Controller
         $courseSubtitle = $webinar->translate('ar')?->summary
             ?: ($webinar->category->title ?? 'الادارة والتنفيذ');
 
-        [$certificateLocked, $certificateUrl] = $this->resolveCourseCertificate($webinar, $user, $progress);
+        [$certificateLocked, $certificateUrl, $certificateNeedsNames, $certificateId] = $this->resolveCourseCertificate($webinar, $user, $progress);
+        $profileNames = \App\Mixins\Certificate\MakeCertificate::traineeNamesFromUserMetas($user);
 
         return [
             'slug' => $webinar->slug,
@@ -616,18 +617,22 @@ class CoursePlayerController extends Controller
             'lectureAssignment' => $lectureAssignment,
             'certificateLocked' => $certificateLocked,
             'certificateUrl' => $certificateUrl,
+            'certificateNeedsNames' => $certificateNeedsNames,
+            'certificateId' => $certificateId,
+            'traineeNameArPrefill' => $profileNames['ar'] !== '' ? $profileNames['ar'] : (string) ($user->full_name ?? ''),
+            'traineeNameEnPrefill' => $profileNames['en'],
         ];
     }
 
     /**
      * Course certificate unlocks only when webinar.certificate is on and progress is 100%.
      *
-     * @return array{0: bool, 1: string|null}
+     * @return array{0: bool, 1: string|null, 2: bool, 3: int|null}
      */
     private function resolveCourseCertificate($webinar, $user, int $progress): array
     {
         if (empty($webinar->certificate)) {
-            return [true, null];
+            return [true, null, false, null];
         }
 
         $certificate = null;
@@ -641,10 +646,13 @@ class CoursePlayerController extends Controller
         }
 
         if (!empty($certificate?->id)) {
-            return [false, route('panel.v1.student.certificates.download', ['id' => $certificate->id])];
+            $needsNames = $certificate->needsTraineeNames($user);
+            $url = route('panel.v1.student.certificates.download', ['id' => $certificate->id]);
+
+            return [false, $url, $needsNames, (int) $certificate->id];
         }
 
-        return [true, null];
+        return [true, null, false, null];
     }
 
     private function markLessonVisited($user, array $lesson): void

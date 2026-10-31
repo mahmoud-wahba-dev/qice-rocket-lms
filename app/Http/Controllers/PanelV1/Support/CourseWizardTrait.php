@@ -31,6 +31,8 @@ trait CourseWizardTrait
             'teacher_id' => 'المدرب الرئيسي',
             'quiz_id' => 'الاختبار',
             'certificate' => 'الشهادة',
+            'certificate_title_ar' => 'اسم الدورة على الشهادة (عربي)',
+            'certificate_title_en' => 'اسم الدورة على الشهادة (English)',
             'price' => 'السعر',
             'capacity' => 'سعة الطلاب',
             'access_duration' => 'مدة الوصول',
@@ -339,12 +341,21 @@ trait CourseWizardTrait
         $draftLocaleSeo = null;
         $draftLocaleSummary = null;
         $draftLocaleDescription = null;
+        $draftCertificateTitleAr = null;
+        $draftCertificateTitleEn = null;
         if ($draft) {
             $tr = $draft->translate('ar') ?: $draft->translate(app()->getLocale()) ?: $draft->translations->first();
             $draftLocaleTitle = $tr->title ?? null;
             $draftLocaleSeo = $tr->seo_description ?? null;
             $draftLocaleSummary = $tr->summary ?? null;
             $draftLocaleDescription = $tr->description ?? null;
+            $trAr = $draft->translate('ar');
+            $trEn = $draft->translate('en');
+            $draftCertificateTitleAr = trim((string) ($trAr->title ?? $draftLocaleTitle ?? ''));
+            $draftCertificateTitleEn = trim((string) ($trEn->title ?? ''));
+            if ($draftCertificateTitleEn !== '' && preg_match('/[\x{0600}-\x{06FF}]/u', $draftCertificateTitleEn)) {
+                $draftCertificateTitleEn = '';
+            }
         }
 
         return [
@@ -407,6 +418,8 @@ trait CourseWizardTrait
             'draftPrice' => $draft->price ?? null,
             'draftCapacity' => $draft->capacity ?? null,
             'draftCertificate' => (bool) ($draft->certificate ?? false),
+            'draftCertificateTitleAr' => $draftCertificateTitleAr,
+            'draftCertificateTitleEn' => $draftCertificateTitleEn,
             'draftAccessDays' => $draft->access_days ?? null,
             'courseFaqs' => $this->wizardFaqsForView($draft),
         ];
@@ -682,9 +695,13 @@ trait CourseWizardTrait
         }
 
         if (!empty($draft) && $step === 3) {
+            $certOn = $request->boolean('certificate');
+            $titleRule = ($soft || !$certOn) ? 'nullable' : 'required';
             $request->validate([
                 'quiz_id' => 'nullable|exists:quizzes,id',
                 'certificate' => 'nullable|boolean',
+                'certificate_title_ar' => $titleRule . '|string|max:255',
+                'certificate_title_en' => $titleRule . '|string|max:255',
             ], $this->courseWizardMessages(), $attrs);
 
             if ($request->filled('quiz_id')) {
@@ -697,9 +714,28 @@ trait CourseWizardTrait
                 $quiz->save();
             }
 
-            $draft->certificate = $request->boolean('certificate');
+            $draft->certificate = $certOn;
             $draft->updated_at = time();
             $draft->save();
+
+            if ($certOn) {
+                $titleAr = trim((string) $request->input('certificate_title_ar', ''));
+                $titleEn = trim((string) $request->input('certificate_title_en', ''));
+                if ($titleAr !== '') {
+                    $trAr = $draft->translateOrNew('ar');
+                    $trAr->webinar_id = $draft->id;
+                    $trAr->locale = 'ar';
+                    $trAr->title = $titleAr;
+                    $trAr->save();
+                }
+                if ($titleEn !== '') {
+                    $trEn = $draft->translateOrNew('en');
+                    $trEn->webinar_id = $draft->id;
+                    $trEn->locale = 'en';
+                    $trEn->title = $titleEn;
+                    $trEn->save();
+                }
+            }
         }
 
         if (!empty($draft) && $step === 4) {

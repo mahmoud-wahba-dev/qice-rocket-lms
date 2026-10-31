@@ -297,12 +297,17 @@ class CourseEditWizardCycleTest extends TestCase
             'go_next' => 4,
             'quiz_id' => $quiz->id,
             'certificate' => 1,
+            'certificate_title_ar' => 'دورة الشهادة عربي',
+            'certificate_title_en' => 'Certificate Course EN',
         ], $teacher));
 
         $this->assertTrue($response->getData(true)['ok']);
         $this->assertSame($course->id, (int) $quiz->fresh()->webinar_id);
         $this->assertTrue((bool) $course->fresh()->certificate);
         $this->assertSame('pending', $course->fresh()->status);
+        $fresh = $course->fresh(['translations']);
+        $this->assertSame('دورة الشهادة عربي', (string) optional($fresh->translate('ar'))->title);
+        $this->assertSame('Certificate Course EN', (string) optional($fresh->translate('en'))->title);
     }
 
     // -------------------------------------------------------------------------
@@ -415,6 +420,8 @@ class CourseEditWizardCycleTest extends TestCase
             'draft_id' => $course->id,
             'go_next' => 4,
             'certificate' => 1,
+            'certificate_title_ar' => 'عنوان الشهادة عربي',
+            'certificate_title_en' => 'Certificate Title EN',
         ], $teacher));
         $this->assertSame(4, $r3->getData(true)['next_step']);
 
@@ -450,7 +457,9 @@ class CourseEditWizardCycleTest extends TestCase
         $this->assertSame(45, (int) $fresh->access_days);
         $this->assertTrue((bool) $fresh->certificate);
         $this->assertTrue((bool) $fresh->downloadable);
-        $this->assertSame('دورة دورة كاملة بعد الـ QA', $fresh->translate('ar')->title);
+        // Step 3 certificate titles overwrite webinar AR/EN translation titles for the certificate print.
+        $this->assertSame('عنوان الشهادة عربي', $fresh->translate('ar')->title);
+        $this->assertSame('Certificate Title EN', (string) optional($fresh->translate('en'))->title);
         $this->assertTrue(WebinarChapter::where('webinar_id', $fresh->id)->exists());
         $this->assertGreaterThanOrEqual(2, $fresh->tags->count());
     }
@@ -572,10 +581,13 @@ class CourseEditWizardCycleTest extends TestCase
                 'draft_id' => $course->id,
                 'go_next' => 4,
                 'certificate' => 1,
+                'certificate_title_ar' => 'شهادة إدارة عربي',
+                'certificate_title_en' => 'Admin Certificate EN',
             ],
             $admin
         ), $course->id);
         $this->assertTrue((bool) $course->fresh()->certificate);
+        $this->assertSame('Admin Certificate EN', (string) optional($course->fresh(['translations'])->translate('en'))->title);
 
         // Step 4
         $ctrl->storeCourseWizard($this->ajaxPost(

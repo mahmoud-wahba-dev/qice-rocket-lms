@@ -62,17 +62,35 @@
                                 <span class="icon-[tabler--shield-check] size-3.5"></span> تحقق: {{ $validationUrl }}
                             </a>
                         </div>
+                        @php $needsNames = $certificate->needsTraineeNames($authUser ?? auth()->user()); @endphp
                         <div class="flex items-center gap-2">
-                            <a href="{{ route('panel.v1.student.certificates.download', ['id' => $certificate->id]) }}"
-                                class="btn btn-primary rounded-10px h-11 flex-1 font-bold text-13px gap-2">
-                                <span class="icon-[tabler--download] size-4"></span>
-                                تحميل PDF
-                            </a>
-                            <a href="{{ route('panel.v1.student.certificates.download', ['id' => $certificate->id, 'view' => 1]) }}"
-                                target="_blank" rel="noopener"
-                                class="btn btn-ghost rounded-10px h-11 px-4 font-bold text-13px text-primary border border-d9">
-                                عرض
-                            </a>
+                            @if ($needsNames)
+                                <button type="button"
+                                    data-open-certificate-names
+                                    data-certificate-id="{{ $certificate->id }}"
+                                    class="btn btn-primary rounded-10px h-11 flex-1 font-bold text-13px gap-2">
+                                    <span class="icon-[tabler--download] size-4"></span>
+                                    تحميل PDF
+                                </button>
+                                <button type="button"
+                                    data-open-certificate-names
+                                    data-certificate-id="{{ $certificate->id }}"
+                                    data-certificate-view="1"
+                                    class="btn btn-ghost rounded-10px h-11 px-4 font-bold text-13px text-primary border border-d9">
+                                    عرض
+                                </button>
+                            @else
+                                <a href="{{ route('panel.v1.student.certificates.download', ['id' => $certificate->id]) }}"
+                                    class="btn btn-primary rounded-10px h-11 flex-1 font-bold text-13px gap-2">
+                                    <span class="icon-[tabler--download] size-4"></span>
+                                    تحميل PDF
+                                </a>
+                                <a href="{{ route('panel.v1.student.certificates.download', ['id' => $certificate->id, 'view' => 1]) }}"
+                                    target="_blank" rel="noopener"
+                                    class="btn btn-ghost rounded-10px h-11 px-4 font-bold text-13px text-primary border border-d9">
+                                    عرض
+                                </a>
+                            @endif
                         </div>
                         <div class="flex items-center justify-between pt-3 border-t border-d9/60">
                             <span class="font-medium text-11px text-gray">معرّف: #{{ $certificate->id }}</span>
@@ -93,4 +111,6 @@
         @endif
     </div>
 </section>
+
+@include('panel_v1.student.components.certificate-names-modal')
 @endsection

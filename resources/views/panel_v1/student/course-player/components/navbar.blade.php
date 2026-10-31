@@ -2,6 +2,8 @@
     $courseSlug = $slug ?? 'demo';
     $certLocked = $certificateLocked ?? true;
     $certUrl = $certificateUrl ?? null;
+    $certNeedsNames = !empty($certificateNeedsNames);
+    $certId = $certificateId ?? null;
 @endphp
 
 <header class="sticky top-0 z-50 bg-primary text-white shadow-sm flex flex-col">
@@ -24,7 +26,16 @@
         <div class="flex items-center gap-2 sm:gap-4 md:gap-6 lg:w-[76%] justify-between">
             @include('panel_v1.student.course-player.components.tools-dropdown')
 
-            @if (!$certLocked && !empty($certUrl))
+            @if (!$certLocked && $certNeedsNames && !empty($certId))
+                <button type="button"
+                    data-open-certificate-names
+                    data-certificate-id="{{ $certId }}"
+                    class="inline-flex items-center gap-1.5 sm:gap-2 rounded-10px border border-[#0FC787]/50 bg-[#0FC787]/15 px-2 sm:px-3 py-1.5 sm:py-2 font-semibold text-13px sm:text-14px text-white hover:bg-[#0FC787]/25 transition shrink-0"
+                    title="أدخل اسمك ثم نزّل شهادة إتمام الدورة">
+                    <span class="icon-[tabler--certificate] size-4"></span>
+                    الشهادة
+                </button>
+            @elseif (!$certLocked && !empty($certUrl))
                 <a href="{{ $certUrl }}" target="_blank" rel="noopener"
                     class="inline-flex items-center gap-1.5 sm:gap-2 rounded-10px border border-[#0FC787]/50 bg-[#0FC787]/15 px-2 sm:px-3 py-1.5 sm:py-2 font-semibold text-13px sm:text-14px text-white hover:bg-[#0FC787]/25 transition shrink-0"
                     title="تنزيل شهادة إتمام الدورة">

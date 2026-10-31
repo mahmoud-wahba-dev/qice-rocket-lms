@@ -1272,6 +1272,12 @@ class StudentController extends Controller
         } catch (\Throwable $e) {
         }
 
+        $profileNames = \App\Mixins\Certificate\MakeCertificate::traineeNamesFromUserMetas($user);
+        $openCertNamesId = (int) $request->query('open_cert_names', 0);
+        if ($openCertNamesId <= 0 && session()->has('open_cert_names')) {
+            $openCertNamesId = (int) session('open_cert_names');
+        }
+
         return view('panel_v1.student.pages.certificates', [
             'pageTitle' => 'شهاداتي',
             'authUser' => $user,
@@ -1281,7 +1287,61 @@ class StudentController extends Controller
             'courseCertCount' => $courseCertCount,
             'quizCertCount' => $quizCertCount,
             'hasCerts' => $certificates->isNotEmpty(),
+            'traineeNameArPrefill' => $profileNames['ar'] !== '' ? $profileNames['ar'] : (string) ($user->full_name ?? ''),
+            'traineeNameEnPrefill' => $profileNames['en'],
+            'openCertNamesId' => $openCertNamesId > 0 ? $openCertNamesId : null,
         ]);
+    }
+
+    public function completeCertificateNames(Request $request, int $id)
+    {
+        $user = $this->resolveStudent($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $certificate = Certificate::where('id', $id)->where('student_id', $user->id)->first();
+        if (empty($certificate)) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'trainee_name_ar' => 'required|string|max:255',
+            'trainee_name_en' => 'required|string|max:255',
+            'view' => 'nullable|boolean',
+        ], [
+            'trainee_name_ar.required' => 'الاسم بالعربية مطلوب',
+            'trainee_name_en.required' => 'الاسم بالإنجليزية مطلوب',
+        ], [
+            'trainee_name_ar' => 'الاسم بالعربية',
+            'trainee_name_en' => 'الاسم بالإنجليزية',
+        ]);
+
+        $nameAr = trim((string) $data['trainee_name_ar']);
+        $nameEn = trim((string) $data['trainee_name_en']);
+
+        \App\Mixins\Certificate\MakeCertificate::upsertUserTraineeNames($user, $nameAr, $nameEn);
+
+        $meta = is_array($certificate->meta) ? $certificate->meta : [];
+        $meta['trainee_name_ar'] = $nameAr;
+        $meta['trainee_name_en'] = $nameEn;
+        $certificate->meta = $meta;
+        $certificate->save();
+
+        $downloadUrl = route('panel.v1.student.certificates.download', [
+            'id' => $certificate->id,
+            'view' => !empty($data['view']) ? 1 : null,
+        ]);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'ok' => true,
+                'download_url' => $downloadUrl,
+                'message' => 'تم حفظ الاسم على الشهادة',
+            ]);
+        }
+
+        return redirect()->to($downloadUrl);
     }
 
     public function downloadCertificate(Request $request, int $id)
@@ -1294,6 +1354,18 @@ class StudentController extends Controller
         if (empty($certificate)) {
             abort(404);
         }
+
+        if ($certificate->needsTraineeNames($user)) {
+            return redirect()
+                ->route('panel.v1.student.certificates', ['open_cert_names' => $certificate->id])
+                ->with('open_cert_names', $certificate->id)
+                ->with('toast', [
+                    'title' => 'أكمل بيانات الشهادة',
+                    'msg' => 'أدخل اسمك بالعربية والإنجليزية قبل تنزيل الشهادة.',
+                    'type' => 'info',
+                ]);
+        }
+
         $make = new \App\Mixins\Certificate\MakeCertificate();
         $response = $make->showCertificateByType($certificate, $request->boolean('view'));
 

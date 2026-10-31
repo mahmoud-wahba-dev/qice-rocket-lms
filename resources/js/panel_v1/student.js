@@ -3,6 +3,7 @@ import { initAssignmentSubmitModal } from './student-assignment-modal.js';
 import { initCoursePlayer } from './student-course-player.js';
 import { initPanelV1FileUploads } from './file-upload.js';
 import { initStudentRatings } from './student-ratings.js';
+import { initCertificateNamesModal } from './student-certificate-names.js';
 
 document.documentElement.classList.add('panel-v1-ready');
 
@@ -12,4 +13,5 @@ document.addEventListener('DOMContentLoaded', () => {
     initCoursePlayer();
     initPanelV1FileUploads();
     initStudentRatings();
+    initCertificateNamesModal();
 });
