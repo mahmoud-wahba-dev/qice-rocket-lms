@@ -34,7 +34,7 @@ trait CourseWizardTrait
             'certificate_title_ar' => 'اسم الدورة على الشهادة (عربي)',
             'certificate_title_en' => 'اسم الدورة على الشهادة (English)',
             'certificate_accredited_by_ar' => 'جهة الاعتماد (عربي)',
-            'certificate_accredited_by_en' => 'جهة الاعتماد (English)',
+            'certificate_accredited_by_en' => 'Accredited by (English) — جهة الاعتماد بالإنجليزية',
             'certificate_accreditation_number' => 'رقم الاعتماد',
             'price' => 'السعر',
             'capacity' => 'سعة الطلاب',

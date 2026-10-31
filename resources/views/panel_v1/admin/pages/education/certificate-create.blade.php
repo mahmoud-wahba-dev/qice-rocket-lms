@@ -104,7 +104,7 @@
                     <p class="mt-1 font-medium text-12px text-gray">يظهر بعد: الدورة معتمدة من [ … ]</p>
                 </div>
                 <div>
-                    <label class="{{ $label }}">Accredited by (English)</label>
+                    <label class="{{ $label }}">Accredited by (English) — جهة الاعتماد بالإنجليزية</label>
                     <input type="text" name="accredited_by_en" value="{{ old('accredited_by_en', $defaults['accredited_by_en'] ?? 'Quality & Excellence Center') }}" class="{{ $input }}" dir="ltr" placeholder="Quality &amp; Excellence Center">
                     <p class="mt-1 font-medium text-12px text-gray">Appears after: Accredited by [ … ]</p>
                 </div>

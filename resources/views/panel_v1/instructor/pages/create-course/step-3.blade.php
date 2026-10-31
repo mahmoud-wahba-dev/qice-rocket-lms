@@ -128,7 +128,7 @@
             @enderror
         </div>
         <div>
-            <label class="block font-semibold text-14px sm:text-15px text-primary mb-2 text-start">Accredited by (English)</label>
+            <label class="block font-semibold text-14px sm:text-15px text-primary mb-2 text-start">Accredited by (English) — جهة الاعتماد بالإنجليزية</label>
             <input type="text" name="certificate_accredited_by_en" value="{{ $certAccByEn }}"
                 class="{{ $input }} {{ $errors->has('certificate_accredited_by_en') ? 'border-[#FECACA]' : '' }}"
                 placeholder="Quality & Excellence Center" dir="ltr" maxlength="255">
