@@ -27,7 +27,16 @@ class SalesController extends AdminController
         $failedSales = Order::where('status', Order::$fail)->count();
 
         $salesQuery = $this->getSalesFilters($query, $request);
-        $paginator = $salesQuery->orderBy('created_at','desc')->with(['buyer','webinar','meeting','subscribe','promotion'])->paginate(15)->withQueryString();
+        $paginator = $salesQuery->orderBy('created_at','desc')->with([
+            'buyer',
+            'webinar.creator',
+            'bundle.creator',
+            'meeting.creator',
+            'subscribe',
+            'promotion',
+            'order.paymentChannel',
+            'order.offlinePayment',
+        ])->paginate(15)->withQueryString();
         foreach($paginator as $sale){
             $this->makeSaleTitle($sale);
             if(empty($sale->saleLog)){
@@ -36,6 +45,28 @@ class SalesController extends AdminController
         }
         $rows = collect($paginator->items())->map(function ($s) {
             $refunded = !empty($s->refund_at);
+            $amount = (float) ($s->amount ?? 0);
+            $total = (float) ($s->total_amount ?? 0);
+            $discount = (float) ($s->discount ?? 0);
+            $tax = (float) ($s->tax ?? 0);
+
+            // If sale financials were stored empty but the linked order has totals, use order.
+            if ($total <= 0 && $amount <= 0 && !empty($s->order)) {
+                $amount = (float) ($s->order->amount ?? 0);
+                $total = (float) ($s->order->total_amount ?? 0);
+                $tax = (float) ($s->order->tax ?? $tax);
+            }
+
+            // Match legacy admin: paid amount = total_amount (subscribe / free labels).
+            if ($s->payment_method === Sale::$subscribe) {
+                $priceLabel = 'اشتراك';
+            } elseif ($total > 0) {
+                $priceLabel = handlePrice($total);
+            } elseif ($amount > 0) {
+                $priceLabel = handlePrice($amount);
+            } else {
+                $priceLabel = 'مجاني';
+            }
 
             return [
                 'id' => $s->id,
@@ -44,14 +75,17 @@ class SalesController extends AdminController
                 'student_email' => $s->buyer->email ?? '',
                 'instructor' => $s->item_seller ?? '—',
                 'service' => $s->item_title ?? $s->type,
-                'price' => handlePrice($s->amount),
-                'discount' => handlePrice($s->discount),
-                'vat' => handlePrice($s->tax ?? 0),
+                'price' => $priceLabel,
+                'discount' => handlePrice($discount),
+                'vat' => handlePrice($tax),
+                'payment_method' => method_exists($s, 'resolvePaymentMethodLabel')
+                    ? $s->resolvePaymentMethodLabel()
+                    : '—',
                 'type' => $s->type === 'webinar' ? 'دورة' : $s->type,
                 'date' => date('Y/m/d', (int) $s->created_at),
                 'status' => $refunded ? 'مسترد' : 'مكتمل',
                 'is_refunded' => $refunded,
-                'can_invoice' => !empty($s->webinar_id) || !empty($s->bundle_id) || !empty($s->meeting_id) || !empty($s->subscribe_id) || !empty($s->product_order_id) || !empty($s->event_ticket_id) || !empty($s->gift_id) || !empty($s->installment_payment_id) || !empty($s->meeting_package_id) || !empty($s->promotion_id) || !empty($s->registration_package_id) || !empty($s->total_amount) || !empty($s->amount),
+                'can_invoice' => !empty($s->webinar_id) || !empty($s->bundle_id) || !empty($s->meeting_id) || !empty($s->subscribe_id) || !empty($s->product_order_id) || !empty($s->event_ticket_id) || !empty($s->gift_id) || !empty($s->installment_payment_id) || !empty($s->meeting_package_id) || !empty($s->promotion_id) || !empty($s->registration_package_id) || $total > 0 || $amount > 0,
             ];
         })->all();
 

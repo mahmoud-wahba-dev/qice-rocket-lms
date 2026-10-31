@@ -34,9 +34,10 @@
                         <th class="px-3 py-3.5 text-start font-semibold">متدرب</th>
                         <th class="px-3 py-3.5 text-start font-semibold">المدرب</th>
                         <th class="px-3 py-3.5 text-start font-semibold">الخدمة</th>
-                        <th class="px-3 py-3.5 text-start font-semibold">السعر</th>
+                        <th class="px-3 py-3.5 text-start font-semibold">المبلغ المدفوع</th>
                         <th class="px-3 py-3.5 text-start font-semibold">الخصم</th>
                         <th class="px-3 py-3.5 text-start font-semibold">الضريبة</th>
+                        <th class="px-3 py-3.5 text-start font-semibold">طريقة الدفع</th>
                         <th class="px-3 py-3.5 text-start font-semibold">نوع الخدمة</th>
                         <th class="px-3 py-3.5 text-start font-semibold">التاريخ</th>
                         <th class="px-3 py-3.5 text-start font-semibold">الحالة</th>
@@ -56,6 +57,7 @@
                             <td class="px-3 py-4 font-semibold text-primary whitespace-nowrap">{{ $row['price'] }}</td>
                             <td class="px-3 py-4 font-medium text-gray whitespace-nowrap">{{ $row['discount'] }}</td>
                             <td class="px-3 py-4 font-medium text-gray whitespace-nowrap">{{ $row['vat'] }}</td>
+                            <td class="px-3 py-4 font-medium text-primary whitespace-nowrap">{{ $row['payment_method'] ?? '—' }}</td>
                             <td class="px-3 py-4 font-medium text-primary">{{ $row['type'] }}</td>
                             <td class="px-3 py-4 font-medium text-gray whitespace-nowrap">{{ $row['date'] }}</td>
                             <td class="px-3 py-4">

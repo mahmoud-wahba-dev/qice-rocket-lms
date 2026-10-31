@@ -57,7 +57,9 @@ class AdminController extends Controller
             return $user;
         }
 
-        return view($view, array_merge($data, [
+        // Defaults first; page $data must win (previously array_merge($data, defaults)
+        // overwrote sales/education stats and hid real payment totals).
+        return view($view, array_merge([
             'pageTitle' => $pageTitle,
             'authUser' => $user,
             'unReadNotifications' => $user->getUnReadNotifications(),
@@ -80,6 +82,6 @@ class AdminController extends Controller
                 ->orderBy('id', 'desc')
                 ->limit(8)
                 ->get(),
-        ]));
+        ], $data));
     }
 }
