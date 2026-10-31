@@ -23,5 +23,10 @@ class VerifyCsrfToken extends Middleware
         '/payments/verify/Paytabs',
         '/payments/verify/Cintepay',
         '/payments/verify/Clickpay',
+        '/payments/verify/Tamara',
+        '/payments/verify/Tabby',
+        '/payments/verify/Stripe',
+        '/payments/verify/MyFatoorah',
+        '/payments/verify/Paylink',
     ];
 }

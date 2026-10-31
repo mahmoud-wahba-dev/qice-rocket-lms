@@ -14,6 +14,7 @@ use AlazziAz\Tamara\Tamara\Model\Order\OrderItem as TamaraOrderItem;
 use AlazziAz\Tamara\Tamara\Request\Checkout\CreateCheckoutRequest;
 use AlazziAz\Tamara\Tamara\Model\Order\Address as TamaraAddress;
 use AlazziAz\Tamara\Tamara\Request\Order\AuthoriseOrderRequest;
+use AlazziAz\Tamara\Tamara\Request\Order\GetOrderRequest;
 
 use App\Models\Order;
 use App\Models\PaymentChannel;
@@ -21,6 +22,7 @@ use App\PaymentChannels\BasePaymentChannel;
 use App\PaymentChannels\IChannel;
 use \AlazziAz\Tamara\Facades\Tamara;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 
 class Channel extends BasePaymentChannel implements IChannel
@@ -286,43 +288,161 @@ class Channel extends BasePaymentChannel implements IChannel
 
     public function verify(Request $request)
     {
-        $status = $request->get('status');
-        $paymentStatus = $request->get('paymentStatus');
-        $tamaraPaymentOrderId = $request->get('orderId');
+        $callbackStatus = strtolower((string) $request->get('status', ''));
+        $tamaraPaymentOrderId = $request->get('orderId')
+            ?? $request->input('order_id')
+            ?? $request->input('orderId');
 
-        $user = auth()->user();
         $sessionOrderId = session()->get($this->order_session_key, null);
         $checkoutResponseTamaraOrderId = session()->get($this->checkout_response_order_session_key, null);
         session()->forget($this->order_session_key);
         session()->forget($this->checkout_response_order_session_key);
 
         $order = null;
+        $paidStatuses = ['authorised', 'authorized', 'approved', 'captured', 'fully_captured'];
 
-        if (!empty($tamaraPaymentOrderId) and !empty($checkoutResponseTamaraOrderId) and $checkoutResponseTamaraOrderId == $tamaraPaymentOrderId) {
-            $order = Order::query()->where('id', $sessionOrderId)
-                ->where('user_id', $user->id)
-                ->first();
+        // Cancel/failure browser return — resolve order for status page, mark fail only if still pending/paying.
+        if (in_array($callbackStatus, ['cancel', 'failure', 'failed'], true) && empty($tamaraPaymentOrderId)) {
+            $order = $this->resolveLocalOrder(
+                $request->get('orderReferenceId') ?? $request->input('order_reference_id'),
+                $sessionOrderId,
+                null
+            );
 
-            if (!empty($order)) {
-                $authOrder = new AuthoriseOrderRequest($tamaraPaymentOrderId);
+            if (!empty($order) && !in_array($order->status, [Order::$paid, Order::$paying], true)) {
+                $order->update(['status' => Order::$fail]);
+            }
 
+            return $order;
+        }
+
+        try {
+            if (!empty($tamaraPaymentOrderId)) {
                 $tamaraClient = $this->getTamaraClient();
-                $authedResponse = $tamaraClient->authoriseOrder($authOrder);
+                $localOrderId = null;
+                $tamaraOrderStatus = null;
 
-                $tamaraOrderStatus = $authedResponse->getOrderStatus(); // authorised, approved, captured, fully_captured, declined, refunded, failed, expired
-
-                if ($tamaraOrderStatus == "authorised") {
-                    $order->update([
-                        'status' => Order::$paying,
-                    ]);
-                } else {
-                    $order->update([
-                        'status' => Order::$fail,
+                // Prefer API order details (works without browser session / for notify).
+                try {
+                    $orderDetails = $tamaraClient->getOrder(new GetOrderRequest((string) $tamaraPaymentOrderId));
+                    if (method_exists($orderDetails, 'isSuccess') && $orderDetails->isSuccess()) {
+                        $localOrderId = $orderDetails->getOrderReferenceId();
+                        $tamaraOrderStatus = $orderDetails->getStatus();
+                    }
+                } catch (\Throwable $e) {
+                    \Log::warning('Tamara getOrder failed during verify', [
+                        'tamara_order_id' => $tamaraPaymentOrderId,
+                        'message' => $e->getMessage(),
                     ]);
                 }
+
+                if (empty($localOrderId)) {
+                    $localOrderId = $request->get('orderReferenceId')
+                        ?? $request->input('order_reference_id')
+                        ?? $sessionOrderId;
+                }
+
+                // Session Tamara id match is optional fallback only.
+                if (
+                    empty($localOrderId)
+                    && !empty($checkoutResponseTamaraOrderId)
+                    && (string) $checkoutResponseTamaraOrderId === (string) $tamaraPaymentOrderId
+                ) {
+                    $localOrderId = $sessionOrderId;
+                }
+
+                $order = $this->resolveLocalOrder($localOrderId, $sessionOrderId, null);
+
+                if (!empty($order)) {
+                    if ($order->status === Order::$paid) {
+                        $this->ensureBuyerLoggedIn($order);
+                        return $order;
+                    }
+
+                    // Authorise when still in new/approved; ignore errors if already captured.
+                    if (empty($tamaraOrderStatus) || in_array(strtolower((string) $tamaraOrderStatus), ['new', 'approved', 'authorised', 'authorized'], true)) {
+                        try {
+                            $authedResponse = $tamaraClient->authoriseOrder(new AuthoriseOrderRequest((string) $tamaraPaymentOrderId));
+                            if (method_exists($authedResponse, 'getOrderStatus') && $authedResponse->getOrderStatus()) {
+                                $tamaraOrderStatus = $authedResponse->getOrderStatus();
+                            }
+                        } catch (\Throwable $e) {
+                            \Log::warning('Tamara authoriseOrder failed during verify', [
+                                'tamara_order_id' => $tamaraPaymentOrderId,
+                                'local_order_id' => $order->id,
+                                'message' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+
+                    $normalizedStatus = strtolower((string) $tamaraOrderStatus);
+
+                    if (in_array($normalizedStatus, $paidStatuses, true)) {
+                        $this->ensureBuyerLoggedIn($order);
+                        $order->update(['status' => Order::$paying]);
+                    } elseif (!in_array($callbackStatus, ['notify', 'success'], true)) {
+                        $order->update(['status' => Order::$fail]);
+                    } else {
+                        \Log::error('Tamara verify: unpaid status after API check', [
+                            'local_order_id' => $order->id,
+                            'tamara_status' => $tamaraOrderStatus,
+                            'callback_status' => $callbackStatus,
+                        ]);
+                    }
+                } else {
+                    \Log::error('Tamara verify: local order not found', [
+                        'tamara_order_id' => $tamaraPaymentOrderId,
+                        'resolved_reference' => $localOrderId,
+                        'session_order_id' => $sessionOrderId,
+                    ]);
+                }
+            } elseif (!empty($sessionOrderId) && Auth::check()) {
+                // Legacy fallback when gateway id missing.
+                $order = Order::where('id', $sessionOrderId)
+                    ->where('user_id', Auth::id())
+                    ->first();
+
+                if (!empty($order) && !in_array($order->status, [Order::$paid, Order::$paying], true)) {
+                    $order->update(['status' => Order::$fail]);
+                }
             }
+        } catch (\Throwable $e) {
+            \Log::error('Tamara verify exception', [
+                'message' => $e->getMessage(),
+                'tamara_order_id' => $tamaraPaymentOrderId,
+            ]);
         }
 
         return $order;
+    }
+
+    private function resolveLocalOrder($referenceId, $sessionOrderId, $userId = null): ?Order
+    {
+        $orderId = null;
+
+        if (!empty($referenceId) && is_numeric($referenceId)) {
+            $orderId = (int) $referenceId;
+        } elseif (!empty($sessionOrderId) && is_numeric($sessionOrderId)) {
+            $orderId = (int) $sessionOrderId;
+        }
+
+        if (empty($orderId)) {
+            return null;
+        }
+
+        $query = Order::query()->where('id', $orderId);
+
+        if (!empty($userId)) {
+            $query->where('user_id', $userId);
+        }
+
+        return $query->first();
+    }
+
+    private function ensureBuyerLoggedIn(Order $order): void
+    {
+        if (!Auth::check() || (int) Auth::id() !== (int) $order->user_id) {
+            Auth::loginUsingId($order->user_id);
+        }
     }
 }

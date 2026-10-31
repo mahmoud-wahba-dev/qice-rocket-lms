@@ -7,6 +7,7 @@ use App\Models\PaymentChannel;
 use App\PaymentChannels\BasePaymentChannel;
 use App\PaymentChannels\IChannel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Tabby\Services\TabbyService;
 use Tabby\Models\Buyer as TabbyBuyer;
@@ -225,43 +226,83 @@ class Channel extends BasePaymentChannel implements IChannel
 
     public function verify(Request $request)
     {
-        $status = $request->get('status');
+        $callbackStatus = strtolower((string) $request->get('status', ''));
         $paymentId = $request->get('payment_id');
 
-        $user = auth()->user();
         $sessionOrderId = session()->get($this->order_session_key, null);
         session()->forget($this->order_session_key);
 
         $order = null;
 
-        if (!empty($paymentId)) {
-            $tabbyService = new TabbyService(
-                merchantCode: $this->merchantCode,
-                publicKey: $this->publicKey,
-                secretKey: $this->secretKey,
-                currency: $this->currency,
-            );
+        try {
+            if (!empty($paymentId)) {
+                $tabbyService = new TabbyService(
+                    merchantCode: $this->merchantCode,
+                    publicKey: $this->publicKey,
+                    secretKey: $this->secretKey,
+                    currency: $this->currency,
+                );
 
-            $payment = $tabbyService->retrievePayment($paymentId);
-            $paymentOrder = $payment->getOrder();
+                $payment = $tabbyService->retrievePayment($paymentId);
+                $paymentOrder = $payment->getOrder();
+                $paymentOrderId = str_replace('order-', '', (string) $paymentOrder->getReferenceId());
 
-            $paymentOrderId = str_replace('order-', '', $paymentOrder->getReferenceId());
+                $order = Order::where('id', $paymentOrderId)->first();
 
-            $order = Order::where('id', $paymentOrderId)
-                ->where('user_id', $user->id)
-                ->first();
+                if (empty($order) && !empty($sessionOrderId)) {
+                    $order = Order::where('id', $sessionOrderId)->first();
+                }
 
-            if (!empty($order) and in_array($payment->getStatus(), ["AUTHORIZED", "CLOSED"])) {
-                $order->update([
-                    'status' => Order::$paying,
-                ]);
-            } else {
-                $order->update([
-                    'status' => Order::$fail,
-                ]);
+                if (!empty($order)) {
+                    if ($order->status === Order::$paid) {
+                        $this->ensureBuyerLoggedIn($order);
+                        return $order;
+                    }
+
+                    if (in_array($payment->getStatus(), ['AUTHORIZED', 'CLOSED'], true)) {
+                        $this->ensureBuyerLoggedIn($order);
+                        $order->update(['status' => Order::$paying]);
+                    } else {
+                        if (!in_array($order->status, [Order::$paid, Order::$paying], true)) {
+                            $order->update(['status' => Order::$fail]);
+                        }
+                        \Log::error('Tabby verify: unpaid payment status', [
+                            'local_order_id' => $order->id,
+                            'tabby_status' => $payment->getStatus(),
+                            'callback_status' => $callbackStatus,
+                        ]);
+                    }
+                } else {
+                    \Log::error('Tabby verify: local order not found', [
+                        'payment_id' => $paymentId,
+                        'reference_id' => $paymentOrderId,
+                        'session_order_id' => $sessionOrderId,
+                    ]);
+                }
+            } elseif (!empty($sessionOrderId) && Auth::check()) {
+                $order = Order::where('id', $sessionOrderId)
+                    ->where('user_id', Auth::id())
+                    ->first();
+
+                if (!empty($order) && in_array($callbackStatus, ['cancel', 'failure', 'failed'], true)
+                    && !in_array($order->status, [Order::$paid, Order::$paying], true)) {
+                    $order->update(['status' => Order::$fail]);
+                }
             }
+        } catch (\Throwable $e) {
+            \Log::error('Tabby verify exception', [
+                'message' => $e->getMessage(),
+                'payment_id' => $paymentId,
+            ]);
         }
 
         return $order;
+    }
+
+    private function ensureBuyerLoggedIn(Order $order): void
+    {
+        if (!Auth::check() || (int) Auth::id() !== (int) $order->user_id) {
+            Auth::loginUsingId($order->user_id);
+        }
     }
 }

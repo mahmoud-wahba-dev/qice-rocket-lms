@@ -25,7 +25,7 @@
                             <div class="d-flex align-items-center gap-16 mt-16">
                                 <a href="academyapp://payment-success" class="btn btn-lg btn-outline-primary d-flex d-sm-none">{{ trans('update.redirect_to_app') }}</a>
 
-                                <a href="/panel" class="btn btn-primary btn-lg">{{ trans('public.my_panel') }}</a>
+                                <a href="{{ panelV1HomeUrl(auth()->user()) }}" class="btn btn-primary btn-lg">{{ trans('public.my_panel') }}</a>
                             </div>
                         @else
                             @php
@@ -41,7 +41,7 @@
                                 <p class="font-14 text-gray-500 mt-4">{{ trans('update.offline_payment_submitted_hint') }}</p>
 
                                 <div class="d-flex align-items-center gap-16 mt-16">
-                                    <a href="/panel" class="btn btn-primary btn-lg">{{ trans('public.my_panel') }}</a>
+                                    <a href="{{ panelV1HomeUrl(auth()->user()) }}" class="btn btn-primary btn-lg">{{ trans('public.my_panel') }}</a>
                                 </div>
                             @else
                             <div class="system-status-page-image">
@@ -55,7 +55,7 @@
                             <div class="d-flex align-items-center gap-16 mt-16">
                                 <a href="academyapp://payment-failed" class="btn btn-lg btn-outline-primary d-flex d-sm-none">{{ trans('update.redirect_to_app') }}</a>
 
-                                <a href="/panel" class="btn btn-primary btn-lg">{{ trans('public.my_panel') }}</a>
+                                <a href="{{ panelV1HomeUrl(auth()->user()) }}" class="btn btn-primary btn-lg">{{ trans('public.my_panel') }}</a>
                             </div>
                             @endif
                         @endif

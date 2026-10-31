@@ -7,6 +7,7 @@ use App\Models\PaymentChannel;
 use App\PaymentChannels\BasePaymentChannel;
 use App\PaymentChannels\IChannel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Stripe\Checkout\Session;
 use Stripe\Stripe;
 
@@ -56,13 +57,14 @@ class Channel extends BasePaymentChannel implements IChannel
                 'quantity' => 1,
             ]],
             'mode' => 'payment',
+            'client_reference_id' => (string) $order->id,
+            'metadata' => [
+                'order_id' => (string) $order->id,
+                'user_id' => (string) $order->user_id,
+            ],
             'success_url' => $this->makeCallbackUrl('success'),
             'cancel_url' => $this->makeCallbackUrl('cancel'),
         ]);
-
-        /*$order->update([
-            'reference_id' => $checkout->id,
-        ]);*/
 
         session()->put($this->order_session_key, $order->id);
 
@@ -80,38 +82,70 @@ class Channel extends BasePaymentChannel implements IChannel
 
     public function verify(Request $request)
     {
-        $data = $request->all();
-        $status = $data['status'];
-
-        $order_id = session()->get($this->order_session_key, null);
+        $status = $request->get('status');
+        $sessionOrderId = session()->get($this->order_session_key, null);
         session()->forget($this->order_session_key);
 
-        $user = auth()->user();
+        $order = null;
 
-        $order = Order::where('id', $order_id)
-            ->where('user_id', $user->id)
-            ->first();
+        try {
+            if (!empty($request->session_id)) {
+                Stripe::setApiKey($this->api_secret);
+                $session = Session::retrieve($request->session_id);
 
-        if ($status == 'success' and !empty($request->session_id) and !empty($order)) {
-            Stripe::setApiKey($this->api_secret);
+                $orderId = $session->metadata->order_id
+                    ?? $session->client_reference_id
+                    ?? $sessionOrderId;
 
-            $session = Session::retrieve($request->session_id);
+                if (!empty($orderId)) {
+                    $order = Order::where('id', $orderId)->first();
+                }
 
-            if (!empty($session) and $session->payment_status == 'paid') {
-                $order->update([
-                    'status' => Order::$paying
-                ]);
+                if (!empty($order)) {
+                    if ($order->status === Order::$paid) {
+                        $this->ensureBuyerLoggedIn($order);
+                        return $order;
+                    }
 
-                return $order;
+                    if ($status === 'success' && $session->payment_status === 'paid') {
+                        $this->ensureBuyerLoggedIn($order);
+                        $order->update(['status' => Order::$paying]);
+                        return $order;
+                    }
+
+                    if (!in_array($order->status, [Order::$paid, Order::$paying], true)) {
+                        $order->update(['status' => Order::$fail]);
+                    }
+                } else {
+                    \Log::error('Stripe verify: local order not found', [
+                        'session_id' => $request->session_id,
+                        'resolved_order_id' => $orderId ?? null,
+                        'session_order_id' => $sessionOrderId,
+                    ]);
+                }
+            } elseif (!empty($sessionOrderId) && Auth::check()) {
+                $order = Order::where('id', $sessionOrderId)
+                    ->where('user_id', Auth::id())
+                    ->first();
+
+                if (!empty($order) && !in_array($order->status, [Order::$paid, Order::$paying], true)) {
+                    $order->update(['status' => Order::$fail]);
+                }
             }
-        }
-
-        // is fail
-
-        if (!empty($order)) {
-            $order->update(['status' => Order::$fail]);
+        } catch (\Throwable $e) {
+            \Log::error('Stripe verify exception', [
+                'message' => $e->getMessage(),
+                'session_id' => $request->session_id,
+            ]);
         }
 
         return $order;
+    }
+
+    private function ensureBuyerLoggedIn(Order $order): void
+    {
+        if (!Auth::check() || (int) Auth::id() !== (int) $order->user_id) {
+            Auth::loginUsingId($order->user_id);
+        }
     }
 }

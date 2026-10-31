@@ -26,6 +26,11 @@ class RecoverPaidOrders extends Command
         $userId = $this->option('user');
         $dryRun = $this->option('dry-run') || !$this->option('force');
 
+        $appUrl = (string) config('app.url');
+        if (str_contains($appUrl, '.local') || str_contains($appUrl, 'localhost')) {
+            $this->warn("APP_URL is '{$appUrl}' — Tamara/Tabby callbacks will use this host. Production must be https://training.qiec.sa (then config:clear).");
+        }
+
         $query = Order::query()
             ->whereNotExists(function ($q) {
                 $q->select(DB::raw(1))

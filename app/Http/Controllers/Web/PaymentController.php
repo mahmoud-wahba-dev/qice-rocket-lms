@@ -222,6 +222,11 @@ class PaymentController extends Controller
             return $this->paymentOrderAfterVerify($order);
 
         } catch (\Exception $exception) {
+            \Log::error('paymentVerify failed', [
+                'gateway' => $gateway,
+                'message' => $exception->getMessage(),
+            ]);
+
             $toastData = [
                 'title' => trans('cart.fail_purchase'),
                 'msg' => trans('cart.gateway_error'),
@@ -237,7 +242,14 @@ class PaymentController extends Controller
         if (!empty($order)) {
 
             if ($order->status == Order::$paying) {
-                $this->setPaymentAccounting($order);
+                // Idempotent: notify + browser return must not create duplicate sales.
+                if (!Sale::where('order_id', $order->id)->exists()) {
+                    $this->setPaymentAccounting($order);
+                } else {
+                    \Log::info('paymentOrderAfterVerify: sale already exists, skipping accounting', [
+                        'order_id' => $order->id,
+                    ]);
+                }
 
                 $order->update(['status' => Order::$paid]);
             } else {
@@ -258,6 +270,8 @@ class PaymentController extends Controller
 
             return redirect("/payments/status?t={$order->id}");
         } else {
+            \Log::error('paymentOrderAfterVerify: empty order after gateway verify');
+
             $toastData = [
                 'title' => trans('cart.fail_purchase'),
                 'msg' => trans('cart.gateway_error'),
@@ -270,6 +284,14 @@ class PaymentController extends Controller
 
     public function setPaymentAccounting($order, $type = null)
     {
+        // Guard against double enrollment (webhook + browser, or recover --force twice).
+        if (!$order->is_charge_account && Sale::where('order_id', $order->id)->exists()) {
+            \Log::info('setPaymentAccounting: skipped, sale already exists', [
+                'order_id' => $order->id,
+            ]);
+            return;
+        }
+
         $cashbackAccounting = new CashbackAccounting();
 
         if ($order->is_charge_account) {
@@ -387,7 +409,7 @@ class PaymentController extends Controller
             return view('design_1.web.cart.payment.status.index', $data);
         }
 
-        return redirect('/panel');
+        return redirect(panelV1HomeUrl());
     }
 
 }
