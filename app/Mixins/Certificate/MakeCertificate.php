@@ -318,6 +318,11 @@ class MakeCertificate
         $defaultAccreditedByAr = (string) ($cachedDefaults['accredited_by_ar'] ?? $settings['accredited_by_ar'] ?? 'مركز الجودة والتميز');
         $defaultAccreditedByEn = (string) ($cachedDefaults['accredited_by_en'] ?? $settings['accredited_by_en'] ?? 'Quality & Excellence Center');
 
+        // Course-level accreditation (set in create-course wizard) overrides global defaults.
+        $courseAcc = trim((string) ($course->certificate_accreditation_number ?? ''));
+        $courseAccByAr = trim((string) ($course->certificate_accredited_by_ar ?? ''));
+        $courseAccByEn = trim((string) ($course->certificate_accredited_by_en ?? ''));
+
         $data = [
             'certificate_number' => self::formatCertificateNumber((int) $certificate->id),
             'trainee_name' => $traineeName,
@@ -331,9 +336,9 @@ class MakeCertificate
             'start_date' => $startDate,
             'end_date' => $endDate,
             'issue_date' => $issueDate,
-            'accreditation_number' => $defaultAcc,
-            'accredited_by_ar' => $defaultAccreditedByAr,
-            'accredited_by_en' => $defaultAccreditedByEn,
+            'accreditation_number' => $courseAcc !== '' ? $courseAcc : $defaultAcc,
+            'accredited_by_ar' => $courseAccByAr !== '' ? $courseAccByAr : $defaultAccreditedByAr,
+            'accredited_by_en' => $courseAccByEn !== '' ? $courseAccByEn : $defaultAccreditedByEn,
             'officer_name' => $defaultOfficer,
             'director_name' => $defaultDirector,
             'certificate_id' => (int) $certificate->id,

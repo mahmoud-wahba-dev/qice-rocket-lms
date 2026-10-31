@@ -299,6 +299,9 @@ class CourseEditWizardCycleTest extends TestCase
             'certificate' => 1,
             'certificate_title_ar' => 'دورة الشهادة عربي',
             'certificate_title_en' => 'Certificate Course EN',
+            'certificate_accredited_by_ar' => 'مركز الجودة والتميز',
+            'certificate_accredited_by_en' => 'Quality & Excellence Center',
+            'certificate_accreditation_number' => 'QIEC-ACC-C' . $course->id,
         ], $teacher));
 
         $this->assertTrue($response->getData(true)['ok']);
@@ -422,6 +425,9 @@ class CourseEditWizardCycleTest extends TestCase
             'certificate' => 1,
             'certificate_title_ar' => 'عنوان الشهادة عربي',
             'certificate_title_en' => 'Certificate Title EN',
+            'certificate_accredited_by_ar' => 'مركز الجودة والتميز',
+            'certificate_accredited_by_en' => 'Quality & Excellence Center',
+            'certificate_accreditation_number' => 'QIEC-ACC-F' . $course->id,
         ], $teacher));
         $this->assertSame(4, $r3->getData(true)['next_step']);
 
@@ -583,6 +589,9 @@ class CourseEditWizardCycleTest extends TestCase
                 'certificate' => 1,
                 'certificate_title_ar' => 'شهادة إدارة عربي',
                 'certificate_title_en' => 'Admin Certificate EN',
+                'certificate_accredited_by_ar' => 'مركز الجودة والتميز',
+                'certificate_accredited_by_en' => 'Quality & Excellence Center',
+                'certificate_accreditation_number' => 'QIEC-ACC-A' . $course->id,
             ],
             $admin
         ), $course->id);

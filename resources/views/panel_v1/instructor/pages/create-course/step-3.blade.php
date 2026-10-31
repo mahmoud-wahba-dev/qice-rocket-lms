@@ -68,6 +68,9 @@
     $certOn = old('certificate', !empty($draftCertificate) ? '1' : '0') == '1';
     $certTitleAr = old('certificate_title_ar', $draftCertificateTitleAr ?? ($draftTitle ?? ''));
     $certTitleEn = old('certificate_title_en', $draftCertificateTitleEn ?? '');
+    $certAccByAr = old('certificate_accredited_by_ar', $draftCertificateAccreditedByAr ?? 'مركز الجودة والتميز');
+    $certAccByEn = old('certificate_accredited_by_en', $draftCertificateAccreditedByEn ?? 'Quality & Excellence Center');
+    $certAccNo = old('certificate_accreditation_number', $draftCertificateAccreditationNumber ?? '');
     $input = 'input input-bordered w-full h-12 sm:h-14 rounded-10px border-d9 font-medium text-15px sm:text-16px text-black focus:outline-none focus:border-primary';
 @endphp
 <section class="{{ $card }}" data-certificate-section>
@@ -92,7 +95,7 @@
     </div>
     <div class="mt-5 space-y-4 {{ $certOn ? '' : 'hidden' }}" data-certificate-titles>
         <p class="font-medium text-13px sm:text-14px text-gray text-start">
-            أدخل اسم الدورة كما سيظهر على الشهادة بالعربية والإنجليزية.
+            بيانات الشهادة المطبوعة لهذه الدورة. رقم الشهادة (مثل QEC-0000-047) يُصدر تلقائيًا وبشكل فريد لكل متدرب.
         </p>
         <div>
             <label class="block font-semibold text-14px sm:text-15px text-primary mb-2 text-start">اسم الدورة (عربي)</label>
@@ -111,6 +114,36 @@
                 placeholder="e.g. Total Quality Management" dir="ltr" maxlength="255"
                 data-certificate-title-en>
             @error('certificate_title_en')
+                <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+            @enderror
+        </div>
+        <div>
+            <label class="block font-semibold text-14px sm:text-15px text-primary mb-2 text-start">جهة الاعتماد (عربي)</label>
+            <input type="text" name="certificate_accredited_by_ar" value="{{ $certAccByAr }}"
+                class="{{ $input }} {{ $errors->has('certificate_accredited_by_ar') ? 'border-[#FECACA]' : '' }}"
+                placeholder="مركز الجودة والتميز" dir="rtl" maxlength="255">
+            <p class="mt-1 font-medium text-12px text-gray text-start">يظهر بعد: الدورة معتمدة من</p>
+            @error('certificate_accredited_by_ar')
+                <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+            @enderror
+        </div>
+        <div>
+            <label class="block font-semibold text-14px sm:text-15px text-primary mb-2 text-start">Accredited by (English)</label>
+            <input type="text" name="certificate_accredited_by_en" value="{{ $certAccByEn }}"
+                class="{{ $input }} {{ $errors->has('certificate_accredited_by_en') ? 'border-[#FECACA]' : '' }}"
+                placeholder="Quality & Excellence Center" dir="ltr" maxlength="255">
+            <p class="mt-1 font-medium text-12px text-gray text-start">Appears after: Accreditation By</p>
+            @error('certificate_accredited_by_en')
+                <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
+            @enderror
+        </div>
+        <div>
+            <label class="block font-semibold text-14px sm:text-15px text-primary mb-2 text-start">رقم الاعتماد *</label>
+            <input type="text" name="certificate_accreditation_number" value="{{ $certAccNo }}"
+                class="{{ $input }} {{ $errors->has('certificate_accreditation_number') ? 'border-[#FECACA]' : '' }}"
+                placeholder="مثال: QIEC-ACC-001" dir="ltr" maxlength="120">
+            <p class="mt-1 font-medium text-12px text-gray text-start">يجب أن يكون فريدًا لكل دورة — يظهر كـ رقم الاعتماد / Accreditation Number</p>
+            @error('certificate_accreditation_number')
                 <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
             @enderror
         </div>

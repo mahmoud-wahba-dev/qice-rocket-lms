@@ -83,6 +83,7 @@ class CertificateBilingualDataTest extends TestCase
         $course = $this->seedCourse($teacher);
         $ctrl = new InstructorController();
 
+        $accNo = 'QIEC-ACC-T' . $course->id;
         $response = $ctrl->storeCourse($this->ajaxPost('/v1/instructor/courses/store', [
             'wizard_step' => 3,
             'draft_id' => $course->id,
@@ -90,6 +91,9 @@ class CertificateBilingualDataTest extends TestCase
             'certificate' => 1,
             'certificate_title_ar' => 'إدارة الجودة الشاملة',
             'certificate_title_en' => 'Total Quality Management',
+            'certificate_accredited_by_ar' => 'مركز الجودة والتميز',
+            'certificate_accredited_by_en' => 'Quality & Excellence Center',
+            'certificate_accreditation_number' => $accNo,
         ], $teacher));
 
         $this->assertTrue($response->getData(true)['ok']);
@@ -97,6 +101,42 @@ class CertificateBilingualDataTest extends TestCase
         $this->assertTrue((bool) $fresh->certificate);
         $this->assertSame('إدارة الجودة الشاملة', (string) optional($fresh->translate('ar'))->title);
         $this->assertSame('Total Quality Management', (string) optional($fresh->translate('en'))->title);
+        $this->assertSame('مركز الجودة والتميز', (string) $fresh->certificate_accredited_by_ar);
+        $this->assertSame('Quality & Excellence Center', (string) $fresh->certificate_accredited_by_en);
+        $this->assertSame($accNo, (string) $fresh->certificate_accreditation_number);
+    }
+
+    public function test_wizard_step3_rejects_duplicate_accreditation_number(): void
+    {
+        $teacher = $this->makeTeacher();
+        $courseA = $this->seedCourse($teacher);
+        $courseB = $this->seedCourse($teacher);
+        $ctrl = new InstructorController();
+
+        $ctrl->storeCourse($this->ajaxPost('/v1/instructor/courses/store', [
+            'wizard_step' => 3,
+            'draft_id' => $courseA->id,
+            'go_next' => 4,
+            'certificate' => 1,
+            'certificate_title_ar' => 'دورة أ',
+            'certificate_title_en' => 'Course A',
+            'certificate_accredited_by_ar' => 'مركز الجودة والتميز',
+            'certificate_accredited_by_en' => 'Quality & Excellence Center',
+            'certificate_accreditation_number' => 'QIEC-ACC-DUP-1',
+        ], $teacher));
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $ctrl->storeCourse($this->ajaxPost('/v1/instructor/courses/store', [
+            'wizard_step' => 3,
+            'draft_id' => $courseB->id,
+            'go_next' => 4,
+            'certificate' => 1,
+            'certificate_title_ar' => 'دورة ب',
+            'certificate_title_en' => 'Course B',
+            'certificate_accredited_by_ar' => 'مركز الجودة والتميز',
+            'certificate_accredited_by_en' => 'Quality & Excellence Center',
+            'certificate_accreditation_number' => 'QIEC-ACC-DUP-1',
+        ], $teacher));
     }
 
     public function test_wizard_step3_requires_titles_when_certificate_enabled(): void
@@ -195,6 +235,11 @@ class CertificateBilingualDataTest extends TestCase
         $trEn->title = 'Quality Course';
         $trEn->save();
 
+        $course->certificate_accredited_by_ar = 'مركز الجودة والتميز';
+        $course->certificate_accredited_by_en = 'Quality & Excellence Center';
+        $course->certificate_accreditation_number = 'QIEC-ACC-META-' . $course->id;
+        $course->save();
+
         $certificate = Certificate::create([
             'type' => 'course',
             'student_id' => $student->id,
@@ -209,5 +254,8 @@ class CertificateBilingualDataTest extends TestCase
         $this->assertSame('Sara Ahmed', $data['trainee_name_en']);
         $this->assertSame('دورة الجودة', $data['course_title_ar']);
         $this->assertSame('Quality Course', $data['course_title_en']);
+        $this->assertSame('مركز الجودة والتميز', $data['accredited_by_ar']);
+        $this->assertSame('Quality & Excellence Center', $data['accredited_by_en']);
+        $this->assertSame('QIEC-ACC-META-' . $course->id, $data['accreditation_number']);
     }
 }

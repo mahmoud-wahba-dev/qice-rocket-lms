@@ -33,6 +33,9 @@ trait CourseWizardTrait
             'certificate' => 'الشهادة',
             'certificate_title_ar' => 'اسم الدورة على الشهادة (عربي)',
             'certificate_title_en' => 'اسم الدورة على الشهادة (English)',
+            'certificate_accredited_by_ar' => 'جهة الاعتماد (عربي)',
+            'certificate_accredited_by_en' => 'جهة الاعتماد (English)',
+            'certificate_accreditation_number' => 'رقم الاعتماد',
             'price' => 'السعر',
             'capacity' => 'سعة الطلاب',
             'access_duration' => 'مدة الوصول',
@@ -420,6 +423,9 @@ trait CourseWizardTrait
             'draftCertificate' => (bool) ($draft->certificate ?? false),
             'draftCertificateTitleAr' => $draftCertificateTitleAr,
             'draftCertificateTitleEn' => $draftCertificateTitleEn,
+            'draftCertificateAccreditedByAr' => $draft ? trim((string) ($draft->certificate_accredited_by_ar ?? '')) : '',
+            'draftCertificateAccreditedByEn' => $draft ? trim((string) ($draft->certificate_accredited_by_en ?? '')) : '',
+            'draftCertificateAccreditationNumber' => $draft ? trim((string) ($draft->certificate_accreditation_number ?? '')) : '',
             'draftAccessDays' => $draft->access_days ?? null,
             'courseFaqs' => $this->wizardFaqsForView($draft),
         ];
@@ -697,12 +703,24 @@ trait CourseWizardTrait
         if (!empty($draft) && $step === 3) {
             $certOn = $request->boolean('certificate');
             $titleRule = ($soft || !$certOn) ? 'nullable' : 'required';
+            $accUnique = \Illuminate\Validation\Rule::unique('webinars', 'certificate_accreditation_number')
+                ->ignore($draft->id);
             $request->validate([
                 'quiz_id' => 'nullable|exists:quizzes,id',
                 'certificate' => 'nullable|boolean',
                 'certificate_title_ar' => $titleRule . '|string|max:255',
                 'certificate_title_en' => $titleRule . '|string|max:255',
-            ], $this->courseWizardMessages(), $attrs);
+                'certificate_accredited_by_ar' => $titleRule . '|string|max:255',
+                'certificate_accredited_by_en' => $titleRule . '|string|max:255',
+                'certificate_accreditation_number' => array_values(array_filter([
+                    $titleRule,
+                    'string',
+                    'max:120',
+                    $certOn && !$soft ? $accUnique : null,
+                ])),
+            ], array_merge($this->courseWizardMessages(), [
+                'certificate_accreditation_number.unique' => 'رقم الاعتماد مستخدم لدورة أخرى — يجب أن يكون فريدًا.',
+            ]), $attrs);
 
             if ($request->filled('quiz_id')) {
                 $quizQ = \App\Models\Quiz::where('id', $request->input('quiz_id'));
@@ -715,6 +733,15 @@ trait CourseWizardTrait
             }
 
             $draft->certificate = $certOn;
+            if ($certOn) {
+                $draft->certificate_accredited_by_ar = trim((string) $request->input('certificate_accredited_by_ar', '')) ?: null;
+                $draft->certificate_accredited_by_en = trim((string) $request->input('certificate_accredited_by_en', '')) ?: null;
+                $draft->certificate_accreditation_number = trim((string) $request->input('certificate_accreditation_number', '')) ?: null;
+            } else {
+                $draft->certificate_accredited_by_ar = null;
+                $draft->certificate_accredited_by_en = null;
+                $draft->certificate_accreditation_number = null;
+            }
             $draft->updated_at = time();
             $draft->save();
 

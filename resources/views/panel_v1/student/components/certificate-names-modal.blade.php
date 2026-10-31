@@ -21,7 +21,7 @@
     <div class="modal-dialog overlay-open:opacity-100 w-full max-w-md max-h-[90vh] px-4 my-6">
         <div class="modal-content relative rounded-20px border border-d9 bg-white p-0 overflow-hidden shadow-xl">
             <button type="button"
-                class="absolute top-4 end-4 btn btn-sm btn-circle btn-ghost text-white/90 hover:bg-white/10 z-10"
+                class="absolute top-4 end-4 bg-primary btn btn-sm btn-circle btn-ghost text-white/90 hover:bg-white/10 z-10"
                 aria-label="إغلاق" data-overlay="#student-certificate-names-modal">
                 <span class="icon-[tabler--x] size-5"></span>
             </button>
