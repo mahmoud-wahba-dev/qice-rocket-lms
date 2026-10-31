@@ -230,7 +230,7 @@
                                             </li>
                                             <li>
                                                 <a class="dropdown-item flex items-center gap-3 rounded-[8px] px-3 py-2.5 font-semibold text-[14px] text-primary hover:bg-[#F3F4F6] transition"
-                                                    href="{{ url('/panel/courses/' . $course['webinarId'] . '/sale/' . $course['saleId'] . '/invoice') }}"
+                                                    href="{{ route('panel.v1.student.invoice', ['webinarId' => $course['webinarId'], 'saleId' => $course['saleId']]) }}"
                                                     target="_blank" rel="noopener noreferrer">
                                                     <span class="icon-[tabler--receipt] size-4 text-[#C9A46C] shrink-0" aria-hidden="true"></span>
                                                     <span>

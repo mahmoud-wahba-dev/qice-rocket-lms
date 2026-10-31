@@ -16,6 +16,11 @@ use App\Http\Controllers\PanelV1\OrganizationController;
 |
 */
 
+// Safety: collapse accidental double /v1 prefix (e.g. /v1/v1/student/purchases).
+Route::get('/v1/v1/{path}', function (string $path) {
+    return redirect('/v1/' . ltrim($path, '/'), 301);
+})->where('path', '.*');
+
 Route::prefix('v1')->name('panel.v1.')->group(function () {
 
     // Exit "login as" — must NOT use `panel` (that middleware rejects admins).
@@ -33,6 +38,10 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
             Route::post('/student/notifications/mark-all-read', [StudentController::class, 'markAllNotificationsRead'])
                 ->name('student.notifications.mark-all-read');
             Route::get('/student/purchases', [StudentController::class, 'purchases'])->name('student.purchases');
+            Route::get('/student/courses/{webinarId}/sale/{saleId}/invoice', [StudentController::class, 'invoice'])
+                ->whereNumber('webinarId')
+                ->whereNumber('saleId')
+                ->name('student.invoice');
             Route::post('/student/payouts/request', [StudentController::class, 'requestPayout'])->name('student.payouts.request');
             Route::get('/student/support', [StudentController::class, 'support'])->name('student.support');
             Route::post('/student/support', [StudentController::class, 'storeSupport'])->name('student.support.store');

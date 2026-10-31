@@ -105,7 +105,7 @@ class Handler extends ExceptionHandler
                 $pageTitle = !empty($errorSettings['title']) ? $errorSettings['title'] : trans('update.error_page');
 
                 $data = [
-                    "pageTitle" => $pageTitle,
+                    'pageTitle' => $pageTitle,
                     'statusCode' => $statusCode,
                     'errorSettings' => $errorSettings,
                     'dontShowCookieSecurity' => true,
@@ -113,7 +113,8 @@ class Handler extends ExceptionHandler
 
                 $data = array_merge($data, $shareData);
 
-                return response()->view('design_1.web.errors.errors', $data, $statusCode);
+                // V1 landing shell (not legacy design_1 system status pages).
+                return response()->view('landing_v1.pages.errors', $data, $statusCode);
             }
         }
 

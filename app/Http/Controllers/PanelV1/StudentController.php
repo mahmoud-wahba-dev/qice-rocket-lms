@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Accounting;
 use App\Models\Certificate;
 use App\Models\Comment;
+use App\Models\Gift;
 use App\Models\Notification;
 use App\Models\NotificationStatus;
 use App\Models\Sale;
@@ -14,6 +15,7 @@ use App\Models\SupportConversation;
 use App\Models\SupportDepartment;
 use App\Models\Subscribe;
 use App\Models\SubscribeUse;
+use App\Models\Webinar;
 use App\Models\WebinarAssignment;
 use App\Models\WebinarAssignmentHistory;
 use App\Models\QuizzesResult;
@@ -552,6 +554,93 @@ class StudentController extends Controller
                 ->orderBy('id', 'desc')
                 ->limit(10)
                 ->get(),
+        ]);
+    }
+
+    public function invoice(Request $request, int $webinarId, int $saleId)
+    {
+        $user = $this->resolveStudent($request);
+
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        $giftIds = Gift::query()
+            ->where(function ($query) use ($user) {
+                $query->where('email', $user->email)
+                    ->orWhere('user_id', $user->id);
+            })
+            ->where('status', 'active')
+            ->where('webinar_id', $webinarId)
+            ->where(function ($query) {
+                $query->whereNull('date')
+                    ->orWhere('date', '<', time());
+            })
+            ->whereHas('sale')
+            ->pluck('id')
+            ->all();
+
+        $sale = Sale::query()
+            ->where('id', $saleId)
+            ->where(function ($query) use ($webinarId, $user, $giftIds) {
+                $query->where(function ($q) use ($webinarId, $user) {
+                    $q->where('buyer_id', $user->id)
+                        ->where('webinar_id', $webinarId);
+                });
+
+                if (!empty($giftIds)) {
+                    $query->orWhereIn('gift_id', $giftIds);
+                }
+            })
+            ->whereNull('refund_at')
+            ->with([
+                'order',
+                'buyer' => fn ($q) => $q->select('id', 'full_name', 'email', 'mobile'),
+            ])
+            ->first();
+
+        if (empty($sale)) {
+            abort(404);
+        }
+
+        if (!empty($sale->gift_id) && !empty($sale->gift)) {
+            $gift = $sale->gift;
+            $sale->gift_recipient = !empty($gift->receipt) ? $gift->receipt->full_name : $gift->name;
+        }
+
+        $webinar = Webinar::where('status', 'active')
+            ->where('id', $webinarId)
+            ->with([
+                'teacher' => fn ($q) => $q->select('id', 'full_name'),
+                'creator' => fn ($q) => $q->select('id', 'full_name'),
+                'webinarPartnerTeacher.teacher' => fn ($q) => $q->select('id', 'full_name'),
+            ])
+            ->first();
+
+        if (empty($webinar)) {
+            abort(404);
+        }
+
+        $partners = [];
+        foreach ($webinar->webinarPartnerTeacher ?? [] as $partner) {
+            if (!empty($partner->teacher->full_name)) {
+                $partners[] = $partner->teacher->full_name;
+            }
+        }
+
+        return view('panel_v1.admin.pages.sales.invoice', [
+            'pageTitle' => trans('webinars.invoice_page_title') ?: 'فاتورة الشراء',
+            'sale' => $sale,
+            'webinar' => $webinar,
+            'itemTitle' => $webinar->title ?? '—',
+            'itemId' => $webinar->id,
+            'itemType' => !empty($webinar->type) ? (trans('webinars.' . $webinar->type) ?: 'دورة') : 'دورة',
+            'teacherName' => $webinar->teacher->full_name ?? '—',
+            'creatorName' => $webinar->creator->full_name ?? null,
+            'partnerTeachers' => $partners,
+            'siteName' => getGeneralSettings('site_name') ?: 'QIEC',
+            'platformAddress' => getContactPageSettings('address') ?? '',
+            'backUrl' => route('panel.v1.student.purchases'),
         ]);
     }
 

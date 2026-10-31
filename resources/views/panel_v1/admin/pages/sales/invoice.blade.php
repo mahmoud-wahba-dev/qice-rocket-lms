@@ -327,8 +327,12 @@
         <button type="button" onclick="window.print()" class="btn btn-warning btn-icon icon-left">
             <i class="fas fa-print"></i> طباعة
         </button>
-        <a href="{{ route('panel.v1.admin.sales.home') }}" class="btn btn-primary">
-            العودة للمبيعات
+        @php
+            $invoiceBackUrl = $backUrl ?? route('panel.v1.admin.sales.home');
+            $invoiceBackLabel = !empty($backUrl) ? 'العودة لمشترياتي' : 'العودة للمبيعات';
+        @endphp
+        <a href="{{ $invoiceBackUrl }}" class="btn btn-primary">
+            {{ $invoiceBackLabel }}
         </a>
     </div>
 </div>

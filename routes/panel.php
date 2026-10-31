@@ -57,7 +57,12 @@ Route::group(['namespace' => 'Panel', 'prefix' => 'panel', 'middleware' => ['imp
 
         Route::get('/organization_classes', 'MyOrganizationCoursesController@index');
 
-        Route::get('/{id}/sale/{sale_id}/invoice', 'WebinarController@invoice');
+        Route::get('/{id}/sale/{sale_id}/invoice', function ($id, $sale_id) {
+            return redirect()->route('panel.v1.student.invoice', [
+                'webinarId' => $id,
+                'saleId' => $sale_id,
+            ], 301);
+        });
         Route::get('/{id}/getNextSessionInfo', 'WebinarController@getNextSessionInfo');
 
         Route::group(['prefix' => 'purchases'], function () {

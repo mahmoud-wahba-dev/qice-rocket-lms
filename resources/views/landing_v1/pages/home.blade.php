@@ -378,9 +378,9 @@
                     data-carousel='{ "loadingClasses": "opacity-0", "slidesQty": { "xs": 1, "sm": 2, "lg": 4 , "xl": 4 }, "isRTL": true ,"dotsItemClasses": "carousel-dot" ,"isInfiniteLoop": true }'
                     class="relative w-full">
                     <div class="carousel ">
-                        <div class="carousel-body  h-full opacity-0 overflow-visible gap-4 xl:gap-8">
+                        <div class="carousel-body h-full opacity-0 overflow-visible gap-4 xl:gap-8 items-stretch">
                             @forelse ($paidCourses as $course)
-                                <div class="carousel-slide">
+                                <div class="carousel-slide !h-auto self-stretch [&>*]:h-full">
                                     <x-landing_v1::course-card :title="$course->title" :description="$course->seo_description ?? ($course->summary ?? $course->description)" :teacherName="$course->teacher->full_name ?? ''"
                                         :teacherAvatar="!empty($course->teacher) ? $course->teacher->getAvatar() : null" :price="$course->price > 0 ? handlePrice($course->price) : 'مجاناً'" :image="$course->image_cover ??
                                             ($course->thumbnail ?? asset('assets/landing_v1/img/home/course.webp'))" :categoryTitle="$course->category->title ?? ''"

@@ -81,8 +81,9 @@
                                 <p class="font-semibold text-20px text-[#AAAAAA] mb-2">
                                     {{ date('j F Y', (int) $sale->created_at) }}</p>
                                 @if (!empty($saleWebinar))
-                                    <a href="{{ url('/panel/courses/' . $saleWebinar->id . '/sale/' . $sale->id . '/invoice') }}"
-                                        class="inline-flex items-center justify-center gap-2 font-bold text-20px text-primary hover:opacity-80 transition">
+                                    <a href="{{ route('panel.v1.student.invoice', ['webinarId' => $saleWebinar->id, 'saleId' => $sale->id]) }}"
+                                        class="inline-flex items-center justify-center gap-2 font-bold text-20px text-primary hover:opacity-80 transition"
+                                        target="_blank" rel="noopener noreferrer">
                                         <span class="icon-[tabler--file-invoice] size-5"></span>
                                         تحميل الفاتورة
                                     </a>
