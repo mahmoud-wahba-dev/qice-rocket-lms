@@ -63,9 +63,9 @@
                 <p class="link link-hover font-normal text-19px text-white">
                     للتسجيل والاستفسارات، يرجى التواصل معنا
                 </p>
-                <a href="mailto:contact@training.qiec.sa"
+                <a href="mailto:info@qiec.sa"
                     class="link link-hover font-normal text-19px text-white block mt-2">
-                    contact@training.qiec.sa
+                    info@qiec.sa
                 </a>
                 @include('landing_v1.components.social-links')
             </nav>
