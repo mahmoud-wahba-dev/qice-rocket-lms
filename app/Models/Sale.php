@@ -79,7 +79,7 @@ class Sale extends Model
     }
 
     /**
-     * Human-readable payment method (Tabby / Tamara / credit / subscribe / offline…).
+     * Human-readable payment method (Tabby / Tamara / Paymob / credit / subscribe / offline…).
      */
     public function resolvePaymentMethodLabel(): string
     {
@@ -92,7 +92,9 @@ class Sale extends Model
         }
 
         if (!empty($this->order_id)) {
-            $order = $this->relationLoaded('order') ? $this->order : $this->order()->with(['paymentChannel', 'offlinePayment'])->first();
+            $order = $this->relationLoaded('order')
+                ? $this->order
+                : $this->order()->with(['paymentChannel', 'offlinePayment'])->first();
             if (!empty($order) && method_exists($order, 'resolvePaymentMethodLabel')) {
                 return $order->resolvePaymentMethodLabel();
             }

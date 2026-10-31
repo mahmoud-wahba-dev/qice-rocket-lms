@@ -124,8 +124,28 @@ class RecoverPaidOrders extends Command
                 DB::transaction(function () use ($controller, $order, &$recovered) {
                     if (empty($order->payment_method)) {
                         $order->payment_method = Order::$paymentChannel;
-                        $order->save();
                     }
+
+                    // Ensure gateway label is recoverable after recover.
+                    $data = method_exists($order, 'decodedPaymentData') ? $order->decodedPaymentData() : [];
+                    if (empty($order->payment_channel_id) && !empty($data['gateway'])) {
+                        $channelId = PaymentChannel::query()
+                            ->whereRaw('LOWER(class_name) = ?', [strtolower((string) $data['gateway'])])
+                            ->value('id');
+                        if (!empty($channelId)) {
+                            $order->payment_channel_id = $channelId;
+                        }
+                    }
+                    if (empty($data['gateway']) && !empty($order->payment_channel_id)) {
+                        $ch = PaymentChannel::find($order->payment_channel_id);
+                        if ($ch) {
+                            $data['gateway'] = $ch->class_name;
+                            $data['channel_id'] = $ch->id;
+                            $data['title'] = $ch->title;
+                            $order->payment_data = json_encode($data);
+                        }
+                    }
+                    $order->save();
 
                     $controller->setPaymentAccounting($order);
                     $order->update(['status' => Order::$paid]);

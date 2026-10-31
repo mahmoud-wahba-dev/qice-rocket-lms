@@ -71,7 +71,7 @@ class Order extends Model
     }
 
     /**
-     * Human-readable payment method for admin dashboards (Tabby, Tamara, credit, offline, …).
+     * Human-readable payment method for admin dashboards (Tabby, Tamara, Paymob, credit, offline, …).
      */
     public function resolvePaymentMethodLabel(): string
     {
@@ -79,38 +79,48 @@ class Order extends Model
             return 'رصيد المحفظة';
         }
 
+        if ($this->relationLoaded('offlinePayment') ? !empty($this->offlinePayment) : $this->offlinePayment()->exists()) {
+            return 'تحويل بنكي';
+        }
+
+        $paymentData = $this->decodedPaymentData();
+
+        // 1) Linked payment channel row (Paymob / Tabby / Tamara).
+        $channel = null;
         if (!empty($this->payment_channel_id)) {
             $channel = $this->relationLoaded('paymentChannel')
                 ? $this->paymentChannel
                 : $this->paymentChannel()->first();
+        }
 
-            if (!empty($channel)) {
-                return $channel->title ?: $channel->class_name;
+        // 2) Resolve channel from payment_data when channel_id was not stored.
+        if (empty($channel)) {
+            $gatewayKey = $paymentData['gateway']
+                ?? $paymentData['title']
+                ?? $paymentData['class_name']
+                ?? null;
+            if (!empty($gatewayKey) && !in_array(strtolower((string) $gatewayKey), ['offline', 'credit', 'payment_channel'], true)) {
+                $channel = PaymentChannel::query()
+                    ->where(function ($q) use ($gatewayKey) {
+                        $q->where('class_name', $gatewayKey)
+                            ->orWhere('title', $gatewayKey)
+                            ->orWhereRaw('LOWER(class_name) = ?', [strtolower((string) $gatewayKey)])
+                            ->orWhereRaw('LOWER(title) = ?', [strtolower((string) $gatewayKey)]);
+                    })
+                    ->first();
             }
         }
 
-        $paymentData = null;
-        if (!empty($this->payment_data)) {
-            $decoded = json_decode($this->payment_data, true);
-            if (is_array($decoded)) {
-                $paymentData = $decoded;
-            }
+        if (!empty($channel)) {
+            return self::formatGatewayLabel($channel->title ?: $channel->class_name);
         }
 
         if (!empty($paymentData['gateway'])) {
-            $gateway = (string) $paymentData['gateway'];
-            if (strcasecmp($gateway, 'offline') === 0) {
-                return 'تحويل بنكي';
-            }
-            if (strcasecmp($gateway, 'credit') === 0) {
-                return 'رصيد المحفظة';
-            }
-
-            return $gateway;
+            return self::formatGatewayLabel((string) $paymentData['gateway']);
         }
 
-        if ($this->relationLoaded('offlinePayment') ? !empty($this->offlinePayment) : $this->offlinePayment()->exists()) {
-            return 'تحويل بنكي';
+        if (!empty($paymentData['title'])) {
+            return self::formatGatewayLabel((string) $paymentData['title']);
         }
 
         if ($this->payment_method === self::$paymentChannel) {
@@ -118,5 +128,35 @@ class Order extends Model
         }
 
         return '—';
+    }
+
+    public function decodedPaymentData(): array
+    {
+        if (empty($this->payment_data)) {
+            return [];
+        }
+
+        $decoded = json_decode($this->payment_data, true);
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * Normalize gateway names for admin UI (matches checkout labels).
+     */
+    public static function formatGatewayLabel(string $gateway): string
+    {
+        $key = strtolower(trim($gateway));
+
+        $map = [
+            'tamara' => 'Tamara',
+            'tabby' => 'Tabby',
+            'paymob' => 'Paymob',
+            'offline' => 'تحويل بنكي',
+            'credit' => 'رصيد المحفظة',
+            'payment_channel' => 'بوابة دفع',
+        ];
+
+        return $map[$key] ?? $gateway;
     }
 }

@@ -200,23 +200,23 @@ class PaymentController extends Controller
             $order = $channelManager->verify($request);
 
             if (!empty($order) && !empty($paymentChannel)) {
-                $updates = [];
-                if (empty($order->payment_channel_id)) {
-                    $updates['payment_channel_id'] = $paymentChannel->id;
+                $paymentData = [];
+                if (!empty($order->payment_data)) {
+                    $decoded = json_decode($order->payment_data, true);
+                    if (is_array($decoded)) {
+                        $paymentData = $decoded;
+                    }
                 }
-                if (empty($order->payment_method)) {
-                    $updates['payment_method'] = Order::$paymentChannel;
-                }
-                if (empty($order->payment_data)) {
-                    $updates['payment_data'] = json_encode([
-                        'gateway' => $paymentChannel->class_name,
-                        'channel_id' => $paymentChannel->id,
-                        'title' => $paymentChannel->title,
-                    ]);
-                }
-                if (!empty($updates)) {
-                    $order->update($updates);
-                }
+                $paymentData['gateway'] = $paymentChannel->class_name;
+                $paymentData['channel_id'] = $paymentChannel->id;
+                $paymentData['title'] = $paymentChannel->title;
+
+                $order->update([
+                    'payment_channel_id' => $order->payment_channel_id ?: $paymentChannel->id,
+                    'payment_method' => Order::$paymentChannel,
+                    'payment_data' => json_encode($paymentData),
+                ]);
+                $order->unsetRelation('paymentChannel');
             }
 
             return $this->paymentOrderAfterVerify($order);
