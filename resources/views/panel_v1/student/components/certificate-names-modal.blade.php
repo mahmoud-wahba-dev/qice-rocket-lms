@@ -5,6 +5,10 @@
     $needsNames = !empty($certificateNeedsNames) || !empty($openCertNamesId);
     $completeUrlTemplate = route('panel.v1.student.certificates.complete-names', ['id' => 0]);
     $completeUrlTemplate = preg_replace('#/0/complete-names$#', '/__ID__/complete-names', $completeUrlTemplate);
+    // Real POST target so a missing JS build never POSTs to the current /watch page (405).
+    $completeUrl = !empty($initialCertId)
+        ? route('panel.v1.student.certificates.complete-names', ['id' => (int) $initialCertId])
+        : url('/v1/student/certificates');
 @endphp
 
 <div id="student-certificate-names-modal"
@@ -31,7 +35,7 @@
                 </p>
             </div>
 
-            <form method="POST" action="#" class="px-6 sm:px-8 py-6 space-y-5" data-certificate-names-form>
+            <form method="POST" action="{{ $completeUrl }}" class="px-6 sm:px-8 py-6 space-y-5" data-certificate-names-form>
                 @csrf
                 <input type="hidden" name="view" value="0" data-certificate-names-view>
                 <input type="hidden" name="certificate_id" value="{{ $initialCertId ?: '' }}" data-certificate-names-id>

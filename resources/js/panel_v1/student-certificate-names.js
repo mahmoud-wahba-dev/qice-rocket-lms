@@ -49,6 +49,9 @@ export function initCertificateNamesModal() {
         if (viewInput) {
             viewInput.value = view ? '1' : '0';
         }
+        if (form && urlTemplate) {
+            form.action = urlTemplate.replace('__ID__', String(certificateId));
+        }
         if (errorEl) {
             errorEl.textContent = '';
             errorEl.classList.add('hidden');
