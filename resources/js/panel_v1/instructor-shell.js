@@ -346,14 +346,53 @@ export function initCreateCourseWizard(root) {
         }
     };
 
+    const clearFieldErrors = () => {
+        wrap.querySelectorAll('[data-error-for]').forEach((el) => {
+            el.textContent = '';
+            el.classList.add('hidden');
+        });
+        wrap.querySelectorAll('[aria-invalid="true"]').forEach((el) => {
+            el.removeAttribute('aria-invalid');
+            el.classList.remove('border-[#FECACA]');
+        });
+    };
+
+    const applyFieldErrors = (errors) => {
+        clearFieldErrors();
+        const entries = errors && typeof errors === 'object' ? Object.entries(errors) : [];
+        let firstInvalid = null;
+        entries.forEach(([field, messages]) => {
+            const msg = Array.isArray(messages) ? messages[0] : String(messages);
+            const slot = wrap.querySelector(`[data-error-for="${CSS.escape(field)}"]`);
+            if (slot) {
+                slot.textContent = msg;
+                slot.classList.remove('hidden');
+            }
+            const input = wrap.querySelector(`[name="${CSS.escape(field)}"]`);
+            if (input) {
+                input.setAttribute('aria-invalid', 'true');
+                input.classList.add('border-[#FECACA]');
+                if (!firstInvalid) {
+                    firstInvalid = input;
+                }
+            }
+        });
+        if (firstInvalid) {
+            firstInvalid.focus({ preventScroll: true });
+            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return firstInvalid;
+    };
+
     const showErrors = (errors) => {
         const box = wrap.querySelector('[data-wizard-errors]');
         const list = wrap.querySelector('[data-wizard-errors-list]');
+        const entries = errors && typeof errors === 'object' ? Object.entries(errors) : [];
+        applyFieldErrors(errors);
         if (!box || !list) {
             return;
         }
         list.innerHTML = '';
-        const entries = errors && typeof errors === 'object' ? Object.entries(errors) : [];
         if (!entries.length) {
             box.classList.add('hidden');
             return;
@@ -370,6 +409,32 @@ export function initCreateCourseWizard(root) {
     };
 
     const clearErrors = () => showErrors(null);
+
+    const validateCertificateFieldsClient = () => {
+        if (currentStep !== 3) {
+            return null;
+        }
+        const toggle = wrap.querySelector('[data-certificate-switch]');
+        if (!toggle || !toggle.checked) {
+            return null;
+        }
+        const required = [
+            ['certificate_title_ar', 'اسم الدورة (عربي) مطلوب عند تفعيل الشهادة.'],
+            ['certificate_title_en', 'Course name (English) مطلوب عند تفعيل الشهادة.'],
+            ['certificate_accredited_by_ar', 'جهة الاعتماد (عربي) مطلوبة عند تفعيل الشهادة.'],
+            ['certificate_accredited_by_en', 'Accredited by (English) مطلوب عند تفعيل الشهادة.'],
+            ['certificate_accreditation_number', 'رقم الاعتماد مطلوب عند تفعيل الشهادة.'],
+        ];
+        const errors = {};
+        required.forEach(([name, message]) => {
+            const input = wrap.querySelector(`[name="${name}"]`);
+            const value = (input?.value || '').trim();
+            if (!value) {
+                errors[name] = [message];
+            }
+        });
+        return Object.keys(errors).length ? errors : null;
+    };
 
     const updateChrome = (step, progress, title) => {
         const info = stepInfo(step);
@@ -503,6 +568,16 @@ export function initCreateCourseWizard(root) {
         if (!soft && currentStep === 1 && (goNext === 2 || goNext === '2')) {
             soft = false;
         }
+        // Instant client-side certificate validation before network (strict saves only)
+        if (!soft) {
+            const clientErrors = validateCertificateFieldsClient();
+            if (clientErrors) {
+                showErrors(clientErrors);
+                toast('خطأ في الحقل', Object.values(clientErrors)[0]?.[0] || 'أكمل حقول الشهادة المطلوبة', 'error');
+                setAutosaveStatus('');
+                return null;
+            }
+        }
         saving = true;
         setAutosaveStatus(silent ? 'جاري الحفظ...' : 'جاري الحفظ...');
         clearErrors();
@@ -523,8 +598,20 @@ export function initCreateCourseWizard(root) {
                 data = null;
             }
             if (!response.ok) {
-                showErrors(data?.errors || null);
-                toast('خطأ في الحقل', firstValidationError(data), 'error');
+                const status = response.status;
+                const fieldErrors = data?.errors || null;
+                showErrors(fieldErrors);
+                let toastMsg = firstValidationError(data);
+                if (status === 422 && fieldErrors) {
+                    toastMsg = firstValidationError(data) || 'راجع الحقول المحددة باللون الأحمر';
+                } else if (status >= 500) {
+                    toastMsg = (data?.message && data.message !== 'Server Error')
+                        ? data.message
+                        : 'خطأ في الخادم أثناء الحفظ. إن كانت حقول الشهادة جديدة، تأكد من تشغيل ترحيل قاعدة البيانات ثم أعد المحاولة.';
+                } else if (status === 419) {
+                    toastMsg = 'انتهت صلاحية الجلسة. حدّث الصفحة ثم أعد المحاولة.';
+                }
+                toast(status === 422 ? 'خطأ في الحقل' : 'تعذر الحفظ', toastMsg, 'error');
                 setAutosaveStatus('');
                 return null;
             }
@@ -1053,11 +1140,19 @@ function toast(title, msg, type = 'success') {
 
 function firstValidationError(data) {
     if (!data || !data.errors) {
-        return data?.message || 'تعذر تنفيذ العملية';
+        const raw = data?.message;
+        if (!raw || raw === 'Server Error') {
+            return 'تعذر تنفيذ العملية. راجع الحقول أو أعد المحاولة.';
+        }
+        return raw;
     }
     const entries = Object.entries(data.errors);
     if (!entries.length) {
-        return data.message || 'تعذر تنفيذ العملية';
+        const raw = data.message;
+        if (!raw || raw === 'Server Error') {
+            return 'تعذر تنفيذ العملية. راجع الحقول أو أعد المحاولة.';
+        }
+        return raw;
     }
     const [field, messages] = entries[0];
     const msg = Array.isArray(messages) ? messages[0] : String(messages);

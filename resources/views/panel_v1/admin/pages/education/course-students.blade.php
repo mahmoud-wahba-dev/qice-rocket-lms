@@ -14,7 +14,7 @@
 <div class="space-y-6 sm:space-y-8 pb-8">
     @component('panel_v1.admin.components.page-header', [
         'title' => ($webinar->title ?? 'الدورة') . ' - الطلاب',
-        'subtitle' => 'قائمة الطلاب',
+        'subtitle' => 'قائمة المسجّلين وطريقة الدفع وحالة الوصول للدورة',
     ])
         @slot('actions')
             <a href="{{ route('panel.v1.admin.education.courses.performance', ['id' => $courseId]) }}"
@@ -28,6 +28,29 @@
             </a>
         @endslot
     @endcomponent
+
+    <div class="rounded-14px border border-[#BFDBFE] bg-[#EFF6FF] px-5 py-4 flex items-start gap-3">
+        <span class="icon-[tabler--info-circle] size-5 text-[#1D4ED8] shrink-0 mt-0.5"></span>
+        <div class="min-w-0 space-y-3 font-medium text-14px text-[#1E3A8A] leading-relaxed text-start">
+            <div>
+                <p class="font-bold text-15px mb-1.5">طريقة الدفع</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li><span class="font-bold">تسجيل إداري / رصيد</span> — تسجيل يدوي من الإدارة أو بيع رصيد بدون بوابة دفع (غالباً الدخل 0 في الدورات المجانية).</li>
+                    <li><span class="font-bold">رصيد المحفظة</span> — دفع من رصيد محفظة المتدرب.</li>
+                    <li><span class="font-bold">اشتراك</span> — عبر باقة اشتراك.</li>
+                    <li><span class="font-bold">Tamara / Tabby / Paymob / تحويل بنكي</span> — دفع عبر بوابة دفع إلكتروني أو تحويل.</li>
+                </ul>
+            </div>
+            <div>
+                <p class="font-bold text-15px mb-1.5">الحالة (وصول للدورة — ليست نسبة التعلّم)</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li><span class="font-bold">نشط</span> — ما زال لدى المتدرب صلاحية دخول الدورة.</li>
+                    <li><span class="font-bold">منتهي</span> — انتهت مدة الوصول المحددة للدورة (access days)، وليس بالضرورة أنه أكمل المحتوى.</li>
+                    <li><span class="font-bold">محظور</span> — تم حظر وصوله من الإدارة.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
 
     <div class="border border-d9 rounded-14px bg-white shadow-sm overflow-visible">
         <div class="p-4 sm:p-5 border-b border-d9">

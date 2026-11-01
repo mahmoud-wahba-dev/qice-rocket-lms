@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\PanelV1\Support;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Shared 5-step course create/edit wizard for Instructor + Admin panel_v1.
@@ -36,6 +39,7 @@ trait CourseWizardTrait
             'certificate_accredited_by_ar' => 'جهة الاعتماد (عربي)',
             'certificate_accredited_by_en' => 'Accredited by (English) — جهة الاعتماد بالإنجليزية',
             'certificate_accreditation_number' => 'رقم الاعتماد',
+            'certificate_columns' => 'بيانات اعتماد الشهادة',
             'price' => 'السعر',
             'capacity' => 'سعة الطلاب',
             'access_duration' => 'مدة الوصول',
@@ -77,6 +81,25 @@ trait CourseWizardTrait
             'date' => 'حقل :attribute يجب أن يكون تاريخًا صالحًا',
             'string' => 'حقل :attribute يجب أن يكون نصًا',
         ];
+    }
+
+    /**
+     * Whether webinars table has certificate accreditation columns (production may lag migrations).
+     */
+    protected function webinarHasCertificateAccreditationColumns(): bool
+    {
+        static $cached = null;
+        if ($cached === null) {
+            try {
+                $cached = Schema::hasColumn('webinars', 'certificate_accreditation_number')
+                    && Schema::hasColumn('webinars', 'certificate_accredited_by_ar')
+                    && Schema::hasColumn('webinars', 'certificate_accredited_by_en');
+            } catch (\Throwable $e) {
+                $cached = false;
+            }
+        }
+
+        return (bool) $cached;
     }
 
     protected function courseWizardStepsMeta(): array
@@ -703,22 +726,35 @@ trait CourseWizardTrait
         if (!empty($draft) && $step === 3) {
             $certOn = $request->boolean('certificate');
             $titleRule = ($soft || !$certOn) ? 'nullable' : 'required';
-            $accUnique = \Illuminate\Validation\Rule::unique('webinars', 'certificate_accreditation_number')
-                ->ignore($draft->id);
+            $hasAccColumns = $this->webinarHasCertificateAccreditationColumns();
+
+            if ($certOn && !$hasAccColumns && !$soft) {
+                throw ValidationException::withMessages([
+                    'certificate' => 'تعذر حفظ بيانات الشهادة: أعمدة الاعتماد غير موجودة في قاعدة البيانات. شغّل ترحيل webinars ثم أعد المحاولة.',
+                ]);
+            }
+
+            $accNumber = trim((string) $request->input('certificate_accreditation_number', ''));
+            $accRules = [$titleRule, 'bail', 'string', 'max:120'];
+            // Always unique when a value is present (soft autosave too) to avoid SQL unique 500s.
+            if ($hasAccColumns && $accNumber !== '') {
+                $accRules[] = Rule::unique('webinars', 'certificate_accreditation_number')->ignore($draft->id);
+            }
+
             $request->validate([
                 'quiz_id' => 'nullable|exists:quizzes,id',
                 'certificate' => 'nullable|boolean',
-                'certificate_title_ar' => $titleRule . '|string|max:255',
-                'certificate_title_en' => $titleRule . '|string|max:255',
-                'certificate_accredited_by_ar' => $titleRule . '|string|max:255',
-                'certificate_accredited_by_en' => $titleRule . '|string|max:255',
-                'certificate_accreditation_number' => array_values(array_filter([
-                    $titleRule,
-                    'string',
-                    'max:120',
-                    $certOn && !$soft ? $accUnique : null,
-                ])),
+                'certificate_title_ar' => $titleRule . '|bail|string|max:255',
+                'certificate_title_en' => $titleRule . '|bail|string|max:255',
+                'certificate_accredited_by_ar' => $titleRule . '|bail|string|max:255',
+                'certificate_accredited_by_en' => $titleRule . '|bail|string|max:255',
+                'certificate_accreditation_number' => $accRules,
             ], array_merge($this->courseWizardMessages(), [
+                'certificate_title_ar.required' => 'اسم الدورة (عربي) مطلوب عند تفعيل الشهادة.',
+                'certificate_title_en.required' => 'Course name (English) مطلوب عند تفعيل الشهادة.',
+                'certificate_accredited_by_ar.required' => 'جهة الاعتماد (عربي) مطلوبة عند تفعيل الشهادة.',
+                'certificate_accredited_by_en.required' => 'Accredited by (English) مطلوب عند تفعيل الشهادة.',
+                'certificate_accreditation_number.required' => 'رقم الاعتماد مطلوب عند تفعيل الشهادة.',
                 'certificate_accreditation_number.unique' => 'رقم الاعتماد مستخدم لدورة أخرى — يجب أن يكون فريدًا.',
             ]), $attrs);
 
@@ -733,17 +769,36 @@ trait CourseWizardTrait
             }
 
             $draft->certificate = $certOn;
-            if ($certOn) {
-                $draft->certificate_accredited_by_ar = trim((string) $request->input('certificate_accredited_by_ar', '')) ?: null;
-                $draft->certificate_accredited_by_en = trim((string) $request->input('certificate_accredited_by_en', '')) ?: null;
-                $draft->certificate_accreditation_number = trim((string) $request->input('certificate_accreditation_number', '')) ?: null;
-            } else {
-                $draft->certificate_accredited_by_ar = null;
-                $draft->certificate_accredited_by_en = null;
-                $draft->certificate_accreditation_number = null;
+            if ($hasAccColumns) {
+                if ($certOn) {
+                    $draft->certificate_accredited_by_ar = trim((string) $request->input('certificate_accredited_by_ar', '')) ?: null;
+                    $draft->certificate_accredited_by_en = trim((string) $request->input('certificate_accredited_by_en', '')) ?: null;
+                    $draft->certificate_accreditation_number = $accNumber !== '' ? $accNumber : null;
+                } else {
+                    $draft->certificate_accredited_by_ar = null;
+                    $draft->certificate_accredited_by_en = null;
+                    $draft->certificate_accreditation_number = null;
+                }
             }
             $draft->updated_at = time();
-            $draft->save();
+            try {
+                $draft->save();
+            } catch (\Illuminate\Database\QueryException $e) {
+                $msg = (string) $e->getMessage();
+                if (stripos($msg, 'certificate_accreditation_number') !== false
+                    || stripos($msg, 'Duplicate') !== false
+                    || stripos($msg, '1062') !== false) {
+                    throw ValidationException::withMessages([
+                        'certificate_accreditation_number' => 'رقم الاعتماد مستخدم لدورة أخرى — يجب أن يكون فريدًا.',
+                    ]);
+                }
+                if (stripos($msg, 'Unknown column') !== false || stripos($msg, '42S22') !== false) {
+                    throw ValidationException::withMessages([
+                        'certificate' => 'تعذر حفظ بيانات الشهادة بسبب نقص أعمدة في قاعدة البيانات. شغّل الترحيلات ثم أعد المحاولة.',
+                    ]);
+                }
+                throw $e;
+            }
 
             if ($certOn) {
                 $titleAr = trim((string) $request->input('certificate_title_ar', ''));

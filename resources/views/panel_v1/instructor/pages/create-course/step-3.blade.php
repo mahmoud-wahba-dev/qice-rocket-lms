@@ -95,57 +95,50 @@
     </div>
     <div class="mt-5 space-y-4 {{ $certOn ? '' : 'hidden' }}" data-certificate-titles>
         <p class="font-medium text-13px sm:text-14px text-gray text-start">
-            بيانات الشهادة المطبوعة لهذه الدورة. رقم الشهادة (مثل QEC-0000-047) يُصدر تلقائيًا وبشكل فريد لكل متدرب.
+            بيانات الشهادة المطبوعة لهذه الدورة. جميع الحقول أدناه مطلوبة عند تفعيل الشهادة. رقم الشهادة (مثل QEC-0000-047) يُصدر تلقائيًا وبشكل فريد لكل متدرب.
         </p>
-        <div>
-            <label class="block font-semibold text-14px sm:text-15px text-primary mb-2 text-start">اسم الدورة (عربي)</label>
+        <div data-field-wrap="certificate_title_ar">
+            <label class="block font-semibold text-14px sm:text-15px text-primary mb-2 text-start">اسم الدورة (عربي) <span class="text-[#B91C1C]">*</span></label>
             <input type="text" name="certificate_title_ar" value="{{ $certTitleAr }}"
                 class="{{ $input }} {{ $errors->has('certificate_title_ar') ? 'border-[#FECACA]' : '' }}"
                 placeholder="مثال: إدارة الجودة الشاملة" dir="rtl" maxlength="255"
-                data-certificate-title-ar>
-            @error('certificate_title_ar')
-                <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
-            @enderror
+                data-certificate-title-ar aria-describedby="err-certificate_title_ar">
+            <p id="err-certificate_title_ar" class="mt-2 font-medium text-13px text-[#B91C1C] {{ $errors->has('certificate_title_ar') ? '' : 'hidden' }}" data-error-for="certificate_title_ar" role="alert">{{ $errors->first('certificate_title_ar') }}</p>
         </div>
-        <div>
-            <label class="block font-semibold text-14px sm:text-15px text-primary mb-2 text-start">Course name (English)</label>
+        <div data-field-wrap="certificate_title_en">
+            <label class="block font-semibold text-14px sm:text-15px text-primary mb-2 text-start">Course name (English) <span class="text-[#B91C1C]">*</span></label>
             <input type="text" name="certificate_title_en" value="{{ $certTitleEn }}"
                 class="{{ $input }} {{ $errors->has('certificate_title_en') ? 'border-[#FECACA]' : '' }}"
                 placeholder="e.g. Total Quality Management" dir="ltr" maxlength="255"
-                data-certificate-title-en>
-            @error('certificate_title_en')
-                <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
-            @enderror
+                data-certificate-title-en aria-describedby="err-certificate_title_en">
+            <p id="err-certificate_title_en" class="mt-2 font-medium text-13px text-[#B91C1C] {{ $errors->has('certificate_title_en') ? '' : 'hidden' }}" data-error-for="certificate_title_en" role="alert">{{ $errors->first('certificate_title_en') }}</p>
         </div>
-        <div>
-            <label class="block font-semibold text-14px sm:text-15px text-primary mb-2 text-start">جهة الاعتماد (عربي)</label>
+        <div data-field-wrap="certificate_accredited_by_ar">
+            <label class="block font-semibold text-14px sm:text-15px text-primary mb-2 text-start">جهة الاعتماد (عربي) <span class="text-[#B91C1C]">*</span></label>
             <input type="text" name="certificate_accredited_by_ar" value="{{ $certAccByAr }}"
                 class="{{ $input }} {{ $errors->has('certificate_accredited_by_ar') ? 'border-[#FECACA]' : '' }}"
-                placeholder="مركز الجودة والتميز" dir="rtl" maxlength="255">
+                placeholder="مركز الجودة والتميز" dir="rtl" maxlength="255"
+                aria-describedby="err-certificate_accredited_by_ar">
             <p class="mt-1 font-medium text-12px text-gray text-start">يظهر بعد: الدورة معتمدة من</p>
-            @error('certificate_accredited_by_ar')
-                <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
-            @enderror
+            <p id="err-certificate_accredited_by_ar" class="mt-2 font-medium text-13px text-[#B91C1C] {{ $errors->has('certificate_accredited_by_ar') ? '' : 'hidden' }}" data-error-for="certificate_accredited_by_ar" role="alert">{{ $errors->first('certificate_accredited_by_ar') }}</p>
         </div>
-        <div>
-            <label class="block font-semibold text-14px sm:text-15px text-primary mb-2 text-start">Accredited by (English) — جهة الاعتماد بالإنجليزية</label>
+        <div data-field-wrap="certificate_accredited_by_en">
+            <label class="block font-semibold text-14px sm:text-15px text-primary mb-2 text-start">Accredited by (English) — جهة الاعتماد بالإنجليزية <span class="text-[#B91C1C]">*</span></label>
             <input type="text" name="certificate_accredited_by_en" value="{{ $certAccByEn }}"
                 class="{{ $input }} {{ $errors->has('certificate_accredited_by_en') ? 'border-[#FECACA]' : '' }}"
-                placeholder="Quality & Excellence Center" dir="ltr" maxlength="255">
+                placeholder="Quality & Excellence Center" dir="ltr" maxlength="255"
+                aria-describedby="err-certificate_accredited_by_en">
             <p class="mt-1 font-medium text-12px text-gray text-start">Appears after: Accreditation By</p>
-            @error('certificate_accredited_by_en')
-                <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
-            @enderror
+            <p id="err-certificate_accredited_by_en" class="mt-2 font-medium text-13px text-[#B91C1C] {{ $errors->has('certificate_accredited_by_en') ? '' : 'hidden' }}" data-error-for="certificate_accredited_by_en" role="alert">{{ $errors->first('certificate_accredited_by_en') }}</p>
         </div>
-        <div>
-            <label class="block font-semibold text-14px sm:text-15px text-primary mb-2 text-start">رقم الاعتماد *</label>
+        <div data-field-wrap="certificate_accreditation_number">
+            <label class="block font-semibold text-14px sm:text-15px text-primary mb-2 text-start">رقم الاعتماد <span class="text-[#B91C1C]">*</span></label>
             <input type="text" name="certificate_accreditation_number" value="{{ $certAccNo }}"
                 class="{{ $input }} {{ $errors->has('certificate_accreditation_number') ? 'border-[#FECACA]' : '' }}"
-                placeholder="مثال: QIEC-ACC-001" dir="ltr" maxlength="120">
+                placeholder="مثال: QIEC-ACC-001" dir="ltr" maxlength="120"
+                aria-describedby="err-certificate_accreditation_number">
             <p class="mt-1 font-medium text-12px text-gray text-start">يجب أن يكون فريدًا لكل دورة — يظهر كـ رقم الاعتماد / Accreditation Number</p>
-            @error('certificate_accreditation_number')
-                <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
-            @enderror
+            <p id="err-certificate_accreditation_number" class="mt-2 font-medium text-13px text-[#B91C1C] {{ $errors->has('certificate_accreditation_number') ? '' : 'hidden' }}" data-error-for="certificate_accreditation_number" role="alert">{{ $errors->first('certificate_accreditation_number') }}</p>
         </div>
     </div>
 </section>
