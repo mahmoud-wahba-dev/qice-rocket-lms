@@ -37,6 +37,7 @@
                 <span>تاريخ الدورة: {{ $programDate }}</span>
             </p>
         @endif
+     <div class="mt-auto">
         <div class="flex items-center gap-1.5 mb-5 border-t border-card-border pt-4">
             <div class="avatar">
                 <div class="size-10 rounded-full">
@@ -47,12 +48,13 @@
             <p class="font-medium text-77 text-base">{{ $teacherName }}</p>
         </div>
 
-        <div class="flex items-center justify-between mt-auto pt-2">
+        <div class="flex items-center justify-between  pt-2">
             <span class="font-bold text-20px text-primary whitespace-nowrap">
                 {{ $price }}
             </span>
             <a href="{{ $detailUrl }}"
                 class="btn btn-primary rounded-[3px] h-10 font-medium text-14px">{{ $buttonText }}</a>
         </div>
+     </div>
     </div>
 </div>
