@@ -38,7 +38,7 @@
             </p>
         @endif
      <div class="mt-auto">
-        <div class="flex items-center gap-1.5 mb-5 border-t border-card-border pt-4">
+        <div class="flex items-center gap-1.5 mb-1 border-t border-card-border pt-4">
             <div class="avatar">
                 <div class="size-10 rounded-full">
                     <img src="{{ !empty($teacherAvatar) ? $teacherAvatar : asset('assets/landing_v1/img/home/instructor.webp') }}"
