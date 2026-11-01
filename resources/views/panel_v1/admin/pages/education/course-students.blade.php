@@ -144,10 +144,12 @@
                         <th class="font-semibold px-4 py-3.5 text-start">التعلم</th>
                         <th class="font-semibold px-4 py-3.5 text-start">مجموعة المستخدم</th>
                         <th class="font-semibold px-4 py-3.5 text-start">الدخل</th>
-                        <th class="font-semibold px-4 py-3.5 text-start">طريقة الدفع</th>
+                        <th class="font-semibold px-4 py-3.5 text-start"
+                            title="تسجيل إداري/رصيد = إضافة يدوية أو رصيد بلا بوابة · البوابات = Tamara/Tabby وغيرها">طريقة الدفع</th>
                         <th class="font-semibold px-4 py-3.5 text-start">مصدر التسجيل</th>
                         <th class="font-semibold px-4 py-3.5 text-start">تاريخ الشراء</th>
-                        <th class="font-semibold px-4 py-3.5 text-start">الحالة</th>
+                        <th class="font-semibold px-4 py-3.5 text-start"
+                            title="نشط = وصول ساري · منتهي = انتهت مدة الوصول · محظور = تم الحظر — ليست نسبة التعلّم">الحالة</th>
                         <th class="font-semibold px-4 py-3.5 text-start">اجراءات</th>
                     </tr>
                 </thead>
