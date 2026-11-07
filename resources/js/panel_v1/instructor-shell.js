@@ -1855,7 +1855,8 @@ function initCurriculumAjax(wrap) {
                 toast('خطأ في الحقل', msg, 'error');
                 return;
             }
-            if (isLiveSession && linkInput && !String(linkInput.value || '').trim()) {
+            const sessionApi = form.querySelector('[data-session-api-radio]:checked')?.value || 'local';
+            if (isLiveSession && sessionApi !== 'zoom' && linkInput && !linkInput.disabled && !String(linkInput.value || '').trim()) {
                 const msg = 'رابط الاجتماع مطلوب للدورة المباشرة';
                 if (errorEl) {
                     errorEl.textContent = msg;

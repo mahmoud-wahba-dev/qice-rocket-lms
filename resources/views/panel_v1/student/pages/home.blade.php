@@ -389,10 +389,22 @@
                                         اعادة المحاضرة
                                     </a>
                                 @else
-                                    <a href="{{ $liveSession['watchUrl'] }}"
-                                        class="btn btn-primary rounded-[10px] h-11 px-6 font-bold text-[13px]">
-                                        الانضمام إلى المحاضرة
-                                    </a>
+                                    @php
+                                        $isZoomSession = ($liveSession['session_api'] ?? 'local') === 'zoom';
+                                        $directLink = $liveSession['link'] ?? null;
+                                    @endphp
+                                    @if ($isZoomSession && !empty($directLink))
+                                        <a href="{{ $directLink }}" target="_blank" rel="noopener"
+                                            class="btn rounded-[10px] h-11 px-6 font-bold text-[13px] bg-[#2D8CFF] hover:bg-[#1a7af0] text-white border-0 inline-flex items-center gap-1.5">
+                                            <span class="icon-[tabler--video] size-4"></span>
+                                            الانضمام إلى Zoom
+                                        </a>
+                                    @else
+                                        <a href="{{ $liveSession['watchUrl'] }}"
+                                            class="btn btn-primary rounded-[10px] h-11 px-6 font-bold text-[13px]">
+                                            الانضمام إلى المحاضرة
+                                        </a>
+                                    @endif
                                 @endif
                             </div>
                         </div>

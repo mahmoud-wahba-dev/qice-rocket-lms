@@ -188,9 +188,24 @@ $instructorName = $instructorName ?? ($authUser->full_name ?? 'المدرب');
                 <div class="space-y-2.5">
                     @foreach ($upcomingLectures ?? [] as $lecture)
                     <div class="rounded-12px bg-f9 border border-[#C99C691C] px-4 py-3">
-                        <p class="font-bold text-20px  text-primary mb-2 leading-snug">{{ $lecture['title']
-                            }}</p>
-                        <p class="font-semibold text-16px text-primary">{{ $lecture['when'] }}</p>
+                        <p class="font-bold text-18px text-primary mb-1 leading-snug">{{ $lecture['title'] }}</p>
+                        <p class="font-semibold text-14px text-gray mb-2">{{ $lecture['when'] }}</p>
+                        @php
+                            $joinUrl  = !empty($lecture['start_link']) ? $lecture['start_link'] : ($lecture['link'] ?? null);
+                            $isZoom   = ($lecture['session_api'] ?? 'local') === 'zoom';
+                        @endphp
+                        @if (!empty($joinUrl))
+                            <a href="{{ $joinUrl }}" target="_blank" rel="noopener"
+                                class="inline-flex items-center gap-1.5 h-8 px-3 rounded-8px {{ $isZoom ? 'bg-[#2D8CFF] hover:bg-[#1a7af0]' : 'bg-primary hover:opacity-90' }} text-white font-semibold text-12px transition">
+                                @if ($isZoom)
+                                    <span class="icon-[tabler--video] size-3.5"></span>
+                                    بدء جلسة Zoom
+                                @else
+                                    <span class="icon-[tabler--external-link] size-3.5"></span>
+                                    انضمام للجلسة
+                                @endif
+                            </a>
+                        @endif
                     </div>
                     @endforeach
                 </div>

@@ -151,23 +151,67 @@
                     <label class="block font-medium text-12px text-gray mb-1.5">المدة (دقيقة) <span class="text-red-500">*</span></label>
                     <input type="number" name="duration" required min="1" placeholder="90" class="{{ $input }}" data-field-label="مدة الجلسة">
                 </div>
-                <div class="{{ $courseTypeKey === 'live' ? 'sm:col-span-2' : 'hidden' }}">
-                    <label class="block font-medium text-12px text-gray mb-1.5">
-                        رابط الاجتماع
-                        @if ($courseTypeKey === 'live') <span class="text-red-500">*</span> @endif
-                    </label>
-                    <input type="url" name="link" placeholder="https://meet.google.com/... أو Zoom"
-                        {{ $courseTypeKey === 'live' ? 'required' : '' }}
-                        class="{{ $input }}" data-field-label="رابط الاجتماع" data-session-link
-                        {{ $courseTypeKey === 'live' ? '' : 'disabled' }}>
-                    <p class="mt-1.5 font-medium text-12px text-gray">رابط Zoom / Google Meet / Microsoft Teams أو أي منصة مباشرة</p>
-                </div>
+                @if ($courseTypeKey === 'live')
+                    @php $zoomSessionEnabled = !empty(getFeaturesSettings('zoom_client_id')); @endphp
+                    <div class="sm:col-span-2 lg:col-span-3" id="session-api-wrapper-{{ $unit['id'] ?? 'new' }}">
+                        <label class="block font-medium text-12px text-gray mb-1.5">طريقة الاجتماع <span class="text-red-500">*</span></label>
+                        <div class="grid {{ $zoomSessionEnabled ? 'grid-cols-2' : 'grid-cols-1' }} gap-2 mb-3">
+                            <label class="flex items-center gap-2 border border-d9 rounded-10px px-3 py-2.5 cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                                <input type="radio" name="session_api" value="local" checked class="radio radio-primary radio-sm" data-session-api-radio>
+                                <span class="font-medium text-13px text-primary">رابط خارجي (Zoom / Meet / Teams)</span>
+                            </label>
+                            @if ($zoomSessionEnabled)
+                                <label class="flex items-center gap-2 border border-d9 rounded-10px px-3 py-2.5 cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                                    <input type="radio" name="session_api" value="zoom" class="radio radio-primary radio-sm" data-session-api-radio>
+                                    <span class="font-medium text-13px text-primary">Zoom (إنشاء تلقائي)</span>
+                                </label>
+                            @endif
+                        </div>
+                        <div data-session-local-fields>
+                            <input type="url" name="link" placeholder="https://meet.google.com/... أو رابط Zoom"
+                                class="{{ $input }}" data-field-label="رابط الاجتماع" data-session-link>
+                            <p class="mt-1.5 font-medium text-12px text-gray">رابط Zoom / Google Meet / Microsoft Teams أو أي منصة مباشرة</p>
+                        </div>
+                        @if ($zoomSessionEnabled)
+                            <div class="hidden rounded-10px bg-[#EBF8FF] border border-[#BEE3F8] px-4 py-3" data-session-zoom-hint>
+                                <p class="font-medium text-13px text-[#1A365D]">سيتم إنشاء اجتماع Zoom تلقائياً عند حفظ الجلسة. ستصلك رابط الانضمام بعد الإنشاء.</p>
+                            </div>
+                        @endif
+                    </div>
+                @else
+                    <div class="hidden">
+                        <input type="url" name="link" class="{{ $input }}" disabled data-session-link>
+                        <input type="hidden" name="session_api" value="local">
+                    </div>
+                @endif
                 <div class="flex items-end {{ $courseTypeKey === 'live' ? 'sm:col-span-2 lg:col-span-1' : '' }}">
                     <button type="submit" class="inline-flex items-center justify-center w-full h-12 sm:h-14 px-5 rounded-10px bg-primary text-white font-bold text-15px hover:opacity-90 transition">إضافة</button>
                 </div>
             </form>
             <p class="hidden px-4 pb-3 font-medium text-13px text-[#B91C1C]" data-curriculum-form-error></p>
         </details>
+        @if ($courseTypeKey === 'live' && !empty($zoomSessionEnabled))
+        <script>
+        (() => {
+            const wrapper = document.getElementById('session-api-wrapper-{{ $unit['id'] ?? 'new' }}');
+            if (!wrapper) return;
+            const form = wrapper.closest('form');
+            const radios = wrapper.querySelectorAll('[data-session-api-radio]');
+            const localFields = wrapper.querySelector('[data-session-local-fields]');
+            const zoomHint = wrapper.querySelector('[data-session-zoom-hint]');
+            const linkInput = wrapper.querySelector('input[name="link"]');
+            const sync = () => {
+                const val = wrapper.querySelector('[data-session-api-radio]:checked')?.value || 'local';
+                const isZoom = val === 'zoom';
+                if (localFields) localFields.classList.toggle('hidden', isZoom);
+                if (zoomHint) zoomHint.classList.toggle('hidden', !isZoom);
+                if (linkInput) { linkInput.required = !isZoom; linkInput.disabled = isZoom; }
+            };
+            radios.forEach(r => r.addEventListener('change', sync));
+            sync();
+        })();
+        </script>
+        @endif
         <details class="rounded-10px border border-d9" @if($openFile) open @endif>
             <summary class="cursor-pointer px-4 py-3 font-semibold text-14px text-primary list-none flex items-center justify-between gap-2">
                 <span>+ إضافة ملف</span>

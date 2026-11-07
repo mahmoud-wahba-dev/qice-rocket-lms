@@ -34,14 +34,33 @@
                     <p class="font-medium text-13px text-primary">درس نصي: {{ $t->title }}</p>
                 </div>
             @endforeach
+            @php $adminZoomEnabled = !empty(getFeaturesSettings('zoom_client_id')); @endphp
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 pt-2">
-                <form method="POST" action="{{ route('panel.v1.admin.education.courses.sessions.store',['id'=>$webinar->id]) }}" class="flex flex-wrap gap-2 rounded-10px bg-[#FAFAF4] border border-d9 p-3">
+                <form method="POST" action="{{ route('panel.v1.admin.education.courses.sessions.store',['id'=>$webinar->id]) }}" class="flex flex-col gap-2 rounded-10px bg-[#FAFAF4] border border-d9 p-3">
                     @csrf
                     <input type="hidden" name="chapter_id" value="{{ $ch->id }}">
-                    <input type="text" name="topic" required placeholder="موضوع الجلسة *" class="input input-bordered flex-1 h-10 rounded-10px border-d9 text-13px min-w-[10rem]">
-                    <input type="date" name="date" required class="input input-bordered h-10 rounded-10px border-d9 text-13px">
-                    <input type="number" name="duration" value="60" min="1" class="input input-bordered w-24 h-10 rounded-10px border-d9 text-13px">
-                    <button type="submit" class="h-10 px-4 rounded-10px bg-primary text-white font-bold text-12px">+ جلسة</button>
+                    <div class="flex flex-wrap gap-2">
+                        <input type="text" name="topic" required placeholder="موضوع الجلسة *" class="input input-bordered flex-1 h-10 rounded-10px border-d9 text-13px min-w-[10rem]">
+                        <input type="date" name="date" required class="input input-bordered h-10 rounded-10px border-d9 text-13px">
+                        <input type="number" name="duration" value="60" min="1" class="input input-bordered w-24 h-10 rounded-10px border-d9 text-13px">
+                    </div>
+                    @if ($adminZoomEnabled)
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" name="session_api" value="local" checked class="radio radio-primary radio-xs" id="admin-sess-local-{{ $ch->id }}" onchange="document.getElementById('admin-sess-link-{{ $ch->id }}').classList.remove('hidden')">
+                                <span class="font-medium text-12px">رابط خارجي</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" name="session_api" value="zoom" class="radio radio-primary radio-xs" id="admin-sess-zoom-{{ $ch->id }}" onchange="document.getElementById('admin-sess-link-{{ $ch->id }}').classList.add('hidden')">
+                                <span class="font-medium text-12px">Zoom تلقائي</span>
+                            </label>
+                            <input type="url" name="link" id="admin-sess-link-{{ $ch->id }}" placeholder="رابط الاجتماع (اختياري)" class="input input-bordered flex-1 h-10 rounded-10px border-d9 text-12px min-w-[8rem]">
+                        </div>
+                    @else
+                        <input type="url" name="link" placeholder="رابط الاجتماع (اختياري)" class="input input-bordered w-full h-10 rounded-10px border-d9 text-12px">
+                        <input type="hidden" name="session_api" value="local">
+                    @endif
+                    <button type="submit" class="h-10 px-4 rounded-10px bg-primary text-white font-bold text-12px self-start">+ جلسة</button>
                 </form>
                 <form method="POST" action="{{ route('panel.v1.admin.education.courses.files.store',['id'=>$webinar->id]) }}" enctype="multipart/form-data" class="flex flex-wrap gap-2 rounded-10px bg-[#FAFAF4] border border-d9 p-3">
                     @csrf

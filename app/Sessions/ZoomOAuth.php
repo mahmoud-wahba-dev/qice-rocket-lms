@@ -50,8 +50,10 @@ class ZoomOAuth
             unset($session->title, $session->locale);
 
             $session->update([
-                'link' => $meeting['data']['join_url'],
-                'api_secret' => $meeting['data']['password'],
+                'link'            => $meeting['data']['join_url'],
+                'zoom_start_link' => $meeting['data']['start_url'] ?? null,
+                'zoom_id'         => (string) ($meeting['data']['id'] ?? ''),
+                'api_secret'      => $meeting['data']['password'],
             ]);
 
             return true;

@@ -978,10 +978,14 @@ class InstructorController extends Controller
         $isLive = ($draft->type ?? '') === 'webinar';
 
         if ($isLive) {
+            $sessionApi = $request->input('session_api', 'local');
+            $isZoomSession = $sessionApi === 'zoom' && !empty(getFeaturesSettings('zoom_client_id'));
+
             $request->validate([
                 'session_date' => 'required|date_format:Y-m-d',
                 'session_time' => 'required|string|max:8',
-                'link' => 'required|url|max:2000',
+                'link' => $isZoomSession ? 'nullable' : 'required|url|max:2000',
+                'session_api' => 'nullable|in:local,zoom',
             ], $this->courseWizardMessages(), [
                 'session_date' => 'تاريخ الجلسة',
                 'session_time' => 'وقت الجلسة',
@@ -1032,15 +1036,17 @@ class InstructorController extends Controller
             $sessionTs = time();
         }
 
+        $useZoom = isset($isZoomSession) && $isZoomSession;
+
         $session = new \App\Models\Session();
         $session->creator_id = $user->id;
         $session->webinar_id = $draft->id;
         $session->chapter_id = $chapter->id;
         $session->date = $sessionTs;
         $session->duration = (int) $request->input('duration');
-        $session->session_api = 'local';
-        $session->link = $request->filled('link') ? trim((string) $request->input('link')) : null;
-        $session->api_secret = $session->api_secret ?: \Illuminate\Support\Str::random(10);
+        $session->session_api = $useZoom ? 'zoom' : 'local';
+        $session->link = (!$useZoom && $request->filled('link')) ? trim((string) $request->input('link')) : null;
+        $session->api_secret = \Illuminate\Support\Str::random(10);
         $session->status = 'active';
         $session->created_at = time();
         $session->updated_at = time();
@@ -1057,10 +1063,23 @@ class InstructorController extends Controller
             $tEn->save();
         }
 
+        if ($useZoom) {
+            $zoomOAuth = new \App\Sessions\ZoomOAuth();
+            if (!$zoomOAuth->makeMeeting($session)) {
+                $session->delete();
+                $msg = 'تعذّر إنشاء اجتماع Zoom — تحقق من إعدادات Zoom في لوحة التحكم';
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json(['ok' => false, 'message' => $msg], 422);
+                }
+                return back()->withInput()->with('toast', ['title' => 'خطأ', 'msg' => $msg, 'type' => 'error']);
+            }
+            $session->refresh();
+        }
+
         $whenLabel = date('Y-m-d H:i', $sessionTs);
         $durationLabel = ((int) $request->input('duration')) . ' دقيقة · ' . $whenLabel;
         if (!empty($session->link)) {
-            $durationLabel .= ' · رابط اجتماع';
+            $durationLabel .= $useZoom ? ' · Zoom' : ' · رابط اجتماع';
         }
 
         return $this->curriculumResponse($request, $draft, 'تمت إضافة الجلسة', [
@@ -2684,10 +2703,13 @@ class InstructorController extends Controller
         }
 
         $agoraEnabled = !empty(getFeaturesSettings('agora_for_meeting'));
-        $allowedTypes = $agoraEnabled ? 'agora,external' : 'external';
+        $zoomEnabled  = !empty(getFeaturesSettings('zoom_client_id'));
+        $allowed = ['external'];
+        if ($agoraEnabled) $allowed[] = 'agora';
+        if ($zoomEnabled)  $allowed[] = 'zoom';
 
         $request->validate([
-            'session_type' => 'required|in:' . $allowedTypes,
+            'session_type' => 'required|in:' . implode(',', $allowed),
             'url' => 'required_if:session_type,external|nullable|url|max:2000',
             'password' => 'nullable|string|max:100',
         ], [
@@ -2702,6 +2724,56 @@ class InstructorController extends Controller
         ]);
 
         $sessionType = $request->input('session_type');
+
+        if ($sessionType === 'zoom') {
+            $meeting = $reservation->meetingTime;
+            $duration = $meeting ? (int) ($meeting->duration ?? 60) : 60;
+            $date     = $reservation->reserved_at ?? time();
+
+            $session = \App\Models\Session::updateOrCreate(
+                ['reserve_meeting_id' => $reservation->id],
+                [
+                    'creator_id'   => $user->id,
+                    'date'         => (int) $date,
+                    'duration'     => $duration,
+                    'session_api'  => 'zoom',
+                    'api_secret'   => \Illuminate\Support\Str::random(10),
+                    'status'       => 'active',
+                    'created_at'   => time(),
+                    'updated_at'   => time(),
+                ]
+            );
+
+            // Set title translation
+            $t = $session->translateOrNew('ar');
+            $t->locale = 'ar';
+            $t->title  = 'جلسة استشارية';
+            $t->save();
+
+            $zoom = new \App\Sessions\ZoomOAuth();
+            if (!$zoom->makeMeeting($session)) {
+                $session->delete();
+                return back()->withInput()->with('toast', [
+                    'title' => 'خطأ',
+                    'msg'   => 'تعذّر إنشاء اجتماع Zoom — تحقق من إعدادات Zoom في لوحة التحكم',
+                    'type'  => 'error',
+                ]);
+            }
+            $session->refresh();
+
+            $reservation->update([
+                'status' => \App\Models\ReserveMeeting::$open,
+                'link'   => $session->link,
+            ]);
+
+            return redirect()
+                ->route('panel.v1.instructor.consultations')
+                ->with('toast', [
+                    'title' => 'تم',
+                    'msg'   => 'تم إنشاء اجتماع Zoom — يمكنك الانضمام الآن',
+                    'type'  => 'success',
+                ]);
+        }
 
         if ($sessionType === 'agora') {
             $this->createConsultationAgoraSession($reservation, $user);
@@ -6083,8 +6155,11 @@ class InstructorController extends Controller
                 ->get()
                 ->map(function ($session) {
                     return [
-                        'title' => $session->webinar->title ?? 'محاضرة مباشرة',
-                        'when' => date('Y/m/d H:i', (int) $session->date),
+                        'title'       => $session->webinar->title ?? 'محاضرة مباشرة',
+                        'when'        => date('Y/m/d H:i', (int) $session->date),
+                        'link'        => $session->link ?? null,
+                        'start_link'  => $session->zoom_start_link ?? null,
+                        'session_api' => $session->session_api ?? 'local',
                     ];
                 })->all()
             : [];

@@ -1006,7 +1006,15 @@ class EducationController extends AdminController
     {
         $user=$this->resolveAdmin($request); if($user instanceof \Illuminate\Http\RedirectResponse) return $user;
         $webinar=\App\Models\Webinar::findOrFail($id);
-        $request->validate(['chapter_id'=>'required|integer','topic'=>'required|string|max:255','date'=>'required|date','duration'=>'required|integer|min:1']);
+        $useZoomAdmin = $request->input('session_api') === 'zoom' && !empty(getFeaturesSettings('zoom_client_id'));
+        $request->validate([
+            'chapter_id' => 'required|integer',
+            'topic'      => 'required|string|max:255',
+            'date'       => 'required|date',
+            'duration'   => 'required|integer|min:1',
+            'session_api'=> 'nullable|in:local,zoom',
+            'link'       => $useZoomAdmin ? 'nullable' : 'nullable|url|max:2000',
+        ]);
         $chapter=\App\Models\WebinarChapter::where('id',$request->input('chapter_id'))->where('webinar_id',$webinar->id)->firstOrFail();
         $session=new \App\Models\Session();
         $session->creator_id=$user->id;
@@ -1014,6 +1022,9 @@ class EducationController extends AdminController
         $session->chapter_id=$chapter->id;
         $session->date=strtotime($request->input('date'));
         $session->duration=(int)$request->input('duration');
+        $session->session_api=$useZoomAdmin ? 'zoom' : 'local';
+        $session->link=(!$useZoomAdmin && $request->filled('link')) ? trim((string)$request->input('link')) : null;
+        $session->api_secret=\Illuminate\Support\Str::random(10);
         $session->status='active';
         $session->created_at=time();
         $session->updated_at=time();
@@ -1022,6 +1033,13 @@ class EducationController extends AdminController
         $translation->locale='ar';
         $translation->title=$request->input('topic');
         $translation->save();
+        if ($useZoomAdmin) {
+            $zoom = new \App\Sessions\ZoomOAuth();
+            if (!$zoom->makeMeeting($session)) {
+                $session->delete();
+                return back()->withInput()->with('toast',['title'=>'خطأ','msg'=>'تعذّر إنشاء اجتماع Zoom — تحقق من إعدادات Zoom','type'=>'error']);
+            }
+        }
         return back()->with('toast',['title'=>'تم','msg'=>'تمت إضافة الجلسة','type'=>'success']);
     }
     public function adminSessionDelete(Request $request, int $id, int $sessionId)

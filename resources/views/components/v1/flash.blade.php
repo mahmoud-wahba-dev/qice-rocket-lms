@@ -31,6 +31,33 @@
 {{-- Always mount toast host so showCartToast works on every panel_v1 / course-player page --}}
 @include('components.v1.toast')
 
+{{-- Global body-scroll lock for all <dialog> modals (DaisyUI + custom) --}}
+@once
+<script>
+(function () {
+    if (typeof HTMLDialogElement === 'undefined') return;
+    var n = 0;
+    function lock()   { if (++n === 1) document.body.style.overflow = 'hidden'; }
+    function unlock() { if (--n <= 0)  { n = 0; document.body.style.overflow = ''; } }
+    var oShow  = HTMLDialogElement.prototype.showModal;
+    var oClose = HTMLDialogElement.prototype.close;
+    HTMLDialogElement.prototype.showModal = function () { oShow.call(this); lock(); };
+    HTMLDialogElement.prototype.close     = function () { if (this.open) unlock(); oClose.apply(this, arguments); };
+    // Also handle DaisyUI data-overlay elements (non-dialog overlays)
+    document.addEventListener('click', function (e) {
+        var trigger = e.target.closest && e.target.closest('[data-overlay]');
+        if (!trigger) return;
+        var sel = trigger.getAttribute('data-overlay');
+        if (!sel) return;
+        var el = document.querySelector(sel);
+        if (!el || el.tagName === 'DIALOG') return; // dialogs handled above
+        var willOpen = el.classList.contains('hidden');
+        willOpen ? lock() : unlock();
+    });
+})();
+</script>
+@endonce
+
 {{-- Reusable confirm modal (data-confirm / window.confirmModal) — never use the browser's confirm() --}}
 @include('components.v1.confirm-modal')
 

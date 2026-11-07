@@ -290,6 +290,8 @@ class StudentController extends Controller
                         'duration' => $durationMin,
                         'watchUrl' => $watchUrl,
                         'pdfUrl' => !empty($pdfFile?->file) ? $pdfFile->file : null,
+                        'link' => $session->link ?? null,
+                        'session_api' => $session->session_api ?? 'local',
                     ];
                 })
                 ->values();

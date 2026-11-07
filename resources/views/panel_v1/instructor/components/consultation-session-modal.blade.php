@@ -1,5 +1,6 @@
 @php
     $agoraEnabled = $agoraEnabled ?? !empty(getFeaturesSettings('agora_for_meeting'));
+    $zoomConsultEnabled = !empty(getFeaturesSettings('zoom_client_id'));
 @endphp
 
 {{-- Shared create/update meeting link modal (Rocket create-session equivalent) --}}
@@ -18,16 +19,24 @@
             @csrf
             <p class="font-medium text-13px text-gray" id="consultation-session-student"></p>
 
-            @if ($agoraEnabled)
+            @if ($agoraEnabled || $zoomConsultEnabled)
                 <div>
                     <p class="font-semibold text-14px text-primary mb-2">نوع الجلسة</p>
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-{{ ($agoraEnabled && $zoomConsultEnabled) ? '3' : '2' }} gap-2">
+                        @if ($agoraEnabled)
+                            <label class="flex items-center gap-2 border border-d9 rounded-12px px-3 py-3 cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                                <input type="radio" name="session_type" value="agora" class="radio radio-primary" checked>
+                                <span class="font-medium text-14px text-primary">جلسة مباشرة (Agora)</span>
+                            </label>
+                        @endif
+                        @if ($zoomConsultEnabled)
+                            <label class="flex items-center gap-2 border border-d9 rounded-12px px-3 py-3 cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                                <input type="radio" name="session_type" value="zoom" class="radio radio-primary" {{ !$agoraEnabled ? 'checked' : '' }}>
+                                <span class="font-medium text-14px text-primary">Zoom (تلقائي)</span>
+                            </label>
+                        @endif
                         <label class="flex items-center gap-2 border border-d9 rounded-12px px-3 py-3 cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                            <input type="radio" name="session_type" value="agora" class="radio radio-primary" checked>
-                            <span class="font-medium text-14px text-primary">جلسة مباشرة (Agora)</span>
-                        </label>
-                        <label class="flex items-center gap-2 border border-d9 rounded-12px px-3 py-3 cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                            <input type="radio" name="session_type" value="external" class="radio radio-primary">
+                            <input type="radio" name="session_type" value="external" class="radio radio-primary" {{ (!$agoraEnabled && !$zoomConsultEnabled) ? 'checked' : '' }}>
                             <span class="font-medium text-14px text-primary">رابط خارجي</span>
                         </label>
                     </div>
@@ -57,6 +66,11 @@
                     <p class="font-medium text-13px text-[#065F46]">ستُفتح جلسة مباشرة داخل المنصة عبر Agora (نفس نظام Rocket).</p>
                 </div>
             @endif
+            @if ($zoomConsultEnabled)
+                <div id="consultation-zoom-hint" class="hidden rounded-12px bg-[#EBF8FF] border border-[#BEE3F8] px-4 py-3">
+                    <p class="font-medium text-13px text-[#1A365D]">سيتم إنشاء اجتماع Zoom تلقائياً وإرسال الرابط للطالب.</p>
+                </div>
+            @endif
 
             <div class="flex flex-wrap items-center gap-2 pt-2">
                 <button type="submit"
@@ -84,14 +98,17 @@
     const passwordEl = document.getElementById('consultation-session-password');
     const externalFields = document.getElementById('consultation-external-fields');
     const agoraHint = document.getElementById('consultation-agora-hint');
+    const zoomHint = document.getElementById('consultation-zoom-hint');
 
     const syncType = () => {
         const type = form.querySelector('input[name="session_type"]:checked')?.value
             || form.querySelector('input[name="session_type"]')?.value
             || 'external';
         const isExternal = type === 'external';
+        const isZoom = type === 'zoom';
         if (externalFields) externalFields.classList.toggle('hidden', !isExternal);
-        if (agoraHint) agoraHint.classList.toggle('hidden', isExternal);
+        if (agoraHint) agoraHint.classList.toggle('hidden', type !== 'agora');
+        if (zoomHint) zoomHint.classList.toggle('hidden', !isZoom);
         if (urlEl) urlEl.required = isExternal;
     };
 
@@ -111,10 +128,13 @@
             if (passwordEl) passwordEl.value = '';
             const externalRadio = form.querySelector('input[name="session_type"][value="external"]');
             const agoraRadio = form.querySelector('input[name="session_type"][value="agora"]');
+            const zoomRadio = form.querySelector('input[name="session_type"][value="zoom"]');
             if (link && externalRadio) {
                 externalRadio.checked = true;
             } else if (agoraRadio) {
                 agoraRadio.checked = true;
+            } else if (zoomRadio) {
+                zoomRadio.checked = true;
             }
             syncType();
             if (typeof modal.showModal === 'function') modal.showModal();
