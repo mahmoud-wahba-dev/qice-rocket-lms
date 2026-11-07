@@ -7,7 +7,8 @@
     - url (string, optional GET link)
     - action (string, optional POST form action)
     - method (string, default POST) — only for form items
-    - confirm (string, optional onsubmit confirm)
+    - confirm (string, optional) — asks first in the shared confirm modal; also optional
+      confirm_title, confirm_ok (button label); the modal colour follows `tone` (danger|warning|primary)
     - tone: gray|primary|success|warning|danger (default gray)
     - disabled (bool)
 --}}
@@ -52,9 +53,14 @@
                 </li>
             @elseif (!empty($item['action']))
                 <li>
-                    {{-- Use single-quoted onsubmit: @js/@json emit double quotes and break HTML attrs --}}
+                    {{-- Confirmation uses the shared modal (components/v1/confirm-modal) — never window.confirm() --}}
                     <form method="POST" action="{{ $item['action'] }}"
-                        @if (!empty($item['confirm'])) onsubmit='return confirm(@json($item['confirm']));' @endif>
+                        @if (!empty($item['confirm']))
+                            data-confirm="{{ $item['confirm'] }}"
+                            @if (!empty($item['confirm_title'])) data-confirm-title="{{ $item['confirm_title'] }}" @endif
+                            @if (!empty($item['confirm_ok'])) data-confirm-ok="{{ $item['confirm_ok'] }}" @endif
+                            @if (in_array($item['tone'] ?? '', ['danger', 'warning', 'primary'], true)) data-confirm-tone="{{ $item['tone'] }}" @endif
+                        @endif>
                         @csrf
                         @if (!empty($item['method']) && strtoupper($item['method']) !== 'POST')
                             @method($item['method'])

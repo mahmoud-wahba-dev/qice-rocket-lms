@@ -144,6 +144,7 @@ class SystemController extends AdminController
             'status_class' => $statusMeta['class'],
             'profile_url' => $username !== '' ? $u->getProfileUrl() : null,
             'is_admin' => $u->isAdmin(),
+            'awaiting_approval' => $u->isTeacher() && $status === 'pending',
             'is_self' => auth()->check() && (int) auth()->id() === (int) $u->id,
             // Login-as (impersonate) for students, instructors, organizations
             'can_impersonate' => !$u->isAdmin() && in_array((string) $u->role_name, [

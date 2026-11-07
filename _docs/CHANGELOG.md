@@ -1,6 +1,6 @@
 # Project Changelog
 
-Rolling log of major changes to the QIEC project. For security setup details see [PHASE0_CHANGELOG.md](PHASE0_CHANGELOG.md).
+Rolling log of major changes to the QIEC project.
 
 ---
 
@@ -15,7 +15,6 @@ Rolling log of major changes to the QIEC project. For security setup details see
 - Removed exposed API key from `helper.php` (GitHub secret scanning)
 - Initialized git, pushed to `git@github.com:mahmoud-wahba-dev/qice-rocket-lms.git`
 
-Details: [PHASE0_CHANGELOG.md](PHASE0_CHANGELOG.md)
 
 ---
 
@@ -107,4 +106,3 @@ Recent commits use generic messages (`update`). Consider more descriptive messag
 
 - [README.md](README.md) — documentation index
 - [CLIENT_QIEC.md](CLIENT_QIEC.md) — current client status and TODOs
-- [MIGRATION_REUSE_PLAN.md](MIGRATION_REUSE_PLAN.md) — original migration plan

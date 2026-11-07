@@ -354,7 +354,7 @@
                                     'existingLabel' => 'الملف الحالي',
                                 ])
                                 @if (!empty($authUser->$field))
-                                    <button type="submit" form="student-delete-media-{{ $field }}" class="mt-4 font-bold text-14px text-[#EF4444]" onclick="return confirm('حذف الملف؟');">حذف الملف الحالي</button>
+                                    <button type="submit" form="student-delete-media-{{ $field }}" class="mt-4 font-bold text-14px text-[#EF4444]" data-confirm="حذف الملف؟">حذف الملف الحالي</button>
                                 @endif
                             </div>
                         @endforeach
@@ -375,7 +375,7 @@
                                 'existingLabel' => 'التوقيع الحالي',
                             ])
                             @if (!empty($signature))
-                                <button type="submit" form="student-delete-media-signature_img" class="mt-4 font-bold text-14px text-[#EF4444]" onclick="return confirm('حذف التوقيع؟');">حذف التوقيع</button>
+                                <button type="submit" form="student-delete-media-signature_img" class="mt-4 font-bold text-14px text-[#EF4444]" data-confirm="حذف التوقيع؟">حذف التوقيع</button>
                             @endif
                         </div>
                     </div>
@@ -421,7 +421,7 @@
                                     @forelse ($educations ?? [] as $education)
                                         <div class="flex items-center justify-between gap-3 border border-d9 rounded-10px px-4 py-3">
                                             <span class="font-medium text-15px">{{ $education->value }}</span>
-                                            <button type="submit" form="student-delete-meta-{{ $education->id }}" class="font-bold text-14px text-[#EF4444]" onclick="return confirm('حذف؟');">حذف</button>
+                                            <button type="submit" form="student-delete-meta-{{ $education->id }}" class="font-bold text-14px text-[#EF4444]" data-confirm="حذف؟">حذف</button>
                                         </div>
                                     @empty
                                         <p class="font-medium text-14px text-gray">لا توجد مؤهلات مسجلة.</p>
@@ -438,7 +438,7 @@
                                     @forelse ($experiences ?? [] as $experience)
                                         <div class="flex items-center justify-between gap-3 border border-d9 rounded-10px px-4 py-3">
                                             <span class="font-medium text-15px">{{ $experience->value }}</span>
-                                            <button type="submit" form="student-delete-meta-{{ $experience->id }}" class="font-bold text-14px text-[#EF4444]" onclick="return confirm('حذف؟');">حذف</button>
+                                            <button type="submit" form="student-delete-meta-{{ $experience->id }}" class="font-bold text-14px text-[#EF4444]" data-confirm="حذف؟">حذف</button>
                                         </div>
                                     @empty
                                         <p class="font-medium text-14px text-gray">لا توجد خبرات مسجلة.</p>
@@ -471,7 +471,7 @@
                                                 @endif
                                                 <button type="submit" form="student-delete-attachment-{{ $attachment->id }}"
                                                     class="font-bold text-13px text-[#EF4444] shrink-0"
-                                                    onclick="return confirm('حذف؟');">حذف</button>
+                                                    data-confirm="حذف؟">حذف</button>
                                             </div>
                                         </div>
                                     @empty
@@ -550,7 +550,7 @@
                                         <td class="px-4 py-4">{{ $session->getDuration() }}</td>
                                         <td class="px-4 py-4">
                                             @if (empty($session->session_end_at))
-                                                <form method="POST" action="{{ route('panel.v1.student.sessions.end', ['sessionId' => $session->id]) }}" onsubmit="return confirm('إنهاء هذه الجلسة؟');">
+                                                <form method="POST" action="{{ route('panel.v1.student.sessions.end', ['sessionId' => $session->id]) }}" data-confirm="إنهاء هذه الجلسة؟">
                                                     @csrf
                                                     <button type="submit" class="font-bold text-14px text-[#EF4444]">إنهاء الجلسة</button>
                                                 </form>

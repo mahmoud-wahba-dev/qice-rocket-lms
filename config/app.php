@@ -78,6 +78,13 @@ return [
     'timezone' => 'UTC',
 
     /*
+    | Daily job that archives live courses whose last session has ended (courses:archive-finished).
+    | Off by default: review `php artisan courses:archive-finished --dry-run` first, then set
+    | AUTO_ARCHIVE_FINISHED_COURSES=true in .env (and make sure the scheduler runs on the server).
+    */
+    'auto_archive_courses' => env('AUTO_ARCHIVE_FINISHED_COURSES', false),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------

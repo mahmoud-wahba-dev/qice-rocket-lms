@@ -377,6 +377,8 @@ Route::prefix('v1')->name('panel.v1.')->group(function () {
                 Route::post('/courses/{id}/delete', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'deleteCourse'])->name('courses.delete');
                 Route::post('/courses/{id}/approve', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'approveCourse'])->name('courses.approve');
                 Route::post('/courses/{id}/reject', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'rejectCourse'])->name('courses.reject');
+                Route::post('/courses/{id}/archive', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'archiveCourse'])->name('courses.archive');
+                Route::post('/courses/{id}/unarchive', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'unarchiveCourse'])->name('courses.unarchive');
                 Route::post('/courses/{id}/deactivate', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'deactivateCourse'])->name('courses.deactivate');
                 Route::get('/courses/{id}/notify', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'notifyCourseForm'])->name('courses.notify');
                 Route::post('/courses/{id}/notify', [\App\Http\Controllers\PanelV1\Admin\EducationController::class, 'sendCourseNotification'])->name('courses.notify.send');

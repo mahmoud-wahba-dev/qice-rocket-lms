@@ -151,6 +151,9 @@ class EducationController extends AdminController
                 }
                 if ($st = $request->input('status')) {
                     $q->where('status', $st);
+                } else {
+                    // Archived courses live on their own page (الدورات المؤرشفة).
+                    $q->where('status', '!=', \App\Models\Webinar::$archived);
                 }
                 $real['courses'] = $q->paginate(10)->withQueryString();
                 $real['paginator'] = $real['courses'];
@@ -188,6 +191,35 @@ class EducationController extends AdminController
                     'course' => 'دورات فيديو مُعدّة مسبقاً يمكن للطلاب مشاهدتها في أي وقت — تعلّم مرن حسب جدولك.',
                     default => 'جميع أنواع الدورات في المنصة.',
                 };
+                break;
+            case 'archived':
+                $title = 'الدورات المؤرشفة';
+                $real['adminActive'] = 'courses-archived';
+                $q = \App\Models\Webinar::query()
+                    ->with(['category', 'teacher'])
+                    ->where('status', \App\Models\Webinar::$archived)
+                    ->withCount(['sales as sales_count' => fn ($sq) => $sq->whereNull('refund_at')])
+                    ->orderBy('updated_at', 'desc');
+                if ($search !== '') {
+                    $q->where(function ($qq) use ($search) {
+                        $qq->where('id', $search);
+                        $qq->orWhereHas('translations', fn ($t) => $t->where('title', 'like', "%{$search}%"));
+                        $qq->orWhereHas('teacher', fn ($t) => $t->where('full_name', 'like', "%{$search}%"));
+                    });
+                }
+                $real['archivedCourses'] = $q->paginate(10)->withQueryString();
+                $real['paginator'] = $real['archivedCourses'];
+                // Students who still have access = non-refunded buyers whose access_days have not ended.
+                $real['archivedCourses']->getCollection()->each(function ($c) {
+                    $sales = \App\Models\Sale::where('webinar_id', $c->id)->where('type', 'webinar')->whereNull('refund_at');
+                    if (!empty($c->access_days)) {
+                        $sales->where('created_at', '>', time() - ((int) $c->access_days * 86400));
+                    }
+                    $c->students_with_access = $sales->count();
+                    $c->ends_at = $c->getEndTimestamp();
+                });
+                $real['stubTitle'] = $title;
+                $real['stubSubtitle'] = 'دورات انتهت أو أرشفتها الإدارة. تختفي من الموقع، ويحتفظ الطلاب المشترون بالوصول حتى انتهاء أيام الوصول الخاصة بهم.';
                 break;
             case 'bundles':
                 $title='حزم الدورات';
@@ -511,7 +543,7 @@ class EducationController extends AdminController
         } elseif ($section === 'assignments') {
             $view = 'panel_v1.admin.pages.education.assignments-list';
         } else {
-            $view = in_array($section,['courses','bundles','departments','events','quizzes','assignments','certificates','reviews','live','attendance','filters','trends','enrollment','upcoming','waitlists','statistics','noticeboard']) ? 'panel_v1.admin.pages.education.section-real' : 'panel_v1.admin.pages.education.stub';
+            $view = in_array($section,['courses','archived','bundles','departments','events','quizzes','assignments','certificates','reviews','live','attendance','filters','trends','enrollment','upcoming','waitlists','statistics','noticeboard']) ? 'panel_v1.admin.pages.education.section-real' : 'panel_v1.admin.pages.education.stub';
         }
 
         // fallback to stub if real view not exists
@@ -854,7 +886,7 @@ class EducationController extends AdminController
             'teacher_id'=>'required|exists:users,id',
             'category_id'=>'required|exists:categories,id',
             'price'=>'nullable|numeric|min:0',
-            'status'=>'required|in:active,pending,is_draft,inactive',
+            'status'=>'required|in:active,pending,is_draft,inactive,archived',
             'duration'=>'nullable|numeric|min:1',
             'capacity'=>'nullable|numeric|min:1',
             'access_days'=>'nullable|numeric|min:1|max:3650',
@@ -869,6 +901,7 @@ class EducationController extends AdminController
             'status'=>$data['status'],
             'duration'=>$data['duration'] ?? $webinar->duration,
             'capacity'=>$data['capacity'] ?? null,
+            'enable_waitlist'=> array_key_exists('enable_waitlist',$data) ? $data['enable_waitlist']==='on' : $webinar->enable_waitlist,
             'access_days'=> !empty($data['access_days']) ? (int) $data['access_days'] : null,
             'support'=>!empty($data['support']) && $data['support']=='on',
             'certificate'=>!empty($data['certificate']) && $data['certificate']=='on',
@@ -1042,6 +1075,45 @@ class EducationController extends AdminController
         if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
         \App\Models\Webinar::where('id',$id)->update(['status'=>'inactive','updated_at'=>time()]);
         return back()->with('toast',['title'=>'تم','msg'=>'تم الرفض','type'=>'success']);
+    }
+
+    public function archiveCourse(Request $request, int $id)
+    {
+        $user = $this->resolveAdmin($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        \App\Models\Webinar::where('id', $id)->update([
+            'status' => \App\Models\Webinar::$archived,
+            'updated_at' => time(),
+        ]);
+
+        return back()->with('toast', [
+            'title' => 'تم',
+            'msg' => 'تمت أرشفة الدورة. يحتفظ الطلاب المشترون بالوصول حتى انتهاء أيام الوصول.',
+            'type' => 'success',
+        ]);
+    }
+
+    public function unarchiveCourse(Request $request, int $id)
+    {
+        $user = $this->resolveAdmin($request);
+        if ($user instanceof \Illuminate\Http\RedirectResponse) {
+            return $user;
+        }
+
+        // Back to "inactive" (not public): the admin reviews it, then activates it.
+        \App\Models\Webinar::where('id', $id)->where('status', \App\Models\Webinar::$archived)->update([
+            'status' => \App\Models\Webinar::$inactive,
+            'updated_at' => time(),
+        ]);
+
+        return back()->with('toast', [
+            'title' => 'تم',
+            'msg' => 'تم إلغاء الأرشفة. الدورة غير نشطة الآن، فعّلها من قائمة الدورات لتظهر في الموقع.',
+            'type' => 'success',
+        ]);
     }
 
     public function deactivateCourse(Request $request, int $id)
@@ -2388,7 +2460,7 @@ class EducationController extends AdminController
 
     // ===== Waitlist =====
     public function waitlistIndex(Request $request){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $q=\App\Models\Webinar::where('enable_waitlist',true); $p=$q->paginate(15)->withQueryString(); foreach($p as $w){ $wq=\App\Models\Waitlist::where('webinar_id',$w->id); $w->members=$wq->count(); $w->registered_members=(clone $wq)->whereNotNull('user_id')->count(); } return $this->renderAdmin($request,'panel_v1.admin.pages.education.section-real','قوائم الانتظار',array_merge(AdminMockData::shell('education','courses'),['waitlists'=>$p,'paginator'=>$p,'stubTitle'=>'قوائم الانتظار'])); }
-    public function waitlistView(Request $request,int $webinarId){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $webinar=\App\Models\Webinar::findOrFail($webinarId); $q=\App\Models\Waitlist::where('webinar_id',$webinarId); $q=fromAndToDateFilter($request->get('from'),$request->get('to'),$q,'created_at'); if($s=$request->get('search')) $q->where('full_name','like',"%$s%"); $p=$q->orderBy('created_at','desc')->paginate(15)->withQueryString(); return $this->renderAdmin($request,'panel_v1.admin.pages.education.section-real','قائمة الانتظار: '.$webinar->title,array_merge(AdminMockData::shell('education','courses'),['waitlistItems'=>$p,'paginator'=>$p,'webinar'=>$webinar,'stubTitle'=>'قائمة الانتظار'])); }
+    public function waitlistView(Request $request,int $webinarId){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; $webinar=\App\Models\Webinar::findOrFail($webinarId); $q=\App\Models\Waitlist::with('user')->where('webinar_id',$webinarId); $q=fromAndToDateFilter($request->get('from'),$request->get('to'),$q,'created_at'); if($s=$request->get('search')) $q->where(function($qq) use ($s){ $qq->where('full_name','like',"%$s%")->orWhere('email','like',"%$s%")->orWhere('phone','like',"%$s%")->orWhereHas('user',function($uq) use ($s){ $uq->where('full_name','like',"%$s%")->orWhere('email','like',"%$s%")->orWhere('mobile','like',"%$s%"); }); }); $p=$q->orderBy('created_at','desc')->paginate(15)->withQueryString(); return $this->renderAdmin($request,'panel_v1.admin.pages.education.section-real','قائمة الانتظار: '.$webinar->title,array_merge(AdminMockData::shell('education','courses'),['waitlistItems'=>$p,'paginator'=>$p,'webinar'=>$webinar,'stubTitle'=>'قائمة الانتظار'])); }
     public function waitlistDelete(Request $request,int $id){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; \App\Models\Waitlist::where('id',$id)->delete(); return back()->with('toast',['title'=>'تم','msg'=>'تم الحذف','type'=>'success']); }
     public function waitlistDeleteAll(Request $request,int $webinarId){ $u=$this->resolveAdmin($request); if($u instanceof \Illuminate\Http\RedirectResponse) return $u; \App\Models\Waitlist::where('webinar_id',$webinarId)->delete(); return back()->with('toast',['title'=>'تم','msg'=>'تم الحذف','type'=>'success']); }
 

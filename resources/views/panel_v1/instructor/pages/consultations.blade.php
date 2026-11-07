@@ -180,7 +180,7 @@
                                     @if (!empty($row['finish_url']))
                                         <li>
                                             <form method="POST" action="{{ $row['finish_url'] }}"
-                                                onsubmit="return confirm('إنهاء هذه الجلسة؟');">
+                                                data-confirm="إنهاء هذه الجلسة؟">
                                                 @csrf
                                                 <button type="submit"
                                                     class="dropdown-item w-full text-start px-4 py-2.5 font-semibold text-14px text-[#16A34A] hover:bg-[#F0FDF4]">

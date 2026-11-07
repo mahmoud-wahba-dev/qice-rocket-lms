@@ -54,7 +54,7 @@
                                     <a href="{{ route('panel.v1.student.meetings.join', ['id' => $reserve->id]) }}" class="btn btn-primary rounded-10px h-10 px-5 font-bold text-13px">انضمام</a>
                                 @endif
                                 @if ($reserve->status === 'open')
-                                    <form method="POST" action="{{ route('panel.v1.student.meetings.finish', ['id' => $reserve->id]) }}" onsubmit="return confirm('إنهاء الجلسة؟');">
+                                    <form method="POST" action="{{ route('panel.v1.student.meetings.finish', ['id' => $reserve->id]) }}" data-confirm="إنهاء الجلسة؟">
                                         @csrf
                                         <button type="submit" class="btn btn-ghost rounded-10px h-10 px-4 font-bold text-13px text-gray">إنهاء</button>
                                     </form>

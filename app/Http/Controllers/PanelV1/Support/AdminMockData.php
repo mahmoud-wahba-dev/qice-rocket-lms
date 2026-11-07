@@ -59,11 +59,14 @@ class AdminMockData
     private static function withCourseTypeCounts(array $nav): array
     {
         try {
+            // Archived courses are counted on their own tab, not in the per-type counts.
+            $notArchived = fn () => \App\Models\Webinar::where('status', '!=', \App\Models\Webinar::$archived);
             $counts = [
-                'webinar' => (int) \App\Models\Webinar::where('type', 'webinar')->count(),
-                'course' => (int) \App\Models\Webinar::where('type', 'course')->count(),
-                'text_lesson' => (int) \App\Models\Webinar::where('type', 'text_lesson')->count(),
+                'webinar' => (int) $notArchived()->where('type', 'webinar')->count(),
+                'course' => (int) $notArchived()->where('type', 'course')->count(),
+                'text_lesson' => (int) $notArchived()->where('type', 'text_lesson')->count(),
             ];
+            $archivedCount = (int) \App\Models\Webinar::where('status', \App\Models\Webinar::$archived)->count();
         } catch (\Throwable $e) {
             return $nav;
         }
@@ -74,6 +77,9 @@ class AdminMockData
                     $type = $child['params']['type'] ?? null;
                     if ($type && isset($counts[$type])) {
                         $nav[$gi]['items'][$ii]['children'][$ci]['count'] = $counts[$type];
+                    }
+                    if (($child['params']['section'] ?? null) === 'archived') {
+                        $nav[$gi]['items'][$ii]['children'][$ci]['count'] = $archivedCount;
                     }
                 }
             }
@@ -137,6 +143,12 @@ class AdminMockData
                                 'label' => 'سجل البث المباشر',
                                 'route' => 'panel.v1.admin.education.section',
                                 'params' => ['section' => 'live'],
+                            ],
+                            [
+                                'key' => 'courses-archived',
+                                'label' => 'الدورات المؤرشفة',
+                                'route' => 'panel.v1.admin.education.section',
+                                'params' => ['section' => 'archived'],
                             ],
                         ],
                     ],

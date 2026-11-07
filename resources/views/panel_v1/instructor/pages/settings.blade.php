@@ -365,7 +365,7 @@
                                     'existing' => $current ? [$current] : [],
                                 ])
                                 @if (!empty($authUser->$field))
-                                    <button type="submit" form="instructor-delete-media-{{ $field }}" class="mt-4 font-bold text-14px text-[#EF4444]" onclick="return confirm('حذف الملف؟');">حذف الملف الحالي</button>
+                                    <button type="submit" form="instructor-delete-media-{{ $field }}" class="mt-4 font-bold text-14px text-[#EF4444]" data-confirm="حذف الملف؟">حذف الملف الحالي</button>
                                 @endif
                             </div>
                         @endforeach
@@ -385,7 +385,7 @@
                                 'existing' => $signaturePreview ? [$signaturePreview] : [],
                             ])
                             @if (!empty($signature))
-                                <button type="submit" form="instructor-delete-media-signature_img" class="mt-4 font-bold text-14px text-[#EF4444]" onclick="return confirm('حذف التوقيع؟');">حذف التوقيع</button>
+                                <button type="submit" form="instructor-delete-media-signature_img" class="mt-4 font-bold text-14px text-[#EF4444]" data-confirm="حذف التوقيع؟">حذف التوقيع</button>
                             @endif
                         </div>
                     </div>
@@ -575,7 +575,7 @@
                                         <td class="px-4 py-4">{{ $session->getDuration() }}</td>
                                         <td class="px-4 py-4">
                                             @if (empty($session->session_end_at))
-                                                <form method="POST" action="{{ route('panel.v1.instructor.sessions.end', ['sessionId' => $session->id]) }}" onsubmit="return confirm('إنهاء هذه الجلسة؟');">
+                                                <form method="POST" action="{{ route('panel.v1.instructor.sessions.end', ['sessionId' => $session->id]) }}" data-confirm="إنهاء هذه الجلسة؟">
                                                     @csrf
                                                     <button type="submit" class="font-bold text-14px text-[#EF4444]">إنهاء الجلسة</button>
                                                 </form>

@@ -148,7 +148,7 @@
                         </a>
                         <form method="POST"
                             action="{{ route('panel.v1.instructor.quizzes.questions.delete', ['id' => $quizId, 'questionId' => $question['id']]) }}"
-                            onsubmit='return confirm(@json("حذف هذا السؤال؟"));'>
+                            data-confirm="حذف هذا السؤال؟">
                             @csrf
                             <button type="submit" class="size-9 rounded-full bg-[#FEF2F2] center text-[#EF4444] hover:opacity-80" aria-label="حذف">
                                 <span class="icon-[tabler--trash] size-4"></span>

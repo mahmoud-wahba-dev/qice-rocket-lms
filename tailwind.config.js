@@ -14,6 +14,9 @@ module.exports = {
         "./resources/views/panel_v1/student/**/*.blade.php",
         "./resources/views/panel_v1/instructor/**/*.blade.php",
         "./resources/views/panel_v1/admin/**/*.blade.php",
+        "./resources/views/panel_v1/organization/**/*.blade.php",
+        "./resources/views/panel_v1/components/**/*.blade.php",
+        "./resources/views/components/v1/**/*.blade.php",
         "./resources/views/vendor/pagination/**/*.blade.php",
         // Admin nav icons are defined in PHP — scan so @iconify/tailwind emits CSS
         "./app/Http/Controllers/PanelV1/Support/AdminMockData.php",

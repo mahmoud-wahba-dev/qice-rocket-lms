@@ -31,6 +31,9 @@
 {{-- Always mount toast host so showCartToast works on every panel_v1 / course-player page --}}
 @include('components.v1.toast')
 
+{{-- Reusable confirm modal (data-confirm / window.confirmModal) — never use the browser's confirm() --}}
+@include('components.v1.confirm-modal')
+
 @if (!empty($v1FlashToast))
     {{-- Inline (not only @push): Vite modules load deferred; retry until showCartToast exists --}}
     <script>

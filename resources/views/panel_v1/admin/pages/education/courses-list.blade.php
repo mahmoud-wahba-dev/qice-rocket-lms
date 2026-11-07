@@ -200,8 +200,23 @@
                                             </li>
                                         @endif
                                         <li>
+                                            <form method="POST" action="{{ route('panel.v1.admin.education.courses.archive', ['id' => $c->id]) }}"
+                                                data-confirm="ستختفي الدورة من الموقع ويحتفظ الطلاب المشترون بالوصول إليها حتى انتهاء أيام الوصول الخاصة بهم. يمكنك إلغاء الأرشفة في أي وقت."
+                                                data-confirm-title="أرشفة الدورة"
+                                                data-confirm-ok="أرشفة"
+                                                data-confirm-tone="warning">
+                                                @csrf
+                                                <button type="submit"
+                                                    class="dropdown-item w-full text-start px-4 py-2.5 font-semibold text-14px text-[#7C3AED] hover:bg-[#F5F3FF]"
+                                                    title="نقل الدورة إلى الدورات المؤرشفة">أرشفة</button>
+                                            </form>
+                                        </li>
+                                        <li>
                                             <form method="POST" action="{{ route('panel.v1.admin.education.courses.delete', ['id' => $c->id]) }}"
-                                                onsubmit="return confirm('حذف الدورة؟');">
+                                                data-confirm="سيتم حذف الدورة نهائياً مع بياناتها ولا يمكن التراجع عن ذلك."
+                                                data-confirm-title="حذف الدورة"
+                                                data-confirm-ok="حذف"
+                                                data-confirm-tone="danger">
                                                 @csrf
                                                 <button type="submit" class="dropdown-item w-full text-start px-4 py-2.5 font-semibold text-14px text-[#DC2626] hover:bg-[#FEF2F2]">حذف</button>
                                             </form>

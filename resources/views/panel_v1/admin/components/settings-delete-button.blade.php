@@ -3,7 +3,7 @@
     $btnText = $btnText ?? trans('admin/main.delete');
     $confirm = $confirm ?? 'هل أنت متأكد من الحذف؟';
 @endphp
-<form method="POST" action="{{ $url }}" class="inline" onsubmit="return confirm(@json($confirm));">
+<form method="POST" action="{{ $url }}" class="inline" data-confirm="{{ $confirm }}" data-confirm-tone="danger">
     @csrf
     <button type="submit" class="{{ $btnClass }}">
         <span class="icon-[tabler--trash] size-4"></span>

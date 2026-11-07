@@ -70,5 +70,4 @@
   'reset_password_notification' => 'إعادة تعيين كلمة المرور',
   'new_password' => 'كلمة المرور الجديدة',
   'retype_new_password' => 'أعد كتابة كلمة المرور الجديدة',
-  'reset_your_password' => 'إعادة تعيين كلمة المرور الخاصة بك',
-);
+  'reset_your_password' => 'إعادة تعيين كلمة المرور الخاصة بك',);

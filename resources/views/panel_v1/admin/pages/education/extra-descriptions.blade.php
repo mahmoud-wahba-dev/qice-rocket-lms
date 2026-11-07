@@ -43,7 +43,7 @@
                     <td class="px-4 py-3 text-center">
                         <div class="flex items-center justify-center gap-1.5">
                             <button type="button" onclick="document.getElementById('edit-extra-{{ $item->id }}').classList.toggle('hidden')" class="size-8 rounded-8px border border-d9 center hover:bg-[#FAFAF4]" title="تعديل"><span class="icon-[tabler--edit] size-4 text-primary"></span></button>
-                            <form method="POST" action="{{ route('panel.v1.admin.education.extra-descriptions.delete',['id'=>$item->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center hover:bg-red-50" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form>
+                            <form method="POST" action="{{ route('panel.v1.admin.education.extra-descriptions.delete',['id'=>$item->id]) }}" data-confirm="حذف؟" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center hover:bg-red-50" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form>
                         </div>
                     </td>
                 </tr>

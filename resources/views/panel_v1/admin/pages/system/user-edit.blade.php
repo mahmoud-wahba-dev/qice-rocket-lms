@@ -31,7 +31,7 @@
             </a>
             @unless ($isSelf)
                 <form method="POST" action="{{ route('panel.v1.admin.system.users.delete', ['id' => $editUser->id]) }}"
-                    onsubmit='return confirm(@json("حذف هذا المستخدم نهائيًا؟ لا يمكن التراجع."));'>
+                    data-confirm="حذف هذا المستخدم نهائيًا؟ لا يمكن التراجع.">
                     @csrf
                     <button type="submit"
                         class="inline-flex items-center gap-2 h-12 px-5 rounded-12px bg-[#DC2626] text-white font-semibold text-14px hover:opacity-95 transition">
@@ -291,7 +291,7 @@
                                 <td class="px-3 py-3">{{ date('Y/m/d H:i', (int) $sale->created_at) }}</td>
                                 <td class="px-3 py-3 text-center">
                                     <form method="POST" action="{{ route('panel.v1.admin.system.users.block-course', ['id' => $editUser->id, 'saleId' => $sale->id]) }}"
-                                        onsubmit='return confirm(@json("إزالة وصول المستخدم لهذه الدورة؟"));' class="inline">
+                                        data-confirm="إزالة وصول المستخدم لهذه الدورة؟" class="inline">
                                         @csrf
                                         <button type="submit" class="font-semibold text-13px text-[#DC2626] hover:underline">إزالة الوصول</button>
                                     </form>

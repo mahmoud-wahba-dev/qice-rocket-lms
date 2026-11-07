@@ -159,7 +159,7 @@
                 <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">التذكرة</th><th class="px-4 py-3 text-center">السعر</th><th class="px-4 py-3 text-center">السعة</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead>
                 <tbody>
                 @foreach($event->tickets as $tk)
-                    <tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $tk->title ?? 'تذكرة #'.$tk->id }}</td><td class="px-4 py-3 text-center">{{ $tk->price ? handlePrice($tk->price) : 'مجانية' }}</td><td class="px-4 py-3 text-center">{{ $tk->capacity ?? '—' }}</td><td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.education.events.tickets.delete',['id'=>$tk->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td></tr>
+                    <tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $tk->title ?? 'تذكرة #'.$tk->id }}</td><td class="px-4 py-3 text-center">{{ $tk->price ? handlePrice($tk->price) : 'مجانية' }}</td><td class="px-4 py-3 text-center">{{ $tk->capacity ?? '—' }}</td><td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.education.events.tickets.delete',['id'=>$tk->id]) }}" data-confirm="حذف؟" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td></tr>
                 @endforeach
                 </tbody>
             </table>
@@ -183,7 +183,7 @@
                 <thead><tr class="bg-fa border-b border-d9 text-gray"><th class="px-4 py-3 text-start">الاسم</th><th class="px-4 py-3 text-center">الوظيفة</th><th class="px-4 py-3 text-center">إجراء</th></tr></thead>
                 <tbody>
                 @foreach($event->speakers as $sp)
-                    <tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $sp->name ?? 'متحدث #'.$sp->id }}</td><td class="px-4 py-3 text-center">{{ $sp->job ?? '—' }}</td><td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.education.events.speakers.delete',['id'=>$sp->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td></tr>
+                    <tr class="border-b border-d9 last:border-0"><td class="px-4 py-3 font-bold text-primary">{{ $sp->name ?? 'متحدث #'.$sp->id }}</td><td class="px-4 py-3 text-center">{{ $sp->job ?? '—' }}</td><td class="px-4 py-3 text-center"><form method="POST" action="{{ route('panel.v1.admin.education.events.speakers.delete',['id'=>$sp->id]) }}" data-confirm="حذف؟" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form></td></tr>
                 @endforeach
                 </tbody>
             </table>

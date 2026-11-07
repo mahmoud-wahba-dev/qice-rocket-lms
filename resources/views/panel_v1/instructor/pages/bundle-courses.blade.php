@@ -74,7 +74,7 @@
                             @endif
                             <form method="POST"
                                 action="{{ route('panel.v1.instructor.bundles.courses.detach', ['id' => $meta['id'], 'webinarId' => $course['id']]) }}"
-                                onsubmit="return confirm('إزالة هذه الدورة من الحزمة؟');">
+                                data-confirm="إزالة هذه الدورة من الحزمة؟">
                                 @csrf
                                 <button type="submit"
                                     class="inline-flex items-center gap-1.5 h-9 px-3 rounded-10px border border-[#FECACA] font-semibold text-13px text-[#E11D48] hover:bg-[#FEF2F2] transition">

@@ -196,8 +196,13 @@ class LoginController extends Controller
         ]);
     }
 
-    protected function sendNotActiveResponse($user)
+    protected function sendNotActiveResponse($user, $justVerified = false)
     {
+        if ($user->requiresAdminApproval() and $user->status == User::$pending) {
+            // Just verified their code = fresh registration; otherwise a later login attempt.
+            return redirect('/login')->with('instructor_pending_modal', $justVerified ? 'registered' : 'login');
+        }
+
         $toastData = [
             'title' => trans('public.request_failed'),
             'msg' => trans('auth.login_failed_your_account_is_not_verified'),
@@ -250,13 +255,16 @@ class LoginController extends Controller
 
             if ($checkConfirmed['status'] == 'send') {
                 return redirect('/verification');
-            } elseif ($checkConfirmed['status'] == 'verified') {
+            } elseif ($checkConfirmed['status'] == 'verified' and !$user->requiresAdminApproval()) {
                 Auth::login($user);
 
                 $user->update([
                     'status' => User::$active,
                 ]);
             }
+        } elseif ($verify and $user->requiresAdminApproval()) {
+            // Contact verified, but instructors still wait for admin approval.
+            session()->forget('verificationId');
         } elseif ($verify) {
             session()->forget('verificationId');
 
@@ -273,7 +281,7 @@ class LoginController extends Controller
             $request->session()->flush();
             $request->session()->regenerate();
 
-            return $this->sendNotActiveResponse($user);
+            return $this->sendNotActiveResponse($user, $verify);
         }
 
         $checkLoginDeviceLimit = $this->checkLoginDeviceLimit($user);

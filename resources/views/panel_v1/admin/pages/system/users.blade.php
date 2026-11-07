@@ -99,6 +99,20 @@
                                         $isSelf = !empty($row['is_self']);
                                         $canImpersonate = !empty($row['can_impersonate']);
                                         $userMenuItems = [];
+                                        if (!empty($row['awaiting_approval'])) {
+                                            $userMenuItems[] = [
+                                                'label' => 'قبول المدرب',
+                                                'action' => route('panel.v1.admin.system.instructor-requests.approve', ['id' => $row['id']]),
+                                                'confirm' => 'قبول هذا المدرب وتفعيل حسابه؟',
+                                                'tone' => 'primary',
+                                            ];
+                                            $userMenuItems[] = [
+                                                'label' => 'رفض الطلب',
+                                                'action' => route('panel.v1.admin.system.instructor-requests.reject', ['id' => $row['id']]),
+                                                'confirm' => 'رفض طلب هذا المدرب؟',
+                                                'tone' => 'danger',
+                                            ];
+                                        }
                                         if ($canImpersonate) {
                                             $userMenuItems[] = [
                                                 'label' => 'تسجيل الدخول كـ',

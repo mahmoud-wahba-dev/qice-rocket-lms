@@ -37,7 +37,6 @@ Before `git init` or first push:
 3. Create local `.env` with safe dev credentials
 4. Grep codebase for hardcoded API keys before push (GitHub secret scanning will block)
 
-See [PHASE0_CHANGELOG.md](PHASE0_CHANGELOG.md) for QIEC example.
 
 ---
 
@@ -218,5 +217,4 @@ See [ISSUES_AND_LESSONS.md](ISSUES_AND_LESSONS.md) for the full list. Top 5:
 ## Related docs
 
 - [CLIENT_QIEC.md](CLIENT_QIEC.md) — this client's specifics
-- [MIGRATION_REUSE_PLAN.md](MIGRATION_REUSE_PLAN.md) — original siematplus → QIEC plan
 - [ARCHITECTURE_SUMMARY.md](ARCHITECTURE_SUMMARY.md) — full technical reference

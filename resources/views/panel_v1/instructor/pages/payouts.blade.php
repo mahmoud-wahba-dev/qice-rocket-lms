@@ -39,7 +39,7 @@
             </div>
             <div class="mt-auto grid grid-cols-2 gap-2.5">
                 <form method="POST" action="{{ route('panel.v1.instructor.payouts.request') }}"
-                    onsubmit="return confirm('تأكيد طلب سحب الرصيد المتاح؟');">
+                    data-confirm="تأكيد طلب سحب الرصيد المتاح؟">
                     @csrf
                     <button type="submit"
                         @disabled(empty($summary['can_request']))

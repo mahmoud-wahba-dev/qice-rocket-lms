@@ -43,16 +43,6 @@ Route::group(['prefix' => 'captcha'], function () {
     Route::get('{config?}', '\Mews\Captcha\CaptchaController@getCaptcha');
 });
 
-/* Emergency Database Update */
-Route::get('/emergencyDatabaseUpdate', function () {
-    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-    $msg1 = \Illuminate\Support\Facades\Artisan::output();
-    \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-    $msg2 = \Illuminate\Support\Facades\Artisan::output();
-    \Illuminate\Support\Facades\Artisan::call('clear:all', ['--force' => true]);
-    return response()->json(['migrations' => $msg1, 'sections' => $msg2]);
-});
-
 // ── Auth routes — controllers serve the landing_v1 auth views ──────────────
 Route::group(['namespace' => 'Auth', 'middleware' => ['check_mobile_app', 'share', 'check_maintenance', 'check_restriction']], function () {
     Route::get('/login',    'LoginController@showLoginForm')->name('landing.v1.login');

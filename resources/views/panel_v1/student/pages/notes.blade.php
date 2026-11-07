@@ -34,7 +34,7 @@
                     <div class="flex items-start justify-between gap-3 mb-2">
                         <p class="font-bold text-16px text-primary">دورة #{{ $note->course_id }}</p>
                         <form method="POST" action="{{ route('panel.v1.student.notes.delete', ['id' => $note->id]) }}"
-                            onsubmit="return confirm('حذف الملاحظة؟');">
+                            data-confirm="حذف الملاحظة؟">
                             @csrf
                             <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف</button>
                         </form>

@@ -30,7 +30,7 @@
                 </button>
             @endif
             @if (!empty($d['finish_url']))
-                <form method="POST" action="{{ $d['finish_url'] }}" onsubmit="return confirm('إنهاء هذه الجلسة؟');">
+                <form method="POST" action="{{ $d['finish_url'] }}" data-confirm="إنهاء هذه الجلسة؟">
                     @csrf
                     <button type="submit"
                         class="inline-flex items-center gap-2 h-10 px-4 rounded-12px border border-[#FECACA] text-[#E11D48] font-semibold text-14px hover:bg-[#FEF2F2] transition">

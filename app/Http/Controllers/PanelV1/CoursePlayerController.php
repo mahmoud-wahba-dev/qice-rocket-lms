@@ -1541,7 +1541,7 @@ class CoursePlayerController extends Controller
 
         $webinar = \App\Models\Webinar::with(['teacher', 'translations'])
             ->where('slug', $slug)
-            ->where('status', 'active')
+            ->whereIn('status', \App\Models\Webinar::$buyerVisibleStatuses)
             ->first();
 
         if (empty($webinar)) {
@@ -1614,7 +1614,7 @@ class CoursePlayerController extends Controller
 
         $webinar = \App\Models\Webinar::with(['teacher', 'translations'])
             ->where('slug', $slug)
-            ->where('status', 'active')
+            ->whereIn('status', \App\Models\Webinar::$buyerVisibleStatuses)
             ->first();
 
         if (empty($webinar)) {
@@ -1636,7 +1636,7 @@ class CoursePlayerController extends Controller
         }
         $webinar = \App\Models\Webinar::with(['teacher', 'translations'])
             ->where('slug', $slug)
-            ->where('status', 'active')
+            ->whereIn('status', \App\Models\Webinar::$buyerVisibleStatuses)
             ->first();
         if (empty($webinar)) { abort(404); }
         if (!$this->canAccess($user,$webinar)) {
@@ -1657,9 +1657,8 @@ class CoursePlayerController extends Controller
             return true;
         }
 
-        return \App\Models\Sale::where('buyer_id', $user->id)
-            ->where('webinar_id', $webinar->id)
-            ->exists();
+        // Enforces refunds and the course's access_days (expired access = no player access).
+        return $webinar->checkUserHasBought($user);
     }
 
     /**

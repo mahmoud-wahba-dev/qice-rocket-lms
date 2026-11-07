@@ -1,182 +1,90 @@
-# AGENTS — تعليمات وكلاء التطوير لمشروع QICE
+# QIEC Training Platform
 
-> للوكلاء (AI agents) والأدوات الآلية — الأولوية: **عدم كسر الإنتاج، عدم تسريب أسرار، عدم الرفع بدون إذن**.
+Shared instructions for every coding agent on this project (Claude Code, Cursor, OpenCode).
 
----
+RocketLMS v2.1 (Laravel 9) rebranded for QIEC (Quality and Innovation in Education Center). Arabic-first, RTL.
 
-## 1. ما هذا المشروع
+- **Local:** http://training.qiec.local/ (Windows, XAMPP, `c:\xampp\htdocs\qiec-project`)
+- **Production:** https://training.qiec.sa/
+- **Repo:** `mahmoud-wahba-dev/qice-rocket-lms`, branch `master`
 
-- **QIEC للتدريب** على RocketLMS v2.1 — Laravel 9 · PHP 8.2 + ionCube Loader 15.5 · MySQL 8.
-- ثلاث طبقات: `design_1` (Stisla قديم — Mix) + `landing_v1` (تسويقية — Vite+Tailwind) + `panel_v1` (لوحات Student/Instructor/Admin/Organization — Vite).
-- الحالة: **Student/CoursePlayer/Landing/Instructor/Organization/Admin 100% حقيقي** (`v1` بديل حرفي كامل 1:1) — صفر Mock في الإنتاج (تمت إزالة `InstructorMockData` و `CoursePlayerMockData` من `PanelV1` — `AdminMockData` باقٍ للـ `shell` فقط).
-- Admin V1 مكتمل CRUD: دورات/حزم/اختبارات+أسئلة/تكليفات/فعاليات+تذاكر ومتحدثون/مراجعات (اعتماد)/مستخدمون (إنشاء/تعديل/حذف)/خصومات/مجموعات/شارات/أدوار/سحب (موافقة)/offline (تأكيد)/استيراد CSV/تصدير Excel — اختبارات `AdminV1 12/12`.
-- الترخيص مربوط بـ `training.qiec.local` — `localhost` يُحول لـ `/purchase-code`.
+All new work is in the **v1 layer**: `routes/panel_v1.php`, `app/Http/Controllers/PanelV1/`, `resources/views/{panel_v1,landing_v1}/`. The `design_1` layer and `/panel/*` are legacy.
 
----
+## Docs
 
-## 2. القواعد الصلبة — لا تتجاوزها
+All project docs live in `_docs/`, for every agent. Don't create docs in `.claude/`, `.cursor/`, `.opencode/` or the project root.
 
-1. **لا `git commit` ولا `git push` بدون إذن صريح** — العمل في `working tree` فقط.
-2. **لا تلمس `ionCube`** (`PurchaseCode`, `LicenseService`, `routes/admin.php`, أي `//00507`).
-3. **لا ترفع أسراراً:** `.env`, `.env.testing`, `firebase-auth.json`, `*.pem`, `*.sql`, `storage/logs/*`, `vendor/`, `node_modules/`, `public/build`, `public/assets/`, `public/vendor/` — كلها `gitignored`.
-4. **لا `docker compose down -v`** إلا بأمر صريح — يمسح `qiec-mysql-data`.
-5. **لا تغيير PHP/ionCube** خارج `8.2 + 15.5` إلا بعد مناقشة.
-6. **أي رقم/قائمة من DB** — لا Mock في الإنتاج (المسموح `StudentV1DemoDataSeeder` للاختبار فقط).
+- `_docs/map/`: current reference docs. Update them when behaviour changes.
+- `_docs/plans/`: plans written by any agent, one file per feature, named `<feature>.plan.md`.
+- Tool entry files stay in the root because tools only load them from there. `AGENTS.md` holds the content; `CLAUDE.md` just imports it.
 
----
+## Hard rules
 
-## 3. كيف تشغّل المشروع
+1. **Pushing to `master` deploys to production** (maintenance mode, `git reset --hard`, `migrate --force`). No commit or push without explicit permission. Before committing, show `git status`/diff and check for secrets. Never `git add .`.
+2. **Never touch ionCube-encoded or license code:** `app/Http/Kernel.php`, `routes/admin.php`, `app/Models/PurchaseCode.php`, `app/Services/*LicenseService.php`, `app/Http/Middleware/*LicenseCheck.php`, `app/Providers/*License*Provider.php`, `app/Http/Controllers/Web/PurchaseCodeController.php`, or anything containing `//00507`. Encoded files cannot be read or edited.
+3. **Don't run PHPUnit until `.env.testing` exists.** It doesn't exist now, so tests would run against the dev `qiec` DB. Setup: `_docs/map/dev-and-deploy.md`.
+4. **Never copy or commit secrets:** `.env`, `.env.testing`, `firebase-auth.json`, `*.pem`, `*.sql`, `_backups/`, `storage/logs/*`. Some files in `_docs/` and `README.md` hold credentials or server details; never repeat them.
+5. **No mock data in production.** Numbers and lists come from the DB. `AdminMockData::shell()` is an exception: despite the name it is live admin nav code. `StudentV1DemoDataSeeder` is for test data only.
+6. **`panel_v1` and `design_1` never import each other.** New screens go only in the v1 layer.
+7. **Every v1 controller action must check the role.** The `panel` middleware admits all non-admin roles; isolation lives in the controllers (see `_docs/map/v1-conventions.md`).
+8. **Ask first** when unsure about payments, permissions, or licensing. Don't change PHP/ionCube versions without discussion.
+9. **Never use the browser's `alert()`, `confirm()` or `prompt()` (or `onsubmit="return confirm(...)"`).** Use our shared UI, which follows the brand colours and RTL:
+   - **Confirm an action** (delete, archive, end session...): add `data-confirm="message"` to the `<form>` or button/link, optionally `data-confirm-title`, `data-confirm-ok` (button label) and `data-confirm-tone="danger|warning|primary"`. In `actions-dropdown` items use `confirm`, `confirm_title`, `confirm_ok` and `tone`. From JS: `if (await window.confirmModal({title, message, ok, tone})) {...}`. Component: `resources/views/components/v1/confirm-modal.blade.php` (already included in every v1 layout via `components/v1/flash`).
+   - **Tell the user something** (success/error): the toast, `window.showCartToast(title, msg, 'success'|'error')`, or `session('toast')` from a controller.
+   - **Show a bigger message** (like the instructor "awaiting approval" or "seats are full" dialogs): follow `landing_v1/components/instructor-pending-modal.blade.php`. Reuse these components; don't write a new dialog style. This applies to every AI agent (Claude, Cursor, OpenCode).
 
-### المسار المدعوم: Docker — الملفات في `/tmp/qiec-docker/` لا تُنقل
+## Environment
 
-```bash
-echo '127.0.0.1 training.qiec.local' | sudo tee -a /etc/hosts
-cd /tmp/qiec-docker && docker compose up -d   # qiec-app:8000 + qiec-db:3307 (db:3306)
-docker ps --filter name=qiec
-```
+PHP 8.2.12 + ionCube 15.5 and MariaDB 10.4 (DB `qiec`), Apache on port 80 with docroot `public/`. There is no Docker on this machine: ignore `docker exec` commands in older docs and run the commands directly.
 
-### أوامر artisan — كـ www-data بعد الإعداد
-
-```bash
-docker exec -u www-data -w /var/www/html qiec-app php artisan config:clear
-docker exec -u www-data -w /var/www/html qiec-app php artisan migrate --force
-docker exec -u www-data -w /var/www/html qiec-app php artisan db:seed --force
-```
-
-كـ `root` فقط لتثبيت حزم، ثم صحح:
+`php` and `composer` may not be on PATH. Use `C:\xampp\php\php.exe` and `php composer.phar`.
 
 ```bash
-docker exec -w /var/www/html qiec-app chown -R www-data:www-data storage bootstrap/cache
+php artisan view:clear            # after Blade changes that don't show
+php artisan config:clear          # after .env changes
+php -l path/to/File.php           # after adding a `use` import
+npm run dev:full                  # Vite dev server (writes public/hot)
+npm run build:landing             # production Vite build
 ```
 
-### الأصول
+- The license is bound to `training.qiec.local`. Using `localhost` redirects to `/purchase-code`, so always use the vhost.
+- `php artisan route:list` crashes here (`ForumController` aborts in its constructor). Search `routes/` instead.
+- If `public/hot` exists, `@vite` loads from the dev server. If styles vanish with Vite stopped, delete `public/hot`.
 
-```bash
-npm install
-npx mix --production        # admin + design_1 → public/assets/* (gitignored)
-npm run build:landing       # landing_v1 + panel_v1 → public/build (gitignored)
-docker exec -w /var/www/html qiec-app bash -c "mkdir -p public/vendor/laravel-filemanager && cp -r vendor/unisharp/laravel-filemanager/public/* public/vendor/laravel-filemanager/"
-```
+## Where to edit
 
----
-
-## 4. بيئات العمل
-
-| المتغير | محلي | اختبار | إنتاج |
+| Area | Routes | Controller | Views |
 |---|---|---|---|
-| ملف | `.env` | `.env.testing` (`APP_ENV=testing`, DB `qiec_testing`) | `.env` على السيرفر |
-| `APP_DEBUG` | `true` | `true` | **`false`** |
-| `APP_URL` | `http://training.qiec.local:8000` | `http://localhost` | `https://training.qiec.sa` بلا `/` |
-| `MAIL_MAILER` | `log` | `array` | `smtp` (hostinger) |
-| `DB_DATABASE` | `qiec` | `qiec_testing` | `u873288737_markaz` |
+| Public site, cart, auth | `routes/web.php` | `Web/LandingV1Controller`, `Auth/*` | `landing_v1/` |
+| Student | `routes/panel_v1.php` | `PanelV1/StudentController` | `panel_v1/student/` |
+| Course player | `routes/panel_v1.php` | `PanelV1/CoursePlayerController` | `panel_v1/student/course-player/` |
+| Instructor | `routes/panel_v1.php` | `PanelV1/InstructorController` | `panel_v1/instructor/` |
+| Organization | `routes/panel_v1.php` | `PanelV1/OrganizationController` | `panel_v1/organization/` |
+| Admin | `routes/panel_v1.php` | `PanelV1/Admin/{Education,Sales,Marketing,System,Settings}Controller` | `panel_v1/admin/pages/{education,sales,marketing,system}/` |
+| Login redirect | | `panelV1HomeUrl()` in `app/Helpers/helper.php` | |
+| Certificates | | `app/Mixins/Certificate/MakeCertificate.php` | `panel_v1/certificates/` |
 
-> بعد تعديل `.env` على السيرفر: `rm ~/domains/training.qiec.sa/public_html/bootstrap/cache/config.php`.
+Controllers are under `app/Http/Controllers/`, views under `resources/views/`.
 
----
+## Read when needed
 
-## 5. قاعدة البيانات
+Read only the file for the area you're working on, instead of re-exploring the code:
 
-- 471 migration — 11 مُصلحة idempotent — لا ترجعها.
-- لوكال: `2026_09_08_000001_create_purchase_code_table.php`.
-- `migrate:status` + `SHOW TABLES` للتحقق — `qiec_testing` تُهاجر مرة واحدة ثم `DatabaseTransactions`.
+| Task | Read |
+|---|---|
+| Writing any v1 route, controller, view or style (incl. confirm/alert rule) | `_docs/map/v1-conventions.md` |
+| How the layers, login and legacy overlap fit together | `_docs/map/architecture.md` |
+| Adding or changing routes, controllers, pages | `_docs/map/routes-and-controllers.md` |
+| Blade, Tailwind, Vite, RTL, translations | `_docs/map/frontend.md` |
+| Models, tables, roles, helpers, integrations | `_docs/map/domain-model.md` |
+| Local setup, tests, deployment, production env | `_docs/map/dev-and-deploy.md` |
+| Risks, known bugs, stale docs | `_docs/map/known-issues.md` |
 
-**Seeders:**
-```bash
-docker exec -w /var/www/html qiec-app php artisan db:seed --force
-docker exec -w /var/www/html qiec-app php artisan qiec:seed-landing-demo      # 6 مدربين + 14 دورة
-docker exec -w /var/www/html qiec-app php artisan db:seed --class=StudentV1DemoDataSeeder --force  # مناطق/بنوك/مشتريات/اختبارات للاختبار
-```
+`README.md` and the older files directly in `_docs/` predate the current setup. Trust the code and `_docs/map/` over them.
 
----
+## Working style
 
-## 6. المعمارية — أين تعدّل (محدّث)
-
-| تريد تعديل | عدّل هنا | لا تلمس | الحالة |
-|---|---|---|---|
-| واجهة تسويقية | `resources/views/landing_v1/` + `LandingV1Controller` | `design_1/web` | 100% حقيقي |
-| لوحة طالب | `resources/views/panel_v1/student/` + `StudentController` | `design_1/panel` | 100% حقيقي (23 route) |
-| مشغل الدورة | `resources/views/panel_v1/student/course-player/` + `CoursePlayerController::buildPlayerData()` | `design_1/web/courses/learning_page` | 100% حقيقي (كان Mock) |
-| لوحة مدرب | `resources/views/panel_v1/instructor/` + `InstructorController` | `design_1/panel` | 95% (باقي `courseWatch` سابقاً) |
-| لوحة منظمة | `resources/views/panel_v1/organization/` + `OrganizationController` | — | 100% حقيقي (6 تابات `ProfileSettingsTrait`) |
-| لوحة إدارة | `resources/views/panel_v1/admin/` + `Admin/*Controller` | `design_1/admin` | 100% حقيقي (`59/59 tests`) |
-| ثيم إدارة | `resources/sass/admin/qiec-theme.scss` → `custom.css` | `style.css` (Stisla) | — |
-| تحويل بعد الدخول | `app/Helpers/helper.php:panelV1HomeUrl()` | `Role::$*` | لا يزال للقديم حتى التفعيل |
-| ترتيب mix | `webpack.mix.js` | `vite.config.js` للجديد | — |
-
-**قاعدة:** `panel_v1` لا تستورد `design_1`، والعكس.
-
----
-
-## 7. الاختبارات
-
-```bash
-docker exec -w /var/www/html -e APP_ENV=testing qiec-app vendor/bin/phpunit
-docker exec -w /var/www/html -e APP_ENV=testing qiec-app vendor/bin/phpunit --testsuite=Unit
-docker exec -w /var/www/html -e APP_ENV=testing qiec-app vendor/bin/phpunit --testsuite=Feature --testdox
-docker exec -w /var/www/html qiec-app php test_comprehensive.php  # اختبار شامل 30+ مسار v1 بداتا واقعية
-```
-
-- قاعدة `qiec_testing` + `DatabaseTransactions`.
-- **52 اختبار (93 assertion)** — يغطي: أسعار، `panelV1HomeUrl`, `Setting` fallback, أدوار `User`, `ReserveMeeting`, guards الأربعة، ملكية `teacherWebinarOrFail`, اختبارات `passed/failed/waiting`, ترخيص, `Student` 9 حالات مباشرة.
-- إصلاحان: `convertPriceToDefaultCurrency` + `User::isAdmin()` null-safe + `AdminController:82` `]));`.
-
-**قاعدة جودة:** أي `MockData` في الإنتاج مرفوض — الاختبار يجب أن يستخدم `DB` حقيقية (`Sale::where`, `Webinar::where`).
-
----
-
-## 8. النشر
-
-راجع `_docs/DEPLOYMENT.md` + `ENV_PRODUCTION_CHECKLIST.md` + `FIRST_DEPLOY_CHECKLIST.md`.
-
-**الخلاصة:** `build` محلياً (`mix` + `vite`) → `git push` (بإذن) → `git pull` على السيرفر → نقل `public/assets|build|vendor` يدوياً (gitignored) → `migrate --force && storage:link && config:clear` (كـ `www-data`) → `APP_DEBUG=false`.
-
-> `_docs/` تحتوي باسوردات تاريخية — لا تنسخها في ردود.
-
----
-
-## 9. أسلوب العمل للوكيل — موسّع
-
-### قبل التعديل
-- اقرأ `README.md` + `AGENTS.md` + `_docs/README.md` + `vite.config.js`/`webpack.mix.js` قبل أي `edit`.
-- استخدم `Read/Grep/Glob` قبل `Edit`؛ لا تستخدم `bash` للقراءة.
-
-### أثناء التعديل
-- غيّر أصغر نطاق ممكن — لا تحذف أسطر غير مطلوبة.
-- أي استيراد جديد `use` → تحقق `php -l`.
-- لا تنشئ ملفات إلا عند الضرورة — عدّل الموجود.
-- للـ `Blade`: استخدم `@php $x=...; @endphp` لا `@php($x=...)` (يسبب `unexpected token "@"`).
-
-### التحقق (إجباري)
-- شغّل `php artisan view:clear && php -l` + `phpunit` قبل التسليم — لا تسلّم بدون تنفيذ.
-- اختبر بداتا واقعية: `User::find(2)` (11 شراء) عبر `StudentController::home()` + `CoursePlayerController::watch()` مباشرة.
-- عند الشك في `ionCube`/الدفع/الصلاحيات → اسأل.
-
-### التواصل
-- رسائلك قصيرة ومباشرة، بلا مدح — أشر للملف:السطر (`file:line`).
-- عند تضارب الأدلة → اذكر الفرضيات والنتائج، وثق بالأدلة المحلية.
-- لا `commit/push` إلا بأمر صريح — اعرض `git status/diff` أولاً وافحص الأسرار.
-
-### الأدوار
-- **مطور V1:** ينقل `design_1` → `v1` بمنطق حقيقي، يزيل `MockData`، يكتب `tests/Feature/PanelV1/*`.
-- **مصمم:** يطابق Figma (`Figma → Tailwind` في `landing_v1/panel_v1` مع `rounded-[12px] bg-[#0F3D36]`).
-- **مدقق:** يشغّل `test_comprehensive.php` (30+ مسار) ويتأكد من `phpunit` أخضر.
-
----
-
-## 10. جهات اتصال المشروع
-
-- **الإنتاج:** `https://training.qiec.sa`
-- **المستودع:** `git@github.com:mahmoud-wahba-dev/qice-rocket-lms.git` (https: `https://github.com/mahmoud-wahba-dev/qice-rocket-lms.git`)
-- **المجلد المحلي:** `/home/hmh/IdeaProjects/qice-rocket-lms`
-- **الـ Docker:** `/tmp/qiec-docker` (لا تنقله) — `qiec-app:8000` + `qiec-db:3307` (`db:3306`)
-- **المضيف:** `hmh@hmh-MS-7C96` — `~/Desktop` للتقارير (`v1_nawaqis_taqrir.md`)
-
----
-
-## 11. خارطة الطريق المحدثة (بعد `bccbd78`)
-
-- **تم:** `Student` 100% + `CoursePlayer` حقيقي + `Landing` + `Figma home` + `Instructor` 100% (`support/marketing/assignments/courseWatch/Performance` → حقيقي) + `Organization` 100% (`settings` 6 تابات) + `Admin` 100% (`education/sales/marketing/system` كلها `DB` حقيقي) — `59/59`
-- **المتبقي:** تفعيل `panelV1HomeUrl()` + `build` `public/build|assets`
-- **التالي:** تفعيل التحويل وبدء `QA` النهائي قبل الإنتاج
-
-> **تذكير أخير:** عند فتح `http://training.qiec.local:8000/purchase-code` مباشرة سترى نموذج الكود — هذا طبيعي. التحويل التلقائي يحدث فقط عند فشل التحقق أو دخول `localhost`.
+- Keep changes to the smallest scope; don't delete unrelated lines. Edit existing files rather than adding new ones.
+- In Blade, use `@php $x = ...; @endphp`, not `@php($x = ...)` (causes `unexpected token "@"`).
+- Verify before handing over, using realistic DB data. When evidence conflicts, state the possibilities and trust local evidence.
+- Replies: short and direct, no praise, with file references.

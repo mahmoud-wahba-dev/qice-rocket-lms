@@ -61,6 +61,7 @@
                                     'pending' => 'بانتظار المراجعة',
                                     'is_draft' => 'مسودة',
                                     'inactive' => 'غير نشط',
+                                    'archived' => 'مؤرشفة',
                                     default => $c->status ?: '—',
                                 };
                             @endphp
@@ -82,6 +83,9 @@
                                     } else {
                                         $courseActionItems[] = ['label' => 'تفعيل', 'action' => route('panel.v1.admin.education.courses.approve',['id'=>$c->id]), 'tone' => 'success'];
                                     }
+                                    if ($c->status !== 'archived') {
+                                        $courseActionItems[] = ['label' => 'أرشفة', 'action' => route('panel.v1.admin.education.courses.archive',['id'=>$c->id]), 'confirm' => 'ستختفي الدورة من الموقع ويحتفظ الطلاب المشترون بالوصول إليها حتى انتهاء أيام الوصول الخاصة بهم. يمكنك إلغاء الأرشفة في أي وقت.', 'confirm_title' => 'أرشفة الدورة', 'confirm_ok' => 'أرشفة', 'tone' => 'warning'];
+                                    }
                                     $courseActionItems[] = ['label' => 'حذف', 'action' => route('panel.v1.admin.education.courses.delete',['id'=>$c->id]), 'confirm' => 'حذف الدورة؟', 'tone' => 'danger'];
                                 @endphp
                                 @include('panel_v1.components.actions-dropdown', [
@@ -91,6 +95,76 @@
                             </td>
                         </tr>
                     @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
+    @if (isset($archivedCourses))
+        <div class="border border-d9 rounded-14px bg-white overflow-hidden">
+            <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h2 class="font-bold text-16px text-primary">الدورات المؤرشفة ({{ $archivedCourses->total() }})</h2>
+                    @if (!empty($stubSubtitle))
+                        <p class="font-medium text-12px text-gray mt-1">{{ $stubSubtitle }}</p>
+                    @endif
+                </div>
+                <form method="GET" action="{{ url()->current() }}" class="flex items-center gap-2">
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="ابحث بالرقم أو اسم الدورة أو المدرب"
+                        class="input input-bordered h-10 rounded-10px border-d9 text-13px min-w-[14rem] bg-white">
+                    <button type="submit" class="inline-flex items-center h-10 px-4 rounded-10px bg-primary text-white font-bold text-13px">بحث</button>
+                </form>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table w-full text-14px">
+                    <thead>
+                        <tr class="bg-fa border-b border-d9 text-gray">
+                            <th class="px-4 py-3 text-start">الدورة</th>
+                            <th class="px-4 py-3">المدرب</th>
+                            <th class="px-4 py-3">المقاعد</th>
+                            <th class="px-4 py-3">الطلاب</th>
+                            <th class="px-4 py-3">لديهم وصول</th>
+                            <th class="px-4 py-3">انتهت في</th>
+                            <th class="px-4 py-3">أُرشفت في</th>
+                            <th class="px-4 py-3 text-center">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($archivedCourses as $c)
+                            <tr class="border-b border-d9 last:border-0">
+                                <td class="px-4 py-3 font-bold text-primary">
+                                    <a href="{{ route('panel.v1.admin.education.courses.edit', ['id' => $c->id]) }}" class="hover:underline">{{ $c->title }}</a>
+                                    <p class="font-medium text-12px text-gray">#{{ $c->id }} — {{ match ($c->type) { 'webinar' => 'مباشرة', 'course' => 'مسجلة', default => 'كتابية' } }}</p>
+                                </td>
+                                <td class="px-4 py-3 text-center">{{ $c->teacher->full_name ?? '—' }}</td>
+                                <td class="px-4 py-3 text-center">{{ is_null($c->capacity) ? 'غير محدود' : $c->capacity }}</td>
+                                <td class="px-4 py-3 text-center">{{ $c->sales_count }}</td>
+                                <td class="px-4 py-3 text-center">
+                                    <span class="font-bold {{ $c->students_with_access > 0 ? 'text-[#059669]' : 'text-gray' }}">{{ $c->students_with_access }}</span>
+                                    <p class="font-medium text-11px text-gray">{{ empty($c->access_days) ? 'وصول مفتوح' : $c->access_days.' يوم' }}</p>
+                                </td>
+                                <td class="px-4 py-3 text-center text-gray">{{ $c->ends_at ? date('Y/m/d', $c->ends_at) : '—' }}</td>
+                                <td class="px-4 py-3 text-center text-gray">{{ $c->updated_at ? date('Y/m/d', (int) $c->updated_at) : '—' }}</td>
+                                <td class="px-4 py-3 text-center">
+                                    @include('panel_v1.components.actions-dropdown', [
+                                        'id' => 'edu-archived-'.$c->id,
+                                        'items' => [
+                                            ['label' => 'عرض / تعديل', 'url' => route('panel.v1.admin.education.courses.edit', ['id' => $c->id]), 'tone' => 'gray'],
+                                            ['label' => 'قائمة الطلاب', 'url' => route('panel.v1.admin.education.courses.students', ['id' => $c->id]), 'tone' => 'gray'],
+                                            ['label' => 'إلغاء الأرشفة', 'action' => route('panel.v1.admin.education.courses.unarchive', ['id' => $c->id]), 'confirm' => 'ستصبح الدورة غير نشطة (غير ظاهرة في الموقع) حتى تفعّلها من قائمة الدورات.', 'confirm_title' => 'إلغاء أرشفة الدورة', 'confirm_ok' => 'إلغاء الأرشفة', 'tone' => 'primary'],
+                                        ],
+                                    ])
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="8" class="px-4 py-16 text-center">
+                                    <p class="font-semibold text-18px text-primary mb-2">لا توجد دورات مؤرشفة</p>
+                                    <p class="font-medium text-14px text-gray">تظهر هنا الدورات المباشرة بعد انتهاء آخر جلسة، أو أي دورة تؤرشفها من قائمة «إدارة الدورات».</p>
+                                </td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
@@ -705,7 +779,7 @@
         <div class="border border-d9 rounded-14px bg-white overflow-hidden">
             <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex flex-wrap items-center justify-between gap-3">
                 <h2 class="font-bold text-16px text-primary">قائمة الانتظار — {{ $webinar->title ?? '' }} ({{ $waitlistItems->total() }})</h2>
-                <form method="POST" action="{{ route('panel.v1.admin.education.waitlists.delete-all', ['webinarId' => $webinar->id ?? 0]) }}" onsubmit="return confirm('حذف كل الأعضاء؟')" class="inline">@csrf<button type="submit" class="h-10 px-4 rounded-12px border border-red-200 bg-white font-semibold text-13px text-red-500 hover:bg-red-50 transition">حذف الكل</button></form>
+                <form method="POST" action="{{ route('panel.v1.admin.education.waitlists.delete-all', ['webinarId' => $webinar->id ?? 0]) }}" data-confirm="حذف كل الأعضاء؟" class="inline">@csrf<button type="submit" class="h-10 px-4 rounded-12px border border-red-200 bg-white font-semibold text-13px text-red-500 hover:bg-red-50 transition">حذف الكل</button></form>
             </div>
             <div class="overflow-x-auto">
                 <table class="table w-full text-14px">
@@ -713,8 +787,23 @@
                     <tbody>
                     @foreach($waitlistItems as $w)
                         <tr class="border-b border-d9 last:border-0">
-                            <td class="px-4 py-3 font-bold text-primary">{{ $w->full_name ?? 'عضو #'.$w->id }}</td>
-                            <td class="px-4 py-3 text-center font-medium text-gray" dir="ltr">{{ $w->phone ?? '—' }}</td>
+                            @php
+                                $wlUser = $w->user;
+                                $wlName = $w->full_name ?: ($wlUser->full_name ?? null);
+                                $wlEmail = $w->email ?: ($wlUser->email ?? null);
+                                $wlPhone = $w->phone ?: ($wlUser->mobile ?? null);
+                            @endphp
+                            <td class="px-4 py-3">
+                                @if ($wlUser)
+                                    <a href="{{ route('panel.v1.admin.system.users.edit', ['id' => $wlUser->id]) }}" class="font-bold text-primary hover:underline">{{ $wlName ?: 'مستخدم #'.$wlUser->id }}</a>
+                                @else
+                                    <span class="font-bold text-primary">{{ $wlName ?: 'زائر' }}</span>
+                                @endif
+                                @if ($wlEmail)
+                                    <p class="font-medium text-12px text-gray" dir="ltr">{{ $wlEmail }}</p>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 text-center font-medium text-gray" dir="ltr">{{ $wlPhone ?: '—' }}</td>
                             <td class="px-4 py-3 text-center font-medium text-gray">{{ date('Y/m/d', (int)$w->created_at) }}</td>
                             <td class="px-4 py-3 text-center">@include('panel_v1.components.actions-dropdown', ['id' => 'edu-wl-item-'.$w->id, 'items' => [['label' => 'حذف', 'action' => route('panel.v1.admin.education.waitlists.delete',['id'=>$w->id]), 'confirm' => 'حذف؟', 'tone' => 'danger']]])</td>
                         </tr>
@@ -725,7 +814,7 @@
         </div>
     @endif
 
-    @if (!empty($stats) && empty($courses) && empty($bundles) && empty($assignments) && empty($quizzes) && empty($certificates) && empty($lives) && empty($events) && empty($reviews) && empty($courseReviews) && empty($departments) && empty($attendanceSessions) && empty($filters) && empty($trends) && empty($sales) && empty($upcomingCourses) && empty($waitlists) && empty($waitlistItems) && empty($noticeboards) && empty($quizzesResults) && empty($relatedCourses))
+    @if (!empty($stats) && empty($courses) && !isset($archivedCourses) && empty($bundles) && empty($assignments) && empty($quizzes) && empty($certificates) && empty($lives) && empty($events) && empty($reviews) && empty($courseReviews) && empty($departments) && empty($attendanceSessions) && empty($filters) && empty($trends) && empty($sales) && empty($upcomingCourses) && empty($waitlists) && empty($waitlistItems) && empty($noticeboards) && empty($quizzesResults) && empty($relatedCourses))
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach($stats as $st)
                 <div class="border border-d9 rounded-14px bg-white p-6 text-center">
@@ -736,7 +825,7 @@
         </div>
     @endif
 
-    @if (empty($courses) && empty($bundles) && empty($assignments) && empty($quizzes) && empty($certificates) && empty($lives) && empty($events) && empty($reviews) && empty($courseReviews) && empty($departments) && empty($attendanceSessions) && empty($filters) && empty($trends) && empty($sales) && empty($upcomingCourses) && empty($waitlists) && empty($waitlistItems) && empty($noticeboards) && empty($quizzesResults) && empty($relatedCourses) && empty($stats))
+    @if (empty($courses) && !isset($archivedCourses) && empty($bundles) && empty($assignments) && empty($quizzes) && empty($certificates) && empty($lives) && empty($events) && empty($reviews) && empty($courseReviews) && empty($departments) && empty($attendanceSessions) && empty($filters) && empty($trends) && empty($sales) && empty($upcomingCourses) && empty($waitlists) && empty($waitlistItems) && empty($noticeboards) && empty($quizzesResults) && empty($relatedCourses) && empty($stats))
         @include('panel_v1.admin.components.empty-stub')
     @endif
 

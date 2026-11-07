@@ -37,7 +37,7 @@ php artisan key:generate
 php artisan migrate    # if needed
 
 # Landing dev server (hot reload)
-npm run dev:landing
+npm run dev:full
 
 # Production asset build
 npm run build:landing
@@ -64,7 +64,7 @@ This runs:
 
 **Feature branch** (before merge): push branch, SSH `git pull origin <branch>`, then `npm run optimize:production`. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
-Merging to `master` on GitHub does **not** auto-deploy — you still run `npm run deploy` locally.
+Every push to `master` auto-deploys through `.github/workflows/deploy.yml`. See [map/dev-and-deploy.md](map/dev-and-deploy.md).
 
 ---
 
@@ -72,6 +72,8 @@ Merging to `master` on GitHub does **not** auto-deploy — you still run `npm ru
 
 | Doc | Purpose |
 |-----|---------|
+| [map/](map/) | **Current project map** — v1 conventions, architecture, routes, frontend, domain model, dev and deploy, known issues (start at `../AGENTS.md`) |
+| [plans/](plans/) | Feature plans from any agent (`<feature>.plan.md`) |
 | [CLIENT_PLAYBOOK.md](CLIENT_PLAYBOOK.md) | **Reusable process** for any new RocketLMS client with a new Figma |
 | [CLIENT_QIEC.md](CLIENT_QIEC.md) | **This client** — routes, colors, pages, TODOs |
 | [ISSUES_AND_LESSONS.md](ISSUES_AND_LESSONS.md) | Problems faced and how to avoid them next time |
@@ -79,15 +81,11 @@ Merging to `master` on GitHub does **not** auto-deploy — you still run `npm ru
 | [PRODUCTION_ROLLBACK.md](PRODUCTION_ROLLBACK.md) | Rollback tags, server backups, emergency restore |
 | [ENV_PRODUCTION_CHECKLIST.md](ENV_PRODUCTION_CHECKLIST.md) | Local vs production `.env` validation |
 | [PRODUCTION_MAIL.md](PRODUCTION_MAIL.md) | Hostinger SMTP + registration verification emails |
-| [LOCAL_TO_PRODUCTION.md](LOCAL_TO_PRODUCTION.md) | Sync local DB + images to production |
 | [FIRST_DEPLOY_CHECKLIST.md](FIRST_DEPLOY_CHECKLIST.md) | Step-by-step first production deploy |
 | [DEPLOY_TEMPLATE.md](DEPLOY_TEMPLATE.md) | Copy-paste deploy script templates |
 | [CHANGELOG.md](CHANGELOG.md) | Rolling project log |
 | [ARCHITECTURE_SUMMARY.md](ARCHITECTURE_SUMMARY.md) | Technical architecture reference |
 | [COMPARISON_SIEMATPLUS_VS_QIEC.md](COMPARISON_SIEMATPLUS_VS_QIEC.md) | Side-by-side with reference project |
-| [MIGRATION_REUSE_PLAN.md](MIGRATION_REUSE_PLAN.md) | Original migration plan (historical) |
-| [PHASE0_CHANGELOG.md](PHASE0_CHANGELOG.md) | Security fixes and git init |
-| [FOLDER_RENAME_RECOMMENDATION.md](FOLDER_RENAME_RECOMMENDATION.md) | Why folder was renamed qice → qiec |
 
 ---
 

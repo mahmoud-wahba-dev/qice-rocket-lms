@@ -14,6 +14,12 @@
             'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-h-full min-w-[177.78vh] w-[100vw] h-[56.25vw] border-0 pointer-events-auto object-cover';
         $isInCart = $isInCart ?? false;
         $hasUserBought = $hasUserBought ?? false;
+        $seatsLimited = $seatsLimited ?? false;
+        $seatsTotal = $seatsTotal ?? null;
+        $seatsLeft = $seatsLeft ?? null;
+        $seatsFull = $seatsFull ?? false;
+        $waitlistEnabled = $waitlistEnabled ?? false;
+        $joinedWaitlist = $joinedWaitlist ?? false;
         $averageRating = $averageRating ?? 0;
         $totalReviewsCount = $totalReviewsCount ?? 0;
         $learningOutcomes = $learningOutcomes ?? [];
@@ -148,12 +154,27 @@
                             <span class="font-medium text-14px text-white whitespace-nowrap">حضور مَرِن (عن بُعد /
                                 حضوري)</span>
                         </div>
+                        @if ($seatsLimited)
+                            <div
+                                class="flex items-center gap-2 px-7 py-2 rounded-full border {{ $seatsFull ? 'border-red-300 bg-red-500/20' : 'border-[#155554]' }} backdrop-blur-[9px] flex-nowrap">
+                                <span class="icon-[tabler--armchair] size-6 shrink-0 text-white"></span>
+                                <span class="font-semibold text-14px text-white whitespace-nowrap">
+                                    @if ($seatsLeft > 0)
+                                        المقاعد المتاحة: {{ $seatsLeft }} من {{ $seatsTotal }}
+                                    @else
+                                        اكتمل عدد المقاعد ({{ $seatsTotal }})
+                                    @endif
+                                </span>
+                            </div>
+                        @endif
                     </div>
 
                     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
 
-                        <button type="button" id="buy-now-btn" data-course-id="{{ $course->id }}"
-                            data-checkout-url="{{ route('landing.v1.checkout') }}"
+                        <button type="button"
+                            @if ($seatsFull) data-seats-full-open
+                            @else id="buy-now-btn" data-course-id="{{ $course->id }}"
+                            data-checkout-url="{{ route('landing.v1.checkout') }}" @endif
                             class="rounded-9px font-black text-13px text-[#155554] px-6 py-3   bg-white text-primary border border-[#00FF88] cursor-pointer">
                             بـــ
 
@@ -178,14 +199,14 @@
                                 <img src="{{ $courseDetailsImg }}/seat.webp" alt="" class="size-6 shrink-0">
                             </a>
                         @else
-                            <form action="/cart/store" method="post" class="add-to-cart-form"
+                            <form action="/cart/store" method="post" class="{{ $seatsFull ? '' : 'add-to-cart-form' }}"
                                 data-seat-icon="{{ $courseDetailsImg }}/seat.webp">
                                 @csrf
                                 <input type="hidden" name="item_id" value="{{ $course->id }}">
                                 <input type="hidden" name="item_name" value="webinar_id">
-                                <button type="submit" @disabled($isInCart)
+                                <button @if ($seatsFull) type="button" data-seats-full-open @else type="submit" @disabled($isInCart) @endif
                                     class="btn h-14 rounded-9px font-bold text-18px px-8 inline-flex items-center gap-3 bg-white text-primary border border-[#00FF88] shadow-[0_0_24px_rgba(255,255,255,0.15)] hover:bg-[#f5f5f5] {{ $isInCart ? 'btn-disabled opacity-60 cursor-not-allowed is-added-to-cart' : '' }}">
-                                    {{ $isInCart ? 'تمت الإضافة للسلة' : 'سجل مقعدك الآن' }}
+                                    {{ ($isInCart && !$seatsFull) ? 'تمت الإضافة للسلة' : 'سجل مقعدك الآن' }}
                                     <img src="{{ $courseDetailsImg }}/seat.webp" alt="" class="size-6 shrink-0">
                                 </button>
                             </form>
@@ -431,6 +452,9 @@
 
 
     </main>
+    @if ($seatsFull)
+        @include('landing_v1.components.seats-full-modal')
+    @endif
 @endsection
 
 @push('scripts')

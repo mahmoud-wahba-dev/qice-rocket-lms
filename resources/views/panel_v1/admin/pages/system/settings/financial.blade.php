@@ -130,7 +130,7 @@
             });
             if (res.status === 422) {
                 const err = await res.json();
-                alert(Object.values(err.errors || {}).flat().join('\n') || 'يرجى التحقق من الحقول المطلوبة');
+                window.showCartToast('تعذر الحفظ', Object.values(err.errors || {}).flat().join(' — ') || 'يرجى التحقق من الحقول المطلوبة', 'error');
                 return;
             }
             const data = await res.json();

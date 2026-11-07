@@ -698,13 +698,33 @@ class LandingV1Controller extends Controller
             'averageRating' => $totalReviewsCount > 0 ? round($activeReviews->avg('rates'), 1) : 0,
             'isInCart' => $this->isWebinarInCart($course),
             'hasUserBought' => auth()->check() ? $course->checkUserHasBought(auth()->user()) : false,
-        ], $detailExtras);
+        ], $detailExtras, $this->courseSeatsData($course));
 
         $view = ($course->price > 0)
             ? 'landing_v1.pages.course-details-paid'
             : 'landing_v1.pages.course-details-free';
 
         return view($view, $data);
+    }
+
+    /**
+     * Seat limits for the course page. Courses without a capacity are unlimited.
+     * The waitlist is only offered when the admin enabled it on the course.
+     */
+    private function courseSeatsData(Webinar $course): array
+    {
+        $hasLimit = !is_null($course->capacity);
+        $user = auth()->user();
+        $alreadyBought = $user ? $course->checkUserHasBought($user) : false;
+
+        return [
+            'seatsLimited' => $hasLimit,
+            'seatsTotal' => $hasLimit ? (int) $course->capacity : null,
+            'seatsLeft' => $hasLimit ? (int) $course->getWebinarCapacity() : null,
+            'seatsFull' => $hasLimit && $course->checkCapacityReached() && !$alreadyBought,
+            'waitlistEnabled' => (bool) $course->enable_waitlist,
+            'joinedWaitlist' => $user ? $course->waitlists()->where('user_id', $user->id)->exists() : false,
+        ];
     }
 
     private function courseDetailsEagerLoads(): array
@@ -996,6 +1016,8 @@ class LandingV1Controller extends Controller
 
             return redirect()->route('landing.v1.login');
         }
+
+        (new CartManagerController())->removeUnavailableItems($user);
 
         $carts = Cart::where('creator_id', $user->id)
             ->with([

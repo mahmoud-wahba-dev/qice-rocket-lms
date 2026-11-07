@@ -208,6 +208,11 @@ class VerificationController extends Controller
             if (!empty($authUser)) {
                 if (\Auth::loginUsingId($authUser->id)) {
 
+                    if ($authUser->requiresAdminApproval()) {
+                        // No referral/bonus until an admin approves the instructor.
+                        return $loginController->afterLogged($request, true);
+                    }
+
                     if (!empty($referralCode)) {
                         Affiliate::storeReferral($authUser, $referralCode);
                     }

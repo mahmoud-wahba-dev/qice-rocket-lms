@@ -14,7 +14,7 @@
                 </p>
             </div>
             @if (($ticket->status ?? '') !== 'close')
-                <form method="POST" action="{{ route('panel.v1.student.support.close', ['id' => $ticket->id]) }}" onsubmit="return confirm('إغلاق التذكرة؟');">
+                <form method="POST" action="{{ route('panel.v1.student.support.close', ['id' => $ticket->id]) }}" data-confirm="إغلاق التذكرة؟">
                     @csrf
                     <button type="submit" class="btn btn-ghost rounded-10px h-11 px-5 font-bold text-14px text-[#EF4444] border border-[#FECACA]">إغلاق التذكرة</button>
                 </form>

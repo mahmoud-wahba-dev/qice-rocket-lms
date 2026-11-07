@@ -294,7 +294,7 @@ Both share identical RocketLMS dependency sets (90+ packages for payment gateway
 
 ## Files to Clean Up Before Git Init
 
-> Historical — Phase 0 completed. See [PHASE0_CHANGELOG.md](PHASE0_CHANGELOG.md).
+> Historical — Phase 0 completed.
 
 | File / Pattern | Reason |
 |----------------|--------|

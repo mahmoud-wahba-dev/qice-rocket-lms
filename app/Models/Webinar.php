@@ -30,9 +30,18 @@ class Webinar extends Model implements TranslatableContract
     public $morphsFunctions = ['productBadgeContents', 'relatedCourses', 'deleteRequest'];
 
     static $active = 'active';
+
     static $pending = 'pending';
     static $isDraft = 'is_draft';
     static $inactive = 'inactive';
+    static $archived = 'archived';
+
+    /**
+     * Statuses a buyer can still open. "inactive" = disabled by an admin and "archived" = finished:
+     * both are hidden from the public site, but students who bought the course keep access
+     * until their own access_days end.
+     */
+    public static $buyerVisibleStatuses = ['active', 'inactive', 'archived'];
 
     static $webinar = 'webinar';
     static $course = 'course';
@@ -125,6 +134,25 @@ class Webinar extends Model implements TranslatableContract
     public function sessions()
     {
         return $this->hasMany('App\Models\Session', 'webinar_id', 'id');
+    }
+
+    /**
+     * When the course's schedule ends: the last session's end, else start_date + duration (minutes).
+     * Null for courses with no schedule (e.g. recorded courses), which are never auto-archived.
+     */
+    public function getEndTimestamp(): ?int
+    {
+        $lastSession = $this->sessions()->whereNotNull('date')->orderByDesc('date')->first();
+
+        if (!empty($lastSession)) {
+            return (int) $lastSession->date + ((int) $lastSession->duration * 60);
+        }
+
+        if (!empty($this->start_date)) {
+            return (int) $this->start_date + ((int) $this->duration * 60);
+        }
+
+        return null;
     }
 
     public function files()

@@ -20,12 +20,35 @@ class CartManagerController extends Controller
 {
     public $cookieKey = 'carts';
 
+    /**
+     * Remove cart rows whose course/bundle was deleted or is no longer active.
+     * Without this, price calculation and checkout crash on a null relation.
+     */
+    public function removeUnavailableItems($user): void
+    {
+        $user->carts()
+            ->whereNotNull('webinar_id')
+            ->whereDoesntHave('webinar', function ($query) {
+                $query->where('status', Webinar::$active);
+            })
+            ->delete();
+
+        $user->carts()
+            ->whereNotNull('bundle_id')
+            ->whereDoesntHave('bundle', function ($query) {
+                $query->where('status', Bundle::$active);
+            })
+            ->delete();
+    }
+
     public function getCarts()
     {
         $carts = collect();
 
         if (auth()->check()) {
             $user = auth()->user();
+
+            $this->removeUnavailableItems($user);
 
             $user->carts()
                 ->whereNotNull('product_order_id')
@@ -430,6 +453,24 @@ class CartManagerController extends Controller
                 return back()->with(['toast' => $result]);
             }
         } else { // store in cookie
+            if ($item_name == 'webinar_id') {
+                $webinar = Webinar::where('id', $data['item_id'])->where('status', 'active')->first();
+
+                if (!empty($webinar) and !$webinar->canSale()) {
+                    $result = [
+                        'title' => trans('public.request_failed'),
+                        'msg' => 'اكتمل عدد المقاعد لهذه الدورة',
+                        'status' => 'error',
+                    ];
+
+                    if ($request->ajax()) {
+                        return response()->json(['toast_alert' => $result], 422);
+                    }
+
+                    return back()->with(['toast' => $result]);
+                }
+            }
+
             $this->storeCookieCart($data);
         }
 

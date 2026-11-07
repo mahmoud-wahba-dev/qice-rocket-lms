@@ -332,7 +332,7 @@
                                 <input type="file" name="{{ $field }}" class="hidden" accept="{{ $field === 'profile_video' ? 'video/*' : 'image/*' }}">
                             </label>
                             @if (!empty($authUser->$field))
-                                <form method="POST" action="{{ route('landing.v1.account.media.delete', ['type' => $field]) }}" onsubmit="return confirm('حذف الملف؟');" class="mt-4">
+                                <form method="POST" action="{{ route('landing.v1.account.media.delete', ['type' => $field]) }}" data-confirm="حذف الملف؟" class="mt-4">
                                     @csrf
                                     <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف الملف الحالي</button>
                                 </form>
@@ -344,7 +344,7 @@
                         @php $signature = $authUser->getSignature(true); @endphp
                         @if (!empty($signature))
                             <div class="mb-6"><img src="{{ $signature }}" alt="" class="max-h-32 rounded-10px" loading="lazy"></div>
-                            <form method="POST" action="{{ route('landing.v1.account.media.delete', ['type' => 'signature_img']) }}" onsubmit="return confirm('حذف التوقيع؟');" class="mb-4">
+                            <form method="POST" action="{{ route('landing.v1.account.media.delete', ['type' => 'signature_img']) }}" data-confirm="حذف التوقيع؟" class="mb-4">
                                 @csrf
                                 <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف التوقيع</button>
                             </form>
@@ -409,7 +409,7 @@
                                 @forelse ($educations ?? [] as $education)
                                     <div class="flex items-center justify-between gap-3 border border-d9 rounded-10px px-4 py-3">
                                         <span class="font-medium text-15px">{{ $education->value }}</span>
-                                        <form method="POST" action="{{ route('landing.v1.account.metas.delete', ['metaId' => $education->id]) }}" onsubmit="return confirm('حذف؟');">
+                                        <form method="POST" action="{{ route('landing.v1.account.metas.delete', ['metaId' => $education->id]) }}" data-confirm="حذف؟">
                                             @csrf
                                             <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف</button>
                                         </form>
@@ -430,7 +430,7 @@
                                 @forelse ($experiences ?? [] as $experience)
                                     <div class="flex items-center justify-between gap-3 border border-d9 rounded-10px px-4 py-3">
                                         <span class="font-medium text-15px">{{ $experience->value }}</span>
-                                        <form method="POST" action="{{ route('landing.v1.account.metas.delete', ['metaId' => $experience->id]) }}" onsubmit="return confirm('حذف؟');">
+                                        <form method="POST" action="{{ route('landing.v1.account.metas.delete', ['metaId' => $experience->id]) }}" data-confirm="حذف؟">
                                             @csrf
                                             <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف</button>
                                         </form>
@@ -460,7 +460,7 @@
                                             @if (!empty($attachment->attachment))
                                                 <a href="{{ $attachment->attachment }}" target="_blank" rel="noopener" class="font-bold text-14px text-primary">تنزيل</a>
                                             @endif
-                                            <form method="POST" action="{{ route('landing.v1.account.attachments.delete', ['attachmentId' => $attachment->id]) }}" onsubmit="return confirm('حذف؟');">
+                                            <form method="POST" action="{{ route('landing.v1.account.attachments.delete', ['attachmentId' => $attachment->id]) }}" data-confirm="حذف؟">
                                                 @csrf
                                                 <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف</button>
                                             </form>
@@ -529,7 +529,7 @@
                                     <td class="px-4 py-4">{{ $session->getDuration() }}</td>
                                     <td class="px-4 py-4">
                                         @if (empty($session->session_end_at))
-                                            <form method="POST" action="{{ route('landing.v1.account.sessions.end', ['sessionId' => $session->id]) }}" onsubmit="return confirm('إنهاء هذه الجلسة؟');">
+                                            <form method="POST" action="{{ route('landing.v1.account.sessions.end', ['sessionId' => $session->id]) }}" data-confirm="إنهاء هذه الجلسة؟">
                                                 @csrf
                                                 <button type="submit" class="font-bold text-14px text-[#EF4444]">إنهاء الجلسة</button>
                                             </form>

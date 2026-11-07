@@ -63,6 +63,14 @@ class WaitlistController extends Controller
             ->where('status', 'active')
             ->first();
 
+        if (!empty($course) and !$course->enable_waitlist) {
+            return response()->json([
+                'code' => 422,
+                'title' => trans('public.request_failed'),
+                'msg' => 'قائمة الانتظار غير متاحة لهذه الدورة.',
+            ], 422);
+        }
+
         if (!empty($course)) {
             $userId = !empty($user) ? $user->id : null;
             $fullName = $data['name'] ?? null;

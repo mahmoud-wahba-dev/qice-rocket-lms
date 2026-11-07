@@ -25,6 +25,11 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('inspire')->hourly();
+
+        // Archive live courses whose last session has ended (opt-in: AUTO_ARCHIVE_FINISHED_COURSES=true).
+        if (config('app.auto_archive_courses')) {
+            $schedule->command('courses:archive-finished')->dailyAt('02:00')->withoutOverlapping();
+        }
     }
 
     /**

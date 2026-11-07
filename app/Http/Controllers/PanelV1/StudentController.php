@@ -38,7 +38,15 @@ class StudentController extends Controller
             ->where('buyer_id', $user->id)
             ->whereNotNull('webinar_id')
             ->orderBy('id', 'desc')
-            ->get();
+            ->get()
+            // Hide courses whose access period (access_days) has ended for this student.
+            ->filter(function ($sale) {
+                $course = $sale->webinar;
+
+                return empty($course) || empty($course->access_days)
+                    || $course->checkHasExpiredAccessDays($sale->created_at, $sale->gift_id);
+            })
+            ->values();
 
         $webinarIds = $enrolledSales->pluck('webinar_id')->filter()->unique()->values()->all();
 
@@ -608,7 +616,7 @@ class StudentController extends Controller
             $sale->gift_recipient = !empty($gift->receipt) ? $gift->receipt->full_name : $gift->name;
         }
 
-        $webinar = Webinar::where('status', 'active')
+        $webinar = Webinar::whereIn('status', Webinar::$buyerVisibleStatuses)
             ->where('id', $webinarId)
             ->with([
                 'teacher' => fn ($q) => $q->select('id', 'full_name'),
@@ -1262,7 +1270,7 @@ class StudentController extends Controller
                 ->whereDoesntHave('quizResults', function ($q) use ($user) {
                     $q->where('user_id', $user->id)->where('status', 'passed');
                 })->count() : 0;
-            $pendingWebinars = !empty($purchasedIds) ? \App\Models\Webinar::where('status', 'active')
+            $pendingWebinars = !empty($purchasedIds) ? \App\Models\Webinar::whereIn('status', \App\Models\Webinar::$buyerVisibleStatuses)
                 ->where('certificate', true)
                 ->whereIn('id', $purchasedIds)
                 ->whereDoesntHave('certificates', function ($q) use ($user) {
@@ -1394,7 +1402,7 @@ class StudentController extends Controller
             }
 
             $courses = \App\Models\Webinar::whereIn('id', $ids)
-                ->where('status', 'active')
+                ->whereIn('status', \App\Models\Webinar::$buyerVisibleStatuses)
                 ->where('certificate', true)
                 ->limit(20)
                 ->get();

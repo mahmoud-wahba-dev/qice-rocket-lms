@@ -56,6 +56,7 @@
                         <option value="active" @selected(old('status', $course->status ?? '')=='active')>نشط</option>
                         <option value="is_draft" @selected(old('status', $course->status ?? '')=='is_draft')>مسودة</option>
                         <option value="inactive" @selected(old('status', $course->status ?? '')=='inactive')>مرفوض</option>
+                        <option value="archived" @selected(old('status', $course->status ?? '')=='archived')>مؤرشفة</option>
                     </select>
                 </div>
 
@@ -76,6 +77,12 @@
                     <label class="font-semibold text-14px text-primary mb-2 block">السعة (مقعد)</label>
                     <input type="number" name="capacity" value="{{ old('capacity', $course->capacity ?? '') }}" min="1"
                         class="input input-bordered w-full h-12 rounded-12px border-d9 text-14px" placeholder="فارغ = غير محدود">
+                    <input type="hidden" name="enable_waitlist" value="off">
+                    <label class="mt-3 flex items-center gap-2 font-medium text-13px text-primary">
+                        <input type="checkbox" name="enable_waitlist" value="on" @checked(old('enable_waitlist', ($course->enable_waitlist ?? false) ? 'on' : 'off') === 'on') class="checkbox checkbox-sm">
+                        تفعيل قائمة الانتظار
+                    </label>
+                    <p class="mt-1 font-medium text-12px text-gray">عند اكتمال المقاعد يمكن للمتدرب الانضمام لقائمة الانتظار وتظهر في «قوائم الانتظار».</p>
                 </div>
 
                 <div>

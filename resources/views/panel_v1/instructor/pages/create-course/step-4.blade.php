@@ -81,5 +81,13 @@
         @error('capacity')
             <p class="mt-2 font-medium text-13px text-[#B91C1C]">{{ $message }}</p>
         @enderror
+
+        <input type="hidden" name="enable_waitlist" value="off">
+        <label class="mt-4 flex items-center gap-2 font-semibold text-14px sm:text-15px text-primary">
+            <input type="checkbox" name="enable_waitlist" value="on" class="checkbox checkbox-sm"
+                @checked(old('enable_waitlist', !empty($draftEnableWaitlist) ? 'on' : 'off') === 'on')>
+            تفعيل قائمة الانتظار
+        </label>
+        <p class="mt-1 font-medium text-13px text-gray">عند اكتمال المقاعد يمكن للمتدرب الانضمام لقائمة الانتظار وستصلك الطلبات عبر الإدارة.</p>
     </div>
 </section>

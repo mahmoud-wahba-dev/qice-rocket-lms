@@ -50,6 +50,7 @@ app/logs/*.log
 /storage/*.key
 /storage/framework/views
 /storage/framework/laravel-excel
+/storage/framework/lsp-*.php
 /vendor
 
 # === IDE ===

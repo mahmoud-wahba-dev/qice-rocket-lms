@@ -34,7 +34,7 @@ Problems encountered during the siematplus → QIEC migration. Read this before 
 
 **What happened:** Folder was named `qice-project` instead of `qiec-project`, mismatching domain `training.qiec.sa`.
 
-**Fix:** Renamed before git init. See [FOLDER_RENAME_RECOMMENDATION.md](FOLDER_RENAME_RECOMMENDATION.md).
+**Fix:** Renamed before git init.
 
 **Prevention:** Align folder name, repo name, and domain from day one.
 
@@ -211,4 +211,3 @@ git grep "landing:build"
 
 - [CLIENT_PLAYBOOK.md](CLIENT_PLAYBOOK.md) — prevention checklist
 - [DEPLOYMENT.md](DEPLOYMENT.md) — deploy troubleshooting
-- [PHASE0_CHANGELOG.md](PHASE0_CHANGELOG.md) — security fixes log

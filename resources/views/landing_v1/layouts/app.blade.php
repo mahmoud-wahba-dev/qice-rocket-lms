@@ -29,6 +29,7 @@
         @php($landingImg = asset('assets/landing_v1/img'))
         @include('landing_v1.layouts.navbar')
         @include('components.v1.flash')
+        @include('landing_v1.components.instructor-pending-modal')
         @yield('content')
         @include('landing_v1.layouts.footer')
         @include('landing_v1.components.floating-whatsapp')

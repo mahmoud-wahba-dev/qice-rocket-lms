@@ -490,7 +490,7 @@ class CartController extends Controller
         $user = null;
 
         if (!empty($cart->webinar_id) or !empty($cart->bundle_id)) {
-            $user = $cart->webinar_id ? $cart->webinar->creator : $cart->bundle->creator;
+            $user = $cart->webinar_id ? optional($cart->webinar)->creator : optional($cart->bundle)->creator;
         } elseif (!empty($cart->reserve_meeting_id)) {
             $user = $cart->reserveMeeting->meeting->creator;
         } elseif (!empty($cart->product_order_id) and !empty($cart->productOrder)) {

@@ -301,6 +301,9 @@ class RegisterController extends Controller
             }
 
             return redirect('/verification');
+        } elseif ($checkConfirmed['status'] == 'verified' and $user->requiresAdminApproval()) {
+            // Instructors stay pending until an admin approves them; no login, no bonus.
+            return redirect('/login')->with('instructor_pending_modal', 'registered');
         } elseif ($checkConfirmed['status'] == 'verified') {
             $this->guard()->login($user);
 

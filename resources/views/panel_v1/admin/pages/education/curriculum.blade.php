@@ -14,19 +14,19 @@
     <div class="border border-d9 rounded-14px bg-white overflow-hidden">
         <div class="px-4 sm:px-6 py-4 border-b border-d9 bg-[#FAFAF4] flex items-center justify-between gap-3">
             <h2 class="font-bold text-16px text-primary">{{ $ch->title ?: 'وحدة #'.$ch->id }}</h2>
-            <form method="POST" action="{{ route('panel.v1.admin.education.courses.chapters.delete',['id'=>$webinar->id,'chapterId'=>$ch->id]) }}" onsubmit="return confirm('حذف الوحدة؟')" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف الوحدة"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form>
+            <form method="POST" action="{{ route('panel.v1.admin.education.courses.chapters.delete',['id'=>$webinar->id,'chapterId'=>$ch->id]) }}" data-confirm="حذف الوحدة؟" class="inline">@csrf<button type="submit" class="size-8 rounded-8px border border-red-200 center" title="حذف الوحدة"><span class="icon-[tabler--trash] size-4 text-red-500"></span></button></form>
         </div>
         <div class="p-4 sm:p-6 space-y-3">
             @foreach ($ch->sessions as $s)
                 <div class="flex items-center justify-between gap-2 rounded-10px border border-d9 px-3 py-2.5">
                     <p class="font-medium text-13px text-primary">جلسة: {{ $s->title }} <span class="text-gray">({{ $s->duration ?? 0 }} دقيقة)</span></p>
-                    <form method="POST" action="{{ route('panel.v1.admin.education.courses.sessions.delete',['id'=>$webinar->id,'sessionId'=>$s->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="text-red-500 font-bold text-12px">حذف</button></form>
+                    <form method="POST" action="{{ route('panel.v1.admin.education.courses.sessions.delete',['id'=>$webinar->id,'sessionId'=>$s->id]) }}" data-confirm="حذف؟" class="inline">@csrf<button type="submit" class="text-red-500 font-bold text-12px">حذف</button></form>
                 </div>
             @endforeach
             @foreach ($ch->files as $f)
                 <div class="flex items-center justify-between gap-2 rounded-10px border border-d9 px-3 py-2.5">
                     <p class="font-medium text-13px text-primary">ملف: {{ $f->title }}</p>
-                    <form method="POST" action="{{ route('panel.v1.admin.education.courses.files.delete',['id'=>$webinar->id,'fileId'=>$f->id]) }}" onsubmit="return confirm('حذف؟')" class="inline">@csrf<button type="submit" class="text-red-500 font-bold text-12px">حذف</button></form>
+                    <form method="POST" action="{{ route('panel.v1.admin.education.courses.files.delete',['id'=>$webinar->id,'fileId'=>$f->id]) }}" data-confirm="حذف؟" class="inline">@csrf<button type="submit" class="text-red-500 font-bold text-12px">حذف</button></form>
                 </div>
             @endforeach
             @foreach ($ch->textLessons as $t)

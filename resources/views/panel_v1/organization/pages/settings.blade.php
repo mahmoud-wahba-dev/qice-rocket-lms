@@ -350,7 +350,7 @@
                                     'existing' => $current ? [$current] : [],
                                 ])
                                 @if (!empty($authUser->$field))
-                                    <button type="submit" form="org-delete-media-{{ $field }}" class="mt-4 font-bold text-14px text-[#EF4444]" onclick="return confirm('حذف الملف؟');">حذف الملف الحالي</button>
+                                    <button type="submit" form="org-delete-media-{{ $field }}" class="mt-4 font-bold text-14px text-[#EF4444]" data-confirm="حذف الملف؟">حذف الملف الحالي</button>
                                 @endif
                             </div>
                         @endforeach
@@ -370,7 +370,7 @@
                                 'existing' => $signaturePreview ? [$signaturePreview] : [],
                             ])
                             @if (!empty($signature))
-                                <button type="submit" form="org-delete-media-signature_img" class="mt-4 font-bold text-14px text-[#EF4444]" onclick="return confirm('حذف التوقيع؟');">حذف التوقيع</button>
+                                <button type="submit" form="org-delete-media-signature_img" class="mt-4 font-bold text-14px text-[#EF4444]" data-confirm="حذف التوقيع؟">حذف التوقيع</button>
                             @endif
                         </div>
                     </div>
@@ -414,7 +414,7 @@
                                     @forelse ($educations ?? [] as $education)
                                         <div class="flex items-center justify-between gap-3 border border-d9 rounded-10px px-4 py-3">
                                             <span class="font-medium text-15px">{{ $education->value }}</span>
-                                            <form method="POST" action="{{ route('panel.v1.organization.metas.delete', ['metaId' => $education->id]) }}" onsubmit="return confirm('حذف؟');">
+                                            <form method="POST" action="{{ route('panel.v1.organization.metas.delete', ['metaId' => $education->id]) }}" data-confirm="حذف؟">
                                                 @csrf
                                                 <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف</button>
                                             </form>
@@ -434,7 +434,7 @@
                                     @forelse ($experiences ?? [] as $experience)
                                         <div class="flex items-center justify-between gap-3 border border-d9 rounded-10px px-4 py-3">
                                             <span class="font-medium text-15px">{{ $experience->value }}</span>
-                                            <form method="POST" action="{{ route('panel.v1.organization.metas.delete', ['metaId' => $experience->id]) }}" onsubmit="return confirm('حذف؟');">
+                                            <form method="POST" action="{{ route('panel.v1.organization.metas.delete', ['metaId' => $experience->id]) }}" data-confirm="حذف؟">
                                                 @csrf
                                                 <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف</button>
                                             </form>
@@ -463,7 +463,7 @@
                                                 @if (!empty($attachment->attachment))
                                                     <a href="{{ $attachment->attachment }}" target="_blank" rel="noopener" class="font-bold text-14px text-primary">تنزيل</a>
                                                 @endif
-                                                <form method="POST" action="{{ route('panel.v1.organization.attachments.delete', ['attachmentId' => $attachment->id]) }}" onsubmit="return confirm('حذف؟');">
+                                                <form method="POST" action="{{ route('panel.v1.organization.attachments.delete', ['attachmentId' => $attachment->id]) }}" data-confirm="حذف؟">
                                                     @csrf
                                                     <button type="submit" class="font-bold text-14px text-[#EF4444]">حذف</button>
                                                 </form>
@@ -536,7 +536,7 @@
                                         <td class="px-4 py-4">{{ $session->getDuration() }}</td>
                                         <td class="px-4 py-4">
                                             @if (empty($session->session_end_at))
-                                                <form method="POST" action="{{ route('panel.v1.organization.sessions.end', ['sessionId' => $session->id]) }}" onsubmit="return confirm('إنهاء هذه الجلسة؟');">
+                                                <form method="POST" action="{{ route('panel.v1.organization.sessions.end', ['sessionId' => $session->id]) }}" data-confirm="إنهاء هذه الجلسة؟">
                                                     @csrf
                                                     <button type="submit" class="font-bold text-14px text-[#EF4444]">إنهاء الجلسة</button>
                                                 </form>

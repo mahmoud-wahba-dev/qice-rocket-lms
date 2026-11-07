@@ -141,6 +141,15 @@ class User extends Authenticatable
         return $this->role_name === Role::$teacher;
     }
 
+    /**
+     * Instructor accounts are never activated by contact verification alone;
+     * an admin must approve them (admin > users > teachers, or instructor requests).
+     */
+    public function requiresAdminApproval(): bool
+    {
+        return $this->isTeacher();
+    }
+
     public function isOrganization()
     {
         return $this->role_name === Role::$organization;
@@ -922,7 +931,13 @@ class User extends Authenticatable
                 }
             } else {
                 if (!empty($sale->webinar_id)) {
-                    $webinarIds[] = $sale->webinar_id;
+                    $saleWebinar = $sale->webinar;
+                    $accessExpired = !empty($saleWebinar) && !empty($saleWebinar->access_days)
+                        && !$saleWebinar->checkHasExpiredAccessDays($sale->created_at, $sale->gift_id);
+
+                    if (!$accessExpired) {
+                        $webinarIds[] = $sale->webinar_id;
+                    }
                 }
 
                 if (!empty($sale->bundle_id)) {

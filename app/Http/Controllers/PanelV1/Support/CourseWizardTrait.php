@@ -443,6 +443,7 @@ trait CourseWizardTrait
             'teacherQuizzes' => $teacherQuizzes,
             'draftPrice' => $draft->price ?? null,
             'draftCapacity' => $draft->capacity ?? null,
+            'draftEnableWaitlist' => (bool) ($draft->enable_waitlist ?? false),
             'draftCertificate' => (bool) ($draft->certificate ?? false),
             'draftCertificateTitleAr' => $draftCertificateTitleAr,
             'draftCertificateTitleEn' => $draftCertificateTitleEn,
@@ -835,6 +836,7 @@ trait CourseWizardTrait
             }
 
             $draft->capacity = $request->input('capacity') ?: null;
+            $draft->enable_waitlist = $request->input('enable_waitlist') === 'on';
 
             if ($request->input('access_duration') === 'limited') {
                 $draft->access_days = (int) ($request->input('access_days') ?: 180);

@@ -44,7 +44,7 @@
                                     <button type="submit" class="btn btn-sm rounded-8px bg-[#FEF6E7] text-12px">إرسال</button>
                                 </form>
                             </details>
-                            <form method="POST" action="{{ route('panel.v1.student.comments.delete', ['id' => $comment->id]) }}" onsubmit="return confirm('حذف التعليق؟');">
+                            <form method="POST" action="{{ route('panel.v1.student.comments.delete', ['id' => $comment->id]) }}" data-confirm="حذف التعليق؟">
                                 @csrf
                                 <button type="submit" class="font-bold text-13px text-[#EF4444] hover:underline">حذف</button>
                             </form>

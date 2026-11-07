@@ -175,7 +175,7 @@
                                         <div id="js-support-more-menu"
                                             class="hidden absolute end-0 top-full mt-1 z-20 w-44 rounded-12px border border-d9 bg-white shadow-lg py-2">
                                             <form method="POST" action="{{ route('panel.v1.instructor.support.close', ['id' => $selectSupport->id]) }}"
-                                                onsubmit="return confirm('إغلاق هذه المحادثة؟');">
+                                                data-confirm="إغلاق هذه المحادثة؟">
                                                 @csrf
                                                 <button type="submit" class="w-full text-start px-4 py-2.5 font-bold text-14px text-[#EF4444] hover:bg-[#FEF2F2]">
                                                     إغلاق المحادثة
