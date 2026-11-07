@@ -335,9 +335,6 @@ class StudentController extends Controller
                 ->get();
         }
 
-        // Issue course certificates for finished purchased courses (progress 100%)
-        $this->syncFinishedCourseCertificates($user);
-
         $certificates = Certificate::with(['webinar'])
             ->where('student_id', $user->id)
             ->orderBy('id', 'desc')

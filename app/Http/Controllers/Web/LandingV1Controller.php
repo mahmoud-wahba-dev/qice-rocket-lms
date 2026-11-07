@@ -164,15 +164,18 @@ class LandingV1Controller extends Controller
 
     public function index()
     {
-        $trainers = $this->getActiveInstructors(12);
+        $trainers     = Cache::remember('home.instructors',  600, fn () => $this->getActiveInstructors(12));
+        $freeWorkshops = Cache::remember('home.workshops',   600, fn () => $this->getFreeWorkshops(12));
+        $paidCourses  = Cache::remember('home.paid_courses', 600, fn () => $this->getPaidCourses(12));
+        $latestPosts  = Cache::remember('home.blog_posts',   600, fn () => $this->getLatestBlogPosts(4));
 
         $data = [
-            'pageTitle' => 'مركز الجودة والتميز للتدريب',
-            'trainers' => $trainers,
-            'instructors' => $trainers,
-            'freeWorkshops' => $this->getFreeWorkshops(12),
-            'paidCourses' => $this->getPaidCourses(12),
-            'latestPosts' => $this->getLatestBlogPosts(4),
+            'pageTitle'     => 'مركز الجودة والتميز للتدريب',
+            'trainers'      => $trainers,
+            'instructors'   => $trainers,
+            'freeWorkshops' => $freeWorkshops,
+            'paidCourses'   => $paidCourses,
+            'latestPosts'   => $latestPosts,
         ];
 
         return view('landing_v1.pages.home', $data);
@@ -364,17 +367,56 @@ class LandingV1Controller extends Controller
     public function instructors()
     {
         $instructors = $this->getActiveInstructors();
+        $ids = $instructors->pluck('id')->all();
 
-        foreach ($instructors as $instructor) {
-            $this->attachInstructorStats($instructor);
+        if (!empty($ids)) {
+            // Batch course counts: 2 queries (creator + teacher) instead of N×1.
+            $creatorCounts = Webinar::where('status', Webinar::$active)
+                ->where('private', false)
+                ->whereIn('creator_id', $ids)
+                ->selectRaw('creator_id as iid, count(*) as cnt')
+                ->groupBy('creator_id')
+                ->pluck('cnt', 'iid');
+
+            $teacherCounts = Webinar::where('status', Webinar::$active)
+                ->where('private', false)
+                ->whereIn('teacher_id', $ids)
+                ->selectRaw('teacher_id as iid, count(*) as cnt')
+                ->groupBy('teacher_id')
+                ->pluck('cnt', 'iid');
+
+            // Batch sales counts: 1 query instead of N×1.
+            $salesCounts = Sale::where('type', 'webinar')
+                ->whereNotNull('webinar_id')
+                ->whereNull('refund_at')
+                ->whereIn('seller_id', $ids)
+                ->selectRaw('seller_id, count(*) as cnt')
+                ->groupBy('seller_id')
+                ->pluck('cnt', 'seller_id');
+
+            // Batch ratings via avg_rates column (cached on webinar row): 1 query.
+            $ratingRows = Webinar::where('status', Webinar::$active)
+                ->whereIn('creator_id', $ids)
+                ->whereNotNull('avg_rates')
+                ->where('avg_rates', '>', 0)
+                ->selectRaw('creator_id, avg(avg_rates) as avg_r')
+                ->groupBy('creator_id')
+                ->pluck('avg_r', 'creator_id');
+
+            foreach ($instructors as $instructor) {
+                $instructor->courses_count = (int) ($creatorCounts[$instructor->id] ?? 0)
+                    + (int) ($teacherCounts[$instructor->id] ?? 0);
+                $instructor->students_count = (int) ($salesCounts[$instructor->id] ?? 0);
+                $instructor->rating = isset($ratingRows[$instructor->id])
+                    ? number_format((float) $ratingRows[$instructor->id], 2)
+                    : 0;
+            }
         }
 
-        $data = [
-            'pageTitle' => 'المدربين',
-            'instructors' => $instructors,
-        ];
-
-        return view('landing_v1.pages.instructors', $data);
+        return view('landing_v1.pages.instructors', [
+            'pageTitle'    => 'المدربين',
+            'instructors'  => $instructors,
+        ]);
     }
 
     public function instructorDetails($username)
@@ -1058,21 +1100,17 @@ class LandingV1Controller extends Controller
         $isMultiCurrency = !empty(getFinancialCurrencySettings('multi_currency'));
         $userCurrency    = currency();
 
-        $paymentChannels = PaymentChannel::where('status', 'active')
-            ->get()
-            ->filter(function ($ch) use ($isMultiCurrency, $userCurrency) {
-                return !$isMultiCurrency
-                    || (! empty($ch->currencies) && in_array($userCurrency, $ch->currencies));
-            })
-            ->values();
+        $allChannels = PaymentChannel::where('status', 'active')->get();
 
-        $invalidChannels = PaymentChannel::where('status', 'active')
-            ->get()
-            ->filter(function ($ch) use ($isMultiCurrency, $userCurrency) {
-                return $isMultiCurrency
-                    && (empty($ch->currencies) || ! in_array($userCurrency, $ch->currencies));
-            })
-            ->values();
+        $paymentChannels = $allChannels->filter(function ($ch) use ($isMultiCurrency, $userCurrency) {
+            return !$isMultiCurrency
+                || (! empty($ch->currencies) && in_array($userCurrency, $ch->currencies));
+        })->values();
+
+        $invalidChannels = $allChannels->filter(function ($ch) use ($isMultiCurrency, $userCurrency) {
+            return $isMultiCurrency
+                && (empty($ch->currencies) || ! in_array($userCurrency, $ch->currencies));
+        })->values();
 
         $razorpay = $paymentChannels->contains('class_name', 'Razorpay');
 

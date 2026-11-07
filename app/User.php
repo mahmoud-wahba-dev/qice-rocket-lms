@@ -71,6 +71,7 @@ class User extends Authenticatable
     private $permissions;
     private $user_group;
     private $userInfo;
+    private ?array $purchasedCoursesIdsCache = null;
 
 
     public static function boot()
@@ -892,6 +893,10 @@ class User extends Authenticatable
 
     public function getPurchasedCoursesIds()
     {
+        if ($this->purchasedCoursesIdsCache !== null) {
+            return $this->purchasedCoursesIdsCache;
+        }
+
         $webinarIds = [];
         $bundleIds = [];
 
@@ -1000,7 +1005,8 @@ class User extends Authenticatable
         }
 
 
-        return array_unique($webinarIds);
+        $this->purchasedCoursesIdsCache = array_unique($webinarIds);
+        return $this->purchasedCoursesIdsCache;
     }
 
     public function getPurchasedBundlesIds()

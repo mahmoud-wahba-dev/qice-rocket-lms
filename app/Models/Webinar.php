@@ -281,12 +281,12 @@ class Webinar extends Model implements TranslatableContract
         if (!empty($this->avg_rates)) {
             $rate = $this->avg_rates;
         } else {
-            $reviews = $this->reviews()
+            $avg = $this->reviews()
                 ->where('status', 'active')
-                ->get();
+                ->avg('rates');
 
-            if (!empty($reviews) and $reviews->count() > 0) {
-                $rate = number_format($reviews->avg('rates'), 2);
+            if ($avg !== null) {
+                $rate = number_format($avg, 2);
             }
         }
 

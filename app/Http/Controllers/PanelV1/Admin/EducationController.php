@@ -14,13 +14,18 @@ class EducationController extends AdminController
 
     public function home(Request $request)
     {
-        $activeCount = (int) \App\Models\Webinar::where('status', 'active')->count();
-        $pendingCount = (int) \App\Models\Webinar::where('status', 'pending')->count();
-        $draftCount = (int) \App\Models\Webinar::where('status', 'is_draft')->count();
-        $inactiveCount = (int) \App\Models\Webinar::where('status', 'inactive')->count();
+        // One grouped query replaces 5 separate Webinar::count() calls.
+        $statusCounts = \App\Models\Webinar::selectRaw('status, count(*) as cnt')
+            ->groupBy('status')
+            ->pluck('cnt', 'status');
+        $activeCount  = (int) ($statusCounts['active']   ?? 0);
+        $pendingCount = (int) ($statusCounts['pending']  ?? 0);
+        $draftCount   = (int) ($statusCounts['is_draft'] ?? 0);
+        $inactiveCount = (int) ($statusCounts['inactive'] ?? 0);
+        $totalCount   = (int) $statusCounts->sum();
 
         $stats = [
-            ['label' => 'إجمالي الدورات', 'value' => (string) \App\Models\Webinar::count()],
+            ['label' => 'إجمالي الدورات', 'value' => (string) $totalCount],
             ['label' => 'نشطة', 'value' => (string) $activeCount],
             ['label' => 'بانتظار المراجعة', 'value' => (string) $pendingCount],
             ['label' => 'مسودات', 'value' => (string) $draftCount],
@@ -76,39 +81,40 @@ class EducationController extends AdminController
         };
     }
 
-    /** Last 7 days enrollments + new courses for ApexCharts (unix timestamps). */
+    /** Last 7 days enrollments + new courses for ApexCharts (unix timestamps). Cached 5 minutes. */
     private function buildAcademicActivityChart(): array
     {
-        $dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-        $labels = [];
-        $enrollments = [];
-        $newCourses = [];
+        return \Illuminate\Support\Facades\Cache::remember('admin.activity_chart', 300, function () {
+            $dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            $labels = [];
+            $enrollments = [];
+            $newCourses = [];
+            $todayStart = strtotime('today');
 
-        $todayStart = strtotime('today');
+            for ($i = 6; $i >= 0; $i--) {
+                $start = $todayStart - ($i * 86400);
+                $end = $start + 86399;
+                $labels[] = $dayNames[(int) date('w', $start)];
 
-        for ($i = 6; $i >= 0; $i--) {
-            $start = $todayStart - ($i * 86400);
-            $end = $start + 86399;
-            $labels[] = $dayNames[(int) date('w', $start)];
+                $enrollments[] = (int) \App\Models\Sale::query()
+                    ->whereNotNull('webinar_id')
+                    ->whereNull('refund_at')
+                    ->whereBetween('created_at', [$start, $end])
+                    ->count();
 
-            $enrollments[] = (int) \App\Models\Sale::query()
-                ->whereNotNull('webinar_id')
-                ->whereNull('refund_at')
-                ->whereBetween('created_at', [$start, $end])
-                ->count();
+                $newCourses[] = (int) \App\Models\Webinar::query()
+                    ->whereBetween('created_at', [$start, $end])
+                    ->count();
+            }
 
-            $newCourses[] = (int) \App\Models\Webinar::query()
-                ->whereBetween('created_at', [$start, $end])
-                ->count();
-        }
-
-        return [
-            'labels' => $labels,
-            'series' => [
-                ['name' => 'التسجيلات', 'data' => $enrollments],
-                ['name' => 'دورات جديدة', 'data' => $newCourses],
-            ],
-        ];
+            return [
+                'labels' => $labels,
+                'series' => [
+                    ['name' => 'التسجيلات', 'data' => $enrollments],
+                    ['name' => 'دورات جديدة', 'data' => $newCourses],
+                ],
+            ];
+        });
     }
 
     public function section(Request $request, string $section)
@@ -210,12 +216,26 @@ class EducationController extends AdminController
                 $real['archivedCourses'] = $q->paginate(10)->withQueryString();
                 $real['paginator'] = $real['archivedCourses'];
                 // Students who still have access = non-refunded buyers whose access_days have not ended.
-                $real['archivedCourses']->getCollection()->each(function ($c) {
-                    $sales = \App\Models\Sale::where('webinar_id', $c->id)->where('type', 'webinar')->whereNull('refund_at');
+                // Batch count courses with no access_days limit in one query; courses with access_days need per-row queries.
+                $collection = $real['archivedCourses']->getCollection();
+                $ids = $collection->pluck('id')->all();
+                $baseCounts = \App\Models\Sale::whereIn('webinar_id', $ids)
+                    ->where('type', 'webinar')
+                    ->whereNull('refund_at')
+                    ->selectRaw('webinar_id, count(*) as cnt')
+                    ->groupBy('webinar_id')
+                    ->pluck('cnt', 'webinar_id');
+
+                $collection->each(function ($c) use ($baseCounts) {
                     if (!empty($c->access_days)) {
-                        $sales->where('created_at', '>', time() - ((int) $c->access_days * 86400));
+                        $c->students_with_access = (int) \App\Models\Sale::where('webinar_id', $c->id)
+                            ->where('type', 'webinar')
+                            ->whereNull('refund_at')
+                            ->where('created_at', '>', time() - ((int) $c->access_days * 86400))
+                            ->count();
+                    } else {
+                        $c->students_with_access = (int) ($baseCounts[$c->id] ?? 0);
                     }
-                    $c->students_with_access = $sales->count();
                     $c->ends_at = $c->getEndTimestamp();
                 });
                 $real['stubTitle'] = $title;
@@ -918,6 +938,7 @@ class EducationController extends AdminController
             'description'=>$data['description'] ?? $data['title'],
         ]);
 
+        $this->forgetHomeCaches();
         return redirect()->route('panel.v1.admin.education.section',['section'=>'courses'])->with('toast',['title'=>'تم','msg'=>'تم التحديث (منطق Admin\WebinarController حرفياً)','type'=>'success']);
     }
 
@@ -1057,11 +1078,20 @@ class EducationController extends AdminController
         return back()->with('toast',['title'=>'تم','msg'=>'تم حذف الدورة','type'=>'success']);
     }
 
+    /** Flush the landing home-page caches that reflect course/instructor lists. */
+    private function forgetHomeCaches(): void
+    {
+        foreach (['home.instructors', 'home.workshops', 'home.paid_courses', 'home.blog_posts'] as $key) {
+            \Illuminate\Support\Facades\Cache::forget($key);
+        }
+    }
+
     public function approveCourse(Request $request, int $id)
     {
         $user = $this->resolveAdmin($request);
         if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
         \App\Models\Webinar::where('id',$id)->update(['status'=>'active','updated_at'=>time()]);
+        $this->forgetHomeCaches();
         return back()->with('toast',[
             'title'=>'تم',
             'msg'=>'تم تفعيل الدورة وستظهر في صفحة الدورات',
@@ -1074,6 +1104,7 @@ class EducationController extends AdminController
         $user = $this->resolveAdmin($request);
         if ($user instanceof \Illuminate\Http\RedirectResponse) return $user;
         \App\Models\Webinar::where('id',$id)->update(['status'=>'inactive','updated_at'=>time()]);
+        $this->forgetHomeCaches();
         return back()->with('toast',['title'=>'تم','msg'=>'تم الرفض','type'=>'success']);
     }
 
@@ -1089,6 +1120,7 @@ class EducationController extends AdminController
             'updated_at' => time(),
         ]);
 
+        $this->forgetHomeCaches();
         return back()->with('toast', [
             'title' => 'تم',
             'msg' => 'تمت أرشفة الدورة. يحتفظ الطلاب المشترون بالوصول حتى انتهاء أيام الوصول.',
@@ -1109,6 +1141,7 @@ class EducationController extends AdminController
             'updated_at' => time(),
         ]);
 
+        $this->forgetHomeCaches();
         return back()->with('toast', [
             'title' => 'تم',
             'msg' => 'تم إلغاء الأرشفة. الدورة غير نشطة الآن، فعّلها من قائمة الدورات لتظهر في الموقع.',
